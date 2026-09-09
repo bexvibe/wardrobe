@@ -1,0 +1,1313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light">
+<title>The Archive — Wardrobe Inventory</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Work+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    color-scheme: light;
+    --bone:#F6F1E7;
+    --surface:#FCFAF4;
+    --ink:#2B2620;
+    --ink-soft:#6B6255;
+    --line:#E3D9C6;
+    --sage:#7C8567;
+    --sage-deep:#5E6650;
+    --clay:#B06B45;
+    --clay-soft:#EADFCF;
+  }
+  *{box-sizing:border-box;}
+  html{color-scheme: light;}
+  body{
+    margin:0;
+    background:var(--bone);
+    color:var(--ink);
+    font-family:'Work Sans', sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  input::placeholder, textarea::placeholder{
+    color:var(--ink-soft);
+    opacity:1;
+  }
+  .wrap{max-width:960px;margin:0 auto;padding:28px 16px 90px;}
+  header{margin-bottom:20px;}
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    letter-spacing:0.12em;
+    text-transform:uppercase;
+    color:var(--sage-deep);
+    margin-bottom:6px;
+  }
+  h1{
+    font-family:'Fraunces', serif;
+    font-weight:500;
+    font-size:34px;
+    margin:0 0 4px;
+    letter-spacing:-0.01em;
+  }
+  .sub{color:var(--ink-soft);font-size:13px;margin:0;}
+
+  /* Tabs */
+  .tabs{
+    display:flex;
+    gap:6px;
+    overflow-x:auto;
+    padding:16px 0 12px;
+    margin-bottom:6px;
+    -webkit-overflow-scrolling:touch;
+    scrollbar-width:none;
+  }
+  .tabs::-webkit-scrollbar{display:none;}
+  .tab{
+    flex:none;
+    font-family:'Work Sans',sans-serif;
+    font-size:13px;
+    font-weight:600;
+    padding:8px 14px;
+    border-radius:999px;
+    border:1px solid var(--line);
+    background:var(--surface);
+    color:var(--ink-soft);
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .tab.active{
+    background:var(--ink);
+    border-color:var(--ink);
+    color:var(--bone);
+  }
+  .tab .count{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10px;
+    opacity:0.7;
+    margin-left:4px;
+  }
+
+  .toolbar-row{
+    display:flex;justify-content:space-between;align-items:center;
+    gap:10px;margin:14px 0 16px;flex-wrap:wrap;
+  }
+  input[type=text]{
+    font-family:'Work Sans',sans-serif;
+    font-size:13px;
+    padding:8px 12px;
+    border:1px solid var(--line);
+    border-radius:6px;
+    background:var(--surface);
+    color:var(--ink);
+    flex:1;
+    min-width:160px;
+  }
+  .btn{
+    font-family:'Work Sans',sans-serif;
+    font-size:13px;
+    font-weight:600;
+    padding:9px 16px;
+    border-radius:6px;
+    border:1px solid var(--ink);
+    background:var(--ink);
+    color:var(--bone);
+    cursor:pointer;
+  }
+  .btn.secondary{
+    background:transparent;
+    color:var(--ink);
+    border:1px solid var(--line);
+  }
+  .btn.small{padding:6px 10px;font-size:12px;}
+  .btn:hover{opacity:0.85;}
+
+  input, textarea, select{
+    width:100%;
+    font-family:'Work Sans',sans-serif;
+    font-size:14px;
+    padding:9px 10px;
+    border:1px solid var(--line);
+    border-radius:6px;
+    background:var(--bone);
+    color:var(--ink);
+  }
+  input:focus, textarea:focus, select:focus{outline:2px solid var(--sage);outline-offset:1px;}
+
+  .count-line{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px;
+    color:var(--ink-soft);
+    margin-bottom:14px;
+  }
+
+  /* Image-only gallery */
+  .gallery{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(140px, 1fr));
+    gap:10px;
+  }
+  .tile{
+    aspect-ratio:1/1;
+    background:var(--bone);
+    border-radius:8px;
+    overflow:hidden;
+    cursor:pointer;
+    position:relative;
+  }
+  .tile img{width:100%;height:100%;object-fit:contain;display:block;}
+  .tile .no-photo{
+    width:100%;height:100%;
+    display:flex;align-items:center;justify-content:center;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10px;color:var(--ink-soft);
+    text-align:center;padding:8px;
+  }
+  .tile-chip{
+    position:absolute;
+    bottom:6px;left:6px;
+    background:rgba(43,38,32,0.75);
+    color:var(--bone);
+    font-family:'IBM Plex Mono',monospace;
+    font-size:9px;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    padding:3px 7px;
+    border-radius:999px;
+  }
+  .detail-chip{
+    display:inline-block;
+    background:var(--clay-soft);
+    color:var(--sage-deep);
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10px;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    padding:4px 10px;
+    border-radius:999px;
+    margin-bottom:8px;
+  }
+
+  .empty{text-align:center;padding:60px 20px;color:var(--ink-soft);}
+  .empty h3{font-family:'Fraunces', serif;font-weight:500;color:var(--ink);margin-bottom:6px;}
+
+  /* Name list view */
+  .name-list{display:flex;flex-direction:column;}
+  .name-row{
+    display:flex;align-items:center;gap:10px;
+    padding:12px 4px;
+    cursor:pointer;
+  }
+  .name-row-thumb{
+    width:36px;height:36px;border-radius:6px;object-fit:contain;
+    background:var(--bone);flex:none;
+  }
+  .name-row-thumb.no-photo-mini{
+    display:flex;align-items:center;justify-content:center;
+    font-family:'IBM Plex Mono',monospace;font-size:7px;color:var(--ink-soft);
+  }
+  .name-row-text{flex:1;min-width:0;}
+  .name-row-title{font-family:'Fraunces',serif;font-size:15px;}
+  .name-row-sub{font-size:12px;color:var(--ink-soft);}
+
+  /* Edit mode / bulk select */
+  .tile.select-mode, .name-row.select-mode{position:relative;}
+  .select-check{
+    position:absolute;top:6px;left:6px;
+    width:22px;height:22px;border-radius:6px;
+    background:var(--surface);border:2px solid var(--line);
+    display:flex;align-items:center;justify-content:center;
+    font-size:13px;color:transparent;
+    z-index:2;
+  }
+  .select-check.checked{background:var(--sage);border-color:var(--sage);color:#fff;}
+  .name-row .select-check{position:static;width:20px;height:20px;flex:none;}
+  .tile.item-selected{outline:2px solid var(--sage);outline-offset:-2px;}
+  .name-row.item-selected{background:var(--clay-soft);}
+  .bulk-bar{
+    display:flex;justify-content:space-between;align-items:center;
+    background:var(--surface);border:1px solid var(--line);border-radius:8px;
+    padding:10px 14px;margin-bottom:14px;
+    font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink-soft);
+  }
+
+  /* Full-screen detail sheet */
+  .modal-backdrop{
+    display:none;
+    position:fixed;inset:0;
+    background:var(--bone);
+    z-index:100;
+    overflow-y:auto;
+  }
+  .modal-backdrop.open{display:block;}
+  .modal{
+    max-width:640px;
+    margin:0 auto;
+    min-height:100%;
+    background:var(--bone);
+  }
+  .sheet-header{
+    position:sticky;top:0;z-index:5;
+    background:var(--bone);
+    padding:12px 16px;
+    display:flex;align-items:center;
+  }
+  .sheet-back{
+    font-family:'Work Sans',sans-serif;
+    font-size:13px;font-weight:600;
+    background:none;border:none;
+    color:var(--ink);cursor:pointer;
+    padding:6px 4px;
+  }
+  .modal-photo{
+    aspect-ratio:1/1;
+    background:var(--bone);
+    display:flex;align-items:center;justify-content:center;
+    overflow:hidden;
+  }
+  .modal-photo img{width:100%;height:100%;object-fit:contain;}
+  .modal-photo .no-photo{
+    font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink-soft);
+  }
+  .modal-body{padding:18px;}
+  .modal-brand{
+    font-family:'IBM Plex Mono', monospace;font-size:11px;
+    text-transform:uppercase;letter-spacing:0.08em;color:var(--sage-deep);
+  }
+  .modal-name{font-family:'Fraunces', serif;font-size:22px;font-weight:500;margin:2px 0 8px;}
+  .modal-meta{font-size:13px;color:var(--ink-soft);margin-bottom:3px;}
+  .modal-price{
+    font-family:'IBM Plex Mono', monospace;font-size:15px;color:var(--clay);margin:8px 0;
+  }
+  .modal-notes{font-size:13px;color:var(--ink-soft);margin:8px 0;font-style:italic;}
+  .modal-actions{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;}
+  .outfits-heading{
+    font-family:'Fraunces', serif;
+    font-weight:500;
+    font-size:17px;
+    margin:22px 0 10px;
+    padding-top:16px;
+  }
+  .outfit-card.expanded{
+    grid-column: 1 / -1;
+    cursor:default;
+  }
+  .outfit-expanded-panel{
+    margin-top:10px;
+    padding-top:10px;
+  }
+  .outfit-collapse-btn{
+    font-family:'Work Sans',sans-serif;
+    font-size:12px;font-weight:600;
+    background:none;border:none;
+    color:var(--ink-soft);cursor:pointer;
+    padding:0 0 8px;
+  }
+
+  .toast{
+    position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+    background:var(--ink);color:var(--bone);
+    padding:10px 18px;border-radius:8px;font-size:13px;
+    font-family:'Work Sans',sans-serif;
+    opacity:0;pointer-events:none;transition:opacity 0.25s;
+    z-index:200;
+  }
+  .toast.show{opacity:1;}
+  @media (max-width:520px){
+    h1{font-size:26px;}
+    .gallery{grid-template-columns:repeat(auto-fill, minmax(110px, 1fr));}
+  }
+  @media (min-width:640px){
+    .gallery{grid-template-columns:repeat(4, 1fr);}
+  }
+
+  /* Mode toggle */
+  .mode-toggle{
+    display:flex;gap:6px;margin-bottom:6px;
+  }
+  .mode-btn{
+    font-family:'Fraunces', serif;
+    font-weight:500;
+    font-size:15px;
+    padding:8px 4px;
+    border:none;background:none;
+    color:var(--ink-soft);
+    cursor:pointer;
+    border-bottom:2px solid transparent;
+  }
+  .mode-btn.active{color:var(--ink);border-bottom-color:var(--clay);}
+
+  /* Outfit filters */
+  .outfit-filters{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:16px;
+    margin:16px 0 18px;
+  }
+  .base-toggle{display:flex;gap:6px;margin-bottom:12px;}
+  .base-btn{
+    font-family:'Work Sans',sans-serif;
+    font-size:12px;font-weight:600;
+    padding:7px 12px;border-radius:999px;
+    border:1px solid var(--line);background:var(--bone);
+    color:var(--ink-soft);cursor:pointer;
+  }
+  .base-btn.active{background:var(--sage);border-color:var(--sage);color:#fff;}
+  .filter-grid{
+    display:flex;
+    gap:8px;
+    overflow-x:auto;
+    padding-bottom:2px;
+    -webkit-overflow-scrolling:touch;
+    scrollbar-width:none;
+  }
+  .filter-grid::-webkit-scrollbar{display:none;}
+  .filter-chip{
+    flex:none;
+    display:flex;flex-direction:column;align-items:flex-start;gap:2px;
+    font-family:'Work Sans',sans-serif;
+    font-size:12px;font-weight:600;
+    padding:8px 14px;
+    border-radius:10px;
+    border:1px solid var(--line);
+    background:var(--bone);
+    color:var(--ink);
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .filter-chip.active{border-color:var(--sage);background:var(--clay-soft);}
+  .filter-chip .chip-state{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10px;color:var(--ink-soft);font-weight:400;
+  }
+  .quick-picks{display:flex;gap:8px;margin-bottom:14px;}
+  .picker-tile{border:1px solid var(--line);position:relative;}
+  .picker-tile.picker-selected{border:2px solid var(--sage);}
+  .picker-check{
+    position:absolute;top:6px;right:6px;
+    width:20px;height:20px;border-radius:999px;
+    background:var(--sage);color:#fff;
+    display:flex;align-items:center;justify-content:center;
+    font-size:12px;
+  }
+
+  /* Outfit gallery */
+  .outfit-gallery{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(160px, 1fr));
+    gap:12px;
+  }
+  .outfit-card{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:8px;
+    cursor:pointer;
+  }
+  .outfit-thumbs{
+    display:flex;flex-wrap:wrap;gap:4px;
+  }
+  .outfit-thumbs img{
+    width:calc(50% - 2px);
+    aspect-ratio:1/1;
+    object-fit:contain;
+    border-radius:5px;
+    background:var(--bone);
+  }
+  .outfit-thumbs .no-photo-mini{
+    width:calc(50% - 2px);
+    aspect-ratio:1/1;
+    border-radius:5px;
+    background:var(--bone);
+    display:flex;align-items:center;justify-content:center;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:8px;color:var(--ink-soft);
+  }
+  .outfit-piece-row{
+    display:flex;gap:10px;align-items:center;
+    padding:10px 0;
+  }
+  .outfit-piece-row img, .outfit-piece-row .no-photo-mini{
+    width:56px;height:56px;border-radius:6px;object-fit:contain;
+    background:var(--bone);flex:none;
+  }
+  .outfit-piece-row .no-photo-mini{
+    display:flex;align-items:center;justify-content:center;
+    font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--ink-soft);
+  }
+  .outfit-piece-info .p-name{font-family:'Fraunces',serif;font-size:14px;}
+  .outfit-piece-info .p-meta{font-size:11px;color:var(--ink-soft);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="inventory-view">
+  <div class="toolbar-row">
+    <input type="text" id="filter-search" placeholder="Search name or brand..." oninput="render()">
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="btn secondary small" id="view-toggle-btn" onclick="toggleViewMode()">List view</button>
+      <button class="btn secondary small" id="edit-toggle-btn" onclick="toggleEditMode()">Edit</button>
+    </div>
+  </div>
+
+  <div class="tabs" id="tabs"></div>
+
+  <div class="count-line" id="count-line"></div>
+  <div class="bulk-bar" id="bulk-bar" style="display:none;">
+    <span id="bulk-count">0 selected</span>
+    <div style="display:flex;gap:8px;">
+      <button class="btn small secondary" onclick="selectAllVisible()">Select all</button>
+      <button class="btn small" style="background:var(--clay);border-color:var(--clay);" onclick="bulkDeleteSelected()">Delete selected</button>
+    </div>
+  </div>
+  <div class="gallery" id="gallery"></div>
+  <div class="name-list" id="name-list" style="display:none;"></div>
+  <div class="empty" id="empty" style="display:none;">
+    <h3>Nothing here yet</h3>
+  </div>
+  </div>
+
+  <div id="outfits-view" style="display:none;">
+    <div class="outfit-filters">
+      <div class="base-toggle">
+        <button class="base-btn active" id="base-topbottom-btn" onclick="setBase('topbottom')">Top + Bottom</button>
+        <button class="base-btn" id="base-dress-btn" onclick="setBase('dress')">Dress</button>
+      </div>
+      <div class="filter-grid" id="filter-grid"></div>
+    </div>
+    <div class="count-line" id="outfit-count-line"></div>
+    <div class="outfit-gallery" id="outfit-gallery"></div>
+    <div class="empty" id="outfit-empty" style="display:none;">
+      <h3>No outfits match</h3>
+    </div>
+    <div style="text-align:center;margin-top:16px;">
+      <button class="btn secondary" id="load-more-btn" onclick="loadMoreOutfits()" style="display:none;">Load more</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="modal-backdrop" onclick="closeModalIfBackdrop(event)">
+  <div class="modal" id="modal"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+<input type="file" id="hidden-photo-input" accept="image/*" style="display:none" onchange="handlePhotoUpload(event)">
+
+<script>
+let ITEMS = [];
+let activeTab = 'All';
+let pendingPhotoItemId = null;
+let appMode = 'inventory';
+let hiddenCombos = [];
+let viewMode = 'photos'; // 'photos' or 'names'
+let editMode = false;
+let selectedIds = new Set();
+
+const TAB_ORDER = ['All','Tops','Bottoms','Jumpers','Jackets','Dresses','Shoes','Accessories','Other','No Image'];
+
+const CATEGORY_TO_TAB = {
+  'Shirts':'Tops','Tops':'Tops',
+  'Jeans':'Bottoms','Pants':'Bottoms','Skirts':'Bottoms','Shorts':'Bottoms',
+  'Knitwear':'Jumpers',
+  'Jackets':'Jackets',
+  'Dresses':'Dresses',
+  'Shoes':'Shoes',
+  'Accessories':'Accessories','Bags':'Accessories','Sets':'Accessories','Swimwear':'Accessories'
+};
+
+function tabForItem(item){
+  if(!item.photo) return 'No Image';
+  return CATEGORY_TO_TAB[item.category] || 'Other';
+}
+
+// ---- Outfit engine state ----
+let outfitBase = 'topbottom'; // or 'dress'
+function anyFilter(){ return {type:'any', ids:[]}; }
+let outfitFilters = { top:anyFilter(), bottom:anyFilter(), dress:anyFilter(), jumper:anyFilter(), jacket:anyFilter(), shoes:anyFilter() };
+let outfitGen = null;
+let outfitDisplayed = [];
+let outfitRenderContext = 'tab'; // 'tab' or 'modal'
+let modalReturnItemId = null;
+const OUTFIT_PAGE_SIZE = 24;
+
+function itemsInTab(tabName){
+  return ITEMS.filter(i => tabForItem(i) === tabName);
+}
+
+function setMode(mode){
+  appMode = mode;
+  document.getElementById('mode-inventory-btn')?.classList.toggle('active', mode==='inventory');
+  document.getElementById('mode-outfits-btn')?.classList.toggle('active', mode==='outfits');
+  document.getElementById('inventory-view').style.display = mode==='inventory' ? 'block' : 'none';
+  document.getElementById('outfits-view').style.display = mode==='outfits' ? 'block' : 'none';
+  if(mode==='outfits'){
+    outfitRenderContext = 'tab';
+    renderOutfitFilters();
+    resetOutfitResults();
+  }
+}
+
+function setBase(base){
+  outfitBase = base;
+  document.getElementById('base-topbottom-btn').classList.toggle('active', base==='topbottom');
+  document.getElementById('base-dress-btn').classList.toggle('active', base==='dress');
+  renderOutfitFilters();
+  resetOutfitResults();
+}
+
+const SLOT_META = {
+  top:{label:'Top', category:'Tops', allowNone:false},
+  bottom:{label:'Bottom', category:'Bottoms', allowNone:false},
+  dress:{label:'Dress', category:'Dresses', allowNone:false},
+  jumper:{label:'Jumper', category:'Jumpers', allowNone:true},
+  jacket:{label:'Jacket', category:'Jackets', allowNone:true},
+  shoes:{label:'Shoes', category:'Shoes', allowNone:true}
+};
+
+function renderOutfitFilters(){
+  const grid = document.getElementById('filter-grid');
+  const slotKeys = outfitBase === 'topbottom' ? ['top','bottom','jumper','jacket','shoes'] : ['dress','jumper','jacket','shoes'];
+
+  grid.innerHTML = slotKeys.map(key => {
+    const meta = SLOT_META[key];
+    const f = outfitFilters[key];
+    let stateLabel;
+    if(f.type === 'any') stateLabel = 'Any';
+    else if(f.type === 'none') stateLabel = 'None';
+    else stateLabel = `${f.ids.length} selected`;
+
+    return `<button class="filter-chip ${f.type!=='any' ? 'active' : ''}" onclick="openSlotPicker('${key}')">
+      ${meta.label}<span class="chip-state">${stateLabel}</span>
+    </button>`;
+  }).join('');
+}
+
+function openSlotPicker(slotKey){
+  const meta = SLOT_META[slotKey];
+  const items = itemsInTab(meta.category);
+  const modal = document.getElementById('modal');
+  modal.innerHTML = `
+    <div class="sheet-header"><button class="sheet-back" onclick="closePickerAndApply()">← Done</button></div>
+    <div class="modal-body">
+      <div class="modal-name" style="margin-bottom:14px;">Choose ${meta.label}</div>
+      <div class="quick-picks">
+        <button class="btn small secondary" onclick="setSlotQuick('${slotKey}','any')">Any</button>
+        ${meta.allowNone ? `<button class="btn small secondary" onclick="setSlotQuick('${slotKey}','none')">None</button>` : ''}
+      </div>
+      <div class="gallery" id="picker-gallery"></div>
+    </div>
+  `;
+  renderPickerGallery(slotKey);
+  document.getElementById('modal-backdrop').classList.add('open');
+}
+
+function renderPickerGallery(slotKey){
+  const meta = SLOT_META[slotKey];
+  const items = itemsInTab(meta.category);
+  const f = outfitFilters[slotKey];
+  document.getElementById('picker-gallery').innerHTML = items.map(i => {
+    const selected = f.type === 'items' && f.ids.includes(i.id);
+    return `<div class="tile picker-tile ${selected ? 'picker-selected' : ''}" onclick="toggleSlotItem('${slotKey}','${i.id}')">
+      ${i.photo ? `<img src="${i.photo}" alt="" referrerpolicy="no-referrer">` : `<span class="no-photo">No photo</span>`}
+      ${selected ? `<span class="picker-check">✓</span>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function setSlotQuick(slotKey, mode){
+  outfitFilters[slotKey] = mode === 'any' ? {type:'any', ids:[]} : {type:'none', ids:[]};
+  renderPickerGallery(slotKey);
+}
+
+function toggleSlotItem(slotKey, itemId){
+  const f = outfitFilters[slotKey];
+  const ids = (f.type === 'items') ? f.ids.slice() : [];
+  const idx = ids.indexOf(itemId);
+  if(idx >= 0) ids.splice(idx, 1); else ids.push(itemId);
+  outfitFilters[slotKey] = ids.length ? {type:'items', ids} : {type:'any', ids:[]};
+  renderPickerGallery(slotKey);
+}
+
+function closePickerAndApply(){
+  closeModal();
+  renderOutfitFilters();
+  resetOutfitResults();
+}
+
+function slotList(categoryItems, filter, allowNone){
+  if(filter.type === 'any'){
+    return allowNone ? [null, ...categoryItems] : categoryItems.slice();
+  } else if(filter.type === 'none'){
+    return [null];
+  } else {
+    const chosen = categoryItems.filter(i => filter.ids.includes(i.id));
+    return chosen.length ? chosen : (allowNone ? [null, ...categoryItems] : categoryItems.slice());
+  }
+}
+
+function* comboGenerator(){
+  const jumpers = slotList(itemsInTab('Jumpers'), outfitFilters.jumper, true);
+  const jackets = slotList(itemsInTab('Jackets'), outfitFilters.jacket, true);
+  const shoes = slotList(itemsInTab('Shoes'), outfitFilters.shoes, true);
+
+  if(outfitBase === 'topbottom'){
+    const tops = slotList(itemsInTab('Tops'), outfitFilters.top, false);
+    const bottoms = slotList(itemsInTab('Bottoms'), outfitFilters.bottom, false);
+    for(const top of tops){
+      for(const bottom of bottoms){
+        for(const jumper of jumpers){
+          for(const jacket of jackets){
+            for(const shoe of shoes){
+              yield {base:'topbottom', top, bottom, jumper, jacket, shoe};
+            }
+          }
+        }
+      }
+    }
+  } else {
+    const dresses = slotList(itemsInTab('Dresses'), outfitFilters.dress, false);
+    for(const dress of dresses){
+      for(const jumper of jumpers){
+        for(const jacket of jackets){
+          for(const shoe of shoes){
+            yield {base:'dress', dress, jumper, jacket, shoe};
+          }
+        }
+      }
+    }
+  }
+}
+
+function comboKey(combo){
+  const id = x => x ? x.id : 'none';
+  if(combo.base === 'dress'){
+    return ['dress', id(combo.dress), id(combo.jumper), id(combo.jacket), id(combo.shoe)].join('|');
+  }
+  return ['tb', id(combo.top), id(combo.bottom), id(combo.jumper), id(combo.jacket), id(combo.shoe)].join('|');
+}
+
+function comboPieces(combo){
+  return [combo.top, combo.bottom, combo.dress, combo.jumper, combo.jacket, combo.shoe].filter(Boolean);
+}
+
+function totalComboCount(){
+  const jumpers = slotList(itemsInTab('Jumpers'), outfitFilters.jumper, true).length;
+  const jackets = slotList(itemsInTab('Jackets'), outfitFilters.jacket, true).length;
+  const shoes = slotList(itemsInTab('Shoes'), outfitFilters.shoes, true).length;
+  if(outfitBase === 'topbottom'){
+    const tops = slotList(itemsInTab('Tops'), outfitFilters.top, false).length;
+    const bottoms = slotList(itemsInTab('Bottoms'), outfitFilters.bottom, false).length;
+    return tops * bottoms * jumpers * jackets * shoes;
+  } else {
+    const dresses = slotList(itemsInTab('Dresses'), outfitFilters.dress, false).length;
+    return dresses * jumpers * jackets * shoes;
+  }
+}
+
+function resetOutfitResults(){
+  outfitGen = comboGenerator();
+  outfitDisplayed = [];
+  loadMoreOutfits();
+}
+
+function loadMoreOutfits(){
+  if(!outfitGen) outfitGen = comboGenerator();
+  let added = 0;
+  let guard = 0;
+  while(added < OUTFIT_PAGE_SIZE && guard < OUTFIT_PAGE_SIZE * 500){
+    const next = outfitGen.next();
+    guard++;
+    if(next.done) break;
+    const key = comboKey(next.value);
+    if(hiddenCombos.includes(key)) continue;
+    outfitDisplayed.push(next.value);
+    added++;
+  }
+  renderOutfits();
+}
+
+async function loadHiddenCombos(){
+  try{
+    const raw = localStorage.getItem('wardrobe-hidden-combos');
+    hiddenCombos = raw ? JSON.parse(raw) : [];
+  }catch(e){
+    hiddenCombos = [];
+  }
+}
+
+async function saveHiddenCombos(){
+  try{
+    localStorage.setItem('wardrobe-hidden-combos', JSON.stringify(hiddenCombos));
+  }catch(e){
+    showToast('Could not save — try again');
+  }
+}
+
+let expandedComboKey = null;
+
+async function hideCombo(key){
+  if(!hiddenCombos.includes(key)) hiddenCombos.push(key);
+  await saveHiddenCombos();
+  outfitDisplayed = outfitDisplayed.filter(c => comboKey(c) !== key);
+  if(expandedComboKey === key) expandedComboKey = null;
+  renderOutfits();
+  showToast('Combo hidden');
+}
+
+function toggleExpandCombo(key){
+  expandedComboKey = (expandedComboKey === key) ? null : key;
+  renderOutfits();
+}
+
+function renderOutfits(){
+  const ids = outfitRenderContext === 'modal'
+    ? {count:'m-outfit-count-line', gallery:'m-outfit-gallery', empty:null, loadMore:'m-load-more-btn'}
+    : {count:'outfit-count-line', gallery:'outfit-gallery', empty:'outfit-empty', loadMore:'load-more-btn'};
+
+  const countLine = document.getElementById(ids.count);
+  const total = totalComboCount();
+  if(countLine) countLine.textContent = `${outfitDisplayed.length} shown of ${total.toLocaleString()} possible combinations`;
+
+  const gallery = document.getElementById(ids.gallery);
+  const emptyState = ids.empty ? document.getElementById(ids.empty) : null;
+  const loadMoreBtn = document.getElementById(ids.loadMore);
+  if(!gallery) return;
+
+  if(outfitDisplayed.length === 0){
+    gallery.innerHTML = '';
+    if(emptyState) emptyState.style.display = 'block';
+    if(loadMoreBtn) loadMoreBtn.style.display = 'none';
+    return;
+  }
+  if(emptyState) emptyState.style.display = 'none';
+  if(loadMoreBtn) loadMoreBtn.style.display = total > outfitDisplayed.length ? 'inline-block' : 'none';
+
+  gallery.innerHTML = outfitDisplayed.map(combo => {
+    const key = comboKey(combo);
+    const pieces = comboPieces(combo);
+    const isExpanded = expandedComboKey === key;
+    const thumbs = pieces.map(p => p.photo
+      ? `<img src="${p.photo}" alt="${p.name}" referrerpolicy="no-referrer">`
+      : `<div class="no-photo-mini">No photo</div>`
+    ).join('');
+
+    const expandedPanel = isExpanded ? `
+      <div class="outfit-expanded-panel">
+        <button class="outfit-collapse-btn" onclick='event.stopPropagation();toggleExpandCombo(${JSON.stringify(key)})'>Collapse ↑</button>
+        ${pieces.map(p => `
+          <div class="outfit-piece-row">
+            ${p.photo ? `<img src="${p.photo}" alt="${p.name}" referrerpolicy="no-referrer">` : `<div class="no-photo-mini">No photo</div>`}
+            <div class="outfit-piece-info">
+              <div class="p-name">${p.name}</div>
+            </div>
+          </div>
+        `).join('')}
+        <div class="modal-actions">
+          <button class="btn small secondary" onclick='event.stopPropagation();hideCombo(${JSON.stringify(key)})'>Hide this combo</button>
+        </div>
+      </div>
+    ` : '';
+
+    return `<div class="outfit-card ${isExpanded ? 'expanded' : ''}" onclick='toggleExpandCombo(${JSON.stringify(key)})'>
+      <div class="outfit-thumbs">${thumbs}</div>
+      ${expandedPanel}
+    </div>`;
+  }).join('');
+}
+
+function lockFilterForPiece(itemId){
+  const item = ITEMS.find(i=>i.id===itemId);
+  if(!item) return false;
+  const tab = tabForItem(item);
+  outfitFilters = { top:anyFilter(), bottom:anyFilter(), dress:anyFilter(), jumper:anyFilter(), jacket:anyFilter(), shoes:anyFilter() };
+  const locked = {type:'items', ids:[itemId]};
+
+  if(tab==='Tops'){ outfitBase='topbottom'; outfitFilters.top=locked; }
+  else if(tab==='Bottoms'){ outfitBase='topbottom'; outfitFilters.bottom=locked; }
+  else if(tab==='Dresses'){ outfitBase='dress'; outfitFilters.dress=locked; }
+  else if(tab==='Jumpers'){ outfitFilters.jumper=locked; }
+  else if(tab==='Jackets'){ outfitFilters.jacket=locked; }
+  else if(tab==='Shoes'){ outfitFilters.shoes=locked; }
+  else { return false; }
+  return true;
+}
+
+function findOutfitsWithPiece(itemId){
+  if(!lockFilterForPiece(itemId)){
+    showToast("This piece's category isn't used in outfit combos yet");
+    return;
+  }
+  closeModal();
+  outfitRenderContext = 'tab';
+  setMode('outfits');
+  document.getElementById('base-topbottom-btn').classList.toggle('active', outfitBase==='topbottom');
+  document.getElementById('base-dress-btn').classList.toggle('active', outfitBase==='dress');
+  renderOutfitFilters();
+  resetOutfitResults();
+}
+
+function showOutfitsInModal(itemId){
+  const container = document.getElementById('modal-outfits-container');
+  if(!lockFilterForPiece(itemId)){
+    container.innerHTML = '';
+    return;
+  }
+  outfitRenderContext = 'modal';
+  container.innerHTML = `
+    <div class="outfits-heading">Outfits with this piece</div>
+    <div class="count-line" id="m-outfit-count-line"></div>
+    <div class="outfit-gallery" id="m-outfit-gallery"></div>
+    <div style="text-align:center;margin-top:12px;">
+      <button class="btn small secondary" id="m-load-more-btn" onclick="loadMoreOutfits()" style="display:none;">Load more</button>
+    </div>
+  `;
+  resetOutfitResults();
+}
+
+const SEED_DATA = [
+  {name:"Fleece jacket", brand:"Patagonia", size:"-", category:"Jackets", price:"NZD $142.00", source:"Depop", notes:"Grey. From @hiddenheatvault.", photo:"wardrobe-photos/patagonia-fleece-jacket-retro-x-cream-nobg.png"},
+  {name:"Tunic jumper", brand:"Free People", size:"L", category:"Knitwear", price:"NZD $49.50", source:"Depop", notes:"Black, small hole at neck. From @ameeliegg.", photo:"wardrobe-photos/free-people-tunic-jumper-black-nobg.png"},
+  {name:"Fleece jacket", brand:"Billabong", size:"L", category:"Jackets", price:"NZD $47.00", source:"Depop", notes:"Brown/cream floral. From @userselling2359.", photo:"wardrobe-photos/billabong-fleece-jacket-brown-cream-floral-nobg.png"},
+  {name:"Corduroy jacket", brand:"Billabong", size:"-", category:"Jackets", price:"NZD $90.00", source:"Depop", notes:"Vintage. From @pentupthrift.", photo:"wardrobe-photos/billabong-corduroy-jacket-v2-nobg.png"},
+  {name:"Fleece jacket", brand:"Quiksilver", size:"XL", category:"Jackets", price:"NZD $68.00", source:"Depop", notes:"Cream. From @finnrobins.", photo:"wardrobe-photos/quiksilver-van-life-sherpa-fleece-nobg.png"},
+  {name:"Jacket", brand:"Carhartt", size:"XL", category:"Jackets", price:"NZD $155.00", source:"Depop", notes:"Awaiting shipping. From @mangoe2.", photo:"wardrobe-photos/carhartt-jacket-detroit-nobg.png"},
+  {name:"Jacket", brand:"Carhartt", size:"-", category:"Jackets", price:"NZD $137.00", source:"Depop", notes:"Tan, relaxed fit. From @klebh.", photo:"wardrobe-photos/carhartt-jacket-tan-chore-coat-nobg.png"},
+  {name:"Indi Coat", brand:"Tree of Life", size:"10, 12", category:"Jackets", price:"NZD $70.00", source:"Designer Wardrobe", notes:"Seller: Susan A. Payment Received.", photo:"wardrobe-photos/tree-of-life-indi-coat-flat-nobg.png"},
+  {name:"Waverly jacket", brand:"Assembly Label", size:"10, 12", category:"Jackets", price:"NZD $100.00", source:"Designer Wardrobe", notes:"Seller: April W.", photo:"wardrobe-photos/assembly-label-waverly-jacket-sand-flat-nobg.png"},
+  {name:"585 Rustic Brown boots", brand:"Blundstone", size:"7", category:"Shoes", price:"NZD $110.00", source:"Designer Wardrobe", notes:"Seller: Caroline.", photo:"wardrobe-photos/blundstone-585-rustic-brown-boots-nobg.png"},
+  {name:"Black Refined Tall Rain Boots", brand:"Hunter Boots", size:"8", category:"Shoes", price:"NZD $170.00", source:"Designer Wardrobe", notes:"Seller: Carmel R.", photo:"wardrobe-photos/hunter-boots-refined-tall-rain-boots-v2-nobg.png"},
+  {name:"Jeans low and straight", brand:"Abrand", size:"28", category:"Jeans", price:"NZD $25.00", source:"Designer Wardrobe", notes:"Seller: Emma J.", photo:"wardrobe-photos/abrand-jeans-low-and-straight-v2-nobg.png"},
+  {name:"Cream Knit Pants", brand:"Zulu & Zephyr", size:"10", category:"Pants", price:"NZD $90.00", source:"Designer Wardrobe", notes:"Seller: Melanie N.", photo:"wardrobe-photos/zulu-zephyr-cream-knit-pants-nobg.png"},
+  {name:"Waverly Jacket", brand:"Assembly Label", size:"14, 16, 12", category:"Jackets", price:"NZD $110.00", source:"Designer Wardrobe", notes:"Seller: Jord O.", photo:"wardrobe-photos/assembly-label-waverly-jacket-dark-choc-flat-nobg.png"},
+  {name:"Loose fit jeans", brand:"Assembly Label", size:"27", category:"Jeans", price:"NZD $100.00", source:"Designer Wardrobe", notes:"Seller: Rachel Y.", photo:"wardrobe-photos/assembly-label-loose-fit-jeans-flat-nobg.png"},
+  {name:"Dolman jacket", brand:"Free People", size:"8", category:"Jackets", price:"NZD $195.00", source:"Designer Wardrobe", notes:"Seller: Emma O.", photo:"wardrobe-photos/free-people-dolman-jacket-flat-nobg.png"},
+  {name:"Nikova knit", brand:"Bronze Snake Shop", size:"12", category:"Knitwear", price:"NZD $120.00", source:"Designer Wardrobe", notes:"Seller: Stella M.", photo:"wardrobe-photos/bronze-snake-shop-nikova-knit-flat-nobg.png"},
+  {name:"Boyfriend Jean", brand:"Assembly Label", size:"30", category:"Jeans", price:"NZD $90.00", source:"Designer Wardrobe", notes:"Seller: Ashleigh.", photo:"wardrobe-photos/assembly-label-boyfriend-jean-flat-nobg.png"},
+  {name:"Shirt/jacket", brand:"Marle", size:"12", category:"Jackets", price:"NZD $70.00", source:"Designer Wardrobe", notes:"Seller: Clare H.", photo:"wardrobe-photos/marle-shirt-jacket-black-nobg.png"},
+  {name:"Denim Shirt", brand:"Marle", size:"12", category:"Jackets", price:"NZD $80.00", source:"Designer Wardrobe", notes:"Seller: Claire H.", photo:"wardrobe-photos/marle-denim-shirt-light-blue-nobg.png"},
+  {name:"Beige Heels", brand:"Windsor Smith", size:"8", category:"Shoes", price:"NZD $40.70", source:"Designer Wardrobe", notes:"Seller: Melody B.", photo:null},
+  {name:"Sailor jeans - Lily blue", brand:"Rollas", size:"30", category:"Jeans", price:"NZD $40.00", source:"Designer Wardrobe", notes:"Seller: Tracy H.", photo:"wardrobe-photos/rollas-sailor-jean-lily-blue-v2-nobg.png"},
+  {name:"Blue Striped Shirt", brand:"Assembly Label", size:"14", category:"Shirts", price:"NZD $40.00", source:"Designer Wardrobe", notes:"Seller: Samantha.", photo:"wardrobe-photos/assembly-label-blue-striped-shirt-nobg.png"},
+  {name:"Black Linen Shirt", brand:"Assembly Label", size:"16", category:"Shirts", price:"NZD $40.00", source:"Designer Wardrobe", notes:"Seller: Samantha.", photo:"wardrobe-photos/assembly-label-xander-linen-shirt-black-nobg.png"},
+  {name:"Santi Jumper", brand:"Marle", size:"12", category:"Knitwear", price:"NZD $125.00", source:"Designer Wardrobe", notes:"Seller: Lorna F.", photo:"wardrobe-photos/marle-santi-jumper-flat-nobg.png"},
+  {name:"The Iconic Beach Shirt", brand:"Endless", size:"8", category:"Shirts", price:"NZD $26.00", source:"Designer Wardrobe", notes:"Seller: Maggie H.", photo:null},
+  {name:"Square Scarf", brand:"Unbranded", size:"8", category:"Accessories", price:"NZD $30.00", source:"Designer Wardrobe", notes:"Seller: Riley N.", photo:null},
+  {name:"Brown T-shirt (relaxed fit)", brand:"COS", size:"M, L", category:"Tops", price:"NZD $30.50", source:"Designer Wardrobe", notes:"Seller: Irina T.", photo:"wardrobe-photos/cos-relaxed-brown-tshirt-cutout.png"},
+  {name:"Eastcoast Flare", brand:"Rollas", size:"27", category:"Pants", price:"NZD $94.00", source:"Designer Wardrobe", notes:"Seller: Laura J.", photo:"wardrobe-photos/rollas-eastcoast-flare-flat-nobg.png"},
+  {name:"Remi Top", brand:"With Jean", size:"8", category:"Tops", price:"NZD $80.00", source:"Designer Wardrobe", notes:"Seller: Sophie P.", photo:null},
+  {name:"Voyage Shorts", brand:"Caitlin Crisp", size:"6, 8, 10", category:"Shorts", price:"NZD $180.00", source:"Designer Wardrobe", notes:"Seller: Jessie M.", photo:null},
+  {name:"Chuck Taylor All Star Classic", brand:"Converse", size:"8", category:"Shoes", price:"NZD $60.00", source:"Designer Wardrobe", notes:"Seller: Emba W. Photo did not load on site.", photo:null},
+  {name:"Drawstring Dress", brand:"Orseund Iris", size:"10, 8", category:"Dresses", price:"NZD $420.00", source:"Designer Wardrobe", notes:"Seller: Caitrin M. Photo did not load on site.", photo:"wardrobe-photos/orseund-iris-drawstring-dress-black-nobg.png"},
+  {name:"High Rise Stove Pipe Straight Leg", brand:"RE/DONE", size:"28", category:"Jeans", price:"NZD $165.82", source:"Designer Wardrobe", notes:"Seller: Rebecca S. Photo did not load on site.", photo:"wardrobe-photos/redone-high-rise-stove-pipe-jean.jpg"},
+  {name:"Cotton Oversized White Shirt", brand:"Laing Home", size:"10, 8", category:"Shirts", price:"NZD $50.00", source:"Designer Wardrobe", notes:"Seller: Andrea C.", photo:"wardrobe-photos/laing-home-cotton-oversized-white-shirt-nobg.png"},
+  {name:"Vada Jumper - Doe", brand:"Marle", size:"8", category:"Knitwear", price:"NZD $150.00", source:"Designer Wardrobe", notes:"Seller: Evie P. Photo did not load on site.", photo:"wardrobe-photos/marle-vada-jumper-doe-v2-nobg.png"},
+  {name:"Backpack", brand:"Kate Spade", size:"-", category:"Accessories", price:"NZD $144.00", source:"Designer Wardrobe", notes:"Seller: M A.", photo:null},
+  {name:"Ribcage Straight Ankle - Black", brand:"Levi's", size:"26", category:"Jeans", price:"NZD $85.00", source:"Designer Wardrobe", notes:"Seller: Laura S.", photo:"wardrobe-photos/levis-ribcage-straight-ankle-black-nobg.png"},
+  {name:"Iren Knit - Grey", brand:"Assembly Label", size:"8, 10", category:"Knitwear", price:"NZD $70.00", source:"Designer Wardrobe", notes:"Seller: Sryne W. Photo did not load on site.", photo:"wardrobe-photos/assembly-label-iren-knit-grey-v2-nobg.png"},
+  {name:"Tank", brand:"RE/DONE", size:"8", category:"Tops", price:"NZD $50.00", source:"Designer Wardrobe", notes:"Seller: Lucy C. Photo did not load on site.", photo:null},
+  {name:"So Shady (Ivory) sun hat", brand:"Sophie Store", size:"S/M", category:"Accessories", price:"NZD $25.00", source:"Designer Wardrobe", notes:"Seller: Elizabeth.", photo:null},
+  {name:"Drop Shoulder Reversible Blouse", brand:"Orseund Iris", size:"8", category:"Tops", price:"NZD $293.00", source:"Designer Wardrobe", notes:"Seller: Looks To Steal.", photo:null},
+  {name:"Long sleeve", brand:"Commoners", size:"8", category:"Tops", price:"NZD $35.00", source:"Designer Wardrobe", notes:"Seller: Darcy H. Photo sourced generically — tag in reference image reads a different brand, verify match.", photo:"wardrobe-photos/commoners-long-sleeve-white-nobg.png"},
+  {name:"Eloise Top", brand:"Marle", size:"6, 8", category:"Tops", price:"NZD $110.00", source:"Designer Wardrobe", notes:"Seller: Mona H.", photo:null},
+  {name:"High waist straight leg jeans", brand:"Levi's", size:"24, 25, 26", category:"Jeans", price:"NZD $65.00", source:"Designer Wardrobe", notes:"Seller: Bella B.", photo:null},
+  {name:"Cara Mini Dress", brand:"Sir The Label", size:"8, 10", category:"Dresses", price:"NZD $120.00", source:"Designer Wardrobe", notes:"Seller: Jade L.", photo:null},
+  {name:"Alfalfa Shirt Indigo", brand:"Marle", size:"-", category:"Jackets", price:"", source:"", notes:"", photo:"wardrobe-photos/marle-alfalfa-shirt-indigo-nobg.png"},
+  {name:"Dallas Boots", brand:"City Beach Australia", size:"-", category:"Shoes", price:"NZD $89.99", source:"", notes:"Colour not specified — used Black variant.", photo:"wardrobe-photos/city-beach-dallas-boots-black.jpg"},
+  {name:"Ana Long Sleeve Top Green", brand:"Marle", size:"-", category:"Tops", price:"NZD $182.00", source:"", notes:"Used 'Tapenade' colourway (closest olive/green match found).", photo:"wardrobe-photos/marle-ana-top-green-tapenade-nobg.png"},
+  {name:"Rib Knit Polo Top", brand:"St. Agni", size:"-", category:"Tops", price:"NZD $259.00", source:"", notes:"Sourced as 'Petit Polo Knit Top' on St. Agni's own site — verify same item.", photo:"wardrobe-photos/st-agni-rib-knit-polo-top-black.jpg"},
+  {name:"Paris Dress", brand:"St. Agni", size:"-", category:"Dresses", price:"NZD $429.00", source:"", notes:"", photo:"wardrobe-photos/st-agni-paris-dress-flat-nobg.png"},
+  {name:"Marina Seersucker Tee", brand:"AFENDS", size:"-", category:"Tops", price:"", source:"", notes:"Womens Marina - Seersucker Top - Marina.", photo:"wardrobe-photos/afends-marina-seersucker-top-flat-nobg.png"},
+  {name:"Crew Neck Sweater", brand:"SIR the Label", size:"-", category:"Knitwear", price:"NZD $403.47", source:"", notes:"", photo:"wardrobe-photos/sir-the-label-crew-neck-sweater-black-nobg.png"},
+  {name:"Milano High Waist Pants", brand:"St. Agni", size:"-", category:"Pants", price:"", source:"", notes:"Colour not specified — used Black variant.", photo:"wardrobe-photos/st-agni-milano-high-waist-pants-black-flat-nobg.png"},
+  {name:"Long Sleeve Knit", brand:"Country Road", size:"-", category:"Tops", price:"NZD $120.00", source:"Infinite Definite", notes:"Black. Generic name — used Merino Wool Silk Long Sleeve Knit as best guess, verify style.", photo:"wardrobe-photos/country-road-long-sleeve-knit-black-nobg.png"},
+  {name:"Neva Beanie", brand:"Remain", size:"-", category:"Accessories", price:"NZD $75.65", source:"", notes:"", photo:null},
+  {name:"Marle Maxi Dress Ivy Black", brand:"Marle", size:"-", category:"Dresses", price:"NZD $229.00", source:"", notes:"", photo:"wardrobe-photos/marle-maxi-dress-ivy-black-flat-nobg.png"},
+  {name:"Cleo boot", brand:"Bronwyn Footwear", size:"-", category:"Shoes", price:"NZD $136.00", source:"", notes:"", photo:"wardrobe-photos/bronwyn-footwear-cleo-boot-nobg.png"},
+  {name:"Layla Flares Carob", brand:"Indigo Luna", size:"-", category:"Pants", price:"", source:"", notes:"", photo:"wardrobe-photos/indigo-luna-layla-flares-carob-nobg.png"},
+  {name:"Agni Flares Chocolate", brand:"Indigo Luna", size:"-", category:"Pants", price:"", source:"", notes:"Requested as 'Agnis Flares brown' — closest match is the Chocolate colourway.", photo:"wardrobe-photos/indigo-luna-agni-flares-chocolate-nobg.png"},
+  {name:"Uma Dress", brand:"Marle", size:"-", category:"Dresses", price:"", source:"", notes:"", photo:"wardrobe-photos/marle-uma-dress-nobg.png"},
+  {name:"Lola Barrel Pant", brand:"Assembly Label", size:"-", category:"Pants", price:"", source:"", notes:"Dark Military Green.", photo:"wardrobe-photos/assembly-label-lola-barrel-pant-dark-military-green-nobg.png"},
+  {name:"Groove Flare Yoga Tights", brand:"Lululemon", size:"-", category:"Pants", price:"", source:"", notes:"Black.", photo:"wardrobe-photos/lululemon-groove-flare-yoga-tights-black-nobg.png"},
+  {name:"Cargo Pant", brand:"", size:"-", category:"Pants", price:"", source:"", notes:"Olive/sage colour.", photo:"wardrobe-photos/cargo-pant-olive-nobg.png"},
+  {name:"Long Sleeve Black", brand:"ME+EM", size:"-", category:"Tops", price:"", source:"", notes:"", photo:"wardrobe-photos/long-sleeve-black-meem-nobg.png"},
+  {name:"Pink Tee", brand:"", size:"-", category:"Tops", price:"", source:"", notes:"", photo:"wardrobe-photos/pink-tee-nobg.png"},
+  {name:"Black Tee", brand:"", size:"-", category:"Tops", price:"", source:"", notes:"", photo:"wardrobe-photos/black-tee-nobg.png"},
+  {name:"White Tee", brand:"", size:"-", category:"Tops", price:"", source:"", notes:"", photo:"wardrobe-photos/white-tee-nobg.png"},
+  {name:"Bucket Hat Beige", brand:"Lack of Colour", size:"-", category:"Accessories", price:"", source:"", notes:"", photo:"wardrobe-photos/lack-of-colour-bucket-hat-beige-nobg.png"},
+  {name:"Straw Bucket Hat", brand:"", size:"-", category:"Accessories", price:"", source:"", notes:"", photo:"wardrobe-photos/straw-bucket-hat-nobg.png"},
+  {name:"Black Bucket Hat", brand:"", size:"-", category:"Accessories", price:"", source:"", notes:"", photo:"wardrobe-photos/black-bucket-hat-nobg.png"},
+  {name:"Boston Clogs", brand:"Birkenstock", size:"-", category:"Shoes", price:"", source:"", notes:"", photo:"wardrobe-photos/birkenstock-boston-nobg.png"},
+  {name:"Turtleneck Jumper", brand:"Arket", size:"-", category:"Knitwear", price:"", source:"", notes:"", photo:"wardrobe-photos/arket-turtleneck-jumper-nobg.png"},
+  {name:"Overalls", brand:"Calvin Klein", size:"-", category:"Pants", price:"", source:"", notes:"Denim dungarees/overalls.", photo:"wardrobe-photos/ck-overalls-nobg.png"},
+  {name:"Cream Denim Shirt", brand:"Marle", size:"-", category:"Jackets", price:"", source:"", notes:"", photo:"wardrobe-photos/marle-cream-denim-shirt-nobg.png"},
+  {name:"Brown Baby Tee", brand:"Cotton On", size:"-", category:"Tops", price:"", source:"", notes:"Brown/tan stripe.", photo:"wardrobe-photos/cotton-on-brown-baby-tee-nobg.png"},
+  {name:"Denim Jacket", brand:"Levi's", size:"-", category:"Jackets", price:"", source:"", notes:"Corduroy collar.", photo:"wardrobe-photos/levis-denim-jacket-corduroy-collar-nobg.png"},
+  {name:"Quilted Jacket", brand:"", size:"-", category:"Jackets", price:"", source:"", notes:"Navy.", photo:"wardrobe-photos/quilted-jacket-navy-nobg.png"},
+  {name:"White Jeans", brand:"AGOLDE", size:"-", category:"Jeans", price:"", source:"", notes:"", photo:"wardrobe-photos/agolde-white-jeans-nobg.png"},
+  {name:"Red Tee", brand:"", size:"-", category:"Tops", price:"", source:"", notes:"", photo:"wardrobe-photos/red-tee-nobg.png"}
+];
+
+let deletedIds = [];
+let photoOverrides = {};
+
+function loadLocalOverrides(){
+  try{
+    deletedIds = JSON.parse(localStorage.getItem('wardrobe-deleted-ids') || '[]');
+  }catch(e){
+    deletedIds = [];
+  }
+  try{
+    photoOverrides = JSON.parse(localStorage.getItem('wardrobe-photo-overrides') || '{}');
+  }catch(e){
+    photoOverrides = {};
+  }
+}
+
+function saveDeletedIds(){
+  try{
+    localStorage.setItem('wardrobe-deleted-ids', JSON.stringify(deletedIds));
+  }catch(e){
+    showToast('Could not save — try again');
+  }
+}
+
+function savePhotoOverrides(){
+  try{
+    localStorage.setItem('wardrobe-photo-overrides', JSON.stringify(photoOverrides));
+  }catch(e){
+    showToast('Could not save — try again');
+  }
+}
+
+async function loadItems(){
+  loadLocalOverrides();
+
+  ITEMS = SEED_DATA
+    .map((item, i) => ({ id: 'seed_' + i, ...item }))
+    .filter(i => !deletedIds.includes(i.id))
+    .map(i => photoOverrides[i.id] ? { ...i, photo: photoOverrides[i.id] } : i);
+
+  applyKnownCorrections();
+  render();
+}
+
+function applyKnownCorrections(){
+  ITEMS.forEach(i => {
+    if(i.name === 'Indi Coat' && i.brand === 'Tree of Life' && i.category !== 'Jackets'){
+      i.category = 'Jackets';
+    }
+  });
+}
+
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 1800);
+}
+
+function fileToDataURL(file){
+  return new Promise((resolve, reject)=>{
+    const reader = new FileReader();
+    reader.onload = ()=>resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+async function removeItem(id){
+  if(!deletedIds.includes(id)) deletedIds.push(id);
+  saveDeletedIds();
+  ITEMS = ITEMS.filter(i=>i.id !== id);
+  closeModal();
+  render();
+  showToast('Removed');
+}
+
+function downloadPhoto(item){
+  if(!item.photo){ showToast('No photo saved for this item'); return; }
+  const a = document.createElement('a');
+  a.href = item.photo;
+  const safeName = (item.name || 'item').replace(/[^a-z0-9]/gi,'_').toLowerCase();
+  a.download = safeName + '.jpg';
+  a.click();
+}
+
+function triggerPhotoUpload(id){
+  pendingPhotoItemId = id;
+  document.getElementById('hidden-photo-input').click();
+}
+
+async function handlePhotoUpload(event){
+  const file = event.target.files[0];
+  event.target.value = '';
+  if(!file || !pendingPhotoItemId) return;
+
+  try{
+    const dataUrl = await fileToDataURL(file);
+    const item = ITEMS.find(i => i.id === pendingPhotoItemId);
+    if(item){
+      item.photo = dataUrl;
+      photoOverrides[pendingPhotoItemId] = dataUrl;
+      savePhotoOverrides();
+      render();
+      if(document.getElementById('modal-backdrop').classList.contains('open')){
+        openModal(item.id);
+      }
+      showToast('Photo added');
+    }
+  }catch(e){
+    showToast('Could not read that photo');
+  }
+  pendingPhotoItemId = null;
+}
+
+function csvEscape(val){
+  if(val == null) return '';
+  const s = String(val).replace(/"/g,'""');
+  return '"' + s + '"';
+}
+
+function exportCSV(){
+  const cols = ['name','brand','size','category','price','source','notes','addedAt','hasPhoto'];
+  const rows = [cols.join(',')];
+  ITEMS.forEach(i=>{
+    rows.push([
+      csvEscape(i.name), csvEscape(i.brand), csvEscape(i.size),
+      csvEscape(i.category), csvEscape(i.price), csvEscape(i.source),
+      csvEscape(i.notes), csvEscape(i.addedAt), csvEscape(i.photo ? 'yes' : 'no')
+    ].join(','));
+  });
+  const blob = new Blob([rows.join('\n')], {type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'wardrobe-inventory.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('CSV downloaded');
+}
+
+function renderTabs(){
+  const counts = {All: ITEMS.length};
+  TAB_ORDER.slice(1).forEach(t => counts[t] = 0);
+  ITEMS.forEach(i => {
+    const t = tabForItem(i);
+    counts[t] = (counts[t] || 0) + 1;
+  });
+
+  const tabsEl = document.getElementById('tabs');
+  tabsEl.innerHTML = TAB_ORDER.map(t => `
+    <button class="tab ${activeTab === t ? 'active' : ''}" onclick="setTab('${t}')">
+      ${t}<span class="count">${counts[t] || 0}</span>
+    </button>
+  `).join('');
+}
+
+function setTab(t){
+  activeTab = t;
+  render();
+}
+
+function openModal(id){
+  const item = ITEMS.find(i => i.id === id);
+  if(!item) return;
+  modalReturnItemId = id;
+  const modal = document.getElementById('modal');
+  modal.innerHTML = `
+    <div class="sheet-header">
+      <button class="sheet-back" onclick="closeModal()">← Back</button>
+    </div>
+    <div class="modal-photo">
+      ${item.photo ? `<img src="${item.photo}" alt="${item.name}" referrerpolicy="no-referrer">` : `<span class="no-photo">No photo yet</span>`}
+    </div>
+    <div class="modal-body">
+      <span class="detail-chip">${tabForItem(item)}</span>
+      <div class="modal-name">${item.name}</div>
+      <div id="modal-outfits-container"></div>
+    </div>
+  `;
+  document.getElementById('modal-backdrop').classList.add('open');
+  showOutfitsInModal(item.id);
+}
+
+function closeModal(){
+  document.getElementById('modal-backdrop').classList.remove('open');
+}
+
+function closeModalIfBackdrop(e){
+  if(e.target.id === 'modal-backdrop') closeModal();
+}
+
+function toggleViewMode(){
+  viewMode = viewMode === 'photos' ? 'names' : 'photos';
+  document.getElementById('view-toggle-btn').textContent = viewMode === 'photos' ? 'List view' : 'Photo view';
+  render();
+}
+
+function toggleEditMode(){
+  editMode = !editMode;
+  selectedIds.clear();
+  confirmingDelete = false;
+  document.getElementById('edit-toggle-btn').textContent = editMode ? 'Done' : 'Edit';
+  document.getElementById('edit-toggle-btn').classList.toggle('active', editMode);
+  render();
+}
+
+function toggleSelectItem(id){
+  if(selectedIds.has(id)) selectedIds.delete(id); else selectedIds.add(id);
+  render();
+}
+
+function selectAllVisible(){
+  const search = document.getElementById('filter-search').value.toLowerCase();
+  const filtered = visibleFilteredItems(search);
+  const allSelected = filtered.every(i => selectedIds.has(i.id));
+  if(allSelected){
+    filtered.forEach(i => selectedIds.delete(i.id));
+  } else {
+    filtered.forEach(i => selectedIds.add(i.id));
+  }
+  render();
+}
+
+let confirmingDelete = false;
+
+function bulkDeleteSelected(){
+  if(selectedIds.size === 0) return;
+  confirmingDelete = true;
+  render();
+}
+
+function cancelBulkDelete(){
+  confirmingDelete = false;
+  render();
+}
+
+async function confirmBulkDelete(){
+  const count = selectedIds.size;
+  selectedIds.forEach(id => { if(!deletedIds.includes(id)) deletedIds.push(id); });
+  saveDeletedIds();
+  ITEMS = ITEMS.filter(i => !selectedIds.has(i.id));
+  selectedIds.clear();
+  confirmingDelete = false;
+  render();
+  showToast(`Deleted ${count} item${count===1?'':'s'}`);
+}
+
+function topsSubRank(item){
+  const n = (item.name || '').toLowerCase();
+  if(/\btee\b|t-shirt|tshirt/.test(n)) return 0;
+  if(/long sleeve/.test(n)) return 1;
+  if(/shirt/.test(n)) return 2;
+  return 3;
+}
+
+function visibleFilteredItems(search){
+  const filtered = ITEMS.filter(i=>{
+    if(activeTab !== 'All' && tabForItem(i) !== activeTab) return false;
+    if(search && !(i.name.toLowerCase().includes(search) || (i.brand||'').toLowerCase().includes(search))) return false;
+    return true;
+  });
+
+  if(activeTab === 'All'){
+    filtered.sort((a, b) => TAB_ORDER.indexOf(tabForItem(a)) - TAB_ORDER.indexOf(tabForItem(b)));
+  }
+  if(activeTab === 'All' || activeTab === 'Tops'){
+    filtered.sort((a, b) => {
+      if(tabForItem(a) === 'Tops' && tabForItem(b) === 'Tops'){
+        return topsSubRank(a) - topsSubRank(b);
+      }
+      return 0;
+    });
+  }
+
+  return filtered;
+}
+
+function render(){
+  renderTabs();
+
+  const search = document.getElementById('filter-search').value.toLowerCase();
+  const filtered = visibleFilteredItems(search);
+
+  document.getElementById('count-line').textContent =
+    `${filtered.length} piece${filtered.length===1?'':'s'} in ${activeTab.toLowerCase()}`;
+
+  const gallery = document.getElementById('gallery');
+  const nameList = document.getElementById('name-list');
+  const emptyState = document.getElementById('empty');
+  const bulkBar = document.getElementById('bulk-bar');
+
+  bulkBar.style.display = editMode ? 'flex' : 'none';
+  if(editMode){
+    if(confirmingDelete){
+      const count = selectedIds.size;
+      bulkBar.innerHTML = `
+        <span>Delete ${count} item${count===1?'':'s'}? This can't be undone.</span>
+        <div style="display:flex;gap:8px;">
+          <button class="btn small secondary" onclick="cancelBulkDelete()">Cancel</button>
+          <button class="btn small" style="background:var(--clay);border-color:var(--clay);" onclick="confirmBulkDelete()">Yes, delete</button>
+        </div>
+      `;
+    } else {
+      bulkBar.innerHTML = `
+        <span id="bulk-count">${selectedIds.size} selected</span>
+        <div style="display:flex;gap:8px;">
+          <button class="btn small secondary" onclick="selectAllVisible()">Select all</button>
+          <button class="btn small" style="background:var(--clay);border-color:var(--clay);" onclick="bulkDeleteSelected()">Delete selected</button>
+        </div>
+      `;
+    }
+  }
+
+  if(filtered.length === 0){
+    gallery.innerHTML = '';
+    nameList.innerHTML = '';
+    emptyState.style.display = 'block';
+    gallery.style.display = 'none';
+    nameList.style.display = 'none';
+    return;
+  }
+  emptyState.style.display = 'none';
+
+  const clickHandler = id => editMode ? `toggleSelectItem('${id}')` : `openModal('${id}')`;
+
+  if(viewMode === 'photos'){
+    gallery.style.display = 'grid';
+    nameList.style.display = 'none';
+    gallery.innerHTML = filtered.map(i => {
+      const selected = selectedIds.has(i.id);
+      return `
+      <div class="tile ${editMode ? 'select-mode' : ''} ${selected ? 'item-selected' : ''}" onclick="${clickHandler(i.id)}">
+        ${editMode ? `<span class="select-check ${selected ? 'checked' : ''}">✓</span>` : ''}
+        ${i.photo ? `<img src="${i.photo}" alt="${i.name}" referrerpolicy="no-referrer">` : `<span class="no-photo">No photo</span>`}
+      </div>
+    `;
+    }).join('');
+  } else {
+    gallery.style.display = 'none';
+    nameList.style.display = 'flex';
+    nameList.innerHTML = filtered.map(i => {
+      const selected = selectedIds.has(i.id);
+      return `
+      <div class="name-row ${editMode ? 'select-mode' : ''} ${selected ? 'item-selected' : ''}" onclick="${clickHandler(i.id)}">
+        ${editMode ? `<span class="select-check ${selected ? 'checked' : ''}">✓</span>` : ''}
+        ${i.photo ? `<img class="name-row-thumb" src="${i.photo}" alt="" referrerpolicy="no-referrer">` : `<div class="name-row-thumb no-photo-mini">No photo</div>`}
+        <div class="name-row-text">
+          <div class="name-row-title">${i.name}</div>
+          <div class="name-row-sub">${i.brand || ''}</div>
+        </div>
+      </div>
+    `;
+    }).join('');
+  }
+}
+
+loadItems();
+loadHiddenCombos();
+</script>
+</body>
+</html>

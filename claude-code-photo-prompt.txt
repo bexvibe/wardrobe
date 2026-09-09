@@ -1,0 +1,34 @@
+I have a self-contained wardrobe inventory app at wardrobe-inventory.html. Inside the <script> tag
+there's a JavaScript array called SEED_DATA — each entry is one clothing item with fields:
+name, brand, size, category, price, source, notes, photo (currently null for most items).
+
+Do the following:
+
+1. Parse SEED_DATA out of wardrobe-inventory.html and list every item where photo is null.
+
+2. For each of those items, search online for a product photo of that exact item (use brand + name
+   as the search query). Prioritize in this order:
+   a. A clear/white background, front-facing product photo — ideally from the brand's own official
+      product page, or a retailer's catalog listing.
+   b. If no clean product shot exists, fall back to any reasonably clear photo of the item.
+   c. If you can't find a confident match at all (wrong item, wrong colour, no results), skip it —
+      don't guess. List it separately in your summary as "needs manual photo."
+
+3. Download the chosen image for each matched item and save it locally in a new folder called
+   wardrobe-photos/, named clearly and consistently, e.g. blundstone-585-rustic-brown.jpg
+   (lowercase, hyphenated, brand-item-name).
+
+4. Update that item's "photo" field in SEED_DATA to a relative local path pointing to the downloaded
+   file, e.g. "wardrobe-photos/blundstone-585-rustic-brown.jpg" — NOT the remote URL. Local relative
+   paths are what make the photo actually display reliably in the browser; hotlinked remote URLs
+   from some sites (e.g. Shopify CDN) get blocked when embedded this way.
+
+5. Don't touch or overwrite any item that already has a photo set.
+
+6. When finished, give me a summary table with three groups:
+   - Items matched with a clear/front-facing product photo
+   - Items matched with a fallback "any photo" (flag these so I know they're not ideal)
+   - Items with no confident match found, that I'll need to photograph or source manually
+
+Work through items one at a time rather than in parallel, and go easy on request rate to any single
+site so we don't trip anti-bot protections.
