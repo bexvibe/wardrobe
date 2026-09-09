@@ -337,6 +337,17 @@
   }
   .mode-btn.active{color:var(--ink);border-bottom-color:var(--clay);}
 
+  .outfit-card{position:relative;}
+  .outfit-fav-btn{
+    position:absolute;top:6px;right:6px;
+    width:28px;height:28px;border-radius:999px;
+    border:none;background:rgba(252,250,244,0.85);
+    display:flex;align-items:center;justify-content:center;
+    font-size:15px;line-height:1;color:var(--ink-soft);
+    cursor:pointer;z-index:2;
+  }
+  .outfit-fav-btn.favorited{color:var(--clay);}
+
   /* Outfit filters */
   .outfit-filters{
     background:var(--surface);
@@ -442,6 +453,12 @@
 </head>
 <body>
 <div class="wrap">
+  <div class="mode-toggle">
+    <button class="mode-btn active" id="mode-inventory-btn" onclick="setMode('inventory')">Inventory</button>
+    <button class="mode-btn" id="mode-outfits-btn" onclick="setMode('outfits')">Outfits</button>
+    <button class="mode-btn" id="mode-saved-btn" onclick="setMode('saved')">Saved</button>
+  </div>
+
   <div id="inventory-view">
   <div class="toolbar-row">
     <input type="text" id="filter-search" placeholder="Search name or brand..." oninput="render()">
@@ -485,6 +502,15 @@
       <button class="btn secondary" id="load-more-btn" onclick="loadMoreOutfits()" style="display:none;">Load more</button>
     </div>
   </div>
+
+  <div id="saved-view" style="display:none;">
+    <div class="count-line" id="saved-count-line"></div>
+    <div class="outfit-gallery" id="saved-gallery"></div>
+    <div class="empty" id="saved-empty" style="display:none;">
+      <h3>No saved outfits yet</h3>
+      <p>Tap the heart on any outfit to save it here.</p>
+    </div>
+  </div>
 </div>
 
 <div class="modal-backdrop" id="modal-backdrop" onclick="closeModalIfBackdrop(event)">
@@ -500,6 +526,8 @@ let activeTab = 'All';
 let pendingPhotoItemId = null;
 let appMode = 'inventory';
 let hiddenCombos = [];
+let favoriteOutfits = [];
+let expandedSavedKey = null;
 let viewMode = 'photos'; // 'photos' or 'names'
 let editMode = false;
 let selectedIds = new Set();
@@ -539,12 +567,17 @@ function setMode(mode){
   appMode = mode;
   document.getElementById('mode-inventory-btn')?.classList.toggle('active', mode==='inventory');
   document.getElementById('mode-outfits-btn')?.classList.toggle('active', mode==='outfits');
+  document.getElementById('mode-saved-btn')?.classList.toggle('active', mode==='saved');
   document.getElementById('inventory-view').style.display = mode==='inventory' ? 'block' : 'none';
   document.getElementById('outfits-view').style.display = mode==='outfits' ? 'block' : 'none';
+  document.getElementById('saved-view').style.display = mode==='saved' ? 'block' : 'none';
   if(mode==='outfits'){
     outfitRenderContext = 'tab';
     renderOutfitFilters();
     resetOutfitResults();
+  }
+  if(mode==='saved'){
+    renderSavedOutfits();
   }
 }
 
@@ -744,6 +777,119 @@ async function saveHiddenCombos(){
   }
 }
 
+async function loadFavoriteOutfits(){
+  try{
+    const raw = localStorage.getItem('wardrobe-favorite-outfits');
+    favoriteOutfits = raw ? JSON.parse(raw) : [];
+  }catch(e){
+    favoriteOutfits = [];
+  }
+}
+
+async function saveFavoriteOutfits(){
+  try{
+    localStorage.setItem('wardrobe-favorite-outfits', JSON.stringify(favoriteOutfits));
+  }catch(e){
+    showToast('Could not save — try again');
+  }
+}
+
+function isFavorited(key){
+  return favoriteOutfits.some(f => f.key === key);
+}
+
+function comboToFavoriteRecord(combo){
+  const id = x => x ? x.id : null;
+  return {
+    key: comboKey(combo),
+    base: combo.base,
+    top: id(combo.top), bottom: id(combo.bottom), dress: id(combo.dress),
+    jumper: id(combo.jumper), jacket: id(combo.jacket), shoe: id(combo.shoe)
+  };
+}
+
+function favoriteRecordToCombo(rec){
+  const find = id => id ? ITEMS.find(i => i.id === id) : null;
+  return {
+    base: rec.base,
+    top: find(rec.top), bottom: find(rec.bottom), dress: find(rec.dress),
+    jumper: find(rec.jumper), jacket: find(rec.jacket), shoe: find(rec.shoe)
+  };
+}
+
+async function toggleFavoriteByKey(key){
+  const combo = outfitDisplayed.find(c => comboKey(c) === key);
+  if(!combo) return;
+  if(isFavorited(key)){
+    favoriteOutfits = favoriteOutfits.filter(f => f.key !== key);
+    showToast('Removed from Saved');
+  } else {
+    favoriteOutfits.push(comboToFavoriteRecord(combo));
+    showToast('Saved to favourites');
+  }
+  await saveFavoriteOutfits();
+  renderOutfits();
+}
+
+async function unfavoriteByKey(key){
+  favoriteOutfits = favoriteOutfits.filter(f => f.key !== key);
+  await saveFavoriteOutfits();
+  if(expandedSavedKey === key) expandedSavedKey = null;
+  renderSavedOutfits();
+  showToast('Removed from Saved');
+}
+
+function toggleExpandSaved(key){
+  expandedSavedKey = (expandedSavedKey === key) ? null : key;
+  renderSavedOutfits();
+}
+
+function renderSavedOutfits(){
+  const countLine = document.getElementById('saved-count-line');
+  const gallery = document.getElementById('saved-gallery');
+  const emptyState = document.getElementById('saved-empty');
+  if(!gallery) return;
+
+  if(countLine) countLine.textContent = `${favoriteOutfits.length} saved outfit${favoriteOutfits.length===1?'':'s'}`;
+
+  if(favoriteOutfits.length === 0){
+    gallery.innerHTML = '';
+    emptyState.style.display = 'block';
+    return;
+  }
+  emptyState.style.display = 'none';
+
+  gallery.innerHTML = favoriteOutfits.map(rec => {
+    const combo = favoriteRecordToCombo(rec);
+    const pieces = comboPieces(combo);
+    const isExpanded = expandedSavedKey === rec.key;
+    const thumbs = pieces.map(p => p.photo
+      ? `<img src="${p.photo}" alt="${p.name}" referrerpolicy="no-referrer">`
+      : `<div class="no-photo-mini">No photo</div>`
+    ).join('');
+
+    const expandedPanel = isExpanded ? `
+      <div class="outfit-expanded-panel">
+        <button class="outfit-collapse-btn" onclick='event.stopPropagation();toggleExpandSaved(${JSON.stringify(rec.key)})'>Collapse ↑</button>
+        ${pieces.map(p => `
+          <div class="outfit-piece-row">
+            ${p.photo ? `<img src="${p.photo}" alt="${p.name}" referrerpolicy="no-referrer">` : `<div class="no-photo-mini">No photo</div>`}
+            <div class="outfit-piece-info">
+              <div class="p-name">${p.name}</div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    ` : '';
+
+    return `<div class="outfit-card ${isExpanded ? 'expanded' : ''}" onclick='toggleExpandSaved(${JSON.stringify(rec.key)})'>
+      <button class="outfit-fav-btn favorited" onclick='event.stopPropagation();unfavoriteByKey(${JSON.stringify(rec.key)})'>♥</button>
+      <div class="outfit-thumbs">${thumbs}</div>
+      ${expandedPanel}
+    </div>`;
+  }).join('');
+}
+
 let expandedComboKey = null;
 
 async function hideCombo(key){
@@ -810,6 +956,7 @@ function renderOutfits(){
     ` : '';
 
     return `<div class="outfit-card ${isExpanded ? 'expanded' : ''}" onclick='toggleExpandCombo(${JSON.stringify(key)})'>
+      <button class="outfit-fav-btn ${isFavorited(key) ? 'favorited' : ''}" onclick='event.stopPropagation();toggleFavoriteByKey(${JSON.stringify(key)})'>${isFavorited(key) ? '♥' : '♡'}</button>
       <div class="outfit-thumbs">${thumbs}</div>
       ${expandedPanel}
     </div>`;
@@ -1308,6 +1455,7 @@ function render(){
 
 loadItems();
 loadHiddenCombos();
+loadFavoriteOutfits();
 </script>
 </body>
 </html>
