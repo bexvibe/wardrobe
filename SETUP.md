@@ -21,12 +21,21 @@ It takes about ten minutes and you only do it once.
 ## 2. Create the tables
 
 1. In the left sidebar: **SQL Editor** → **New query**.
-2. Open `supabase/schema.sql` from this repo, paste the whole file in, and
-   click **Run**.
-3. Do the same with `supabase/seed.sql`. That loads your 80 existing pieces.
+2. Paste in the whole of `supabase/setup-all.sql` and click **Run**. That
+   creates the tables and loads your 80 existing pieces in one go.
 
-Both files are safe to run more than once. Re-running `seed.sql` will *not*
-overwrite anything you've since edited in the app.
+**Make sure nothing in the editor is selected before you hit Run.** With a
+selection, the editor runs only the highlighted text — which is an easy way
+to end up with half a database and the app reporting that `public.items`
+does not exist.
+
+Safe to run as many times as you like: existing rows are left alone, so
+anything you have since edited in the app is never clobbered back to its
+original value.
+
+(`schema.sql` and `seed.sql` are still there if you want them separately —
+`setup-all.sql` is just the two of them concatenated, regenerated with
+`node scripts/generate-setup-sql.js`.)
 
 ## 3. Turn off public sign-ups — don't skip this
 
@@ -114,5 +123,11 @@ The app tells you what it can't do rather than failing silently:
 - *"Not connected yet"* — `config.js` still has empty values.
 - *"Can't reach the wardrobe"* — wrong URL/key, or the project is paused.
   Free projects pause after a week of no use; open the dashboard to resume.
+- *"Could not find the table 'public.items'"* — step 2 has not run, or ran
+  only partially. Re-run `supabase/setup-all.sql` with nothing selected in
+  the editor, then check **Table Editor** shows `items`, `saved_outfits` and
+  `hidden_combos`. If the tables are clearly there but the error persists for
+  a few seconds, that is PostgREST's schema cache catching up — it reloads on
+  its own, so wait and retry.
 - *"That password did not work"* — check the password, and check that the user
   in step 4 was created with **Auto Confirm User** ticked.

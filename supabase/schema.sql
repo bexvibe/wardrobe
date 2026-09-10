@@ -119,12 +119,27 @@ create policy hidden_combos_authenticated_all on public.hidden_combos
 --  previously tried to live in localStorage as base64 and quietly
 --  blew the ~5MB quota.
 -- ============================================================
-insert into storage.buckets (id, name, public)
-values ('wardrobe-uploads', 'wardrobe-uploads', false)
-on conflict (id) do nothing;
+--  Both blocks below swallow their own errors on purpose. The SQL editor
+--  runs a script as one transaction, so an error here would roll back the
+--  tables above with it and leave the app reporting that public.items does
+--  not exist. Photo uploads are the only thing that depends on this, so a
+--  failure should cost you uploads, not the whole wardrobe.
+do $$
+begin
+  insert into storage.buckets (id, name, public)
+  values ('wardrobe-uploads', 'wardrobe-uploads', false)
+  on conflict (id) do nothing;
+exception when others then
+  raise warning 'Storage bucket not created (%). Everything except photo uploads still works.', sqlerrm;
+end $$;
 
-drop policy if exists wardrobe_uploads_authenticated_all on storage.objects;
-create policy wardrobe_uploads_authenticated_all on storage.objects
-  for all to authenticated
-  using (bucket_id = 'wardrobe-uploads')
-  with check (bucket_id = 'wardrobe-uploads');
+do $$
+begin
+  drop policy if exists wardrobe_uploads_authenticated_all on storage.objects;
+  create policy wardrobe_uploads_authenticated_all on storage.objects
+    for all to authenticated
+    using (bucket_id = 'wardrobe-uploads')
+    with check (bucket_id = 'wardrobe-uploads');
+exception when others then
+  raise warning 'Storage policy not created (%). Everything except photo uploads still works.', sqlerrm;
+end $$;
