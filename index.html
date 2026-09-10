@@ -550,6 +550,16 @@ function tabForItem(item){
 }
 
 // ---- Outfit engine state ----
+//
+// Shoes are held out of generated outfits — they get picked by hand.
+// Flip this to true to put them back in; nothing else needs changing.
+//
+// The shoes slot already allows "none", so switching this off just pins
+// that slot to none rather than removing it. Combo keys keep their shoe
+// segment either way, which means saved outfits and hidden combos stay
+// valid across the switch, in both directions.
+const INCLUDE_SHOES_IN_OUTFITS = false;
+
 let outfitBase = 'topbottom'; // or 'dress'
 function anyFilter(){ return {type:'any', ids:[]}; }
 let outfitFilters = { top:anyFilter(), bottom:anyFilter(), dress:anyFilter(), jumper:anyFilter(), jacket:anyFilter(), shoes:anyFilter() };
@@ -598,9 +608,17 @@ const SLOT_META = {
   shoes:{label:'Shoes', category:'Shoes', allowNone:true}
 };
 
+function shoeSlotList(){
+  // Pinned to "no shoes" while shoes are held out of outfits.
+  return INCLUDE_SHOES_IN_OUTFITS
+    ? slotList(itemsInTab('Shoes'), outfitFilters.shoes, true)
+    : [null];
+}
+
 function renderOutfitFilters(){
   const grid = document.getElementById('filter-grid');
-  const slotKeys = outfitBase === 'topbottom' ? ['top','bottom','jumper','jacket','shoes'] : ['dress','jumper','jacket','shoes'];
+  const base = outfitBase === 'topbottom' ? ['top','bottom','jumper','jacket'] : ['dress','jumper','jacket'];
+  const slotKeys = INCLUDE_SHOES_IN_OUTFITS ? base.concat('shoes') : base;
 
   grid.innerHTML = slotKeys.map(key => {
     const meta = SLOT_META[key];
@@ -682,7 +700,7 @@ function slotList(categoryItems, filter, allowNone){
 function* comboGenerator(){
   const jumpers = slotList(itemsInTab('Jumpers'), outfitFilters.jumper, true);
   const jackets = slotList(itemsInTab('Jackets'), outfitFilters.jacket, true);
-  const shoes = slotList(itemsInTab('Shoes'), outfitFilters.shoes, true);
+  const shoes = shoeSlotList();
 
   if(outfitBase === 'topbottom'){
     const tops = slotList(itemsInTab('Tops'), outfitFilters.top, false);
@@ -727,7 +745,7 @@ function comboPieces(combo){
 function totalComboCount(){
   const jumpers = slotList(itemsInTab('Jumpers'), outfitFilters.jumper, true).length;
   const jackets = slotList(itemsInTab('Jackets'), outfitFilters.jacket, true).length;
-  const shoes = slotList(itemsInTab('Shoes'), outfitFilters.shoes, true).length;
+  const shoes = shoeSlotList().length;
   if(outfitBase === 'topbottom'){
     const tops = slotList(itemsInTab('Tops'), outfitFilters.top, false).length;
     const bottoms = slotList(itemsInTab('Bottoms'), outfitFilters.bottom, false).length;
@@ -975,14 +993,20 @@ function lockFilterForPiece(itemId){
   else if(tab==='Dresses'){ outfitBase='dress'; outfitFilters.dress=locked; }
   else if(tab==='Jumpers'){ outfitFilters.jumper=locked; }
   else if(tab==='Jackets'){ outfitFilters.jacket=locked; }
-  else if(tab==='Shoes'){ outfitFilters.shoes=locked; }
+  else if(tab==='Shoes'){
+    if(!INCLUDE_SHOES_IN_OUTFITS) return false;
+    outfitFilters.shoes=locked;
+  }
   else { return false; }
   return true;
 }
 
 function findOutfitsWithPiece(itemId){
   if(!lockFilterForPiece(itemId)){
-    showToast("This piece's category isn't used in outfit combos yet");
+    const item = ITEMS.find(i => i.id === itemId);
+    showToast(item && tabForItem(item) === 'Shoes'
+      ? 'Shoes are left out of outfits — pick them by hand'
+      : "This piece's category isn't used in outfit combos yet");
     return;
   }
   closeModal();
