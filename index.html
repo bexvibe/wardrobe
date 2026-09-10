@@ -408,9 +408,6 @@
     display:grid;
     grid-template-columns:repeat(auto-fill, minmax(160px, 1fr));
     gap:12px;
-    /* Cards hug their contents — without this a simple outfit stretches
-       to match a layered one beside it and opens a void under it. */
-    align-items:start;
   }
   .outfit-card{
     background:var(--surface);
@@ -418,19 +415,28 @@
     border-radius:10px;
     padding:8px;
     cursor:pointer;
+    /* Cards stretch to the tallest in their row, so the column runs
+       full height and the slack goes to the bottom garment below. */
+    display:flex;
+    flex-direction:column;
   }
   /* Outfit cards are laid out as worn: layers and top across the top
      row, the bottom (or dress) full width beneath. */
   .outfit-thumbs{
-    display:block;
+    display:flex;
+    flex-direction:column;
+    flex:1;
+    min-height:0;
   }
-  .outfit-upper{display:flex;gap:3px;}
+  .outfit-upper{display:flex;gap:3px;flex:none;}
   .outfit-upper > *{width:calc(33.333% - 2px);aspect-ratio:1/1;}
   .outfit-upper.n1 > *{width:100%;aspect-ratio:4/3;}
   .outfit-upper.n2 > *{width:calc(50% - 1.5px);aspect-ratio:1/1;}
-  .outfit-lower{margin-top:3px;}
-  .outfit-lower > *{width:100%;aspect-ratio:4/3;}
-  .outfit-feet{margin-top:3px;display:flex;justify-content:center;}
+  /* Absorbs the leftover height rather than leaving a gap, so a simple
+     outfit shows a larger bottom instead of empty card. */
+  .outfit-lower{margin-top:3px;flex:1;min-height:104px;}
+  .outfit-lower > *{width:100%;height:100%;}
+  .outfit-feet{margin-top:3px;display:flex;justify-content:center;flex:none;}
   .outfit-feet > *{width:38%;aspect-ratio:1/1;}
 
   .outfit-thumbs img{
