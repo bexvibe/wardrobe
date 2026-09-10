@@ -1075,6 +1075,66 @@ function toggleExpandSaved(key){
   renderSavedOutfits();
 }
 
+// ---- Shoes on a saved outfit -------------------------------
+//
+// Outfits generate without shoes, so they get attached here by hand.
+// Only shoe_id changes: combo_key stays the identity of the clothing
+// combination, which keeps the heart on the matching combo in the
+// Outfits tab filled instead of it looking unsaved.
+async function setSavedOutfitShoe(key, shoeId){
+  const { error } = await client()
+    .from('saved_outfits')
+    .update({ shoe_id: shoeId })
+    .eq('combo_key', key);
+  if(error) return dbFail(error, 'Could not save the shoes — check connection');
+
+  const rec = favoriteOutfits.find(f => f.key === key);
+  if(rec) rec.shoe = shoeId;
+  closeModal();
+  renderSavedOutfits();
+  showToast(shoeId ? 'Shoes added' : 'Shoes removed');
+  return true;
+}
+
+function openSavedShoePicker(key){
+  const rec = favoriteOutfits.find(f => f.key === key);
+  if(!rec) return;
+  const shoes = itemsInTab('Shoes');
+  const modal = document.getElementById('modal');
+
+  modal.innerHTML = `
+    <div class="sheet-header"><button class="sheet-back" onclick="closeModal()">← Back</button></div>
+    <div class="modal-body">
+      <div class="modal-name" style="margin-bottom:6px;">Choose shoes</div>
+      <div class="count-line">${shoes.length} pair${shoes.length===1?'':'s'} in your wardrobe</div>
+      ${rec.shoe ? `
+        <div class="quick-picks">
+          <button class="base-btn" onclick='setSavedOutfitShoe(${JSON.stringify(key)}, null)'>No shoes</button>
+        </div>
+      ` : ''}
+      ${shoes.length ? `
+        <div class="gallery">
+          ${shoes.map(i => `
+            <div class="tile picker-tile ${rec.shoe === i.id ? 'picker-selected' : ''}"
+                 onclick='setSavedOutfitShoe(${JSON.stringify(key)}, ${JSON.stringify(i.id)})'>
+              ${i.photo
+                ? `<img src="${esc(i.photo)}" alt="${esc(i.name)}" referrerpolicy="no-referrer">`
+                : `<span class="no-photo">No photo</span>`}
+              ${rec.shoe === i.id ? `<span class="picker-check">✓</span>` : ''}
+            </div>
+          `).join('')}
+        </div>
+      ` : `
+        <div class="empty">
+          <h3>No shoes yet</h3>
+          <p>Add a pair to your wardrobe and it will show up here.</p>
+        </div>
+      `}
+    </div>
+  `;
+  document.getElementById('modal-backdrop').classList.add('open');
+}
+
 function renderSavedOutfits(){
   const countLine = document.getElementById('saved-count-line');
   const gallery = document.getElementById('saved-gallery');
@@ -1107,6 +1167,10 @@ function renderSavedOutfits(){
             </div>
           </div>
         `).join('')}
+        <div class="modal-actions">
+          <button class="btn small secondary" onclick='event.stopPropagation();openSavedShoePicker(${JSON.stringify(rec.key)})'>${combo.shoe ? 'Change shoes' : '+ Add shoes'}</button>
+          ${combo.shoe ? `<button class="btn small secondary" onclick='event.stopPropagation();setSavedOutfitShoe(${JSON.stringify(rec.key)}, null)'>Remove shoes</button>` : ''}
+        </div>
       </div>
     ` : '';
 
