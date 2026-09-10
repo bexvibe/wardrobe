@@ -13,8 +13,8 @@
 //  Never put that one in this file.
 // ============================================================
 window.WARDROBE_CONFIG = {
-  supabaseUrl: '',
-  supabaseAnonKey: '',
+  supabaseUrl: 'https://rztcuxisilabybedscwn.supabase.co',
+  supabaseAnonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ6dGN1eGlzaWxhYnliZWRzY3duIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkwMTQ3NzUsImV4cCI6MjEwNDU5MDc3NX0.5kBdWXYzdaoOPFW0zmoX1NZJad_rDHE7Qs4xSEUN4HQ',
 
   // The single account the password screen signs in as. You create this
   // account once in the Supabase dashboard (SETUP.md step 4); the app only
