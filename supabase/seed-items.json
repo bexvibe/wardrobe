@@ -1,0 +1,802 @@
+[
+  {
+    "name": "Fleece jacket",
+    "brand": "Patagonia",
+    "size": "-",
+    "category": "Jackets",
+    "price": "NZD $142.00",
+    "source": "Depop",
+    "notes": "Grey. From @hiddenheatvault.",
+    "photo": "wardrobe-photos/patagonia-fleece-jacket-retro-x-cream-nobg.png"
+  },
+  {
+    "name": "Tunic jumper",
+    "brand": "Free People",
+    "size": "L",
+    "category": "Knitwear",
+    "price": "NZD $49.50",
+    "source": "Depop",
+    "notes": "Black, small hole at neck. From @ameeliegg.",
+    "photo": "wardrobe-photos/free-people-tunic-jumper-black-nobg.png"
+  },
+  {
+    "name": "Fleece jacket",
+    "brand": "Billabong",
+    "size": "L",
+    "category": "Jackets",
+    "price": "NZD $47.00",
+    "source": "Depop",
+    "notes": "Brown/cream floral. From @userselling2359.",
+    "photo": "wardrobe-photos/billabong-fleece-jacket-brown-cream-floral-nobg.png"
+  },
+  {
+    "name": "Corduroy jacket",
+    "brand": "Billabong",
+    "size": "-",
+    "category": "Jackets",
+    "price": "NZD $90.00",
+    "source": "Depop",
+    "notes": "Vintage. From @pentupthrift.",
+    "photo": "wardrobe-photos/billabong-corduroy-jacket-v2-nobg.png"
+  },
+  {
+    "name": "Fleece jacket",
+    "brand": "Quiksilver",
+    "size": "XL",
+    "category": "Jackets",
+    "price": "NZD $68.00",
+    "source": "Depop",
+    "notes": "Cream. From @finnrobins.",
+    "photo": "wardrobe-photos/quiksilver-van-life-sherpa-fleece-nobg.png"
+  },
+  {
+    "name": "Jacket",
+    "brand": "Carhartt",
+    "size": "XL",
+    "category": "Jackets",
+    "price": "NZD $155.00",
+    "source": "Depop",
+    "notes": "Awaiting shipping. From @mangoe2.",
+    "photo": "wardrobe-photos/carhartt-jacket-detroit-nobg.png"
+  },
+  {
+    "name": "Jacket",
+    "brand": "Carhartt",
+    "size": "-",
+    "category": "Jackets",
+    "price": "NZD $137.00",
+    "source": "Depop",
+    "notes": "Tan, relaxed fit. From @klebh.",
+    "photo": "wardrobe-photos/carhartt-jacket-tan-chore-coat-nobg.png"
+  },
+  {
+    "name": "Indi Coat",
+    "brand": "Tree of Life",
+    "size": "10, 12",
+    "category": "Jackets",
+    "price": "NZD $70.00",
+    "source": "Designer Wardrobe",
+    "notes": "Seller: Susan A. Payment Received.",
+    "photo": "wardrobe-photos/tree-of-life-indi-coat-flat-nobg.png"
+  },
+  {
+    "name": "Waverly jacket",
+    "brand": "Assembly Label",
+    "size": "10, 12",
+    "category": "Jackets",
+    "price": "NZD $100.00",
+    "source": "Designer Wardrobe",
+    "notes": "Seller: April W.",
+    "photo": "wardrobe-photos/assembly-label-waverly-jacket-sand-flat-nobg.png"
+  },
+  {
+    "name": "585 Rustic Brown boots",
+    "brand": "Blundstone",
+    "size": "7",
+    "category": "Shoes",
+    "price": "NZD $110.00",
+    "source": "Designer Wardrobe",
+    "notes": "Seller: Caroline.",
+    "photo": "wardrobe-photos/blundstone-585-rustic-brown-boots-nobg.png"
+  },
+  {
+    "name": "Black Refined Tall Rain Boots",
+    "brand": "Hunter Boots",
+    "size": "8",
+    "category": "Shoes",
+    "price": "NZD $170.00",
+    "source": "Designer Wardrobe",
+    "notes": "Seller: Carmel R.",
+    "photo": "wardrobe-photos/hunter-boots-refined-tall-rain-boots-v2-nobg.png"
+  },
+  {
+    "name": "Jeans low and straight",
+    "brand": "Abrand",
+    "size": "28",
+    "category": "Jeans",
+    "price": "NZD $25.00",
+    "source": "Designer Wardrobe",
+    "notes": "Seller: Emma J.",
+    "photo": "wardrobe-photos/abrand-jeans-low-and-straight-v2-nobg.png"
+  },
+  {
+    "name": "Cream Knit Pants",
+    "brand": "Zulu & Zephyr",
+    "size": "10",
+    "category": "Pants",
+    "price": "NZD $90.00",
+    "source": "Designer Wardrobe",
+    "notes": "Seller: Melanie N.",
+    "photo": "wardrobe-photos/zulu-zephyr-cream-knit-pants-nobg.png"
+  },
+  {
+    "name": "Waverly Jacket",
+    "brand": "Assembly Label",
+    "size": "14, 16, 12",
+    "category": "Jackets",
+    "price": "NZD $110.00",
+    "source": "Designer Wardrobe",
+    "notes": "Seller: Jord O.",
+    "photo": "wardrobe-photos/assembly-label-waverly-jacket-dark-choc-flat-nobg.png"
+  },
+  {
+    "name": "Loose fit jeans",
+    "brand": "Assembly Label",
+    "size": "27",
+    "category": "Jeans",
+    "price": "NZD $100.00",
+    "source": "Designer Wardrobe",
+    "notes": "Seller: Rachel Y.",
+    "photo": "wardrobe-photos/assembly-label-loose-fit-jeans-flat-nobg.png"
+  },
+  {
+    "name": "Dolman jacket",
+    "brand": "Free People",
+    "size": "8",
+    "category": "Jackets",
+    "price": "NZD $195.00",
+    "source": "Designer Wardrobe",
+    "notes": "Seller: Emma O.",
+    "photo": "wardrobe-photos/free-people-dolman-jacket-flat-nobg.png"
+  },
+  {
+    "name": "Nikova knit",
+    "brand": "Bronze Snake Shop",
+    "size": "12",
+    "category": "Knitwear",
+    "price": "NZD $120.00",
+    "source": "Designer Wardrobe",
+    "notes": "Seller: Stella M.",
+    "photo": "wardrobe-photos/bronze-snake-shop-nikova-knit-flat-nobg.png"
+  },
+  {
+    "name": "Boyfriend Jean",
+    "brand": "Assembly Label",
+    "size": "30",
+    "category": "Jeans",
+    "price": "NZD $90.00",
+    "source": "Designer Wardrobe",
+    "notes": "Seller: Ashleigh.",
+    "photo": "wardrobe-photos/assembly-label-boyfriend-jean-flat-nobg.png"
+  },
+  {
+    "name": "Shirt/jacket",
+    "brand": "Marle",
+    "size": "12",
+    "category": "Jackets",
+    "price": "NZD $70.00",
+    "source": "Designer Wardrobe",
+    "notes": "Seller: Clare H.",
+    "photo": "wardrobe-photos/marle-shirt-jacket-black-nobg.png"
+  },
+  {
+    "name": "Denim Shirt",
+    "brand": "Marle",
+    "size": "12",
+    "category": "Jackets",
+    "price": "NZD $80.00",
+    "source": "Designer Wardrobe",
+    "notes": "Seller: Claire H.",
+    "photo": "wardrobe-photos/marle-denim-shirt-light-blue-nobg.png"
+  },
+  {
+    "name": "Beige Heels",
+    "brand": "Windsor Smith",
+    "size": "8",
+    "category": "Shoes",
+    "price": "NZD $40.70",
+    "source": "Designer Wardrobe",
+    "notes": "Seller: Melody B.",
+    "photo": null
+  },
+  {
+    "name": "Sailor jeans - Lily blue",
+    "brand": "Rollas",
+    "size": "30",
+    "category": "Jeans",
+    "price": "NZD $40.00",
+    "source": "Designer Wardrobe",
+    "notes": "Seller: Tracy H.",
+    "photo": "wardrobe-photos/rollas-sailor-jean-lily-blue-v2-nobg.png"
+  },
+  {
+    "name": "Blue Striped Shirt",
+    "brand": "Assembly Label",
+    "size": "14",
+    "category": "Shirts",
+    "price": "NZD $40.00",
+    "source": "Designer Wardrobe",
+    "notes": "Seller: Samantha.",
+    "photo": "wardrobe-photos/assembly-label-blue-striped-shirt-nobg.png"
+  },
+  {
+    "name": "Black Linen Shirt",
+    "brand": "Assembly Label",
+    "size": "16",
+    "category": "Shirts",
+    "price": "NZD $40.00",
+    "source": "Designer Wardrobe",
+    "notes": "Seller: Samantha.",
+    "photo": "wardrobe-photos/assembly-label-xander-linen-shirt-black-nobg.png"
+  },
+  {
+    "name": "Santi Jumper",
+    "brand": "Marle",
+    "size": "12",
+    "category": "Knitwear",
+    "price": "NZD $125.00",
+    "source": "Designer Wardrobe",
+    "notes": "Seller: Lorna F.",
+    "photo": "wardrobe-photos/marle-santi-jumper-flat-nobg.png"
+  },
+  {
+    "name": "The Iconic Beach Shirt",
+    "brand": "Endless",
+    "size": "8",
+    "category": "Shirts",
+    "price": "NZD $26.00",
+    "source": "Designer Wardrobe",
+    "notes": "Seller: Maggie H.",
+    "photo": null
+  },
+  {
+    "name": "Square Scarf",
+    "brand": "Unbranded",
+    "size": "8",
+    "category": "Accessories",
+    "price": "NZD $30.00",
+    "source": "Designer Wardrobe",
+    "notes": "Seller: Riley N.",
+    "photo": null
+  },
+  {
+    "name": "Brown T-shirt (relaxed fit)",
+    "brand": "COS",
+    "size": "M, L",
+    "category": "Tops",
+    "price": "NZD $30.50",
+    "source": "Designer Wardrobe",
+    "notes": "Seller: Irina T.",
+    "photo": "wardrobe-photos/cos-relaxed-brown-tshirt-cutout.png"
+  },
+  {
+    "name": "Eastcoast Flare",
+    "brand": "Rollas",
+    "size": "27",
+    "category": "Pants",
+    "price": "NZD $94.00",
+    "source": "Designer Wardrobe",
+    "notes": "Seller: Laura J.",
+    "photo": "wardrobe-photos/rollas-eastcoast-flare-flat-nobg.png"
+  },
+  {
+    "name": "Remi Top",
+    "brand": "With Jean",
+    "size": "8",
+    "category": "Tops",
+    "price": "NZD $80.00",
+    "source": "Designer Wardrobe",
+    "notes": "Seller: Sophie P.",
+    "photo": null
+  },
+  {
+    "name": "Voyage Shorts",
+    "brand": "Caitlin Crisp",
+    "size": "6, 8, 10",
+    "category": "Shorts",
+    "price": "NZD $180.00",
+    "source": "Designer Wardrobe",
+    "notes": "Seller: Jessie M.",
+    "photo": null
+  },
+  {
+    "name": "Chuck Taylor All Star Classic",
+    "brand": "Converse",
+    "size": "8",
+    "category": "Shoes",
+    "price": "NZD $60.00",
+    "source": "Designer Wardrobe",
+    "notes": "Seller: Emba W. Photo did not load on site.",
+    "photo": null
+  },
+  {
+    "name": "Drawstring Dress",
+    "brand": "Orseund Iris",
+    "size": "10, 8",
+    "category": "Dresses",
+    "price": "NZD $420.00",
+    "source": "Designer Wardrobe",
+    "notes": "Seller: Caitrin M. Photo did not load on site.",
+    "photo": "wardrobe-photos/orseund-iris-drawstring-dress-black-nobg.png"
+  },
+  {
+    "name": "High Rise Stove Pipe Straight Leg",
+    "brand": "RE/DONE",
+    "size": "28",
+    "category": "Jeans",
+    "price": "NZD $165.82",
+    "source": "Designer Wardrobe",
+    "notes": "Seller: Rebecca S. Photo did not load on site.",
+    "photo": "wardrobe-photos/redone-high-rise-stove-pipe-jean.jpg"
+  },
+  {
+    "name": "Cotton Oversized White Shirt",
+    "brand": "Laing Home",
+    "size": "10, 8",
+    "category": "Shirts",
+    "price": "NZD $50.00",
+    "source": "Designer Wardrobe",
+    "notes": "Seller: Andrea C.",
+    "photo": "wardrobe-photos/laing-home-cotton-oversized-white-shirt-nobg.png"
+  },
+  {
+    "name": "Vada Jumper - Doe",
+    "brand": "Marle",
+    "size": "8",
+    "category": "Knitwear",
+    "price": "NZD $150.00",
+    "source": "Designer Wardrobe",
+    "notes": "Seller: Evie P. Photo did not load on site.",
+    "photo": "wardrobe-photos/marle-vada-jumper-doe-v2-nobg.png"
+  },
+  {
+    "name": "Backpack",
+    "brand": "Kate Spade",
+    "size": "-",
+    "category": "Accessories",
+    "price": "NZD $144.00",
+    "source": "Designer Wardrobe",
+    "notes": "Seller: M A.",
+    "photo": null
+  },
+  {
+    "name": "Ribcage Straight Ankle - Black",
+    "brand": "Levi's",
+    "size": "26",
+    "category": "Jeans",
+    "price": "NZD $85.00",
+    "source": "Designer Wardrobe",
+    "notes": "Seller: Laura S.",
+    "photo": "wardrobe-photos/levis-ribcage-straight-ankle-black-nobg.png"
+  },
+  {
+    "name": "Iren Knit - Grey",
+    "brand": "Assembly Label",
+    "size": "8, 10",
+    "category": "Knitwear",
+    "price": "NZD $70.00",
+    "source": "Designer Wardrobe",
+    "notes": "Seller: Sryne W. Photo did not load on site.",
+    "photo": "wardrobe-photos/assembly-label-iren-knit-grey-v2-nobg.png"
+  },
+  {
+    "name": "Tank",
+    "brand": "RE/DONE",
+    "size": "8",
+    "category": "Tops",
+    "price": "NZD $50.00",
+    "source": "Designer Wardrobe",
+    "notes": "Seller: Lucy C. Photo did not load on site.",
+    "photo": null
+  },
+  {
+    "name": "So Shady (Ivory) sun hat",
+    "brand": "Sophie Store",
+    "size": "S/M",
+    "category": "Accessories",
+    "price": "NZD $25.00",
+    "source": "Designer Wardrobe",
+    "notes": "Seller: Elizabeth.",
+    "photo": null
+  },
+  {
+    "name": "Drop Shoulder Reversible Blouse",
+    "brand": "Orseund Iris",
+    "size": "8",
+    "category": "Tops",
+    "price": "NZD $293.00",
+    "source": "Designer Wardrobe",
+    "notes": "Seller: Looks To Steal.",
+    "photo": null
+  },
+  {
+    "name": "Long sleeve",
+    "brand": "Commoners",
+    "size": "8",
+    "category": "Tops",
+    "price": "NZD $35.00",
+    "source": "Designer Wardrobe",
+    "notes": "Seller: Darcy H. Photo sourced generically — tag in reference image reads a different brand, verify match.",
+    "photo": "wardrobe-photos/commoners-long-sleeve-white-nobg.png"
+  },
+  {
+    "name": "Eloise Top",
+    "brand": "Marle",
+    "size": "6, 8",
+    "category": "Tops",
+    "price": "NZD $110.00",
+    "source": "Designer Wardrobe",
+    "notes": "Seller: Mona H.",
+    "photo": null
+  },
+  {
+    "name": "High waist straight leg jeans",
+    "brand": "Levi's",
+    "size": "24, 25, 26",
+    "category": "Jeans",
+    "price": "NZD $65.00",
+    "source": "Designer Wardrobe",
+    "notes": "Seller: Bella B.",
+    "photo": null
+  },
+  {
+    "name": "Cara Mini Dress",
+    "brand": "Sir The Label",
+    "size": "8, 10",
+    "category": "Dresses",
+    "price": "NZD $120.00",
+    "source": "Designer Wardrobe",
+    "notes": "Seller: Jade L.",
+    "photo": null
+  },
+  {
+    "name": "Alfalfa Shirt Indigo",
+    "brand": "Marle",
+    "size": "-",
+    "category": "Jackets",
+    "price": "",
+    "source": "",
+    "notes": "",
+    "photo": "wardrobe-photos/marle-alfalfa-shirt-indigo-nobg.png"
+  },
+  {
+    "name": "Dallas Boots",
+    "brand": "City Beach Australia",
+    "size": "-",
+    "category": "Shoes",
+    "price": "NZD $89.99",
+    "source": "",
+    "notes": "Colour not specified — used Black variant.",
+    "photo": "wardrobe-photos/city-beach-dallas-boots-black.jpg"
+  },
+  {
+    "name": "Ana Long Sleeve Top Green",
+    "brand": "Marle",
+    "size": "-",
+    "category": "Tops",
+    "price": "NZD $182.00",
+    "source": "",
+    "notes": "Used 'Tapenade' colourway (closest olive/green match found).",
+    "photo": "wardrobe-photos/marle-ana-top-green-tapenade-nobg.png"
+  },
+  {
+    "name": "Rib Knit Polo Top",
+    "brand": "St. Agni",
+    "size": "-",
+    "category": "Tops",
+    "price": "NZD $259.00",
+    "source": "",
+    "notes": "Sourced as 'Petit Polo Knit Top' on St. Agni's own site — verify same item.",
+    "photo": "wardrobe-photos/st-agni-rib-knit-polo-top-black.jpg"
+  },
+  {
+    "name": "Paris Dress",
+    "brand": "St. Agni",
+    "size": "-",
+    "category": "Dresses",
+    "price": "NZD $429.00",
+    "source": "",
+    "notes": "",
+    "photo": "wardrobe-photos/st-agni-paris-dress-flat-nobg.png"
+  },
+  {
+    "name": "Marina Seersucker Tee",
+    "brand": "AFENDS",
+    "size": "-",
+    "category": "Tops",
+    "price": "",
+    "source": "",
+    "notes": "Womens Marina - Seersucker Top - Marina.",
+    "photo": "wardrobe-photos/afends-marina-seersucker-top-flat-nobg.png"
+  },
+  {
+    "name": "Crew Neck Sweater",
+    "brand": "SIR the Label",
+    "size": "-",
+    "category": "Knitwear",
+    "price": "NZD $403.47",
+    "source": "",
+    "notes": "",
+    "photo": "wardrobe-photos/sir-the-label-crew-neck-sweater-black-nobg.png"
+  },
+  {
+    "name": "Milano High Waist Pants",
+    "brand": "St. Agni",
+    "size": "-",
+    "category": "Pants",
+    "price": "",
+    "source": "",
+    "notes": "Colour not specified — used Black variant.",
+    "photo": "wardrobe-photos/st-agni-milano-high-waist-pants-black-flat-nobg.png"
+  },
+  {
+    "name": "Long Sleeve Knit",
+    "brand": "Country Road",
+    "size": "-",
+    "category": "Tops",
+    "price": "NZD $120.00",
+    "source": "Infinite Definite",
+    "notes": "Black. Generic name — used Merino Wool Silk Long Sleeve Knit as best guess, verify style.",
+    "photo": "wardrobe-photos/country-road-long-sleeve-knit-black-nobg.png"
+  },
+  {
+    "name": "Neva Beanie",
+    "brand": "Remain",
+    "size": "-",
+    "category": "Accessories",
+    "price": "NZD $75.65",
+    "source": "",
+    "notes": "",
+    "photo": null
+  },
+  {
+    "name": "Marle Maxi Dress Ivy Black",
+    "brand": "Marle",
+    "size": "-",
+    "category": "Dresses",
+    "price": "NZD $229.00",
+    "source": "",
+    "notes": "",
+    "photo": "wardrobe-photos/marle-maxi-dress-ivy-black-flat-nobg.png"
+  },
+  {
+    "name": "Cleo boot",
+    "brand": "Bronwyn Footwear",
+    "size": "-",
+    "category": "Shoes",
+    "price": "NZD $136.00",
+    "source": "",
+    "notes": "",
+    "photo": "wardrobe-photos/bronwyn-footwear-cleo-boot-nobg.png"
+  },
+  {
+    "name": "Layla Flares Carob",
+    "brand": "Indigo Luna",
+    "size": "-",
+    "category": "Pants",
+    "price": "",
+    "source": "",
+    "notes": "",
+    "photo": "wardrobe-photos/indigo-luna-layla-flares-carob-nobg.png"
+  },
+  {
+    "name": "Agni Flares Chocolate",
+    "brand": "Indigo Luna",
+    "size": "-",
+    "category": "Pants",
+    "price": "",
+    "source": "",
+    "notes": "Requested as 'Agnis Flares brown' — closest match is the Chocolate colourway.",
+    "photo": "wardrobe-photos/indigo-luna-agni-flares-chocolate-nobg.png"
+  },
+  {
+    "name": "Uma Dress",
+    "brand": "Marle",
+    "size": "-",
+    "category": "Dresses",
+    "price": "",
+    "source": "",
+    "notes": "",
+    "photo": "wardrobe-photos/marle-uma-dress-nobg.png"
+  },
+  {
+    "name": "Lola Barrel Pant",
+    "brand": "Assembly Label",
+    "size": "-",
+    "category": "Pants",
+    "price": "",
+    "source": "",
+    "notes": "Dark Military Green.",
+    "photo": "wardrobe-photos/assembly-label-lola-barrel-pant-dark-military-green-nobg.png"
+  },
+  {
+    "name": "Groove Flare Yoga Tights",
+    "brand": "Lululemon",
+    "size": "-",
+    "category": "Pants",
+    "price": "",
+    "source": "",
+    "notes": "Black.",
+    "photo": "wardrobe-photos/lululemon-groove-flare-yoga-tights-black-nobg.png"
+  },
+  {
+    "name": "Cargo Pant",
+    "brand": "",
+    "size": "-",
+    "category": "Pants",
+    "price": "",
+    "source": "",
+    "notes": "Olive/sage colour.",
+    "photo": "wardrobe-photos/cargo-pant-olive-nobg.png"
+  },
+  {
+    "name": "Long Sleeve Black",
+    "brand": "ME+EM",
+    "size": "-",
+    "category": "Tops",
+    "price": "",
+    "source": "",
+    "notes": "",
+    "photo": "wardrobe-photos/long-sleeve-black-meem-nobg.png"
+  },
+  {
+    "name": "Pink Tee",
+    "brand": "",
+    "size": "-",
+    "category": "Tops",
+    "price": "",
+    "source": "",
+    "notes": "",
+    "photo": "wardrobe-photos/pink-tee-nobg.png"
+  },
+  {
+    "name": "Black Tee",
+    "brand": "",
+    "size": "-",
+    "category": "Tops",
+    "price": "",
+    "source": "",
+    "notes": "",
+    "photo": "wardrobe-photos/black-tee-nobg.png"
+  },
+  {
+    "name": "White Tee",
+    "brand": "",
+    "size": "-",
+    "category": "Tops",
+    "price": "",
+    "source": "",
+    "notes": "",
+    "photo": "wardrobe-photos/white-tee-nobg.png"
+  },
+  {
+    "name": "Bucket Hat Beige",
+    "brand": "Lack of Colour",
+    "size": "-",
+    "category": "Accessories",
+    "price": "",
+    "source": "",
+    "notes": "",
+    "photo": "wardrobe-photos/lack-of-colour-bucket-hat-beige-nobg.png"
+  },
+  {
+    "name": "Straw Bucket Hat",
+    "brand": "",
+    "size": "-",
+    "category": "Accessories",
+    "price": "",
+    "source": "",
+    "notes": "",
+    "photo": "wardrobe-photos/straw-bucket-hat-nobg.png"
+  },
+  {
+    "name": "Black Bucket Hat",
+    "brand": "",
+    "size": "-",
+    "category": "Accessories",
+    "price": "",
+    "source": "",
+    "notes": "",
+    "photo": "wardrobe-photos/black-bucket-hat-nobg.png"
+  },
+  {
+    "name": "Boston Clogs",
+    "brand": "Birkenstock",
+    "size": "-",
+    "category": "Shoes",
+    "price": "",
+    "source": "",
+    "notes": "",
+    "photo": "wardrobe-photos/birkenstock-boston-nobg.png"
+  },
+  {
+    "name": "Turtleneck Jumper",
+    "brand": "Arket",
+    "size": "-",
+    "category": "Knitwear",
+    "price": "",
+    "source": "",
+    "notes": "",
+    "photo": "wardrobe-photos/arket-turtleneck-jumper-nobg.png"
+  },
+  {
+    "name": "Overalls",
+    "brand": "Calvin Klein",
+    "size": "-",
+    "category": "Pants",
+    "price": "",
+    "source": "",
+    "notes": "Denim dungarees/overalls.",
+    "photo": "wardrobe-photos/ck-overalls-nobg.png"
+  },
+  {
+    "name": "Cream Denim Shirt",
+    "brand": "Marle",
+    "size": "-",
+    "category": "Jackets",
+    "price": "",
+    "source": "",
+    "notes": "",
+    "photo": "wardrobe-photos/marle-cream-denim-shirt-nobg.png"
+  },
+  {
+    "name": "Brown Baby Tee",
+    "brand": "Cotton On",
+    "size": "-",
+    "category": "Tops",
+    "price": "",
+    "source": "",
+    "notes": "Brown/tan stripe.",
+    "photo": "wardrobe-photos/cotton-on-brown-baby-tee-nobg.png"
+  },
+  {
+    "name": "Denim Jacket",
+    "brand": "Levi's",
+    "size": "-",
+    "category": "Jackets",
+    "price": "",
+    "source": "",
+    "notes": "Corduroy collar.",
+    "photo": "wardrobe-photos/levis-denim-jacket-corduroy-collar-nobg.png"
+  },
+  {
+    "name": "Quilted Jacket",
+    "brand": "",
+    "size": "-",
+    "category": "Jackets",
+    "price": "",
+    "source": "",
+    "notes": "Navy.",
+    "photo": "wardrobe-photos/quilted-jacket-navy-nobg.png"
+  },
+  {
+    "name": "White Jeans",
+    "brand": "AGOLDE",
+    "size": "-",
+    "category": "Jeans",
+    "price": "",
+    "source": "",
+    "notes": "",
+    "photo": "wardrobe-photos/agolde-white-jeans-nobg.png"
+  },
+  {
+    "name": "Red Tee",
+    "brand": "",
+    "size": "-",
+    "category": "Tops",
+    "price": "",
+    "source": "",
+    "notes": "",
+    "photo": "wardrobe-photos/red-tee-nobg.png"
+  }
+]

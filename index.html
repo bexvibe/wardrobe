@@ -348,6 +348,69 @@
   }
   .outfit-fav-btn.favorited{color:var(--clay);}
 
+  /* Password gate */
+  .gate{
+    display:none;
+    position:fixed;inset:0;
+    background:var(--bone);
+    align-items:center;justify-content:center;
+    padding:24px;z-index:300;
+  }
+  .gate-card{
+    width:100%;max-width:360px;
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:28px 24px;
+  }
+  .gate-eyebrow{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;letter-spacing:0.14em;text-transform:uppercase;
+    color:var(--sage-deep);margin-bottom:14px;
+  }
+  .gate-title{
+    font-family:'Fraunces', serif;font-weight:500;font-size:22px;
+    margin:0 0 8px;
+  }
+  .gate-note{font-size:13px;color:var(--ink-soft);line-height:1.5;margin:0 0 16px;}
+  .gate-note code{
+    font-family:'IBM Plex Mono',monospace;font-size:12px;
+    background:var(--clay-soft);padding:1px 5px;border-radius:4px;
+  }
+  .gate-card input[type="password"]{width:100%;margin-bottom:10px;}
+  .gate-card .btn{width:100%;justify-content:center;}
+  .gate-error{
+    font-size:12px;color:var(--clay);
+    min-height:16px;margin-bottom:8px;
+  }
+
+  /* Add / edit item form */
+  .form-grid{display:flex;flex-direction:column;gap:12px;margin:14px 0;}
+  .form-grid label{
+    display:flex;flex-direction:column;gap:5px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;letter-spacing:0.06em;text-transform:uppercase;
+    color:var(--ink-soft);
+  }
+  .form-error{font-size:12px;color:var(--clay);min-height:16px;}
+
+  /* Archive */
+  .archive-row{
+    display:flex;align-items:center;gap:10px;
+    padding:12px 4px;
+  }
+  .archive-row-text{flex:1;min-width:0;}
+  .archive-row-title{font-family:'Fraunces',serif;font-size:15px;}
+  .archive-row-sub{font-size:12px;color:var(--ink-soft);}
+
+  .signout-row{margin-top:34px;text-align:center;}
+  .signout-btn{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;letter-spacing:0.08em;text-transform:uppercase;
+    background:none;border:none;color:var(--ink-soft);
+    cursor:pointer;padding:8px;
+  }
+
   /* Outfit filters */
   .outfit-filters{
     background:var(--surface);
@@ -452,17 +515,49 @@
 </style>
 </head>
 <body>
-<div class="wrap">
+
+<div class="gate" id="gate">
+  <div class="gate-card">
+    <div class="gate-eyebrow">The Archive</div>
+
+    <div id="gate-login" style="display:none;">
+      <h2 class="gate-title">Welcome back</h2>
+      <p class="gate-note">Enter your wardrobe password. This device will stay unlocked.</p>
+      <input type="password" id="gate-password" placeholder="Password" autocomplete="current-password"
+             onkeydown="if(event.key==='Enter') signIn()">
+      <div class="gate-error" id="gate-login-error"></div>
+      <button class="btn" id="gate-submit" onclick="signIn()">Unlock</button>
+    </div>
+
+    <div id="gate-unconfigured" style="display:none;">
+      <h2 class="gate-title">Not connected yet</h2>
+      <p class="gate-note">
+        This wardrobe has no database attached. Add your Supabase project URL and
+        anon key to <code>config.js</code> — the steps are in <code>SETUP.md</code>.
+      </p>
+    </div>
+
+    <div id="gate-error" style="display:none;">
+      <h2 class="gate-title">Can't reach the wardrobe</h2>
+      <p class="gate-note" id="gate-error-message"></p>
+      <button class="btn secondary" onclick="location.reload()">Try again</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap" id="app-root" style="display:none;">
   <div class="mode-toggle">
     <button class="mode-btn active" id="mode-inventory-btn" onclick="setMode('inventory')">Inventory</button>
     <button class="mode-btn" id="mode-outfits-btn" onclick="setMode('outfits')">Outfits</button>
     <button class="mode-btn" id="mode-saved-btn" onclick="setMode('saved')">Saved</button>
+    <button class="mode-btn" id="mode-archive-btn" onclick="setMode('archive')">Archive</button>
   </div>
 
   <div id="inventory-view">
   <div class="toolbar-row">
     <input type="text" id="filter-search" placeholder="Search name or brand..." oninput="render()">
     <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="btn small" onclick="openItemForm()">+ Add</button>
       <button class="btn secondary small" id="view-toggle-btn" onclick="toggleViewMode()">List view</button>
       <button class="btn secondary small" id="edit-toggle-btn" onclick="toggleEditMode()">Edit</button>
     </div>
@@ -511,15 +606,55 @@
       <p>Tap the heart on any outfit to save it here.</p>
     </div>
   </div>
+
+  <div id="archive-view" style="display:none;">
+    <div class="count-line" id="archive-count-line"></div>
+    <div class="name-list" id="archive-list"></div>
+    <div class="empty" id="archive-empty" style="display:none;">
+      <h3>Nothing archived</h3>
+      <p>Anything you remove from your wardrobe waits here. Nothing is deleted for good.</p>
+    </div>
+  </div>
+
+  <div class="signout-row">
+    <button class="signout-btn" onclick="signOut()">Sign out</button>
+  </div>
 </div>
 
 <div class="modal-backdrop" id="modal-backdrop" onclick="closeModalIfBackdrop(event)">
   <div class="modal" id="modal"></div>
 </div>
 
+<div class="modal-backdrop" id="form-backdrop">
+  <div class="modal">
+    <div class="sheet-header">
+      <button class="sheet-back" onclick="closeItemForm()">← Cancel</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-name" id="form-title">New piece</div>
+      <div class="form-grid">
+        <label>Name<input type="text" id="form-name" placeholder="Black linen shirt"></label>
+        <label>Brand<input type="text" id="form-brand" placeholder="Assembly Label"></label>
+        <label>Category<select id="form-category"></select></label>
+        <label>Size<input type="text" id="form-size" placeholder="10"></label>
+        <label>Price<input type="text" id="form-price" placeholder="NZD $40.00"></label>
+        <label>Source<input type="text" id="form-source" placeholder="Depop"></label>
+        <label>Notes<textarea id="form-notes" rows="3" placeholder="Anything worth remembering"></textarea></label>
+      </div>
+      <div class="form-error" id="form-error"></div>
+      <div class="modal-actions">
+        <button class="btn" id="form-save-btn" onclick="submitItemForm()">Save</button>
+        <button class="btn secondary" onclick="closeItemForm()">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 <input type="file" id="hidden-photo-input" accept="image/*" style="display:none" onchange="handlePhotoUpload(event)">
 
+<script src="vendor/supabase-js-2.116.0.min.js"></script>
+<script src="config.js"></script>
 <script>
 let ITEMS = [];
 let activeTab = 'All';
@@ -568,9 +703,11 @@ function setMode(mode){
   document.getElementById('mode-inventory-btn')?.classList.toggle('active', mode==='inventory');
   document.getElementById('mode-outfits-btn')?.classList.toggle('active', mode==='outfits');
   document.getElementById('mode-saved-btn')?.classList.toggle('active', mode==='saved');
+  document.getElementById('mode-archive-btn')?.classList.toggle('active', mode==='archive');
   document.getElementById('inventory-view').style.display = mode==='inventory' ? 'block' : 'none';
   document.getElementById('outfits-view').style.display = mode==='outfits' ? 'block' : 'none';
   document.getElementById('saved-view').style.display = mode==='saved' ? 'block' : 'none';
+  document.getElementById('archive-view').style.display = mode==='archive' ? 'block' : 'none';
   if(mode==='outfits'){
     outfitRenderContext = 'tab';
     renderOutfitFilters();
@@ -579,6 +716,42 @@ function setMode(mode){
   if(mode==='saved'){
     renderSavedOutfits();
   }
+  if(mode==='archive'){
+    renderArchive();
+  }
+}
+
+function renderArchive(){
+  const countLine = document.getElementById('archive-count-line');
+  const list = document.getElementById('archive-list');
+  const emptyState = document.getElementById('archive-empty');
+  if(!list) return;
+
+  if(countLine){
+    countLine.textContent = `${ARCHIVED.length} archived piece${ARCHIVED.length===1?'':'s'}`;
+  }
+
+  if(ARCHIVED.length === 0){
+    list.innerHTML = '';
+    list.style.display = 'none';
+    emptyState.style.display = 'block';
+    return;
+  }
+  emptyState.style.display = 'none';
+  list.style.display = 'flex';
+
+  list.innerHTML = ARCHIVED.map(i => `
+    <div class="archive-row">
+      ${i.photo
+        ? `<img class="name-row-thumb" src="${esc(i.photo)}" alt="" referrerpolicy="no-referrer">`
+        : `<div class="name-row-thumb no-photo-mini">No photo</div>`}
+      <div class="archive-row-text">
+        <div class="archive-row-title">${esc(i.name)}</div>
+        <div class="archive-row-sub">${esc(i.brand || '')}</div>
+      </div>
+      <button class="btn small secondary" onclick='restoreItem(${JSON.stringify(i.id)})'>Restore</button>
+    </div>
+  `).join('');
 }
 
 function setBase(base){
@@ -642,7 +815,7 @@ function renderPickerGallery(slotKey){
   document.getElementById('picker-gallery').innerHTML = items.map(i => {
     const selected = f.type === 'items' && f.ids.includes(i.id);
     return `<div class="tile picker-tile ${selected ? 'picker-selected' : ''}" onclick="toggleSlotItem('${slotKey}','${i.id}')">
-      ${i.photo ? `<img src="${i.photo}" alt="" referrerpolicy="no-referrer">` : `<span class="no-photo">No photo</span>`}
+      ${i.photo ? `<img src="${esc(i.photo)}" alt="" referrerpolicy="no-referrer">` : `<span class="no-photo">No photo</span>`}
       ${selected ? `<span class="picker-check">✓</span>` : ''}
     </div>`;
   }).join('');
@@ -760,40 +933,6 @@ function loadMoreOutfits(){
   renderOutfits();
 }
 
-async function loadHiddenCombos(){
-  try{
-    const raw = localStorage.getItem('wardrobe-hidden-combos');
-    hiddenCombos = raw ? JSON.parse(raw) : [];
-  }catch(e){
-    hiddenCombos = [];
-  }
-}
-
-async function saveHiddenCombos(){
-  try{
-    localStorage.setItem('wardrobe-hidden-combos', JSON.stringify(hiddenCombos));
-  }catch(e){
-    showToast('Could not save — try again');
-  }
-}
-
-async function loadFavoriteOutfits(){
-  try{
-    const raw = localStorage.getItem('wardrobe-favorite-outfits');
-    favoriteOutfits = raw ? JSON.parse(raw) : [];
-  }catch(e){
-    favoriteOutfits = [];
-  }
-}
-
-async function saveFavoriteOutfits(){
-  try{
-    localStorage.setItem('wardrobe-favorite-outfits', JSON.stringify(favoriteOutfits));
-  }catch(e){
-    showToast('Could not save — try again');
-  }
-}
-
 function isFavorited(key){
   return favoriteOutfits.some(f => f.key === key);
 }
@@ -809,7 +948,9 @@ function comboToFavoriteRecord(combo){
 }
 
 function favoriteRecordToCombo(rec){
-  const find = id => id ? ITEMS.find(i => i.id === id) : null;
+  // Archived pieces still resolve here: archiving an item should not
+  // quietly tear a piece out of an outfit you already saved.
+  const find = id => id ? (ITEMS.find(i => i.id === id) || ARCHIVED.find(i => i.id === id)) : null;
   return {
     base: rec.base,
     top: find(rec.top), bottom: find(rec.bottom), dress: find(rec.dress),
@@ -817,26 +958,39 @@ function favoriteRecordToCombo(rec){
   };
 }
 
+// Un-hearting soft-deletes like everything else — the row keeps its
+// archived_at stamp rather than disappearing, and re-hearting the same
+// combination revives it.
+async function setFavorited(key, favorited, combo){
+  const db = client();
+  if(favorited){
+    const rec = comboToFavoriteRecord(combo);
+    const { error } = await db.from('saved_outfits').upsert(favoriteToRow(rec), { onConflict: 'combo_key' });
+    if(error) return dbFail(error, 'Could not save — check connection');
+    if(!isFavorited(key)) favoriteOutfits.push(rec);
+    showToast('Saved to favourites');
+  } else {
+    const { error } = await db.from('saved_outfits')
+      .update({ archived_at: new Date().toISOString() })
+      .eq('combo_key', key);
+    if(error) return dbFail(error, 'Could not remove — check connection');
+    favoriteOutfits = favoriteOutfits.filter(f => f.key !== key);
+    showToast('Removed from Saved');
+  }
+  return true;
+}
+
 async function toggleFavoriteByKey(key){
   const combo = outfitDisplayed.find(c => comboKey(c) === key);
   if(!combo) return;
-  if(isFavorited(key)){
-    favoriteOutfits = favoriteOutfits.filter(f => f.key !== key);
-    showToast('Removed from Saved');
-  } else {
-    favoriteOutfits.push(comboToFavoriteRecord(combo));
-    showToast('Saved to favourites');
-  }
-  await saveFavoriteOutfits();
+  await setFavorited(key, !isFavorited(key), combo);
   renderOutfits();
 }
 
 async function unfavoriteByKey(key){
-  favoriteOutfits = favoriteOutfits.filter(f => f.key !== key);
-  await saveFavoriteOutfits();
+  if(!await setFavorited(key, false)) return;
   if(expandedSavedKey === key) expandedSavedKey = null;
   renderSavedOutfits();
-  showToast('Removed from Saved');
 }
 
 function toggleExpandSaved(key){
@@ -864,7 +1018,7 @@ function renderSavedOutfits(){
     const pieces = comboPieces(combo);
     const isExpanded = expandedSavedKey === rec.key;
     const thumbs = pieces.map(p => p.photo
-      ? `<img src="${p.photo}" alt="${p.name}" referrerpolicy="no-referrer">`
+      ? `<img src="${esc(p.photo)}" alt="${esc(p.name)}" referrerpolicy="no-referrer">`
       : `<div class="no-photo-mini">No photo</div>`
     ).join('');
 
@@ -873,9 +1027,9 @@ function renderSavedOutfits(){
         <button class="outfit-collapse-btn" onclick='event.stopPropagation();toggleExpandSaved(${JSON.stringify(rec.key)})'>Collapse ↑</button>
         ${pieces.map(p => `
           <div class="outfit-piece-row">
-            ${p.photo ? `<img src="${p.photo}" alt="${p.name}" referrerpolicy="no-referrer">` : `<div class="no-photo-mini">No photo</div>`}
+            ${p.photo ? `<img src="${esc(p.photo)}" alt="${esc(p.name)}" referrerpolicy="no-referrer">` : `<div class="no-photo-mini">No photo</div>`}
             <div class="outfit-piece-info">
-              <div class="p-name">${p.name}</div>
+              <div class="p-name">${esc(p.name)}</div>
             </div>
           </div>
         `).join('')}
@@ -893,8 +1047,12 @@ function renderSavedOutfits(){
 let expandedComboKey = null;
 
 async function hideCombo(key){
+  const { error } = await client()
+    .from('hidden_combos')
+    .upsert({ combo_key: key }, { onConflict: 'combo_key' });
+  if(error){ dbFail(error, 'Could not hide — check connection'); return; }
+
   if(!hiddenCombos.includes(key)) hiddenCombos.push(key);
-  await saveHiddenCombos();
   outfitDisplayed = outfitDisplayed.filter(c => comboKey(c) !== key);
   if(expandedComboKey === key) expandedComboKey = null;
   renderOutfits();
@@ -934,7 +1092,7 @@ function renderOutfits(){
     const pieces = comboPieces(combo);
     const isExpanded = expandedComboKey === key;
     const thumbs = pieces.map(p => p.photo
-      ? `<img src="${p.photo}" alt="${p.name}" referrerpolicy="no-referrer">`
+      ? `<img src="${esc(p.photo)}" alt="${esc(p.name)}" referrerpolicy="no-referrer">`
       : `<div class="no-photo-mini">No photo</div>`
     ).join('');
 
@@ -943,9 +1101,9 @@ function renderOutfits(){
         <button class="outfit-collapse-btn" onclick='event.stopPropagation();toggleExpandCombo(${JSON.stringify(key)})'>Collapse ↑</button>
         ${pieces.map(p => `
           <div class="outfit-piece-row">
-            ${p.photo ? `<img src="${p.photo}" alt="${p.name}" referrerpolicy="no-referrer">` : `<div class="no-photo-mini">No photo</div>`}
+            ${p.photo ? `<img src="${esc(p.photo)}" alt="${esc(p.name)}" referrerpolicy="no-referrer">` : `<div class="no-photo-mini">No photo</div>`}
             <div class="outfit-piece-info">
-              <div class="p-name">${p.name}</div>
+              <div class="p-name">${esc(p.name)}</div>
             </div>
           </div>
         `).join('')}
@@ -1012,141 +1170,433 @@ function showOutfitsInModal(itemId){
   resetOutfitResults();
 }
 
-const SEED_DATA = [
-  {name:"Fleece jacket", brand:"Patagonia", size:"-", category:"Jackets", price:"NZD $142.00", source:"Depop", notes:"Grey. From @hiddenheatvault.", photo:"wardrobe-photos/patagonia-fleece-jacket-retro-x-cream-nobg.png"},
-  {name:"Tunic jumper", brand:"Free People", size:"L", category:"Knitwear", price:"NZD $49.50", source:"Depop", notes:"Black, small hole at neck. From @ameeliegg.", photo:"wardrobe-photos/free-people-tunic-jumper-black-nobg.png"},
-  {name:"Fleece jacket", brand:"Billabong", size:"L", category:"Jackets", price:"NZD $47.00", source:"Depop", notes:"Brown/cream floral. From @userselling2359.", photo:"wardrobe-photos/billabong-fleece-jacket-brown-cream-floral-nobg.png"},
-  {name:"Corduroy jacket", brand:"Billabong", size:"-", category:"Jackets", price:"NZD $90.00", source:"Depop", notes:"Vintage. From @pentupthrift.", photo:"wardrobe-photos/billabong-corduroy-jacket-v2-nobg.png"},
-  {name:"Fleece jacket", brand:"Quiksilver", size:"XL", category:"Jackets", price:"NZD $68.00", source:"Depop", notes:"Cream. From @finnrobins.", photo:"wardrobe-photos/quiksilver-van-life-sherpa-fleece-nobg.png"},
-  {name:"Jacket", brand:"Carhartt", size:"XL", category:"Jackets", price:"NZD $155.00", source:"Depop", notes:"Awaiting shipping. From @mangoe2.", photo:"wardrobe-photos/carhartt-jacket-detroit-nobg.png"},
-  {name:"Jacket", brand:"Carhartt", size:"-", category:"Jackets", price:"NZD $137.00", source:"Depop", notes:"Tan, relaxed fit. From @klebh.", photo:"wardrobe-photos/carhartt-jacket-tan-chore-coat-nobg.png"},
-  {name:"Indi Coat", brand:"Tree of Life", size:"10, 12", category:"Jackets", price:"NZD $70.00", source:"Designer Wardrobe", notes:"Seller: Susan A. Payment Received.", photo:"wardrobe-photos/tree-of-life-indi-coat-flat-nobg.png"},
-  {name:"Waverly jacket", brand:"Assembly Label", size:"10, 12", category:"Jackets", price:"NZD $100.00", source:"Designer Wardrobe", notes:"Seller: April W.", photo:"wardrobe-photos/assembly-label-waverly-jacket-sand-flat-nobg.png"},
-  {name:"585 Rustic Brown boots", brand:"Blundstone", size:"7", category:"Shoes", price:"NZD $110.00", source:"Designer Wardrobe", notes:"Seller: Caroline.", photo:"wardrobe-photos/blundstone-585-rustic-brown-boots-nobg.png"},
-  {name:"Black Refined Tall Rain Boots", brand:"Hunter Boots", size:"8", category:"Shoes", price:"NZD $170.00", source:"Designer Wardrobe", notes:"Seller: Carmel R.", photo:"wardrobe-photos/hunter-boots-refined-tall-rain-boots-v2-nobg.png"},
-  {name:"Jeans low and straight", brand:"Abrand", size:"28", category:"Jeans", price:"NZD $25.00", source:"Designer Wardrobe", notes:"Seller: Emma J.", photo:"wardrobe-photos/abrand-jeans-low-and-straight-v2-nobg.png"},
-  {name:"Cream Knit Pants", brand:"Zulu & Zephyr", size:"10", category:"Pants", price:"NZD $90.00", source:"Designer Wardrobe", notes:"Seller: Melanie N.", photo:"wardrobe-photos/zulu-zephyr-cream-knit-pants-nobg.png"},
-  {name:"Waverly Jacket", brand:"Assembly Label", size:"14, 16, 12", category:"Jackets", price:"NZD $110.00", source:"Designer Wardrobe", notes:"Seller: Jord O.", photo:"wardrobe-photos/assembly-label-waverly-jacket-dark-choc-flat-nobg.png"},
-  {name:"Loose fit jeans", brand:"Assembly Label", size:"27", category:"Jeans", price:"NZD $100.00", source:"Designer Wardrobe", notes:"Seller: Rachel Y.", photo:"wardrobe-photos/assembly-label-loose-fit-jeans-flat-nobg.png"},
-  {name:"Dolman jacket", brand:"Free People", size:"8", category:"Jackets", price:"NZD $195.00", source:"Designer Wardrobe", notes:"Seller: Emma O.", photo:"wardrobe-photos/free-people-dolman-jacket-flat-nobg.png"},
-  {name:"Nikova knit", brand:"Bronze Snake Shop", size:"12", category:"Knitwear", price:"NZD $120.00", source:"Designer Wardrobe", notes:"Seller: Stella M.", photo:"wardrobe-photos/bronze-snake-shop-nikova-knit-flat-nobg.png"},
-  {name:"Boyfriend Jean", brand:"Assembly Label", size:"30", category:"Jeans", price:"NZD $90.00", source:"Designer Wardrobe", notes:"Seller: Ashleigh.", photo:"wardrobe-photos/assembly-label-boyfriend-jean-flat-nobg.png"},
-  {name:"Shirt/jacket", brand:"Marle", size:"12", category:"Jackets", price:"NZD $70.00", source:"Designer Wardrobe", notes:"Seller: Clare H.", photo:"wardrobe-photos/marle-shirt-jacket-black-nobg.png"},
-  {name:"Denim Shirt", brand:"Marle", size:"12", category:"Jackets", price:"NZD $80.00", source:"Designer Wardrobe", notes:"Seller: Claire H.", photo:"wardrobe-photos/marle-denim-shirt-light-blue-nobg.png"},
-  {name:"Beige Heels", brand:"Windsor Smith", size:"8", category:"Shoes", price:"NZD $40.70", source:"Designer Wardrobe", notes:"Seller: Melody B.", photo:null},
-  {name:"Sailor jeans - Lily blue", brand:"Rollas", size:"30", category:"Jeans", price:"NZD $40.00", source:"Designer Wardrobe", notes:"Seller: Tracy H.", photo:"wardrobe-photos/rollas-sailor-jean-lily-blue-v2-nobg.png"},
-  {name:"Blue Striped Shirt", brand:"Assembly Label", size:"14", category:"Shirts", price:"NZD $40.00", source:"Designer Wardrobe", notes:"Seller: Samantha.", photo:"wardrobe-photos/assembly-label-blue-striped-shirt-nobg.png"},
-  {name:"Black Linen Shirt", brand:"Assembly Label", size:"16", category:"Shirts", price:"NZD $40.00", source:"Designer Wardrobe", notes:"Seller: Samantha.", photo:"wardrobe-photos/assembly-label-xander-linen-shirt-black-nobg.png"},
-  {name:"Santi Jumper", brand:"Marle", size:"12", category:"Knitwear", price:"NZD $125.00", source:"Designer Wardrobe", notes:"Seller: Lorna F.", photo:"wardrobe-photos/marle-santi-jumper-flat-nobg.png"},
-  {name:"The Iconic Beach Shirt", brand:"Endless", size:"8", category:"Shirts", price:"NZD $26.00", source:"Designer Wardrobe", notes:"Seller: Maggie H.", photo:null},
-  {name:"Square Scarf", brand:"Unbranded", size:"8", category:"Accessories", price:"NZD $30.00", source:"Designer Wardrobe", notes:"Seller: Riley N.", photo:null},
-  {name:"Brown T-shirt (relaxed fit)", brand:"COS", size:"M, L", category:"Tops", price:"NZD $30.50", source:"Designer Wardrobe", notes:"Seller: Irina T.", photo:"wardrobe-photos/cos-relaxed-brown-tshirt-cutout.png"},
-  {name:"Eastcoast Flare", brand:"Rollas", size:"27", category:"Pants", price:"NZD $94.00", source:"Designer Wardrobe", notes:"Seller: Laura J.", photo:"wardrobe-photos/rollas-eastcoast-flare-flat-nobg.png"},
-  {name:"Remi Top", brand:"With Jean", size:"8", category:"Tops", price:"NZD $80.00", source:"Designer Wardrobe", notes:"Seller: Sophie P.", photo:null},
-  {name:"Voyage Shorts", brand:"Caitlin Crisp", size:"6, 8, 10", category:"Shorts", price:"NZD $180.00", source:"Designer Wardrobe", notes:"Seller: Jessie M.", photo:null},
-  {name:"Chuck Taylor All Star Classic", brand:"Converse", size:"8", category:"Shoes", price:"NZD $60.00", source:"Designer Wardrobe", notes:"Seller: Emba W. Photo did not load on site.", photo:null},
-  {name:"Drawstring Dress", brand:"Orseund Iris", size:"10, 8", category:"Dresses", price:"NZD $420.00", source:"Designer Wardrobe", notes:"Seller: Caitrin M. Photo did not load on site.", photo:"wardrobe-photos/orseund-iris-drawstring-dress-black-nobg.png"},
-  {name:"High Rise Stove Pipe Straight Leg", brand:"RE/DONE", size:"28", category:"Jeans", price:"NZD $165.82", source:"Designer Wardrobe", notes:"Seller: Rebecca S. Photo did not load on site.", photo:"wardrobe-photos/redone-high-rise-stove-pipe-jean.jpg"},
-  {name:"Cotton Oversized White Shirt", brand:"Laing Home", size:"10, 8", category:"Shirts", price:"NZD $50.00", source:"Designer Wardrobe", notes:"Seller: Andrea C.", photo:"wardrobe-photos/laing-home-cotton-oversized-white-shirt-nobg.png"},
-  {name:"Vada Jumper - Doe", brand:"Marle", size:"8", category:"Knitwear", price:"NZD $150.00", source:"Designer Wardrobe", notes:"Seller: Evie P. Photo did not load on site.", photo:"wardrobe-photos/marle-vada-jumper-doe-v2-nobg.png"},
-  {name:"Backpack", brand:"Kate Spade", size:"-", category:"Accessories", price:"NZD $144.00", source:"Designer Wardrobe", notes:"Seller: M A.", photo:null},
-  {name:"Ribcage Straight Ankle - Black", brand:"Levi's", size:"26", category:"Jeans", price:"NZD $85.00", source:"Designer Wardrobe", notes:"Seller: Laura S.", photo:"wardrobe-photos/levis-ribcage-straight-ankle-black-nobg.png"},
-  {name:"Iren Knit - Grey", brand:"Assembly Label", size:"8, 10", category:"Knitwear", price:"NZD $70.00", source:"Designer Wardrobe", notes:"Seller: Sryne W. Photo did not load on site.", photo:"wardrobe-photos/assembly-label-iren-knit-grey-v2-nobg.png"},
-  {name:"Tank", brand:"RE/DONE", size:"8", category:"Tops", price:"NZD $50.00", source:"Designer Wardrobe", notes:"Seller: Lucy C. Photo did not load on site.", photo:null},
-  {name:"So Shady (Ivory) sun hat", brand:"Sophie Store", size:"S/M", category:"Accessories", price:"NZD $25.00", source:"Designer Wardrobe", notes:"Seller: Elizabeth.", photo:null},
-  {name:"Drop Shoulder Reversible Blouse", brand:"Orseund Iris", size:"8", category:"Tops", price:"NZD $293.00", source:"Designer Wardrobe", notes:"Seller: Looks To Steal.", photo:null},
-  {name:"Long sleeve", brand:"Commoners", size:"8", category:"Tops", price:"NZD $35.00", source:"Designer Wardrobe", notes:"Seller: Darcy H. Photo sourced generically — tag in reference image reads a different brand, verify match.", photo:"wardrobe-photos/commoners-long-sleeve-white-nobg.png"},
-  {name:"Eloise Top", brand:"Marle", size:"6, 8", category:"Tops", price:"NZD $110.00", source:"Designer Wardrobe", notes:"Seller: Mona H.", photo:null},
-  {name:"High waist straight leg jeans", brand:"Levi's", size:"24, 25, 26", category:"Jeans", price:"NZD $65.00", source:"Designer Wardrobe", notes:"Seller: Bella B.", photo:null},
-  {name:"Cara Mini Dress", brand:"Sir The Label", size:"8, 10", category:"Dresses", price:"NZD $120.00", source:"Designer Wardrobe", notes:"Seller: Jade L.", photo:null},
-  {name:"Alfalfa Shirt Indigo", brand:"Marle", size:"-", category:"Jackets", price:"", source:"", notes:"", photo:"wardrobe-photos/marle-alfalfa-shirt-indigo-nobg.png"},
-  {name:"Dallas Boots", brand:"City Beach Australia", size:"-", category:"Shoes", price:"NZD $89.99", source:"", notes:"Colour not specified — used Black variant.", photo:"wardrobe-photos/city-beach-dallas-boots-black.jpg"},
-  {name:"Ana Long Sleeve Top Green", brand:"Marle", size:"-", category:"Tops", price:"NZD $182.00", source:"", notes:"Used 'Tapenade' colourway (closest olive/green match found).", photo:"wardrobe-photos/marle-ana-top-green-tapenade-nobg.png"},
-  {name:"Rib Knit Polo Top", brand:"St. Agni", size:"-", category:"Tops", price:"NZD $259.00", source:"", notes:"Sourced as 'Petit Polo Knit Top' on St. Agni's own site — verify same item.", photo:"wardrobe-photos/st-agni-rib-knit-polo-top-black.jpg"},
-  {name:"Paris Dress", brand:"St. Agni", size:"-", category:"Dresses", price:"NZD $429.00", source:"", notes:"", photo:"wardrobe-photos/st-agni-paris-dress-flat-nobg.png"},
-  {name:"Marina Seersucker Tee", brand:"AFENDS", size:"-", category:"Tops", price:"", source:"", notes:"Womens Marina - Seersucker Top - Marina.", photo:"wardrobe-photos/afends-marina-seersucker-top-flat-nobg.png"},
-  {name:"Crew Neck Sweater", brand:"SIR the Label", size:"-", category:"Knitwear", price:"NZD $403.47", source:"", notes:"", photo:"wardrobe-photos/sir-the-label-crew-neck-sweater-black-nobg.png"},
-  {name:"Milano High Waist Pants", brand:"St. Agni", size:"-", category:"Pants", price:"", source:"", notes:"Colour not specified — used Black variant.", photo:"wardrobe-photos/st-agni-milano-high-waist-pants-black-flat-nobg.png"},
-  {name:"Long Sleeve Knit", brand:"Country Road", size:"-", category:"Tops", price:"NZD $120.00", source:"Infinite Definite", notes:"Black. Generic name — used Merino Wool Silk Long Sleeve Knit as best guess, verify style.", photo:"wardrobe-photos/country-road-long-sleeve-knit-black-nobg.png"},
-  {name:"Neva Beanie", brand:"Remain", size:"-", category:"Accessories", price:"NZD $75.65", source:"", notes:"", photo:null},
-  {name:"Marle Maxi Dress Ivy Black", brand:"Marle", size:"-", category:"Dresses", price:"NZD $229.00", source:"", notes:"", photo:"wardrobe-photos/marle-maxi-dress-ivy-black-flat-nobg.png"},
-  {name:"Cleo boot", brand:"Bronwyn Footwear", size:"-", category:"Shoes", price:"NZD $136.00", source:"", notes:"", photo:"wardrobe-photos/bronwyn-footwear-cleo-boot-nobg.png"},
-  {name:"Layla Flares Carob", brand:"Indigo Luna", size:"-", category:"Pants", price:"", source:"", notes:"", photo:"wardrobe-photos/indigo-luna-layla-flares-carob-nobg.png"},
-  {name:"Agni Flares Chocolate", brand:"Indigo Luna", size:"-", category:"Pants", price:"", source:"", notes:"Requested as 'Agnis Flares brown' — closest match is the Chocolate colourway.", photo:"wardrobe-photos/indigo-luna-agni-flares-chocolate-nobg.png"},
-  {name:"Uma Dress", brand:"Marle", size:"-", category:"Dresses", price:"", source:"", notes:"", photo:"wardrobe-photos/marle-uma-dress-nobg.png"},
-  {name:"Lola Barrel Pant", brand:"Assembly Label", size:"-", category:"Pants", price:"", source:"", notes:"Dark Military Green.", photo:"wardrobe-photos/assembly-label-lola-barrel-pant-dark-military-green-nobg.png"},
-  {name:"Groove Flare Yoga Tights", brand:"Lululemon", size:"-", category:"Pants", price:"", source:"", notes:"Black.", photo:"wardrobe-photos/lululemon-groove-flare-yoga-tights-black-nobg.png"},
-  {name:"Cargo Pant", brand:"", size:"-", category:"Pants", price:"", source:"", notes:"Olive/sage colour.", photo:"wardrobe-photos/cargo-pant-olive-nobg.png"},
-  {name:"Long Sleeve Black", brand:"ME+EM", size:"-", category:"Tops", price:"", source:"", notes:"", photo:"wardrobe-photos/long-sleeve-black-meem-nobg.png"},
-  {name:"Pink Tee", brand:"", size:"-", category:"Tops", price:"", source:"", notes:"", photo:"wardrobe-photos/pink-tee-nobg.png"},
-  {name:"Black Tee", brand:"", size:"-", category:"Tops", price:"", source:"", notes:"", photo:"wardrobe-photos/black-tee-nobg.png"},
-  {name:"White Tee", brand:"", size:"-", category:"Tops", price:"", source:"", notes:"", photo:"wardrobe-photos/white-tee-nobg.png"},
-  {name:"Bucket Hat Beige", brand:"Lack of Colour", size:"-", category:"Accessories", price:"", source:"", notes:"", photo:"wardrobe-photos/lack-of-colour-bucket-hat-beige-nobg.png"},
-  {name:"Straw Bucket Hat", brand:"", size:"-", category:"Accessories", price:"", source:"", notes:"", photo:"wardrobe-photos/straw-bucket-hat-nobg.png"},
-  {name:"Black Bucket Hat", brand:"", size:"-", category:"Accessories", price:"", source:"", notes:"", photo:"wardrobe-photos/black-bucket-hat-nobg.png"},
-  {name:"Boston Clogs", brand:"Birkenstock", size:"-", category:"Shoes", price:"", source:"", notes:"", photo:"wardrobe-photos/birkenstock-boston-nobg.png"},
-  {name:"Turtleneck Jumper", brand:"Arket", size:"-", category:"Knitwear", price:"", source:"", notes:"", photo:"wardrobe-photos/arket-turtleneck-jumper-nobg.png"},
-  {name:"Overalls", brand:"Calvin Klein", size:"-", category:"Pants", price:"", source:"", notes:"Denim dungarees/overalls.", photo:"wardrobe-photos/ck-overalls-nobg.png"},
-  {name:"Cream Denim Shirt", brand:"Marle", size:"-", category:"Jackets", price:"", source:"", notes:"", photo:"wardrobe-photos/marle-cream-denim-shirt-nobg.png"},
-  {name:"Brown Baby Tee", brand:"Cotton On", size:"-", category:"Tops", price:"", source:"", notes:"Brown/tan stripe.", photo:"wardrobe-photos/cotton-on-brown-baby-tee-nobg.png"},
-  {name:"Denim Jacket", brand:"Levi's", size:"-", category:"Jackets", price:"", source:"", notes:"Corduroy collar.", photo:"wardrobe-photos/levis-denim-jacket-corduroy-collar-nobg.png"},
-  {name:"Quilted Jacket", brand:"", size:"-", category:"Jackets", price:"", source:"", notes:"Navy.", photo:"wardrobe-photos/quilted-jacket-navy-nobg.png"},
-  {name:"White Jeans", brand:"AGOLDE", size:"-", category:"Jeans", price:"", source:"", notes:"", photo:"wardrobe-photos/agolde-white-jeans-nobg.png"},
-  {name:"Red Tee", brand:"", size:"-", category:"Tops", price:"", source:"", notes:"", photo:"wardrobe-photos/red-tee-nobg.png"}
-];
+// ============================================================
+//  Data layer — Supabase
+//
+//  The inventory used to be a hardcoded SEED_DATA array with the
+//  user's edits layered on top as localStorage diffs. That meant a
+//  "delete" only hid a row in one browser, and nothing synced or
+//  survived a cleared cache. Items now live in Postgres and this is
+//  the only place that talks to it.
+//
+//  Nothing is ever hard-deleted: archiving sets archived_at.
+// ============================================================
 
-let deletedIds = [];
-let photoOverrides = {};
+const BUCKET = 'wardrobe-uploads';
+const PHOTO_URL_TTL = 60 * 60 * 24 * 7; // signed URLs last a week; refreshed every load
+const MAX_PHOTO_EDGE = 1600;            // downscale before upload — phone photos are 3-5MB
 
-function loadLocalOverrides(){
-  try{
-    deletedIds = JSON.parse(localStorage.getItem('wardrobe-deleted-ids') || '[]');
-  }catch(e){
-    deletedIds = [];
-  }
-  try{
-    photoOverrides = JSON.parse(localStorage.getItem('wardrobe-photo-overrides') || '{}');
-  }catch(e){
-    photoOverrides = {};
-  }
+let sb = null;
+let ARCHIVED = [];
+let sessionEmail = null;
+
+function wardrobeConfig(){
+  return window.WARDROBE_CONFIG || {};
 }
 
-function saveDeletedIds(){
-  try{
-    localStorage.setItem('wardrobe-deleted-ids', JSON.stringify(deletedIds));
-  }catch(e){
-    showToast('Could not save — try again');
+function isConfigured(){
+  const c = wardrobeConfig();
+  return Boolean(c.supabaseUrl && c.supabaseAnonKey);
+}
+
+function client(){
+  if(!sb){
+    const c = wardrobeConfig();
+    sb = window.supabase.createClient(c.supabaseUrl, c.supabaseAnonKey);
   }
+  return sb;
 }
 
-function savePhotoOverrides(){
-  try{
-    localStorage.setItem('wardrobe-photo-overrides', JSON.stringify(photoOverrides));
-  }catch(e){
-    showToast('Could not save — try again');
+function dbFail(error, msg){
+  console.error('[wardrobe]', msg, error);
+  showToast(msg);
+  return false;
+}
+
+// ---- Row <-> app shape -------------------------------------
+// The rest of the app reads item.photo and knows nothing about
+// storage paths, so resolution happens here and nowhere else.
+function rowToItem(row){
+  return {
+    id: row.id,
+    name: row.name,
+    brand: row.brand || '',
+    size: row.size || '',
+    category: row.category || '',
+    price: row.price || '',
+    source: row.source || '',
+    notes: row.notes || '',
+    photo: row.photo || null,
+    photoPath: row.photo_path || null,
+    archivedAt: row.archived_at || null
+  };
+}
+
+function rowToFavorite(row){
+  return {
+    key: row.combo_key,
+    base: row.base,
+    top: row.top_id, bottom: row.bottom_id, dress: row.dress_id,
+    jumper: row.jumper_id, jacket: row.jacket_id, shoe: row.shoe_id
+  };
+}
+
+function favoriteToRow(rec){
+  return {
+    combo_key: rec.key,
+    base: rec.base,
+    top_id: rec.top, bottom_id: rec.bottom, dress_id: rec.dress,
+    jumper_id: rec.jumper, jacket_id: rec.jacket, shoe_id: rec.shoe,
+    archived_at: null
+  };
+}
+
+// Uploaded photos live in a private bucket, so they need signed URLs.
+// One batch call covers every item rather than one request each.
+async function hydratePhotoUrls(items){
+  const needing = items.filter(i => i.photoPath);
+  if(!needing.length) return;
+  const { data, error } = await client().storage
+    .from(BUCKET)
+    .createSignedUrls(needing.map(i => i.photoPath), PHOTO_URL_TTL);
+  if(error || !data){
+    console.error('[wardrobe] could not sign photo URLs', error);
+    return;
   }
-}
-
-async function loadItems(){
-  loadLocalOverrides();
-
-  ITEMS = SEED_DATA
-    .map((item, i) => ({ id: 'seed_' + i, ...item }))
-    .filter(i => !deletedIds.includes(i.id))
-    .map(i => photoOverrides[i.id] ? { ...i, photo: photoOverrides[i.id] } : i);
-
-  applyKnownCorrections();
-  render();
-}
-
-function applyKnownCorrections(){
-  ITEMS.forEach(i => {
-    if(i.name === 'Indi Coat' && i.brand === 'Tree of Life' && i.category !== 'Jackets'){
-      i.category = 'Jackets';
-    }
+  const byPath = new Map(data.filter(d => d.signedUrl).map(d => [d.path, d.signedUrl]));
+  needing.forEach(i => {
+    const url = byPath.get(i.photoPath);
+    if(url) i.photo = url;
   });
 }
 
+async function loadAll(){
+  const db = client();
+  const [itemsRes, outfitsRes, hiddenRes] = await Promise.all([
+    db.from('items').select('*').order('created_at', { ascending: true }),
+    db.from('saved_outfits').select('*').is('archived_at', null).order('created_at', { ascending: true }),
+    db.from('hidden_combos').select('combo_key')
+  ]);
+
+  if(itemsRes.error) throw itemsRes.error;
+  if(outfitsRes.error) throw outfitsRes.error;
+  if(hiddenRes.error) throw hiddenRes.error;
+
+  const all = itemsRes.data.map(rowToItem);
+  await hydratePhotoUrls(all);
+
+  ITEMS = all.filter(i => !i.archivedAt);
+  ARCHIVED = all.filter(i => i.archivedAt);
+  favoriteOutfits = outfitsRes.data.map(rowToFavorite);
+  hiddenCombos = hiddenRes.data.map(r => r.combo_key);
+}
+
+// ---- Items -------------------------------------------------
+function newItemId(){
+  const rand = (window.crypto && crypto.randomUUID)
+    ? crypto.randomUUID()
+    : Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+  return 'itm_' + rand;
+}
+
+async function archiveItems(ids){
+  const { error } = await client()
+    .from('items')
+    .update({ archived_at: new Date().toISOString() })
+    .in('id', ids);
+  if(error) return dbFail(error, 'Could not archive — check connection');
+
+  const stamp = new Date().toISOString();
+  const moving = ITEMS.filter(i => ids.includes(i.id));
+  moving.forEach(i => { i.archivedAt = stamp; });
+  ARCHIVED = moving.concat(ARCHIVED);
+  ITEMS = ITEMS.filter(i => !ids.includes(i.id));
+  return true;
+}
+
+async function restoreItem(id){
+  const { error } = await client()
+    .from('items')
+    .update({ archived_at: null })
+    .eq('id', id);
+  if(error) return dbFail(error, 'Could not restore — check connection');
+
+  const item = ARCHIVED.find(i => i.id === id);
+  if(item){
+    item.archivedAt = null;
+    ARCHIVED = ARCHIVED.filter(i => i.id !== id);
+    ITEMS.push(item);
+  }
+  renderArchive();
+  render();
+  showToast('Restored to wardrobe');
+  return true;
+}
+
+async function saveItem(fields, existingId){
+  const db = client();
+  if(existingId){
+    const { data, error } = await db.from('items').update(fields).eq('id', existingId).select().single();
+    if(error) return dbFail(error, 'Could not save — check connection');
+    const idx = ITEMS.findIndex(i => i.id === existingId);
+    const updated = rowToItem(data);
+    await hydratePhotoUrls([updated]);
+    if(idx > -1) ITEMS[idx] = updated;
+    return updated;
+  }
+  const { data, error } = await db.from('items').insert({ id: newItemId(), ...fields }).select().single();
+  if(error) return dbFail(error, 'Could not add — check connection');
+  const created = rowToItem(data);
+  ITEMS.push(created);
+  return created;
+}
+
+// ---- Photos ------------------------------------------------
+// Phone photos are 3-5MB. Previously they were base64'd into
+// localStorage, which silently blew the ~5MB quota after a couple
+// of uploads; now they are downscaled and put in object storage.
+function downscaleImage(file){
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const scale = Math.min(1, MAX_PHOTO_EDGE / Math.max(img.width, img.height));
+      if(scale === 1 && file.size < 1_000_000){ resolve({ blob: file, ext: extFor(file) }); return; }
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob(
+        (blob) => resolve(blob ? { blob, ext: 'jpg' } : { blob: file, ext: extFor(file) }),
+        'image/jpeg',
+        0.85
+      );
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); resolve({ blob: file, ext: extFor(file) }); };
+    img.src = url;
+  });
+}
+
+function extFor(file){
+  const fromType = (file.type || '').split('/')[1];
+  if(fromType) return fromType.replace('jpeg', 'jpg');
+  const fromName = (file.name || '').split('.').pop();
+  return fromName && fromName.length <= 5 ? fromName.toLowerCase() : 'jpg';
+}
+
+async function uploadPhotoFor(itemId, file){
+  const { blob, ext } = await downscaleImage(file);
+  const path = `items/${itemId}/${Date.now()}.${ext}`;
+  const db = client();
+
+  const up = await db.storage.from(BUCKET).upload(path, blob, {
+    contentType: blob.type || 'image/jpeg',
+    upsert: true
+  });
+  if(up.error) return dbFail(up.error, 'Could not upload photo');
+
+  const { error } = await db.from('items').update({ photo_path: path }).eq('id', itemId);
+  if(error) return dbFail(error, 'Photo uploaded but not linked — try again');
+
+  const signed = await db.storage.from(BUCKET).createSignedUrl(path, PHOTO_URL_TTL);
+  const item = ITEMS.find(i => i.id === itemId) || ARCHIVED.find(i => i.id === itemId);
+  if(item){
+    item.photoPath = path;
+    if(signed.data && signed.data.signedUrl) item.photo = signed.data.signedUrl;
+  }
+  return true;
+}
+
+// ---- One-time migration of the old localStorage state -------
+//
+//  Whatever is already on this device — items deleted, outfits
+//  hearted, photos uploaded — gets carried into the database the
+//  first time you sign in. The old keys are deliberately left in
+//  place afterwards: they are the only backup until the database
+//  is confirmed good.
+const MIGRATION_FLAG = 'wardrobe-migrated-to-supabase';
+
+function readLegacyState(){
+  const read = (key, fallback) => {
+    try { return JSON.parse(localStorage.getItem(key) || fallback); }
+    catch(e){ return JSON.parse(fallback); }
+  };
+  const deleted = read('wardrobe-deleted-ids', '[]');
+  const hidden = read('wardrobe-hidden-combos', '[]');
+  const favorites = read('wardrobe-favorite-outfits', '[]');
+  const photos = read('wardrobe-photo-overrides', '{}');
+  return {
+    deleted, hidden, favorites, photos,
+    any: deleted.length || hidden.length || favorites.length || Object.keys(photos).length
+  };
+}
+
+function dataUrlToBlob(dataUrl){
+  const [meta, b64] = dataUrl.split(',');
+  const mime = (meta.match(/:(.*?);/) || [null, 'image/jpeg'])[1];
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for(let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return new Blob([bytes], { type: mime });
+}
+
+async function runLegacyMigration(){
+  if(localStorage.getItem(MIGRATION_FLAG)) return;
+
+  const legacy = readLegacyState();
+  if(!legacy.any){
+    localStorage.setItem(MIGRATION_FLAG, new Date().toISOString());
+    return;
+  }
+
+  const db = client();
+  const done = [];
+
+  const knownIds = new Set(ITEMS.concat(ARCHIVED).map(i => i.id));
+  const toArchive = legacy.deleted.filter(id => knownIds.has(id));
+  if(toArchive.length){
+    const { error } = await db.from('items')
+      .update({ archived_at: new Date().toISOString() })
+      .in('id', toArchive);
+    if(!error) done.push(`${toArchive.length} archived`);
+  }
+
+  if(legacy.hidden.length){
+    const { error } = await db.from('hidden_combos')
+      .upsert(legacy.hidden.map(k => ({ combo_key: k })), { onConflict: 'combo_key' });
+    if(!error) done.push(`${legacy.hidden.length} hidden`);
+  }
+
+  const validFavorites = legacy.favorites.filter(f => f && f.key && f.base);
+  if(validFavorites.length){
+    const { error } = await db.from('saved_outfits')
+      .upsert(validFavorites.map(favoriteToRow), { onConflict: 'combo_key' });
+    if(!error) done.push(`${validFavorites.length} saved outfits`);
+  }
+
+  let photoCount = 0;
+  for(const [itemId, dataUrl] of Object.entries(legacy.photos)){
+    if(!knownIds.has(itemId) || typeof dataUrl !== 'string' || !dataUrl.startsWith('data:')) continue;
+    try{
+      const blob = dataUrlToBlob(dataUrl);
+      const path = `items/${itemId}/migrated-${Date.now()}.jpg`;
+      const up = await db.storage.from(BUCKET).upload(path, blob, { contentType: blob.type, upsert: true });
+      if(up.error) continue;
+      const { error } = await db.from('items').update({ photo_path: path }).eq('id', itemId);
+      if(!error) photoCount++;
+    }catch(e){
+      console.error('[wardrobe] could not migrate photo for', itemId, e);
+    }
+  }
+  if(photoCount) done.push(`${photoCount} photos`);
+
+  localStorage.setItem(MIGRATION_FLAG, new Date().toISOString());
+
+  if(done.length){
+    await loadAll();
+    showToast('Moved to the cloud: ' + done.join(', '));
+  }
+}
+
+// ---- Boot / auth -------------------------------------------
+function showGate(state, message){
+  document.getElementById('app-root').style.display = 'none';
+  document.getElementById('gate').style.display = 'flex';
+  document.getElementById('gate-unconfigured').style.display = state === 'unconfigured' ? 'block' : 'none';
+  document.getElementById('gate-login').style.display = state === 'login' ? 'block' : 'none';
+  document.getElementById('gate-error').style.display = state === 'error' ? 'block' : 'none';
+  if(message) document.getElementById('gate-error-message').textContent = message;
+  if(state === 'login') setTimeout(() => document.getElementById('gate-password')?.focus(), 50);
+}
+
+function hideGate(){
+  document.getElementById('gate').style.display = 'none';
+  document.getElementById('app-root').style.display = 'block';
+}
+
+async function signIn(){
+  const input = document.getElementById('gate-password');
+  const button = document.getElementById('gate-submit');
+  const error = document.getElementById('gate-login-error');
+  const password = input.value;
+  if(!password) return;
+
+  button.disabled = true;
+  button.textContent = 'Unlocking...';
+  error.textContent = '';
+
+  const { error: authError } = await client().auth.signInWithPassword({
+    email: wardrobeConfig().authEmail,
+    password
+  });
+
+  button.disabled = false;
+  button.textContent = 'Unlock';
+
+  if(authError){
+    error.textContent = 'That password did not work.';
+    input.select();
+    return;
+  }
+  input.value = '';
+  await startApp();
+}
+
+async function signOut(){
+  await client().auth.signOut();
+  location.reload();
+}
+
+async function startApp(){
+  hideGate();
+  const { data: { session } } = await client().auth.getSession();
+  sessionEmail = session && session.user ? session.user.email : null;
+  try{
+    await loadAll();
+    await runLegacyMigration();
+  }catch(e){
+    showGate('error', e && e.message ? e.message : 'Could not reach the database.');
+    return;
+  }
+  render();
+}
+
+async function boot(){
+  if(!isConfigured()){
+    showGate('unconfigured');
+    return;
+  }
+  if(!window.supabase){
+    showGate('error', 'The Supabase library did not load.');
+    return;
+  }
+  let session = null;
+  try{
+    const res = await client().auth.getSession();
+    session = res.data.session;
+  }catch(e){
+    showGate('error', 'Could not reach the database.');
+    return;
+  }
+  if(!session){
+    showGate('login');
+    return;
+  }
+  await startApp();
+}
+
+// Item text is written by hand now that pieces are editable, so it cannot go
+// into innerHTML raw: a name like `6" heel` would otherwise break out of an
+// alt attribute, and an ampersand would render wrong.
+function esc(value){
+  return String(value == null ? '' : value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 
 function showToast(msg){
   const t = document.getElementById('toast');
@@ -1155,22 +1605,11 @@ function showToast(msg){
   setTimeout(()=>t.classList.remove('show'), 1800);
 }
 
-function fileToDataURL(file){
-  return new Promise((resolve, reject)=>{
-    const reader = new FileReader();
-    reader.onload = ()=>resolve(reader.result);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
-
 async function removeItem(id){
-  if(!deletedIds.includes(id)) deletedIds.push(id);
-  saveDeletedIds();
-  ITEMS = ITEMS.filter(i=>i.id !== id);
+  if(!await archiveItems([id])) return;
   closeModal();
   render();
-  showToast('Removed');
+  showToast('Moved to Archive');
 }
 
 function downloadPhoto(item){
@@ -1192,23 +1631,21 @@ async function handlePhotoUpload(event){
   event.target.value = '';
   if(!file || !pendingPhotoItemId) return;
 
+  const itemId = pendingPhotoItemId;
+  pendingPhotoItemId = null;
+  showToast('Uploading photo...');
+
   try{
-    const dataUrl = await fileToDataURL(file);
-    const item = ITEMS.find(i => i.id === pendingPhotoItemId);
-    if(item){
-      item.photo = dataUrl;
-      photoOverrides[pendingPhotoItemId] = dataUrl;
-      savePhotoOverrides();
-      render();
-      if(document.getElementById('modal-backdrop').classList.contains('open')){
-        openModal(item.id);
-      }
-      showToast('Photo added');
+    if(!await uploadPhotoFor(itemId, file)) return;
+    render();
+    if(document.getElementById('modal-backdrop').classList.contains('open')){
+      openModal(itemId);
     }
+    showToast('Photo added');
   }catch(e){
+    console.error('[wardrobe] photo upload failed', e);
     showToast('Could not read that photo');
   }
-  pendingPhotoItemId = null;
 }
 
 function csvEscape(val){
@@ -1268,11 +1705,21 @@ function openModal(id){
       <button class="sheet-back" onclick="closeModal()">← Back</button>
     </div>
     <div class="modal-photo">
-      ${item.photo ? `<img src="${item.photo}" alt="${item.name}" referrerpolicy="no-referrer">` : `<span class="no-photo">No photo yet</span>`}
+      ${item.photo ? `<img src="${esc(item.photo)}" alt="${esc(item.name)}" referrerpolicy="no-referrer">` : `<span class="no-photo">No photo yet</span>`}
     </div>
     <div class="modal-body">
       <span class="detail-chip">${tabForItem(item)}</span>
-      <div class="modal-name">${item.name}</div>
+      <div class="modal-name">${esc(item.name)}</div>
+      ${item.brand ? `<div class="modal-brand">${esc(item.brand)}</div>` : ''}
+      ${item.size && item.size !== '-' ? `<div class="modal-meta">Size ${esc(item.size)}</div>` : ''}
+      ${item.source ? `<div class="modal-meta">${esc(item.source)}</div>` : ''}
+      ${item.price ? `<div class="modal-price">${esc(item.price)}</div>` : ''}
+      ${item.notes ? `<div class="modal-notes">${esc(item.notes)}</div>` : ''}
+      <div class="modal-actions">
+        <button class="btn small secondary" onclick='openItemForm(${JSON.stringify(item.id)})'>Edit</button>
+        <button class="btn small secondary" onclick='triggerPhotoUpload(${JSON.stringify(item.id)})'>${item.photo ? 'Replace photo' : 'Add photo'}</button>
+        <button class="btn small secondary" onclick='removeItem(${JSON.stringify(item.id)})'>Archive</button>
+      </div>
       <div id="modal-outfits-container"></div>
     </div>
   `;
@@ -1282,6 +1729,77 @@ function openModal(id){
 
 function closeModal(){
   document.getElementById('modal-backdrop').classList.remove('open');
+}
+
+// ---- Add / edit a piece ------------------------------------
+const CATEGORY_OPTIONS = Object.keys(CATEGORY_TO_TAB).sort();
+let editingItemId = null;
+
+function openItemForm(id){
+  editingItemId = id || null;
+  const item = id ? ITEMS.find(i => i.id === id) : null;
+
+  document.getElementById('form-title').textContent = item ? 'Edit piece' : 'New piece';
+  document.getElementById('form-error').textContent = '';
+  document.getElementById('form-name').value = item ? item.name : '';
+  document.getElementById('form-brand').value = item ? item.brand : '';
+  document.getElementById('form-size').value = item ? item.size : '';
+  document.getElementById('form-price').value = item ? item.price : '';
+  document.getElementById('form-source').value = item ? item.source : '';
+  document.getElementById('form-notes').value = item ? item.notes : '';
+
+  const select = document.getElementById('form-category');
+  const current = item ? item.category : '';
+  const options = CATEGORY_OPTIONS.includes(current) || !current
+    ? CATEGORY_OPTIONS
+    : [current].concat(CATEGORY_OPTIONS);
+  select.innerHTML = options
+    .map(c => `<option value="${esc(c)}" ${c === current ? 'selected' : ''}>${esc(c)}</option>`)
+    .join('');
+
+  closeModal();
+  document.getElementById('form-backdrop').classList.add('open');
+  setTimeout(() => document.getElementById('form-name').focus(), 50);
+}
+
+function closeItemForm(){
+  document.getElementById('form-backdrop').classList.remove('open');
+  editingItemId = null;
+}
+
+async function submitItemForm(){
+  const name = document.getElementById('form-name').value.trim();
+  const errorEl = document.getElementById('form-error');
+  if(!name){
+    errorEl.textContent = 'A name is needed.';
+    return;
+  }
+
+  const fields = {
+    name,
+    brand: document.getElementById('form-brand').value.trim(),
+    size: document.getElementById('form-size').value.trim(),
+    category: document.getElementById('form-category').value,
+    price: document.getElementById('form-price').value.trim(),
+    source: document.getElementById('form-source').value.trim(),
+    notes: document.getElementById('form-notes').value.trim()
+  };
+
+  const button = document.getElementById('form-save-btn');
+  button.disabled = true;
+  button.textContent = 'Saving...';
+
+  const saved = await saveItem(fields, editingItemId);
+
+  button.disabled = false;
+  button.textContent = 'Save';
+  if(!saved) return;
+
+  const wasEditing = Boolean(editingItemId);
+  closeItemForm();
+  render();
+  showToast(wasEditing ? 'Saved' : 'Added to wardrobe');
+  if(!wasEditing && !saved.photo) triggerPhotoUpload(saved.id);
 }
 
 function closeModalIfBackdrop(e){
@@ -1334,14 +1852,13 @@ function cancelBulkDelete(){
 }
 
 async function confirmBulkDelete(){
-  const count = selectedIds.size;
-  selectedIds.forEach(id => { if(!deletedIds.includes(id)) deletedIds.push(id); });
-  saveDeletedIds();
-  ITEMS = ITEMS.filter(i => !selectedIds.has(i.id));
+  const ids = Array.from(selectedIds);
+  if(!ids.length) return;
+  if(!await archiveItems(ids)) return;
   selectedIds.clear();
   confirmingDelete = false;
   render();
-  showToast(`Deleted ${count} item${count===1?'':'s'}`);
+  showToast(`Moved ${ids.length} item${ids.length===1?'':'s'} to Archive`);
 }
 
 function topsSubRank(item){
@@ -1430,7 +1947,7 @@ function render(){
       return `
       <div class="tile ${editMode ? 'select-mode' : ''} ${selected ? 'item-selected' : ''}" onclick="${clickHandler(i.id)}">
         ${editMode ? `<span class="select-check ${selected ? 'checked' : ''}">✓</span>` : ''}
-        ${i.photo ? `<img src="${i.photo}" alt="${i.name}" referrerpolicy="no-referrer">` : `<span class="no-photo">No photo</span>`}
+        ${i.photo ? `<img src="${esc(i.photo)}" alt="${esc(i.name)}" referrerpolicy="no-referrer">` : `<span class="no-photo">No photo</span>`}
       </div>
     `;
     }).join('');
@@ -1442,10 +1959,10 @@ function render(){
       return `
       <div class="name-row ${editMode ? 'select-mode' : ''} ${selected ? 'item-selected' : ''}" onclick="${clickHandler(i.id)}">
         ${editMode ? `<span class="select-check ${selected ? 'checked' : ''}">✓</span>` : ''}
-        ${i.photo ? `<img class="name-row-thumb" src="${i.photo}" alt="" referrerpolicy="no-referrer">` : `<div class="name-row-thumb no-photo-mini">No photo</div>`}
+        ${i.photo ? `<img class="name-row-thumb" src="${esc(i.photo)}" alt="" referrerpolicy="no-referrer">` : `<div class="name-row-thumb no-photo-mini">No photo</div>`}
         <div class="name-row-text">
-          <div class="name-row-title">${i.name}</div>
-          <div class="name-row-sub">${i.brand || ''}</div>
+          <div class="name-row-title">${esc(i.name)}</div>
+          <div class="name-row-sub">${esc(i.brand || '')}</div>
         </div>
       </div>
     `;
@@ -1453,9 +1970,7 @@ function render(){
   }
 }
 
-loadItems();
-loadHiddenCombos();
-loadFavoriteOutfits();
+boot();
 </script>
 </body>
 </html>
