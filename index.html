@@ -653,21 +653,32 @@ function renderOutfitFilters(){
 
 function openSlotPicker(slotKey){
   const meta = SLOT_META[slotKey];
-  const items = itemsInTab(meta.category);
   const modal = document.getElementById('modal');
   modal.innerHTML = `
     <div class="sheet-header"><button class="sheet-back" onclick="closePickerAndApply()">← Done</button></div>
     <div class="modal-body">
       <div class="modal-name" style="margin-bottom:14px;">Choose ${meta.label}</div>
-      <div class="quick-picks">
-        <button class="btn small secondary" onclick="setSlotQuick('${slotKey}','any')">Any</button>
-        ${meta.allowNone ? `<button class="btn small secondary" onclick="setSlotQuick('${slotKey}','none')">None</button>` : ''}
-      </div>
+      <div class="quick-picks" id="picker-quick-picks"></div>
       <div class="gallery" id="picker-gallery"></div>
     </div>
   `;
+  renderQuickPicks(slotKey);
   renderPickerGallery(slotKey);
   document.getElementById('modal-backdrop').classList.add('open');
+}
+
+// Any / None are a mutually exclusive choice alongside picking individual
+// pieces, so they carry the same selected state the item tiles do —
+// otherwise there is no way to see which one a slot is currently on.
+function renderQuickPicks(slotKey){
+  const meta = SLOT_META[slotKey];
+  const f = outfitFilters[slotKey];
+  const el = document.getElementById('picker-quick-picks');
+  if(!el) return;
+  el.innerHTML = `
+    <button class="base-btn ${f.type === 'any' ? 'active' : ''}" onclick="setSlotQuick('${slotKey}','any')">Any</button>
+    ${meta.allowNone ? `<button class="base-btn ${f.type === 'none' ? 'active' : ''}" onclick="setSlotQuick('${slotKey}','none')">None</button>` : ''}
+  `;
 }
 
 function renderPickerGallery(slotKey){
@@ -685,6 +696,7 @@ function renderPickerGallery(slotKey){
 
 function setSlotQuick(slotKey, mode){
   outfitFilters[slotKey] = mode === 'any' ? {type:'any', ids:[]} : {type:'none', ids:[]};
+  renderQuickPicks(slotKey);
   renderPickerGallery(slotKey);
 }
 
@@ -693,7 +705,10 @@ function toggleSlotItem(slotKey, itemId){
   const ids = (f.type === 'items') ? f.ids.slice() : [];
   const idx = ids.indexOf(itemId);
   if(idx >= 0) ids.splice(idx, 1); else ids.push(itemId);
+  // Clearing the last item drops the slot back to 'any', so the quick
+  // picks have to refresh alongside the gallery.
   outfitFilters[slotKey] = ids.length ? {type:'items', ids} : {type:'any', ids:[]};
+  renderQuickPicks(slotKey);
   renderPickerGallery(slotKey);
 }
 
