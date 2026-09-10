@@ -471,6 +471,9 @@
     display:grid;
     grid-template-columns:repeat(auto-fill, minmax(160px, 1fr));
     gap:12px;
+    /* Cards hug their contents — without this a simple outfit stretches
+       to match a layered one beside it and opens a void under it. */
+    align-items:start;
   }
   .outfit-card{
     background:var(--surface);
@@ -479,19 +482,27 @@
     padding:8px;
     cursor:pointer;
   }
+  /* Outfit cards are laid out as worn: layers and top across the top
+     row, the bottom (or dress) full width beneath. */
   .outfit-thumbs{
-    display:flex;flex-wrap:wrap;gap:4px;
+    display:block;
   }
+  .outfit-upper{display:flex;gap:3px;}
+  .outfit-upper > *{width:calc(33.333% - 2px);aspect-ratio:1/1;}
+  .outfit-upper.n1 > *{width:100%;aspect-ratio:4/3;}
+  .outfit-upper.n2 > *{width:calc(50% - 1.5px);aspect-ratio:1/1;}
+  .outfit-lower{margin-top:3px;}
+  .outfit-lower > *{width:100%;aspect-ratio:4/3;}
+  .outfit-feet{margin-top:3px;display:flex;justify-content:center;}
+  .outfit-feet > *{width:38%;aspect-ratio:1/1;}
+
   .outfit-thumbs img{
-    width:calc(50% - 2px);
-    aspect-ratio:1/1;
     object-fit:contain;
     border-radius:5px;
-    background:var(--bone);
+    /* No tinted tile behind the garment — the cutouts sit straight on
+       the card so a card reads as a flat-lay. */
   }
   .outfit-thumbs .no-photo-mini{
-    width:calc(50% - 2px);
-    aspect-ratio:1/1;
     border-radius:5px;
     background:var(--bone);
     display:flex;align-items:center;justify-content:center;
@@ -915,6 +926,33 @@ function comboPieces(combo){
   return [combo.top, combo.bottom, combo.dress, combo.jumper, combo.jacket, combo.shoe].filter(Boolean);
 }
 
+// Lays a combo out the way it is worn — outer layers and the top on one
+// row, the bottom (or dress) beneath — so a card reads head-to-toe
+// instead of as unordered tiles.
+function outfitLayout(combo){
+  const upper = (combo.base === 'dress'
+    ? [combo.jacket, combo.jumper]
+    : [combo.jacket, combo.jumper, combo.top]).filter(Boolean);
+  return {
+    upper,
+    lower: (combo.base === 'dress' ? combo.dress : combo.bottom) || null,
+    // Only set on outfits saved before shoes were held out of the generator.
+    feet: combo.shoe || null
+  };
+}
+
+function outfitThumbsHtml(combo){
+  const cell = p => p.photo
+    ? `<img src="${esc(p.photo)}" alt="${esc(p.name)}" referrerpolicy="no-referrer">`
+    : `<div class="no-photo-mini">No photo</div>`;
+  const { upper, lower, feet } = outfitLayout(combo);
+  return [
+    upper.length ? `<div class="outfit-upper n${upper.length}">${upper.map(cell).join('')}</div>` : '',
+    lower ? `<div class="outfit-lower">${cell(lower)}</div>` : '',
+    feet ? `<div class="outfit-feet">${cell(feet)}</div>` : ''
+  ].join('');
+}
+
 function totalComboCount(){
   const jumpers = slotList(itemsInTab('Jumpers'), outfitFilters.jumper, true).length;
   const jackets = slotList(itemsInTab('Jackets'), outfitFilters.jacket, true).length;
@@ -1035,10 +1073,7 @@ function renderSavedOutfits(){
     const combo = favoriteRecordToCombo(rec);
     const pieces = comboPieces(combo);
     const isExpanded = expandedSavedKey === rec.key;
-    const thumbs = pieces.map(p => p.photo
-      ? `<img src="${esc(p.photo)}" alt="${esc(p.name)}" referrerpolicy="no-referrer">`
-      : `<div class="no-photo-mini">No photo</div>`
-    ).join('');
+    const thumbs = outfitThumbsHtml(combo);
 
     const expandedPanel = isExpanded ? `
       <div class="outfit-expanded-panel">
@@ -1109,10 +1144,7 @@ function renderOutfits(){
     const key = comboKey(combo);
     const pieces = comboPieces(combo);
     const isExpanded = expandedComboKey === key;
-    const thumbs = pieces.map(p => p.photo
-      ? `<img src="${esc(p.photo)}" alt="${esc(p.name)}" referrerpolicy="no-referrer">`
-      : `<div class="no-photo-mini">No photo</div>`
-    ).join('');
+    const thumbs = outfitThumbsHtml(combo);
 
     const expandedPanel = isExpanded ? `
       <div class="outfit-expanded-panel">
