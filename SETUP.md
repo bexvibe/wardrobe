@@ -40,9 +40,10 @@ let a stranger register their own account and read or change your wardrobe.
 ## 4. Create your login
 
 1. **Authentication** → **Users** → **Add user** → **Create new user**.
-2. Email: `wardrobe@the-archive.app`
-   (any address works — it just has to match `authEmail` in `config.js`;
-   no mail is ever sent to it).
+2. Email: `rebeccastory11@gmail.com`
+   (it just has to match `authEmail` in `config.js`, character for
+   character — a mismatch fails as "That password did not work", which is a
+   misleading message for what is really the wrong address).
 3. Password: **this is the password you'll type into the app.** Pick a good
    one and save it in your password manager.
 4. Tick **Auto Confirm User**, then create. Without that tick, Supabase waits
@@ -58,7 +59,7 @@ let a stranger register their own account and read or change your wardrobe.
 window.WARDROBE_CONFIG = {
   supabaseUrl: 'https://xxxxxxxxxxxx.supabase.co',
   supabaseAnonKey: 'eyJhbGciOi...',
-  authEmail: 'wardrobe@the-archive.app',
+  authEmail: 'rebeccastory11@gmail.com',
 };
 ```
 
@@ -97,8 +98,14 @@ failed once you'd added a couple.
 phone and once on your laptop, not every visit. **Sign out** is at the bottom
 of the page.
 
-**To reset the password**, change it under Authentication → Users in the
-Supabase dashboard.
+**To reset the password**, use Authentication → Users in the Supabase
+dashboard. Because `authEmail` is a real mailbox you own, the "send password
+recovery" option works and emails you a reset link — you do not have to
+delete and recreate the account.
+
+A password set here cannot be read back: Supabase stores a one-way hash, so
+no screen in the dashboard, the database, or the API will ever show it. If
+you forget it, reset it rather than going looking for it.
 
 ## If something goes wrong
 

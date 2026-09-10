@@ -19,5 +19,8 @@ window.WARDROBE_CONFIG = {
   // The single account the password screen signs in as. You create this
   // account once in the Supabase dashboard (SETUP.md step 4); the app only
   // ever asks you for the password.
-  authEmail: 'wardrobe@the-archive.app',
+  //
+  // Lowercase on purpose: Supabase normalises addresses to lowercase when it
+  // stores them, so this is the form actually held in the auth table.
+  authEmail: 'rebeccastory11@gmail.com',
 };
