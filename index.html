@@ -1502,6 +1502,10 @@ function downscaleImage(file){
     const img = new Image();
     img.onload = () => {
       URL.revokeObjectURL(url);
+      // Nearly every photo here is a background-removed cutout. Re-encoding
+      // one as JPEG flattens its transparency to solid black, so PNGs stay
+      // PNGs even though they compress less well.
+      const keepAlpha = (file.type || '').includes('png');
       const scale = Math.min(1, MAX_PHOTO_EDGE / Math.max(img.width, img.height));
       if(scale === 1 && file.size < 1_000_000){ resolve({ blob: file, ext: extFor(file) }); return; }
       const canvas = document.createElement('canvas');
@@ -1509,9 +1513,9 @@ function downscaleImage(file){
       canvas.height = Math.round(img.height * scale);
       canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
       canvas.toBlob(
-        (blob) => resolve(blob ? { blob, ext: 'jpg' } : { blob: file, ext: extFor(file) }),
-        'image/jpeg',
-        0.85
+        (blob) => resolve(blob ? { blob, ext: keepAlpha ? 'png' : 'jpg' } : { blob: file, ext: extFor(file) }),
+        keepAlpha ? 'image/png' : 'image/jpeg',
+        keepAlpha ? undefined : 0.85
       );
     };
     img.onerror = () => { URL.revokeObjectURL(url); resolve({ blob: file, ext: extFor(file) }); };
