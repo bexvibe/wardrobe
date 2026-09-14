@@ -641,11 +641,12 @@
   </div>
 
   <div id="saved-view" style="display:none;">
+    <div class="tag-chips" id="saved-tag-filter"></div>
     <div class="count-line" id="saved-count-line"></div>
     <div class="outfit-gallery" id="saved-gallery"></div>
     <div class="empty" id="saved-empty" style="display:none;">
-      <h3>No saved outfits yet</h3>
-      <p>Tap the heart on any outfit to save it here.</p>
+      <h3 id="saved-empty-title">No saved outfits yet</h3>
+      <p id="saved-empty-note">Tap the heart on any outfit to save it here.</p>
     </div>
   </div>
 
@@ -758,17 +759,22 @@ function itemsInTab(tabName){
 // so narrowing one does not silently narrow the other.
 let inventoryTag = null;
 let outfitTag = null;
+let savedTag = null;
 
 function hasTag(item, tag){
   return !tag || (item.tags || []).includes(tag);
 }
 
-// The pool the generator draws from. Filtering here covers every slot at
-// once, so a tag restricts whole outfits rather than individual pieces.
-// itemsInTab stays unfiltered for pickers that are not part of generating,
-// like choosing shoes for an already-saved outfit.
+// The generator draws from everything; the tag is applied to finished
+// combinations instead of to the pool, so an outfit qualifies when any one
+// piece carries it rather than all of them.
 function outfitPool(tabName){
-  return itemsInTab(tabName).filter(i => hasTag(i, outfitTag));
+  return itemsInTab(tabName);
+}
+
+function comboMatchesTag(combo){
+  if(!outfitTag) return true;
+  return comboPieces(combo).some(p => (p.tags || []).includes(outfitTag));
 }
 
 function setMode(mode){
@@ -1022,18 +1028,37 @@ function outfitThumbsHtml(combo){
   ].join('');
 }
 
-function totalComboCount(){
-  const jumpers = slotList(outfitPool('Jumpers'), outfitFilters.jumper, true).length;
-  const jackets = slotList(outfitPool('Jackets'), outfitFilters.jacket, true).length;
-  const shoes = shoeSlotList().length;
+// Counts combinations for one slot. untaggedOnly filters the list slotList
+// returned rather than what went into it: narrowing the input can leave a
+// pinned selection empty, which makes slotList fall back to the whole
+// category and throws the arithmetic out.
+function slotCount(tabName, filter, allowNone, untaggedOnly){
+  let list = slotList(outfitPool(tabName), filter, allowNone);
+  if(untaggedOnly) list = list.filter(x => !x || !(x.tags || []).includes(outfitTag));
+  return list.length;
+}
+
+function comboCountWhere(untaggedOnly){
+  const jumpers = slotCount('Jumpers', outfitFilters.jumper, true, untaggedOnly);
+  const jackets = slotCount('Jackets', outfitFilters.jacket, true, untaggedOnly);
+  const shoes = INCLUDE_SHOES_IN_OUTFITS
+    ? slotCount('Shoes', outfitFilters.shoes, true, untaggedOnly)
+    : 1;
   if(outfitBase === 'topbottom'){
-    const tops = slotList(outfitPool('Tops'), outfitFilters.top, false).length;
-    const bottoms = slotList(outfitPool('Bottoms'), outfitFilters.bottom, false).length;
-    return tops * bottoms * jumpers * jackets * shoes;
-  } else {
-    const dresses = slotList(outfitPool('Dresses'), outfitFilters.dress, false).length;
-    return dresses * jumpers * jackets * shoes;
+    return slotCount('Tops', outfitFilters.top, false, untaggedOnly)
+         * slotCount('Bottoms', outfitFilters.bottom, false, untaggedOnly)
+         * jumpers * jackets * shoes;
   }
+  return slotCount('Dresses', outfitFilters.dress, false, untaggedOnly)
+       * jumpers * jackets * shoes;
+}
+
+function totalComboCount(){
+  const all = comboCountWhere(false);
+  if(!outfitTag) return all;
+  // A combination matches unless the tag appears on none of its pieces, so
+  // subtracting the all-untagged combinations gives the exact figure.
+  return Math.max(0, all - comboCountWhere(true));
 }
 
 function resetOutfitResults(){
@@ -1052,6 +1077,7 @@ function loadMoreOutfits(){
     if(next.done) break;
     const key = comboKey(next.value);
     if(hiddenCombos.includes(key)) continue;
+    if(!comboMatchesTag(next.value)) continue;
     outfitDisplayed.push(next.value);
     added++;
   }
@@ -1183,22 +1209,45 @@ function openSavedShoePicker(key){
   document.getElementById('modal-backdrop').classList.add('open');
 }
 
+// An outfit matches when at least one of its pieces carries the tag, so
+// tagging a single summer top surfaces every outfit you can wear it in.
+function savedOutfitMatchesTag(rec){
+  if(!savedTag) return true;
+  return comboPieces(favoriteRecordToCombo(rec)).some(p => (p.tags || []).includes(savedTag));
+}
+
 function renderSavedOutfits(){
   const countLine = document.getElementById('saved-count-line');
   const gallery = document.getElementById('saved-gallery');
   const emptyState = document.getElementById('saved-empty');
   if(!gallery) return;
 
-  if(countLine) countLine.textContent = `${favoriteOutfits.length} saved outfit${favoriteOutfits.length===1?'':'s'}`;
+  if(savedTag && !allTags().includes(savedTag)) savedTag = null;
+  renderTagChips('saved-tag-filter', savedTag, 'setSavedTag');
 
-  if(favoriteOutfits.length === 0){
+  const shown = favoriteOutfits.filter(savedOutfitMatchesTag);
+
+  if(countLine){
+    countLine.textContent = savedTag
+      ? `${shown.length} of ${favoriteOutfits.length} saved outfit${favoriteOutfits.length===1?'':'s'} tagged ${savedTag}`
+      : `${favoriteOutfits.length} saved outfit${favoriteOutfits.length===1?'':'s'}`;
+  }
+
+  if(shown.length === 0){
     gallery.innerHTML = '';
+    // Say which of the two empty states this is, so a filter that matches
+    // nothing does not read as "you have saved nothing".
+    document.getElementById('saved-empty-title').textContent =
+      savedTag ? `Nothing tagged ${savedTag}` : 'No saved outfits yet';
+    document.getElementById('saved-empty-note').textContent = savedTag
+      ? 'Every piece in an outfit needs the tag for it to show here.'
+      : 'Tap the heart on any outfit to save it here.';
     emptyState.style.display = 'block';
     return;
   }
   emptyState.style.display = 'none';
 
-  gallery.innerHTML = favoriteOutfits.map(rec => {
+  gallery.innerHTML = shown.map(rec => {
     const combo = favoriteRecordToCombo(rec);
     const pieces = comboPieces(combo);
     const isExpanded = expandedSavedKey === rec.key;
@@ -1934,6 +1983,12 @@ function setOutfitTag(tag){
   renderTagChips('outfit-tag-filter', outfitTag, 'setOutfitTag');
   renderOutfitFilters();
   resetOutfitResults();
+}
+
+function setSavedTag(tag){
+  savedTag = (savedTag === tag) ? null : tag;
+  expandedSavedKey = null;   // an expanded card may be filtered away
+  renderSavedOutfits();
 }
 
 function openModal(id){
