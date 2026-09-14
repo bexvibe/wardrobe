@@ -33,6 +33,14 @@ create table if not exists public.items (
 
 create index if not exists items_archived_at_idx on public.items (archived_at);
 
+-- Free-form labels — "summer", "work", "going out" — used to filter both
+-- the wardrobe and the outfit generator. Added separately from the create
+-- above so databases built before tags existed pick it up on a re-run.
+alter table public.items
+  add column if not exists tags text[] not null default '{}';
+
+create index if not exists items_tags_idx on public.items using gin (tags);
+
 -- ------------------------------------------------------------
 --  Saved (hearted) outfits
 --

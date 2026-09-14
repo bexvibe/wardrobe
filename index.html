@@ -394,6 +394,28 @@
   }
   .form-error{font-size:12px;color:var(--clay);min-height:16px;}
 
+  /* Tags */
+  .tag-chips{
+    display:flex;flex-wrap:wrap;gap:6px;
+    margin-bottom:12px;
+  }
+  .tag-chip{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;letter-spacing:0.04em;
+    padding:5px 11px;border-radius:999px;
+    border:1px solid var(--line);background:var(--surface);
+    color:var(--ink-soft);cursor:pointer;
+  }
+  .tag-chip.active{background:var(--sage);border-color:var(--sage);color:#fff;}
+  .form-grid .tag-chips{margin:6px 0 0;}
+  .detail-tags{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0;}
+  .detail-tags span{
+    font-family:'IBM Plex Mono',monospace;font-size:10px;
+    letter-spacing:0.06em;
+    background:var(--clay-soft);color:var(--sage-deep);
+    padding:3px 9px;border-radius:999px;
+  }
+
   /* Archive */
   .archive-row{
     display:flex;align-items:center;gap:10px;
@@ -582,6 +604,8 @@
 
   <div class="tabs" id="tabs"></div>
 
+  <div class="tag-chips" id="tag-filter"></div>
+
   <div class="count-line" id="count-line"></div>
   <div class="bulk-bar" id="bulk-bar" style="display:none;">
     <span id="bulk-count">0 selected</span>
@@ -603,6 +627,7 @@
         <button class="base-btn active" id="base-topbottom-btn" onclick="setBase('topbottom')">Top + Bottom</button>
         <button class="base-btn" id="base-dress-btn" onclick="setBase('dress')">Dress</button>
       </div>
+      <div class="tag-chips" id="outfit-tag-filter"></div>
       <div class="filter-grid" id="filter-grid"></div>
     </div>
     <div class="count-line" id="outfit-count-line"></div>
@@ -656,6 +681,10 @@
         <label>Size<input type="text" id="form-size" placeholder="10"></label>
         <label>Price<input type="text" id="form-price" placeholder="NZD $40.00"></label>
         <label>Source<input type="text" id="form-source" placeholder="Depop"></label>
+        <label id="form-tags-field">Tags
+          <input type="text" id="form-tags" placeholder="summer, work">
+          <div class="tag-chips" id="form-tag-suggestions"></div>
+        </label>
         <label>Notes<textarea id="form-notes" rows="3" placeholder="Anything worth remembering"></textarea></label>
       </div>
       <div class="form-error" id="form-error"></div>
@@ -725,6 +754,23 @@ function itemsInTab(tabName){
   return ITEMS.filter(i => tabForItem(i) === tabName);
 }
 
+// Tag filters are kept separate for the wardrobe and the outfit generator,
+// so narrowing one does not silently narrow the other.
+let inventoryTag = null;
+let outfitTag = null;
+
+function hasTag(item, tag){
+  return !tag || (item.tags || []).includes(tag);
+}
+
+// The pool the generator draws from. Filtering here covers every slot at
+// once, so a tag restricts whole outfits rather than individual pieces.
+// itemsInTab stays unfiltered for pickers that are not part of generating,
+// like choosing shoes for an already-saved outfit.
+function outfitPool(tabName){
+  return itemsInTab(tabName).filter(i => hasTag(i, outfitTag));
+}
+
 function setMode(mode){
   appMode = mode;
   document.getElementById('mode-inventory-btn')?.classList.toggle('active', mode==='inventory');
@@ -737,6 +783,8 @@ function setMode(mode){
   document.getElementById('archive-view').style.display = mode==='archive' ? 'block' : 'none';
   if(mode==='outfits'){
     outfitRenderContext = 'tab';
+    if(outfitTag && !allTags().includes(outfitTag)) outfitTag = null;
+    renderTagChips('outfit-tag-filter', outfitTag, 'setOutfitTag');
     renderOutfitFilters();
     resetOutfitResults();
   }
@@ -801,7 +849,7 @@ const SLOT_META = {
 function shoeSlotList(){
   // Pinned to "no shoes" while shoes are held out of outfits.
   return INCLUDE_SHOES_IN_OUTFITS
-    ? slotList(itemsInTab('Shoes'), outfitFilters.shoes, true)
+    ? slotList(outfitPool('Shoes'), outfitFilters.shoes, true)
     : [null];
 }
 
@@ -856,7 +904,7 @@ function renderQuickPicks(slotKey){
 
 function renderPickerGallery(slotKey){
   const meta = SLOT_META[slotKey];
-  const items = itemsInTab(meta.category);
+  const items = outfitPool(meta.category);
   const f = outfitFilters[slotKey];
   document.getElementById('picker-gallery').innerHTML = items.map(i => {
     const selected = f.type === 'items' && f.ids.includes(i.id);
@@ -903,13 +951,13 @@ function slotList(categoryItems, filter, allowNone){
 }
 
 function* comboGenerator(){
-  const jumpers = slotList(itemsInTab('Jumpers'), outfitFilters.jumper, true);
-  const jackets = slotList(itemsInTab('Jackets'), outfitFilters.jacket, true);
+  const jumpers = slotList(outfitPool('Jumpers'), outfitFilters.jumper, true);
+  const jackets = slotList(outfitPool('Jackets'), outfitFilters.jacket, true);
   const shoes = shoeSlotList();
 
   if(outfitBase === 'topbottom'){
-    const tops = slotList(itemsInTab('Tops'), outfitFilters.top, false);
-    const bottoms = slotList(itemsInTab('Bottoms'), outfitFilters.bottom, false);
+    const tops = slotList(outfitPool('Tops'), outfitFilters.top, false);
+    const bottoms = slotList(outfitPool('Bottoms'), outfitFilters.bottom, false);
     for(const top of tops){
       for(const bottom of bottoms){
         for(const jumper of jumpers){
@@ -922,7 +970,7 @@ function* comboGenerator(){
       }
     }
   } else {
-    const dresses = slotList(itemsInTab('Dresses'), outfitFilters.dress, false);
+    const dresses = slotList(outfitPool('Dresses'), outfitFilters.dress, false);
     for(const dress of dresses){
       for(const jumper of jumpers){
         for(const jacket of jackets){
@@ -975,15 +1023,15 @@ function outfitThumbsHtml(combo){
 }
 
 function totalComboCount(){
-  const jumpers = slotList(itemsInTab('Jumpers'), outfitFilters.jumper, true).length;
-  const jackets = slotList(itemsInTab('Jackets'), outfitFilters.jacket, true).length;
+  const jumpers = slotList(outfitPool('Jumpers'), outfitFilters.jumper, true).length;
+  const jackets = slotList(outfitPool('Jackets'), outfitFilters.jacket, true).length;
   const shoes = shoeSlotList().length;
   if(outfitBase === 'topbottom'){
-    const tops = slotList(itemsInTab('Tops'), outfitFilters.top, false).length;
-    const bottoms = slotList(itemsInTab('Bottoms'), outfitFilters.bottom, false).length;
+    const tops = slotList(outfitPool('Tops'), outfitFilters.top, false).length;
+    const bottoms = slotList(outfitPool('Bottoms'), outfitFilters.bottom, false).length;
     return tops * bottoms * jumpers * jackets * shoes;
   } else {
-    const dresses = slotList(itemsInTab('Dresses'), outfitFilters.dress, false).length;
+    const dresses = slotList(outfitPool('Dresses'), outfitFilters.dress, false).length;
     return dresses * jumpers * jackets * shoes;
   }
 }
@@ -1369,8 +1417,29 @@ function rowToItem(row){
     notes: row.notes || '',
     photo: row.photo || null,
     photoPath: row.photo_path || null,
+    tags: Array.isArray(row.tags) ? row.tags : [],
     archivedAt: row.archived_at || null
   };
+}
+
+// The tags column is a later addition. Rather than assume it is there —
+// writing to a column that does not exist fails the whole save — the app
+// checks what actually came back and hides the tag controls until the
+// migration in supabase/add-tags.sql has been run.
+let tagsAvailable = false;
+
+function allTags(){
+  const seen = new Set();
+  ITEMS.concat(ARCHIVED).forEach(i => (i.tags || []).forEach(t => seen.add(t)));
+  return Array.from(seen).sort();
+}
+
+function parseTags(text){
+  const seen = new Set();
+  return String(text || '')
+    .split(',')
+    .map(t => t.trim().toLowerCase())
+    .filter(t => t && !seen.has(t) && seen.add(t));
 }
 
 function rowToFavorite(row){
@@ -1422,6 +1491,9 @@ async function loadAll(){
   if(itemsRes.error) throw itemsRes.error;
   if(outfitsRes.error) throw outfitsRes.error;
   if(hiddenRes.error) throw hiddenRes.error;
+
+  tagsAvailable = itemsRes.data.length > 0 &&
+    Object.prototype.hasOwnProperty.call(itemsRes.data[0], 'tags');
 
   const all = itemsRes.data.map(rowToItem);
   await hydratePhotoUrls(all);
@@ -1840,6 +1912,30 @@ function setTab(t){
   render();
 }
 
+// ---- Tag filters ----
+function renderTagChips(elementId, selected, handler){
+  const el = document.getElementById(elementId);
+  if(!el) return;
+  const tags = tagsAvailable ? allTags() : [];
+  if(!tags.length){ el.innerHTML = ''; el.style.display = 'none'; return; }
+  el.style.display = 'flex';
+  el.innerHTML = tags.map(t => `
+    <button class="tag-chip ${selected === t ? 'active' : ''}" onclick='${handler}(${JSON.stringify(t)})'>${esc(t)}</button>
+  `).join('');
+}
+
+function setInventoryTag(tag){
+  inventoryTag = (inventoryTag === tag) ? null : tag;   // tapping the active one clears it
+  render();
+}
+
+function setOutfitTag(tag){
+  outfitTag = (outfitTag === tag) ? null : tag;
+  renderTagChips('outfit-tag-filter', outfitTag, 'setOutfitTag');
+  renderOutfitFilters();
+  resetOutfitResults();
+}
+
 function openModal(id){
   const item = ITEMS.find(i => i.id === id);
   if(!item) return;
@@ -1860,6 +1956,7 @@ function openModal(id){
       ${item.source ? `<div class="modal-meta">${esc(item.source)}</div>` : ''}
       ${item.price ? `<div class="modal-price">${esc(item.price)}</div>` : ''}
       ${item.notes ? `<div class="modal-notes">${esc(item.notes)}</div>` : ''}
+      ${(item.tags || []).length ? `<div class="detail-tags">${item.tags.map(t => `<span>${esc(t)}</span>`).join('')}</div>` : ''}
       <div class="modal-actions">
         <button class="btn small secondary" onclick='openItemForm(${JSON.stringify(item.id)})'>Edit</button>
         <button class="btn small secondary" onclick='triggerPhotoUpload(${JSON.stringify(item.id)})'>${item.photo ? 'Replace photo' : 'Add photo'}</button>
@@ -1892,6 +1989,9 @@ function openItemForm(id){
   document.getElementById('form-price').value = item ? item.price : '';
   document.getElementById('form-source').value = item ? item.source : '';
   document.getElementById('form-notes').value = item ? item.notes : '';
+  document.getElementById('form-tags').value = item ? (item.tags || []).join(', ') : '';
+  document.getElementById('form-tags-field').style.display = tagsAvailable ? '' : 'none';
+  renderTagSuggestions();
 
   const select = document.getElementById('form-category');
   const current = item ? item.category : '';
@@ -1905,6 +2005,28 @@ function openItemForm(id){
   closeModal();
   document.getElementById('form-backdrop').classList.add('open');
   setTimeout(() => document.getElementById('form-name').focus(), 50);
+}
+
+// Tags you have already used, tappable so they stay consistent rather than
+// drifting into near-duplicates typed slightly differently each time.
+function renderTagSuggestions(){
+  const el = document.getElementById('form-tag-suggestions');
+  if(!el) return;
+  const existing = allTags();
+  if(!existing.length){ el.innerHTML = ''; return; }
+  const current = parseTags(document.getElementById('form-tags').value);
+  el.innerHTML = existing.map(t => `
+    <button type="button" class="tag-chip ${current.includes(t) ? 'active' : ''}"
+            onclick='toggleFormTag(${JSON.stringify(t)})'>${esc(t)}</button>
+  `).join('');
+}
+
+function toggleFormTag(tag){
+  const input = document.getElementById('form-tags');
+  const current = parseTags(input.value);
+  const next = current.includes(tag) ? current.filter(t => t !== tag) : current.concat(tag);
+  input.value = next.join(', ');
+  renderTagSuggestions();
 }
 
 function closeItemForm(){
@@ -1929,6 +2051,9 @@ async function submitItemForm(){
     source: document.getElementById('form-source').value.trim(),
     notes: document.getElementById('form-notes').value.trim()
   };
+  // Only send tags once the column exists; writing to a missing column
+  // would fail the entire save.
+  if(tagsAvailable) fields.tags = parseTags(document.getElementById('form-tags').value);
 
   const button = document.getElementById('form-save-btn');
   button.disabled = true;
@@ -2017,6 +2142,7 @@ function topsSubRank(item){
 function visibleFilteredItems(search){
   const filtered = ITEMS.filter(i=>{
     if(activeTab !== 'All' && tabForItem(i) !== activeTab) return false;
+    if(!hasTag(i, inventoryTag)) return false;
     if(search && !(i.name.toLowerCase().includes(search) || (i.brand||'').toLowerCase().includes(search))) return false;
     return true;
   });
@@ -2038,6 +2164,9 @@ function visibleFilteredItems(search){
 
 function render(){
   renderTabs();
+  // A tag can disappear when its last item is edited or archived.
+  if(inventoryTag && !allTags().includes(inventoryTag)) inventoryTag = null;
+  renderTagChips('tag-filter', inventoryTag, 'setInventoryTag');
 
   const search = document.getElementById('filter-search').value.toLowerCase();
   const filtered = visibleFilteredItems(search);
