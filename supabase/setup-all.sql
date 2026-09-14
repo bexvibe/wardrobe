@@ -95,9 +95,15 @@ create table if not exists public.hidden_combos (
 -- ------------------------------------------------------------
 --  Keep items.updated_at honest
 -- ------------------------------------------------------------
+-- search_path is pinned because the database linter flags a mutable one:
+-- otherwise the function resolves names against whatever search_path the
+-- caller happens to have. The body only calls now(), which lives in
+-- pg_catalog and is always in scope, so an empty path is safe.
 create or replace function public.touch_updated_at()
 returns trigger
 language plpgsql
+security invoker
+set search_path = ''
 as $$
 begin
   new.updated_at = now();
