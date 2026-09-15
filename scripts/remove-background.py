@@ -4,6 +4,18 @@ Cuts a product shot out of its white studio background.
 Flood-fills inward from the border rather than thresholding globally, so
 light-coloured detail that is genuinely part of the garment — the cream
 Ottway label on the pocket here — stays put instead of being punched out.
+
+Write the result into wardrobe-photos-originals/ — that folder holds the
+full-size masters and is never served — then build the photo the app
+actually downloads:
+
+    python3 scripts/remove-background.py shot.jpg wardrobe-photos-originals/thing-nobg.png
+    python3 scripts/optimise-photos.py
+
+Give a replacement photo a NEW filename rather than overwriting one that
+is already live: served photos are cached as immutable (see vercel.json),
+so a browser that already has the old one will not go looking for a new
+version of the same name.
 """
 import sys
 import numpy as np
