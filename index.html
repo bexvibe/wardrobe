@@ -33,7 +33,7 @@
     color:var(--ink-soft);
     opacity:1;
   }
-  .wrap{max-width:960px;margin:0 auto;padding:28px 16px 90px;}
+  .wrap{max-width:960px;margin:0 auto;padding:28px 16px calc(120px + env(safe-area-inset-bottom, 0px));}
   header{margin-bottom:20px;}
   .eyebrow{
     font-family:'IBM Plex Mono', monospace;
@@ -321,21 +321,50 @@
     .gallery{grid-template-columns:repeat(4, 1fr);}
   }
 
-  /* Mode toggle */
-  .mode-toggle{
-    display:flex;gap:6px;margin-bottom:6px;
+  /* Floating bottom bar — the two places you can be */
+  .bottom-bar{
+    position:fixed;
+    left:50%;transform:translateX(-50%);
+    bottom:calc(16px + env(safe-area-inset-bottom, 0px));
+    z-index:90;
+    display:flex;gap:4px;
+    padding:5px;
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:999px;
+    box-shadow:0 6px 24px rgba(43,38,32,0.13);
+    max-width:calc(100% - 32px);
   }
-  .mode-btn{
+  .bottom-btn{
+    display:flex;align-items:center;gap:7px;
+    font-family:'Work Sans',sans-serif;
+    font-size:13px;font-weight:600;
+    padding:10px 20px;border-radius:999px;
+    border:none;background:none;
+    color:var(--ink-soft);cursor:pointer;
+    white-space:nowrap;
+  }
+  .bottom-btn.active{background:var(--sage);color:#fff;}
+  .bottom-icon{font-size:14px;line-height:1;}
+
+  /* Tabs within a destination */
+  .subtabs{
+    display:flex;gap:18px;
+    margin-bottom:14px;
+    border-bottom:1px solid var(--line);
+  }
+  .subtab{
     font-family:'Fraunces', serif;
     font-weight:500;
-    font-size:15px;
-    padding:8px 4px;
+    font-size:17px;
+    padding:4px 0 9px;
     border:none;background:none;
     color:var(--ink-soft);
     cursor:pointer;
     border-bottom:2px solid transparent;
+    margin-bottom:-1px;
   }
-  .mode-btn.active{color:var(--ink);border-bottom-color:var(--clay);}
+  .subtab.active{color:var(--ink);border-bottom-color:var(--clay);}
 
   .outfit-card{position:relative;}
   .outfit-fav-btn{
@@ -585,14 +614,13 @@
 </div>
 
 <div class="wrap" id="app-root" style="display:none;">
-  <div class="mode-toggle">
-    <button class="mode-btn active" id="mode-inventory-btn" onclick="setMode('inventory')">Inventory</button>
-    <button class="mode-btn" id="mode-outfits-btn" onclick="setMode('outfits')">Outfits</button>
-    <button class="mode-btn" id="mode-saved-btn" onclick="setMode('saved')">Saved</button>
-    <button class="mode-btn" id="mode-archive-btn" onclick="setMode('archive')">Archive</button>
+  <div id="inventory-view">
+  <div class="subtabs">
+    <button class="subtab active" id="sub-available-btn" onclick="setInventorySub('available')">Available</button>
+    <button class="subtab" id="sub-archive-btn" onclick="setInventorySub('archive')">Archive</button>
   </div>
 
-  <div id="inventory-view">
+  <div id="available-panel">
   <div class="toolbar-row">
     <input type="text" id="filter-search" placeholder="Search name or brand..." oninput="render()">
     <div style="display:flex;gap:8px;flex-wrap:wrap;">
@@ -621,7 +649,23 @@
   </div>
   </div>
 
+  <div id="archive-panel" style="display:none;">
+    <div class="count-line" id="archive-count-line"></div>
+    <div class="name-list" id="archive-list"></div>
+    <div class="empty" id="archive-empty" style="display:none;">
+      <h3>Nothing archived</h3>
+      <p>Anything you remove from your wardrobe waits here. Nothing is deleted for good.</p>
+    </div>
+  </div>
+  </div>
+
   <div id="outfits-view" style="display:none;">
+    <div class="subtabs">
+      <button class="subtab active" id="sub-all-btn" onclick="setOutfitsSub('all')">All</button>
+      <button class="subtab" id="sub-saved-btn" onclick="setOutfitsSub('saved')">Saved</button>
+    </div>
+
+    <div id="all-outfits-panel">
     <div class="outfit-filters">
       <div class="base-toggle">
         <button class="base-btn active" id="base-topbottom-btn" onclick="setBase('topbottom')">Top + Bottom</button>
@@ -638,24 +682,16 @@
     <div style="text-align:center;margin-top:16px;">
       <button class="btn secondary" id="load-more-btn" onclick="loadMoreOutfits()" style="display:none;">Load more</button>
     </div>
-  </div>
-
-  <div id="saved-view" style="display:none;">
-    <div class="tag-chips" id="saved-tag-filter"></div>
-    <div class="count-line" id="saved-count-line"></div>
-    <div class="outfit-gallery" id="saved-gallery"></div>
-    <div class="empty" id="saved-empty" style="display:none;">
-      <h3 id="saved-empty-title">No saved outfits yet</h3>
-      <p id="saved-empty-note">Tap the heart on any outfit to save it here.</p>
     </div>
-  </div>
 
-  <div id="archive-view" style="display:none;">
-    <div class="count-line" id="archive-count-line"></div>
-    <div class="name-list" id="archive-list"></div>
-    <div class="empty" id="archive-empty" style="display:none;">
-      <h3>Nothing archived</h3>
-      <p>Anything you remove from your wardrobe waits here. Nothing is deleted for good.</p>
+    <div id="saved-panel" style="display:none;">
+      <div class="tag-chips" id="saved-tag-filter"></div>
+      <div class="count-line" id="saved-count-line"></div>
+      <div class="outfit-gallery" id="saved-gallery"></div>
+      <div class="empty" id="saved-empty" style="display:none;">
+        <h3 id="saved-empty-title">No saved outfits yet</h3>
+        <p id="saved-empty-note">Tap the heart on any outfit to save it here.</p>
+      </div>
     </div>
   </div>
 
@@ -663,6 +699,15 @@
     <button class="signout-btn" onclick="signOut()">Sign out</button>
   </div>
 </div>
+
+<nav class="bottom-bar" id="bottom-bar" style="display:none;">
+  <button class="bottom-btn active" id="nav-inventory-btn" onclick="setMode('inventory')">
+    <span class="bottom-icon">◫</span>Inventory
+  </button>
+  <button class="bottom-btn" id="nav-outfits-btn" onclick="setMode('outfits')">
+    <span class="bottom-icon">❖</span>Outfits
+  </button>
+</nav>
 
 <div class="modal-backdrop" id="modal-backdrop" onclick="closeModalIfBackdrop(event)">
   <div class="modal" id="modal"></div>
@@ -777,28 +822,44 @@ function comboMatchesTag(combo){
   return comboPieces(combo).some(p => (p.tags || []).includes(outfitTag));
 }
 
+// Two destinations in the bottom bar, each with its own pair of tabs.
+// appMode picks the destination; the sub-tab picks the panel inside it.
+let inventorySub = 'available';   // 'available' | 'archive'
+let outfitsSub = 'all';           // 'all' | 'saved'
+
 function setMode(mode){
   appMode = mode;
-  document.getElementById('mode-inventory-btn')?.classList.toggle('active', mode==='inventory');
-  document.getElementById('mode-outfits-btn')?.classList.toggle('active', mode==='outfits');
-  document.getElementById('mode-saved-btn')?.classList.toggle('active', mode==='saved');
-  document.getElementById('mode-archive-btn')?.classList.toggle('active', mode==='archive');
+  document.getElementById('nav-inventory-btn')?.classList.toggle('active', mode==='inventory');
+  document.getElementById('nav-outfits-btn')?.classList.toggle('active', mode==='outfits');
   document.getElementById('inventory-view').style.display = mode==='inventory' ? 'block' : 'none';
   document.getElementById('outfits-view').style.display = mode==='outfits' ? 'block' : 'none';
-  document.getElementById('saved-view').style.display = mode==='saved' ? 'block' : 'none';
-  document.getElementById('archive-view').style.display = mode==='archive' ? 'block' : 'none';
-  if(mode==='outfits'){
+  if(mode==='inventory') setInventorySub(inventorySub);
+  if(mode==='outfits') setOutfitsSub(outfitsSub);
+}
+
+function setInventorySub(sub){
+  inventorySub = sub;
+  document.getElementById('sub-available-btn')?.classList.toggle('active', sub==='available');
+  document.getElementById('sub-archive-btn')?.classList.toggle('active', sub==='archive');
+  document.getElementById('available-panel').style.display = sub==='available' ? 'block' : 'none';
+  document.getElementById('archive-panel').style.display = sub==='archive' ? 'block' : 'none';
+  if(sub==='available') render(); else renderArchive();
+}
+
+function setOutfitsSub(sub){
+  outfitsSub = sub;
+  document.getElementById('sub-all-btn')?.classList.toggle('active', sub==='all');
+  document.getElementById('sub-saved-btn')?.classList.toggle('active', sub==='saved');
+  document.getElementById('all-outfits-panel').style.display = sub==='all' ? 'block' : 'none';
+  document.getElementById('saved-panel').style.display = sub==='saved' ? 'block' : 'none';
+  if(sub==='all'){
     outfitRenderContext = 'tab';
     if(outfitTag && !allTags().includes(outfitTag)) outfitTag = null;
     renderTagChips('outfit-tag-filter', outfitTag, 'setOutfitTag');
     renderOutfitFilters();
     resetOutfitResults();
-  }
-  if(mode==='saved'){
+  } else {
     renderSavedOutfits();
-  }
-  if(mode==='archive'){
-    renderArchive();
   }
 }
 
@@ -1383,6 +1444,7 @@ function findOutfitsWithPiece(itemId){
   }
   closeModal();
   outfitRenderContext = 'tab';
+  outfitsSub = 'all';
   setMode('outfits');
   document.getElementById('base-topbottom-btn').classList.toggle('active', outfitBase==='topbottom');
   document.getElementById('base-dress-btn').classList.toggle('active', outfitBase==='dress');
@@ -1768,6 +1830,7 @@ async function runLegacyMigration(){
 // ---- Boot / auth -------------------------------------------
 function showGate(state, message){
   document.getElementById('app-root').style.display = 'none';
+  document.getElementById('bottom-bar').style.display = 'none';
   document.getElementById('gate').style.display = 'flex';
   document.getElementById('gate-unconfigured').style.display = state === 'unconfigured' ? 'block' : 'none';
   document.getElementById('gate-login').style.display = state === 'login' ? 'block' : 'none';
@@ -1779,6 +1842,7 @@ function showGate(state, message){
 function hideGate(){
   document.getElementById('gate').style.display = 'none';
   document.getElementById('app-root').style.display = 'block';
+  document.getElementById('bottom-bar').style.display = 'flex';
 }
 
 async function signIn(){
@@ -1825,7 +1889,9 @@ async function startApp(){
     showGate('error', e && e.message ? e.message : 'Could not reach the database.');
     return;
   }
-  render();
+  // Go through the nav rather than calling render() directly, so the bottom
+  // bar, the sub-tabs and the visible panel all start in agreement.
+  setMode(appMode);
 }
 
 async function boot(){
