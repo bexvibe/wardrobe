@@ -57,8 +57,8 @@
     display:flex;
     gap:6px;
     overflow-x:auto;
-    padding:16px 0 12px;
-    margin-bottom:6px;
+    padding:10px 0 8px;
+    margin-bottom:0;
     -webkit-overflow-scrolling:touch;
     scrollbar-width:none;
   }
@@ -347,26 +347,26 @@
   .bottom-btn.active{background:var(--sage);color:#fff;}
   .bottom-icon{font-size:14px;line-height:1;}
 
-  /* Tabs within a destination */
-  .subtabs{
-    display:flex;gap:18px;
-    margin-bottom:14px;
-    border-bottom:1px solid var(--line);
+  /* Divider between categories and tags in the shared filter row */
+  .tag-row{align-items:center;margin:0 0 10px;}
+  .tag-row-label{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10px;letter-spacing:0.1em;text-transform:uppercase;
+    color:var(--ink-soft);opacity:0.75;
+    margin-right:2px;
   }
-  .subtab{
-    font-family:'Fraunces', serif;
-    font-weight:500;
-    font-size:17px;
-    padding:4px 0 9px;
-    border:none;background:none;
-    color:var(--ink-soft);
-    cursor:pointer;
-    border-bottom:2px solid transparent;
-    margin-bottom:-1px;
-  }
-  .subtab.active{color:var(--ink);border-bottom-color:var(--clay);}
 
-  .outfit-card{position:relative;}
+  /* Quiet secondary destinations — the archive, and its way back */
+  .quiet-link-row{margin-top:26px;text-align:center;}
+  .quiet-link{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;letter-spacing:0.08em;text-transform:uppercase;
+    background:none;border:none;
+    color:var(--ink-soft);cursor:pointer;
+    padding:8px;
+  }
+  .back-link{display:block;padding:0 0 12px;text-align:left;}
+
   .outfit-fav-btn{
     position:absolute;top:6px;right:6px;
     width:28px;height:28px;border-radius:999px;
@@ -374,103 +374,34 @@
     display:flex;align-items:center;justify-content:center;
     font-size:15px;line-height:1;color:var(--ink-soft);
     cursor:pointer;z-index:2;
+    flex:none;
   }
   .outfit-fav-btn.favorited{color:var(--clay);}
 
-  /* Password gate */
-  .gate{
-    display:none;
-    position:fixed;inset:0;
-    background:var(--bone);
-    align-items:center;justify-content:center;
-    padding:24px;z-index:300;
+  /* Outfits: base choice and a filter button on one row */
+  .outfit-bar{
+    display:flex;align-items:center;justify-content:space-between;
+    gap:10px;margin-bottom:12px;
   }
-  .gate-card{
-    width:100%;max-width:360px;
-    background:var(--surface);
-    border:1px solid var(--line);
-    border-radius:12px;
-    padding:28px 24px;
-  }
-  .gate-eyebrow{
-    font-family:'IBM Plex Mono', monospace;
-    font-size:11px;letter-spacing:0.14em;text-transform:uppercase;
-    color:var(--sage-deep);margin-bottom:14px;
-  }
-  .gate-title{
-    font-family:'Fraunces', serif;font-weight:500;font-size:22px;
-    margin:0 0 8px;
-  }
-  .gate-note{font-size:13px;color:var(--ink-soft);line-height:1.5;margin:0 0 16px;}
-  .gate-note code{
-    font-family:'IBM Plex Mono',monospace;font-size:12px;
-    background:var(--clay-soft);padding:1px 5px;border-radius:4px;
-  }
-  .gate-card input[type="password"]{width:100%;margin-bottom:10px;}
-  .gate-card .btn{width:100%;justify-content:center;}
-  .gate-error{
-    font-size:12px;color:var(--clay);
-    min-height:16px;margin-bottom:8px;
-  }
-
-  /* Add / edit item form */
-  .form-grid{display:flex;flex-direction:column;gap:12px;margin:14px 0;}
-  .form-grid label{
-    display:flex;flex-direction:column;gap:5px;
-    font-family:'IBM Plex Mono',monospace;
-    font-size:11px;letter-spacing:0.06em;text-transform:uppercase;
-    color:var(--ink-soft);
-  }
-  .form-error{font-size:12px;color:var(--clay);min-height:16px;}
-
-  /* Tags */
-  .tag-chips{
-    display:flex;flex-wrap:wrap;gap:6px;
-    margin-bottom:12px;
-  }
-  .tag-chip{
-    font-family:'IBM Plex Mono',monospace;
-    font-size:11px;letter-spacing:0.04em;
-    padding:5px 11px;border-radius:999px;
+  .filters-btn{
+    font-family:'Work Sans',sans-serif;
+    font-size:12px;font-weight:600;
+    padding:7px 14px;border-radius:999px;
     border:1px solid var(--line);background:var(--surface);
     color:var(--ink-soft);cursor:pointer;
+    white-space:nowrap;
   }
-  .tag-chip.active{background:var(--sage);border-color:var(--sage);color:#fff;}
-  .form-grid .tag-chips{margin:6px 0 0;}
-  .detail-tags{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0;}
-  .detail-tags span{
-    font-family:'IBM Plex Mono',monospace;font-size:10px;
-    letter-spacing:0.06em;
-    background:var(--clay-soft);color:var(--sage-deep);
-    padding:3px 9px;border-radius:999px;
-  }
-
-  /* Archive */
-  .archive-row{
-    display:flex;align-items:center;gap:10px;
-    padding:12px 4px;
-  }
-  .archive-row-text{flex:1;min-width:0;}
-  .archive-row-title{font-family:'Fraunces',serif;font-size:15px;}
-  .archive-row-sub{font-size:12px;color:var(--ink-soft);}
-
-  .signout-row{margin-top:34px;text-align:center;}
-  .signout-btn{
-    font-family:'IBM Plex Mono',monospace;
-    font-size:11px;letter-spacing:0.08em;text-transform:uppercase;
-    background:none;border:none;color:var(--ink-soft);
-    cursor:pointer;padding:8px;
-  }
+  .filters-btn.active{background:var(--clay-soft);border-color:var(--clay-soft);color:var(--sage-deep);}
 
   /* Outfit filters */
   .outfit-filters{
     background:var(--surface);
     border:1px solid var(--line);
     border-radius:10px;
-    padding:16px;
-    margin:16px 0 18px;
+    padding:14px;
+    margin:0 0 14px;
   }
-  .base-toggle{display:flex;gap:6px;margin-bottom:12px;}
+  .base-toggle{display:flex;gap:6px;}
   .base-btn{
     font-family:'Work Sans',sans-serif;
     font-size:12px;font-weight:600;
@@ -529,6 +460,8 @@
     border-radius:10px;
     padding:8px;
     cursor:pointer;
+    /* Anchors the heart button, which is absolutely positioned. */
+    position:relative;
     /* Cards stretch to the tallest in their row, so the column runs
        full height and the slack goes to the bottom garment below. */
     display:flex;
@@ -615,65 +548,53 @@
 
 <div class="wrap" id="app-root" style="display:none;">
   <div id="inventory-view">
-  <div class="subtabs">
-    <button class="subtab active" id="sub-available-btn" onclick="setInventorySub('available')">Available</button>
-    <button class="subtab" id="sub-archive-btn" onclick="setInventorySub('archive')">Archive</button>
-  </div>
-
-  <div id="available-panel">
-  <div class="toolbar-row">
-    <input type="text" id="filter-search" placeholder="Search name or brand..." oninput="render()">
-    <div style="display:flex;gap:8px;flex-wrap:wrap;">
-      <button class="btn small" onclick="openItemForm()">+ Add</button>
-      <button class="btn secondary small" id="view-toggle-btn" onclick="toggleViewMode()">List view</button>
-      <button class="btn secondary small" id="edit-toggle-btn" onclick="toggleEditMode()">Edit</button>
+    <div class="toolbar-row">
+      <input type="text" id="filter-search" placeholder="Search name or brand..." oninput="render()">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn small" onclick="openItemForm()">+ Add</button>
+        <button class="btn secondary small" id="view-toggle-btn" onclick="toggleViewMode()">List view</button>
+        <button class="btn secondary small" id="edit-toggle-btn" onclick="toggleEditMode()">Edit</button>
+      </div>
     </div>
-  </div>
 
-  <div class="tabs" id="tabs"></div>
+    <div class="tabs" id="tabs"></div>
+    <div class="tag-chips tag-row" id="tag-filter" style="display:none;"></div>
 
-  <div class="tag-chips" id="tag-filter"></div>
-
-  <div class="count-line" id="count-line"></div>
-  <div class="bulk-bar" id="bulk-bar" style="display:none;">
-    <span id="bulk-count">0 selected</span>
-    <div style="display:flex;gap:8px;">
-      <button class="btn small secondary" onclick="selectAllVisible()">Select all</button>
-      <button class="btn small" style="background:var(--clay);border-color:var(--clay);" onclick="bulkDeleteSelected()">Delete selected</button>
+    <div class="count-line" id="count-line"></div>
+    <div class="bulk-bar" id="bulk-bar" style="display:none;">
+      <span id="bulk-count">0 selected</span>
+      <div style="display:flex;gap:8px;">
+        <button class="btn small secondary" onclick="selectAllVisible()">Select all</button>
+        <button class="btn small" style="background:var(--clay);border-color:var(--clay);" onclick="bulkDeleteSelected()">Delete selected</button>
+      </div>
     </div>
-  </div>
-  <div class="gallery" id="gallery"></div>
-  <div class="name-list" id="name-list" style="display:none;"></div>
-  <div class="empty" id="empty" style="display:none;">
-    <h3>Nothing here yet</h3>
-  </div>
-  </div>
-
-  <div id="archive-panel" style="display:none;">
-    <div class="count-line" id="archive-count-line"></div>
-    <div class="name-list" id="archive-list"></div>
-    <div class="empty" id="archive-empty" style="display:none;">
-      <h3>Nothing archived</h3>
-      <p>Anything you remove from your wardrobe waits here. Nothing is deleted for good.</p>
+    <div class="gallery" id="gallery"></div>
+    <div class="name-list" id="name-list" style="display:none;"></div>
+    <div class="empty" id="empty" style="display:none;">
+      <h3>Nothing here yet</h3>
     </div>
-  </div>
+
+    <!-- Archive is rare, so it sits at the end of the wardrobe rather than
+         taking permanent space in the navigation. -->
+    <div class="quiet-link-row">
+      <button class="quiet-link" id="archive-link" onclick="setMode('archive')"></button>
+    </div>
   </div>
 
   <div id="outfits-view" style="display:none;">
-    <div class="subtabs">
-      <button class="subtab active" id="sub-all-btn" onclick="setOutfitsSub('all')">All</button>
-      <button class="subtab" id="sub-saved-btn" onclick="setOutfitsSub('saved')">Saved</button>
-    </div>
-
-    <div id="all-outfits-panel">
-    <div class="outfit-filters">
+    <div class="outfit-bar">
       <div class="base-toggle">
         <button class="base-btn active" id="base-topbottom-btn" onclick="setBase('topbottom')">Top + Bottom</button>
         <button class="base-btn" id="base-dress-btn" onclick="setBase('dress')">Dress</button>
       </div>
+      <button class="filters-btn" id="filters-toggle" onclick="toggleOutfitFilters()">Filters</button>
+    </div>
+
+    <div class="outfit-filters" id="outfit-filters" style="display:none;">
       <div class="tag-chips" id="outfit-tag-filter"></div>
       <div class="filter-grid" id="filter-grid"></div>
     </div>
+
     <div class="count-line" id="outfit-count-line"></div>
     <div class="outfit-gallery" id="outfit-gallery"></div>
     <div class="empty" id="outfit-empty" style="display:none;">
@@ -682,16 +603,25 @@
     <div style="text-align:center;margin-top:16px;">
       <button class="btn secondary" id="load-more-btn" onclick="loadMoreOutfits()" style="display:none;">Load more</button>
     </div>
-    </div>
+  </div>
 
-    <div id="saved-panel" style="display:none;">
-      <div class="tag-chips" id="saved-tag-filter"></div>
-      <div class="count-line" id="saved-count-line"></div>
-      <div class="outfit-gallery" id="saved-gallery"></div>
-      <div class="empty" id="saved-empty" style="display:none;">
-        <h3 id="saved-empty-title">No saved outfits yet</h3>
-        <p id="saved-empty-note">Tap the heart on any outfit to save it here.</p>
-      </div>
+  <div id="saved-view" style="display:none;">
+    <div class="tag-chips" id="saved-tag-filter"></div>
+    <div class="count-line" id="saved-count-line"></div>
+    <div class="outfit-gallery" id="saved-gallery"></div>
+    <div class="empty" id="saved-empty" style="display:none;">
+      <h3 id="saved-empty-title">No saved outfits yet</h3>
+      <p id="saved-empty-note">Tap the heart on any outfit to save it here.</p>
+    </div>
+  </div>
+
+  <div id="archive-view" style="display:none;">
+    <button class="quiet-link back-link" onclick="setMode('inventory')">← Wardrobe</button>
+    <div class="count-line" id="archive-count-line"></div>
+    <div class="name-list" id="archive-list"></div>
+    <div class="empty" id="archive-empty" style="display:none;">
+      <h3>Nothing archived</h3>
+      <p>Anything you remove from your wardrobe waits here. Nothing is deleted for good.</p>
     </div>
   </div>
 
@@ -701,12 +631,9 @@
 </div>
 
 <nav class="bottom-bar" id="bottom-bar" style="display:none;">
-  <button class="bottom-btn active" id="nav-inventory-btn" onclick="setMode('inventory')">
-    <span class="bottom-icon">◫</span>Inventory
-  </button>
-  <button class="bottom-btn" id="nav-outfits-btn" onclick="setMode('outfits')">
-    <span class="bottom-icon">❖</span>Outfits
-  </button>
+  <button class="bottom-btn active" id="nav-inventory-btn" onclick="setMode('inventory')">Wardrobe</button>
+  <button class="bottom-btn" id="nav-outfits-btn" onclick="setMode('outfits')">Outfits</button>
+  <button class="bottom-btn" id="nav-saved-btn" onclick="setMode('saved')">Saved</button>
 </nav>
 
 <div class="modal-backdrop" id="modal-backdrop" onclick="closeModalIfBackdrop(event)">
@@ -822,45 +749,56 @@ function comboMatchesTag(combo){
   return comboPieces(combo).some(p => (p.tags || []).includes(outfitTag));
 }
 
-// Two destinations in the bottom bar, each with its own pair of tabs.
-// appMode picks the destination; the sub-tab picks the panel inside it.
-let inventorySub = 'available';   // 'available' | 'archive'
-let outfitsSub = 'all';           // 'all' | 'saved'
-
+// Three destinations in the bottom bar. Archive is a fourth view but not a
+// destination: it is reached from a link at the end of the wardrobe, because
+// it is visited rarely and does not deserve permanent space in the nav.
 function setMode(mode){
   appMode = mode;
-  document.getElementById('nav-inventory-btn')?.classList.toggle('active', mode==='inventory');
+  const onInventory = mode === 'inventory' || mode === 'archive';
+  document.getElementById('nav-inventory-btn')?.classList.toggle('active', onInventory);
   document.getElementById('nav-outfits-btn')?.classList.toggle('active', mode==='outfits');
+  document.getElementById('nav-saved-btn')?.classList.toggle('active', mode==='saved');
+
   document.getElementById('inventory-view').style.display = mode==='inventory' ? 'block' : 'none';
   document.getElementById('outfits-view').style.display = mode==='outfits' ? 'block' : 'none';
-  if(mode==='inventory') setInventorySub(inventorySub);
-  if(mode==='outfits') setOutfitsSub(outfitsSub);
-}
+  document.getElementById('saved-view').style.display = mode==='saved' ? 'block' : 'none';
+  document.getElementById('archive-view').style.display = mode==='archive' ? 'block' : 'none';
 
-function setInventorySub(sub){
-  inventorySub = sub;
-  document.getElementById('sub-available-btn')?.classList.toggle('active', sub==='available');
-  document.getElementById('sub-archive-btn')?.classList.toggle('active', sub==='archive');
-  document.getElementById('available-panel').style.display = sub==='available' ? 'block' : 'none';
-  document.getElementById('archive-panel').style.display = sub==='archive' ? 'block' : 'none';
-  if(sub==='available') render(); else renderArchive();
-}
-
-function setOutfitsSub(sub){
-  outfitsSub = sub;
-  document.getElementById('sub-all-btn')?.classList.toggle('active', sub==='all');
-  document.getElementById('sub-saved-btn')?.classList.toggle('active', sub==='saved');
-  document.getElementById('all-outfits-panel').style.display = sub==='all' ? 'block' : 'none';
-  document.getElementById('saved-panel').style.display = sub==='saved' ? 'block' : 'none';
-  if(sub==='all'){
+  if(mode==='inventory') render();
+  if(mode==='archive') renderArchive();
+  if(mode==='saved') renderSavedOutfits();
+  if(mode==='outfits'){
     outfitRenderContext = 'tab';
     if(outfitTag && !allTags().includes(outfitTag)) outfitTag = null;
     renderTagChips('outfit-tag-filter', outfitTag, 'setOutfitTag');
     renderOutfitFilters();
+    renderFiltersButton();
     resetOutfitResults();
-  } else {
-    renderSavedOutfits();
   }
+}
+
+// Slot pickers and the tag filter start collapsed: most of the time you are
+// browsing, not narrowing. The button carries a count so an active filter is
+// never hidden without a trace.
+let outfitFiltersOpen = false;
+
+function activeOutfitFilterCount(){
+  const slots = Object.keys(outfitFilters).filter(k => outfitFilters[k].type !== 'any').length;
+  return slots + (outfitTag ? 1 : 0);
+}
+
+function renderFiltersButton(){
+  const btn = document.getElementById('filters-toggle');
+  if(!btn) return;
+  const n = activeOutfitFilterCount();
+  btn.textContent = n ? `Filters · ${n}` : 'Filters';
+  btn.classList.toggle('active', n > 0 || outfitFiltersOpen);
+}
+
+function toggleOutfitFilters(){
+  outfitFiltersOpen = !outfitFiltersOpen;
+  document.getElementById('outfit-filters').style.display = outfitFiltersOpen ? 'block' : 'none';
+  renderFiltersButton();
 }
 
 function renderArchive(){
@@ -901,6 +839,7 @@ function setBase(base){
   document.getElementById('base-topbottom-btn').classList.toggle('active', base==='topbottom');
   document.getElementById('base-dress-btn').classList.toggle('active', base==='dress');
   renderOutfitFilters();
+  renderFiltersButton();
   resetOutfitResults();
 }
 
@@ -1003,6 +942,7 @@ function toggleSlotItem(slotKey, itemId){
 function closePickerAndApply(){
   closeModal();
   renderOutfitFilters();
+  renderFiltersButton();
   resetOutfitResults();
 }
 
@@ -1444,7 +1384,6 @@ function findOutfitsWithPiece(itemId){
   }
   closeModal();
   outfitRenderContext = 'tab';
-  outfitsSub = 'all';
   setMode('outfits');
   document.getElementById('base-topbottom-btn').classList.toggle('active', outfitBase==='topbottom');
   document.getElementById('base-dress-btn').classList.toggle('active', outfitBase==='dress');
@@ -2014,12 +1953,38 @@ function renderTabs(){
     counts[t] = (counts[t] || 0) + 1;
   });
 
-  const tabsEl = document.getElementById('tabs');
-  tabsEl.innerHTML = TAB_ORDER.map(t => `
+  const categories = TAB_ORDER.map(t => `
     <button class="tab ${activeTab === t ? 'active' : ''}" onclick="setTab('${t}')">
       ${t}<span class="count">${counts[t] || 0}</span>
     </button>
   `).join('');
+
+  document.getElementById('tabs').innerHTML = categories;
+
+  // Tags keep their own row. Sharing the category row buried them off the
+  // right-hand edge behind ten category pills, which hid the feature rather
+  // than simplifying it. Labelled and lighter so it does not read as a
+  // second row of navigation.
+  const tags = tagsAvailable ? allTags() : [];
+  const row = document.getElementById('tag-filter');
+  if(row){
+    row.style.display = tags.length ? 'flex' : 'none';
+    row.innerHTML = tags.length ? `
+      <span class="tag-row-label">Tags</span>
+      ${tags.map(t => `
+        <button class="tag-chip ${inventoryTag === t ? 'active' : ''}" onclick='setInventoryTag(${JSON.stringify(t)})'>${esc(t)}</button>
+      `).join('')}
+    ` : '';
+  }
+}
+
+// Shows the count so the archive is discoverable without being loud, and
+// hides itself entirely when there is nothing in there.
+function renderArchiveLink(){
+  const el = document.getElementById('archive-link');
+  if(!el) return;
+  el.textContent = `Archive (${ARCHIVED.length})`;
+  el.parentElement.style.display = ARCHIVED.length ? 'block' : 'none';
 }
 
 function setTab(t){
@@ -2048,6 +2013,7 @@ function setOutfitTag(tag){
   outfitTag = (outfitTag === tag) ? null : tag;
   renderTagChips('outfit-tag-filter', outfitTag, 'setOutfitTag');
   renderOutfitFilters();
+  renderFiltersButton();
   resetOutfitResults();
 }
 
@@ -2284,10 +2250,11 @@ function visibleFilteredItems(search){
 }
 
 function render(){
-  renderTabs();
-  // A tag can disappear when its last item is edited or archived.
+  // A tag can disappear when its last item is edited or archived. Reset it
+  // before drawing the row that shows it.
   if(inventoryTag && !allTags().includes(inventoryTag)) inventoryTag = null;
-  renderTagChips('tag-filter', inventoryTag, 'setInventoryTag');
+  renderTabs();
+  renderArchiveLink();
 
   const search = document.getElementById('filter-search').value.toLowerCase();
   const filtered = visibleFilteredItems(search);
