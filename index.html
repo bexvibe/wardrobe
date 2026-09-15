@@ -658,38 +658,34 @@
     font-family:'IBM Plex Mono',monospace;
     font-size:11px;color:var(--ink-soft);flex:none;
   }
-  /* A flat-lay of the capsule's pieces. Fixed columns rather than
-     auto-fill so a three-piece capsule and a twelve-piece one read at
-     the same scale down the page — except at one and two pieces, which
-     would otherwise leave most of the card empty. */
-  .capsule-thumbs{
-    display:grid;
-    grid-template-columns:repeat(3, 1fr);
-    gap:4px;
-  }
-  /* A single piece is centred at about half width rather than stretched
-     across the card, the way a lone pair of shoes is on an outfit. */
-  .capsule-thumbs.n1{grid-template-columns:1fr;justify-items:center;}
-  .capsule-thumbs.n1 > *{width:52%;}
-  .capsule-thumbs.n2{grid-template-columns:repeat(2, 1fr);}
-  .capsule-thumbs > *{aspect-ratio:1/1;}
-  .capsule-thumbs img{
-    width:100%;height:100%;
+  /* A flat-lay of the capsule's pieces, laid out as worn like an outfit
+     card: hats and accessories along the top, then layers and tops, then
+     bottoms and dresses, with shoes at the foot. Every piece is shown —
+     a capsule is a list you are checking, so a card that hid some of it
+     would be answering the wrong question.
+
+     Sizing follows the outfit cards exactly: a width and an aspect-ratio
+     on the thumbnail itself, never a percentage height. A percentage
+     height against a row that is still being measured is the one thing
+     Safari and Chrome disagree about here, and it is what let pieces
+     spill out of the bottom of the card. */
+  .capsule-thumbs{display:flex;flex-direction:column;gap:4px;}
+  /* Every band is a row of thirds, centred. One module size the whole way
+     down reads as a flat-lay rather than a ragged left column, and keeps
+     the card short enough to take in at a glance — these are cutouts with
+     a lot of transparent margin, so a half-width square is mostly air. */
+  .capsule-band{display:flex;flex-wrap:wrap;justify-content:center;gap:4px;}
+  .capsule-band > *{
+    width:calc(33.333% - 2.7px);
+    aspect-ratio:1/1;
     object-fit:contain;
     border-radius:5px;
   }
-  .capsule-thumbs .no-photo-mini{
-    border-radius:5px;background:var(--bone);
+  .capsule-band .no-photo-mini{
+    background:var(--bone);
     display:flex;align-items:center;justify-content:center;
     font-family:'IBM Plex Mono',monospace;
     font-size:8px;color:var(--ink-soft);
-  }
-  /* "+3 more" closing out a truncated flat-lay. */
-  .capsule-more{
-    border-radius:5px;background:var(--bone);
-    display:flex;align-items:center;justify-content:center;
-    font-family:'IBM Plex Mono',monospace;
-    font-size:12px;color:var(--ink-soft);
   }
   .capsule-empty-note{
     font-size:12px;color:var(--ink-soft);
@@ -1559,10 +1555,33 @@ function renderSavedOutfits(){
 
 // ---- Capsules ----------------------------------------------
 // A capsule is displayed like a large outfit: the same card shell as the
-// outfit gallery, one per row, with a flat-lay of its pieces. It is not an
-// outfit, though, so it gets a grid rather than the worn-order layout — a
-// capsule can hold four jumpers and no bottoms.
-const CAPSULE_THUMB_LIMIT = 9;
+// outfit gallery, one per row, with its pieces laid out as worn. A capsule
+// can hold six tops and no bottoms, so each band is a wrapping row rather
+// than the outfit card's one-garment-per-slot; the order down the card is
+// the same one.
+const CAPSULE_BANDS = [
+  ['Accessories'],                    // hats and bags, at the top
+  ['Jackets', 'Jumpers', 'Tops'],     // layers outermost first, as on an outfit
+  ['Bottoms', 'Dresses'],
+  ['Shoes'],                          // at the foot, as worn
+];
+
+function capsuleBands(pieces){
+  const placed = new Set();
+  const bands = CAPSULE_BANDS.map(tabs => {
+    const row = [];
+    tabs.forEach(tab => pieces.forEach(p => {
+      if(!placed.has(p.id) && tabForItem(p) === tab){ placed.add(p.id); row.push(p); }
+    }));
+    return row;
+  }).filter(row => row.length);
+
+  // Anything in a category the bands do not name — Other, No Image — still
+  // has to appear, or a piece would vanish from a capsule it is in.
+  const rest = pieces.filter(p => !placed.has(p.id));
+  if(rest.length) bands.push(rest);
+  return bands;
+}
 
 function renderCapsules(){
   const countLine = document.getElementById('capsule-count-line');
@@ -1584,26 +1603,15 @@ function renderCapsules(){
   gallery.innerHTML = capsules.map(capsule => {
     const pieces = capsuleItems(capsule);
     const isExpanded = expandedCapsuleId === capsule.id;
-    // When there is an overflow the "+N" takes one of the cells, so the
-    // flat-lay stays a full 3x3 rather than spilling one cell onto a row
-    // of its own.
-    const overflowing = !isExpanded && pieces.length > CAPSULE_THUMB_LIMIT;
-    const shown = isExpanded
-      ? pieces
-      : pieces.slice(0, overflowing ? CAPSULE_THUMB_LIMIT - 1 : CAPSULE_THUMB_LIMIT);
-    const hidden = pieces.length - shown.length;
 
     const cell = p => p.photo
       ? `<img src="${esc(p.photo)}" alt="${esc(p.name)}" referrerpolicy="no-referrer">`
       : `<div class="no-photo-mini">No photo</div>`;
 
-    // One and two pieces get their own column counts, so a small capsule
-    // fills its card instead of sitting in the top-left third of it.
-    const cells = shown.length + (hidden > 0 ? 1 : 0);
     const thumbs = pieces.length
-      ? `<div class="capsule-thumbs ${cells <= 2 ? 'n' + cells : ''}">
-           ${shown.map(cell).join('')}
-           ${hidden > 0 ? `<div class="capsule-more">+${hidden}</div>` : ''}
+      ? `<div class="capsule-thumbs">
+           ${capsuleBands(pieces).map(row =>
+             `<div class="capsule-band">${row.map(cell).join('')}</div>`).join('')}
          </div>`
       : `<div class="capsule-empty-note">No pieces in this capsule yet — tap to add some.</div>`;
 
