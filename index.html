@@ -351,7 +351,9 @@
     display:flex;align-items:center;gap:7px;
     font-family:'Work Sans',sans-serif;
     font-size:13px;font-weight:600;
-    padding:10px 20px;border-radius:999px;
+    /* Four destinations have to fit inside a 390px screen, so the
+       padding is what gives rather than the label. */
+    padding:10px 13px;border-radius:999px;
     border:none;background:none;
     color:var(--ink-soft);cursor:pointer;
     white-space:nowrap;
@@ -639,6 +641,68 @@
   }
   .outfit-piece-info .p-name{font-family:'Fraunces',serif;font-size:14px;}
   .outfit-piece-info .p-meta{font-size:11px;color:var(--ink-soft);}
+
+  /* Capsules
+     One per row on a phone: a capsule holds many pieces, so it needs the
+     full width to show them at a useful size. Two up once there is room. */
+  .capsule-gallery{display:grid;grid-template-columns:1fr;gap:14px;}
+  @media (min-width:700px){
+    .capsule-gallery{grid-template-columns:repeat(2, 1fr);}
+  }
+  .capsule-head{
+    display:flex;align-items:baseline;justify-content:space-between;
+    gap:10px;margin-bottom:8px;
+  }
+  .capsule-name{font-family:'Fraunces',serif;font-weight:500;font-size:19px;}
+  .capsule-count{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;color:var(--ink-soft);flex:none;
+  }
+  /* A flat-lay of the capsule's pieces. Fixed columns rather than
+     auto-fill so a three-piece capsule and a twelve-piece one read at
+     the same scale down the page — except at one and two pieces, which
+     would otherwise leave most of the card empty. */
+  .capsule-thumbs{
+    display:grid;
+    grid-template-columns:repeat(3, 1fr);
+    gap:4px;
+  }
+  /* A single piece is centred at about half width rather than stretched
+     across the card, the way a lone pair of shoes is on an outfit. */
+  .capsule-thumbs.n1{grid-template-columns:1fr;justify-items:center;}
+  .capsule-thumbs.n1 > *{width:52%;}
+  .capsule-thumbs.n2{grid-template-columns:repeat(2, 1fr);}
+  .capsule-thumbs > *{aspect-ratio:1/1;}
+  .capsule-thumbs img{
+    width:100%;height:100%;
+    object-fit:contain;
+    border-radius:5px;
+  }
+  .capsule-thumbs .no-photo-mini{
+    border-radius:5px;background:var(--bone);
+    display:flex;align-items:center;justify-content:center;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:8px;color:var(--ink-soft);
+  }
+  /* "+3 more" closing out a truncated flat-lay. */
+  .capsule-more{
+    border-radius:5px;background:var(--bone);
+    display:flex;align-items:center;justify-content:center;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;color:var(--ink-soft);
+  }
+  .capsule-empty-note{
+    font-size:12px;color:var(--ink-soft);
+    padding:14px 2px;
+  }
+
+  /* Capsule editor: a name, then the wardrobe to pick from. */
+  .capsule-editor-count{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;letter-spacing:0.04em;
+    color:var(--ink-soft);
+    margin:12px 0 10px;
+  }
 </style>
 </head>
 <body>
@@ -731,6 +795,18 @@
     </div>
   </div>
 
+  <div id="capsules-view" style="display:none;">
+    <div class="toolbar-row">
+      <button class="btn small" onclick="openCapsuleEditor()">+ New capsule</button>
+    </div>
+    <div class="count-line" id="capsule-count-line"></div>
+    <div class="capsule-gallery" id="capsule-gallery"></div>
+    <div class="empty" id="capsule-empty" style="display:none;">
+      <h3>No capsules yet</h3>
+      <p>A capsule is a named set of pieces — winter, evening, work. Build one and it lives here.</p>
+    </div>
+  </div>
+
   <div id="archive-view" style="display:none;">
     <button class="quiet-link back-link" onclick="setMode('inventory')">← Wardrobe</button>
     <div class="count-line" id="archive-count-line"></div>
@@ -763,6 +839,7 @@
   <button class="bottom-btn active" id="nav-inventory-btn" onclick="setMode('inventory')">Wardrobe</button>
   <button class="bottom-btn" id="nav-outfits-btn" onclick="setMode('outfits')">Outfits</button>
   <button class="bottom-btn" id="nav-saved-btn" onclick="setMode('saved')">Saved</button>
+  <button class="bottom-btn" id="nav-capsules-btn" onclick="setMode('capsules')" style="display:none;">Capsules</button>
 </nav>
 
 <div class="modal-backdrop" id="modal-backdrop" onclick="closeModalIfBackdrop(event)">
@@ -811,6 +888,8 @@ let appMode = 'inventory';
 let hiddenCombos = [];
 let favoriteOutfits = [];
 let expandedSavedKey = null;
+let capsules = [];
+let expandedCapsuleId = null;
 let viewMode = 'photos'; // 'photos' or 'names'
 let editMode = false;
 let selectedIds = new Set();
@@ -887,15 +966,18 @@ function setMode(mode){
   document.getElementById('nav-inventory-btn')?.classList.toggle('active', onInventory);
   document.getElementById('nav-outfits-btn')?.classList.toggle('active', mode==='outfits');
   document.getElementById('nav-saved-btn')?.classList.toggle('active', mode==='saved');
+  document.getElementById('nav-capsules-btn')?.classList.toggle('active', mode==='capsules');
 
   document.getElementById('inventory-view').style.display = mode==='inventory' ? 'block' : 'none';
   document.getElementById('outfits-view').style.display = mode==='outfits' ? 'block' : 'none';
   document.getElementById('saved-view').style.display = mode==='saved' ? 'block' : 'none';
+  document.getElementById('capsules-view').style.display = mode==='capsules' ? 'block' : 'none';
   document.getElementById('archive-view').style.display = mode==='archive' ? 'block' : 'none';
 
   if(mode==='inventory') render();
   if(mode==='archive') renderArchive();
   if(mode==='saved') renderSavedOutfits();
+  if(mode==='capsules') renderCapsules();
   if(mode==='outfits'){
     outfitRenderContext = 'tab';
     if(outfitTag && !allTags().includes(outfitTag)) outfitTag = null;
@@ -1475,6 +1557,241 @@ function renderSavedOutfits(){
   }).join('');
 }
 
+// ---- Capsules ----------------------------------------------
+// A capsule is displayed like a large outfit: the same card shell as the
+// outfit gallery, one per row, with a flat-lay of its pieces. It is not an
+// outfit, though, so it gets a grid rather than the worn-order layout — a
+// capsule can hold four jumpers and no bottoms.
+const CAPSULE_THUMB_LIMIT = 9;
+
+function renderCapsules(){
+  const countLine = document.getElementById('capsule-count-line');
+  const gallery = document.getElementById('capsule-gallery');
+  const emptyState = document.getElementById('capsule-empty');
+  if(!gallery) return;
+
+  if(countLine){
+    countLine.textContent = `${capsules.length} capsule${capsules.length===1?'':'s'}`;
+  }
+
+  if(capsules.length === 0){
+    gallery.innerHTML = '';
+    emptyState.style.display = 'block';
+    return;
+  }
+  emptyState.style.display = 'none';
+
+  gallery.innerHTML = capsules.map(capsule => {
+    const pieces = capsuleItems(capsule);
+    const isExpanded = expandedCapsuleId === capsule.id;
+    // When there is an overflow the "+N" takes one of the cells, so the
+    // flat-lay stays a full 3x3 rather than spilling one cell onto a row
+    // of its own.
+    const overflowing = !isExpanded && pieces.length > CAPSULE_THUMB_LIMIT;
+    const shown = isExpanded
+      ? pieces
+      : pieces.slice(0, overflowing ? CAPSULE_THUMB_LIMIT - 1 : CAPSULE_THUMB_LIMIT);
+    const hidden = pieces.length - shown.length;
+
+    const cell = p => p.photo
+      ? `<img src="${esc(p.photo)}" alt="${esc(p.name)}" referrerpolicy="no-referrer">`
+      : `<div class="no-photo-mini">No photo</div>`;
+
+    // One and two pieces get their own column counts, so a small capsule
+    // fills its card instead of sitting in the top-left third of it.
+    const cells = shown.length + (hidden > 0 ? 1 : 0);
+    const thumbs = pieces.length
+      ? `<div class="capsule-thumbs ${cells <= 2 ? 'n' + cells : ''}">
+           ${shown.map(cell).join('')}
+           ${hidden > 0 ? `<div class="capsule-more">+${hidden}</div>` : ''}
+         </div>`
+      : `<div class="capsule-empty-note">No pieces in this capsule yet — tap to add some.</div>`;
+
+    const expandedPanel = isExpanded ? `
+      <div class="outfit-expanded-panel">
+        <button class="outfit-collapse-btn" onclick='event.stopPropagation();toggleExpandCapsule(${JSON.stringify(capsule.id)})'>Collapse ↑</button>
+        ${pieces.map(p => `
+          <div class="outfit-piece-row">
+            ${p.photo ? `<img src="${esc(p.photo)}" alt="${esc(p.name)}" referrerpolicy="no-referrer">` : `<div class="no-photo-mini">No photo</div>`}
+            <div class="outfit-piece-info" style="flex:1;min-width:0;">
+              <div class="p-name">${esc(p.name)}</div>
+              <div class="p-meta">${esc(p.brand || '')}</div>
+            </div>
+            <button class="btn small secondary" onclick='event.stopPropagation();removeFromCapsule(${JSON.stringify(capsule.id)}, ${JSON.stringify(p.id)})'>Remove</button>
+          </div>
+        `).join('')}
+        <div class="modal-actions">
+          <button class="btn small secondary" onclick='event.stopPropagation();openCapsuleEditor(${JSON.stringify(capsule.id)})'>Edit capsule</button>
+          <button class="btn small secondary" onclick='event.stopPropagation();confirmArchiveCapsule(${JSON.stringify(capsule.id)})'>Delete</button>
+        </div>
+      </div>
+    ` : '';
+
+    return `<div class="outfit-card ${isExpanded ? 'expanded' : ''}" onclick='toggleExpandCapsule(${JSON.stringify(capsule.id)})'>
+      <div class="capsule-head">
+        <span class="capsule-name">${esc(capsule.name)}</span>
+        <span class="capsule-count">${pieces.length} piece${pieces.length===1?'':'s'}</span>
+      </div>
+      ${thumbs}
+      ${expandedPanel}
+    </div>`;
+  }).join('');
+}
+
+function toggleExpandCapsule(id){
+  expandedCapsuleId = (expandedCapsuleId === id) ? null : id;
+  renderCapsules();
+}
+
+function confirmArchiveCapsule(id){
+  const capsule = capsules.find(c => c.id === id);
+  if(!capsule) return;
+  const modal = document.getElementById('modal');
+  modal.innerHTML = `
+    <div class="modal-body">
+      <div class="modal-name">Delete ${esc(capsule.name)}?</div>
+      <p class="gate-note">The capsule is archived, not erased, and none of its pieces
+      leave your wardrobe.</p>
+      <div class="modal-actions">
+        <button class="btn small" style="background:var(--clay);border-color:var(--clay);"
+                onclick='closeModal();archiveCapsule(${JSON.stringify(id)})'>Yes, delete</button>
+        <button class="btn small secondary" onclick="closeModal()">Cancel</button>
+      </div>
+    </div>
+  `;
+  document.getElementById('modal-backdrop').classList.add('open');
+}
+
+// ---- Capsule editor ----------------------------------------
+// Naming and picking happen on one sheet, the same shape as the outfit
+// slot picker: a header that gets you out, then the wardrobe as tiles you
+// tap to select. Nothing is written until Save, so backing out of a new
+// capsule leaves no empty row behind.
+let capsuleDraft = null;   // { id, name, itemIds:Set, tab }
+
+function openCapsuleEditor(id){
+  const capsule = id ? capsules.find(c => c.id === id) : null;
+  capsuleDraft = {
+    id: capsule ? capsule.id : null,
+    name: capsule ? capsule.name : '',
+    itemIds: new Set(capsule ? capsule.itemIds : []),
+    tab: 'All'
+  };
+
+  const modal = document.getElementById('modal');
+  modal.innerHTML = `
+    <div class="sheet-header">
+      <button class="sheet-back" onclick="closeCapsuleEditor()">← Cancel</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-name">${capsule ? 'Edit capsule' : 'New capsule'}</div>
+      <div class="form-grid">
+        <label>Name
+          <input type="text" id="capsule-name-input" placeholder="winter"
+                 value="${esc(capsuleDraft.name)}" oninput="onCapsuleNameInput()">
+        </label>
+      </div>
+      <div class="form-error" id="capsule-error"></div>
+      <div class="tabs" id="capsule-tabs"></div>
+      <div class="capsule-editor-count" id="capsule-editor-count"></div>
+      <div class="gallery" id="capsule-editor-gallery"></div>
+      <div class="modal-actions">
+        <button class="btn" id="capsule-save-btn" onclick="submitCapsuleEditor()">Save capsule</button>
+        <button class="btn secondary" onclick="closeCapsuleEditor()">Cancel</button>
+      </div>
+    </div>
+  `;
+  renderCapsuleEditorTabs();
+  renderCapsuleEditorGallery();
+  document.getElementById('modal-backdrop').classList.add('open');
+  if(!capsule) document.getElementById('capsule-name-input').focus();
+}
+
+function onCapsuleNameInput(){
+  capsuleDraft.name = document.getElementById('capsule-name-input').value;
+}
+
+// Picking from eighty pieces in one flat grid is a scroll; the wardrobe's
+// own category row narrows it to the handful you are actually choosing from.
+function renderCapsuleEditorTabs(){
+  const el = document.getElementById('capsule-tabs');
+  if(!el) return;
+  const counts = {};
+  ITEMS.forEach(i => { const t = tabForItem(i); counts[t] = (counts[t] || 0) + 1; });
+  el.innerHTML = TAB_ORDER
+    .filter(t => t === 'All' || counts[t])
+    .map(t => `<button class="tab ${capsuleDraft.tab === t ? 'active' : ''}" onclick="setCapsuleEditorTab('${t}')">
+      ${t}<span class="count">${t === 'All' ? ITEMS.length : counts[t]}</span>
+    </button>`).join('');
+}
+
+function setCapsuleEditorTab(tab){
+  capsuleDraft.tab = tab;
+  renderCapsuleEditorTabs();
+  renderCapsuleEditorGallery();
+}
+
+function renderCapsuleEditorGallery(){
+  const gallery = document.getElementById('capsule-editor-gallery');
+  const countEl = document.getElementById('capsule-editor-count');
+  if(!gallery) return;
+
+  const pool = capsuleDraft.tab === 'All'
+    ? ITEMS
+    : ITEMS.filter(i => tabForItem(i) === capsuleDraft.tab);
+
+  if(countEl){
+    const n = capsuleDraft.itemIds.size;
+    countEl.textContent = n
+      ? `${n} piece${n===1?'':'s'} selected`
+      : 'Tap pieces to add them';
+  }
+
+  gallery.innerHTML = pool.map(i => {
+    const selected = capsuleDraft.itemIds.has(i.id);
+    return `<div class="tile picker-tile ${selected ? 'picker-selected' : ''}" onclick="toggleCapsuleItem('${i.id}')">
+      ${i.photo ? `<img src="${esc(i.photo)}" alt="" referrerpolicy="no-referrer">` : `<span class="no-photo">No photo</span>`}
+      ${selected ? `<span class="picker-check">✓</span>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function toggleCapsuleItem(itemId){
+  if(capsuleDraft.itemIds.has(itemId)) capsuleDraft.itemIds.delete(itemId);
+  else capsuleDraft.itemIds.add(itemId);
+  renderCapsuleEditorGallery();
+}
+
+function closeCapsuleEditor(){
+  capsuleDraft = null;
+  closeModal();
+}
+
+async function submitCapsuleEditor(){
+  const errorEl = document.getElementById('capsule-error');
+  const name = (capsuleDraft.name || '').trim();
+  if(!name){
+    errorEl.textContent = 'Give the capsule a name.';
+    return;
+  }
+  errorEl.textContent = '';
+
+  const btn = document.getElementById('capsule-save-btn');
+  btn.disabled = true;
+  const saved = await saveCapsule({
+    id: capsuleDraft.id,
+    name,
+    itemIds: Array.from(capsuleDraft.itemIds)
+  });
+  btn.disabled = false;
+  if(!saved) return;   // saveCapsule has already explained why
+
+  const wasNew = !capsuleDraft.id;
+  closeCapsuleEditor();
+  setMode('capsules');
+  showToast(wasNew ? 'Capsule created' : 'Capsule saved');
+}
+
 let expandedComboKey = null;
 
 async function hideCombo(key){
@@ -1706,6 +2023,17 @@ function favoriteToRow(rec){
   };
 }
 
+// Capsules are a later addition, like tags. If the migration in
+// supabase/add-capsules.sql has not been run the destination stays hidden
+// rather than showing a page that cannot save anything.
+let capsulesAvailable = false;
+
+function capsuleItems(capsule){
+  // Archived pieces drop out of a capsule's display without losing their
+  // membership: restore the piece and it is back in the capsule.
+  return capsule.itemIds.map(id => ITEMS.find(i => i.id === id)).filter(Boolean);
+}
+
 // Uploaded photos live in a private bucket, so they need signed URLs.
 // One batch call covers every item rather than one request each.
 async function hydratePhotoUrls(items){
@@ -1727,10 +2055,12 @@ async function hydratePhotoUrls(items){
 
 async function loadAll(){
   const db = client();
-  const [itemsRes, outfitsRes, hiddenRes] = await Promise.all([
+  const [itemsRes, outfitsRes, hiddenRes, capsulesRes, membersRes] = await Promise.all([
     db.from('items').select('*').order('created_at', { ascending: true }),
     db.from('saved_outfits').select('*').is('archived_at', null).order('created_at', { ascending: true }),
-    db.from('hidden_combos').select('combo_key')
+    db.from('hidden_combos').select('combo_key'),
+    db.from('capsules').select('*').is('archived_at', null).order('created_at', { ascending: true }),
+    db.from('capsule_items').select('*').order('created_at', { ascending: true })
   ]);
 
   if(itemsRes.error) throw itemsRes.error;
@@ -1747,6 +2077,23 @@ async function loadAll(){
   ARCHIVED = all.filter(i => i.archivedAt);
   favoriteOutfits = outfitsRes.data.map(rowToFavorite);
   hiddenCombos = hiddenRes.data.map(r => r.combo_key);
+
+  // The two capsule queries are allowed to fail together: everything else
+  // on this page still works without them.
+  capsulesAvailable = !capsulesRes.error && !membersRes.error;
+  if(capsulesAvailable){
+    const byCapsule = new Map(capsulesRes.data.map(r => [r.id, []]));
+    membersRes.data.forEach(m => byCapsule.get(m.capsule_id)?.push(m.item_id));
+    capsules = capsulesRes.data.map(r => ({
+      id: r.id,
+      name: r.name,
+      itemIds: byCapsule.get(r.id) || []
+    }));
+  } else {
+    console.error('[wardrobe] capsules unavailable — run supabase/add-capsules.sql',
+      capsulesRes.error || membersRes.error);
+    capsules = [];
+  }
 }
 
 // ---- Items -------------------------------------------------
@@ -1807,6 +2154,82 @@ async function saveItem(fields, existingId){
   const created = rowToItem(data);
   ITEMS.push(created);
   return created;
+}
+
+// ---- Capsules ----------------------------------------------
+function newCapsuleId(){
+  const rand = (window.crypto && crypto.randomUUID)
+    ? crypto.randomUUID()
+    : Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+  return 'cap_' + rand;
+}
+
+// One call saves the name and the whole membership: the editor hands over
+// the list it ended up with rather than a diff, so a half-applied save
+// cannot leave a capsule holding pieces you removed.
+async function saveCapsule({ id, name, itemIds }){
+  const db = client();
+  const capsuleId = id || newCapsuleId();
+
+  if(id){
+    const { error } = await db.from('capsules').update({ name }).eq('id', id);
+    if(error) return dbFail(error, 'Could not save — check connection');
+  } else {
+    const { error } = await db.from('capsules').insert({ id: capsuleId, name });
+    if(error) return dbFail(error, 'Could not create — check connection');
+  }
+
+  const existing = id ? (capsules.find(c => c.id === id)?.itemIds || []) : [];
+  const added = itemIds.filter(x => !existing.includes(x));
+  const removed = existing.filter(x => !itemIds.includes(x));
+
+  if(added.length){
+    const { error } = await db.from('capsule_items')
+      .upsert(added.map(itemId => ({ capsule_id: capsuleId, item_id: itemId })),
+              { onConflict: 'capsule_id,item_id' });
+    if(error) return dbFail(error, 'Could not add pieces — check connection');
+  }
+  if(removed.length){
+    const { error } = await db.from('capsule_items')
+      .delete().eq('capsule_id', capsuleId).in('item_id', removed);
+    if(error) return dbFail(error, 'Could not remove pieces — check connection');
+  }
+
+  const record = { id: capsuleId, name, itemIds: itemIds.slice() };
+  const idx = capsules.findIndex(c => c.id === capsuleId);
+  if(idx > -1) capsules[idx] = record; else capsules.push(record);
+  return record;
+}
+
+// Takes one piece out of one capsule. The piece itself, and its place in
+// any other capsule, is untouched.
+async function removeFromCapsule(capsuleId, itemId){
+  const capsule = capsules.find(c => c.id === capsuleId);
+  if(!capsule) return false;
+
+  const { error } = await client().from('capsule_items')
+    .delete().eq('capsule_id', capsuleId).eq('item_id', itemId);
+  if(error) return dbFail(error, 'Could not remove — check connection');
+
+  capsule.itemIds = capsule.itemIds.filter(id => id !== itemId);
+  renderCapsules();
+  showToast('Removed from capsule');
+  return true;
+}
+
+// Archived, never deleted — the memberships come with it, so restoring the
+// row by hand would bring the capsule back whole.
+async function archiveCapsule(capsuleId){
+  const { error } = await client().from('capsules')
+    .update({ archived_at: new Date().toISOString() })
+    .eq('id', capsuleId);
+  if(error) return dbFail(error, 'Could not delete — check connection');
+
+  capsules = capsules.filter(c => c.id !== capsuleId);
+  if(expandedCapsuleId === capsuleId) expandedCapsuleId = null;
+  renderCapsules();
+  showToast('Capsule archived');
+  return true;
 }
 
 // ---- Photos ------------------------------------------------
@@ -2023,6 +2446,11 @@ async function startApp(){
     showGate('error', e && e.message ? e.message : 'Could not reach the database.');
     return;
   }
+  // Capsules need their migration to have been run; without it the
+  // destination stays out of the nav rather than leading to a dead page.
+  const capsulesBtn = document.getElementById('nav-capsules-btn');
+  if(capsulesBtn) capsulesBtn.style.display = capsulesAvailable ? 'flex' : 'none';
+
   // Go through the nav rather than calling render() directly, so the bottom
   // bar, the sub-tabs and the visible panel all start in agreement.
   setMode(appMode);
