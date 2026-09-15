@@ -433,29 +433,24 @@
     cursor:pointer;padding:8px;
   }
 
-  /* Tags */
-  .tag-chips{display:flex;flex-wrap:wrap;gap:7px;}
+  /* Tags. Both kinds of chip in the filter sheet are the same control, so
+     they share .filter-chip's type, shape and states — the only difference
+     is that tags wrap onto a second row rather than scrolling sideways. */
+  .tag-chips{display:flex;flex-wrap:wrap;gap:8px;}
   .tag-chip{
-    font-family:'IBM Plex Mono', monospace;
-    font-size:11px;
-    letter-spacing:0.06em;
-    line-height:1;
-    padding:8px 13px;
-    border-radius:999px;
-    /* Border width never changes between states, so selecting a chip does
-       not nudge the ones beside it. */
+    flex:none;
+    font-family:'Work Sans',sans-serif;
+    font-size:12px;font-weight:600;
+    padding:8px 14px;
+    border-radius:10px;
     border:1px solid var(--line);
-    background:transparent;
-    color:var(--ink-soft);
+    background:var(--bone);
+    color:var(--ink);
     cursor:pointer;
-    transition:background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+    white-space:nowrap;
+    transition:background 0.12s ease, border-color 0.12s ease;
   }
-  .tag-chip:hover{border-color:var(--sage);color:var(--sage-deep);}
-  .tag-chip.active{
-    background:var(--sage);
-    border-color:var(--sage);
-    color:#fff;
-  }
+  .tag-chip.active{border-color:var(--sage);background:var(--clay-soft);}
 
   /* Read-only tags on an item's detail sheet */
   .detail-tags{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0;}
@@ -467,7 +462,7 @@
   }
 
   /* Tag chips inside the add/edit form sit under their input */
-  .form-grid .tag-chips{margin-top:7px;}
+  .form-grid .tag-chips{margin-top:8px;}
 
   /* Filters: a pill within thumb reach, and the sheet it raises */
   .filters-fab{
