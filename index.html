@@ -236,7 +236,9 @@
     display:none;
     position:fixed;inset:0;
     background:var(--bone);
-    z-index:100;
+    /* Above the filter sheet: a slot picker is opened from inside it, and
+       must cover it rather than open underneath. */
+    z-index:130;
     overflow-y:auto;
   }
   .modal-backdrop.open{display:block;}
@@ -303,6 +305,16 @@
     color:var(--ink-soft);cursor:pointer;
     padding:0 0 8px;
   }
+  .outfit-fav-btn{
+    position:absolute;top:8px;right:8px;
+    width:26px;height:26px;
+    display:flex;align-items:center;justify-content:center;
+    border:none;border-radius:999px;
+    background:rgba(250,248,244,0.86);
+    font-size:15px;line-height:1;color:var(--ink-soft);
+    cursor:pointer;z-index:2;
+  }
+  .outfit-fav-btn.favorited{color:var(--clay);}
 
   .toast{
     position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
@@ -347,14 +359,60 @@
   .bottom-btn.active{background:var(--sage);color:#fff;}
   .bottom-icon{font-size:14px;line-height:1;}
 
-  /* Divider between categories and tags in the shared filter row */
-  .tag-row{align-items:center;margin:0 0 10px;}
-  .tag-row-label{
-    font-family:'IBM Plex Mono',monospace;
-    font-size:10px;letter-spacing:0.1em;text-transform:uppercase;
-    color:var(--ink-soft);opacity:0.75;
-    margin-right:2px;
+  /* Password gate */
+  .gate{
+    display:none;
+    position:fixed;inset:0;
+    background:var(--bone);
+    align-items:center;justify-content:center;
+    padding:24px;z-index:300;
   }
+  .gate-card{
+    width:100%;max-width:360px;
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:28px 24px;
+  }
+  .gate-eyebrow{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;letter-spacing:0.14em;text-transform:uppercase;
+    color:var(--sage-deep);margin-bottom:14px;
+  }
+  .gate-title{
+    font-family:'Fraunces', serif;font-weight:500;font-size:22px;
+    margin:0 0 8px;
+  }
+  .gate-note{font-size:13px;color:var(--ink-soft);line-height:1.5;margin:0 0 16px;}
+  .gate-note code{
+    font-family:'IBM Plex Mono',monospace;font-size:12px;
+    background:var(--clay-soft);padding:1px 5px;border-radius:4px;
+  }
+  .gate-card input[type="password"]{width:100%;margin-bottom:10px;}
+  .gate-card .btn{width:100%;justify-content:center;}
+  .gate-error{
+    font-size:12px;color:var(--clay);
+    min-height:16px;margin-bottom:8px;
+  }
+
+  /* Add / edit item form */
+  .form-grid{display:flex;flex-direction:column;gap:12px;margin:14px 0;}
+  .form-grid label{
+    display:flex;flex-direction:column;gap:5px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;letter-spacing:0.06em;text-transform:uppercase;
+    color:var(--ink-soft);
+  }
+  .form-error{font-size:12px;color:var(--clay);min-height:16px;}
+
+  /* Archive */
+  .archive-row{
+    display:flex;align-items:center;gap:10px;
+    padding:12px 4px;
+  }
+  .archive-row-text{flex:1;min-width:0;}
+  .archive-row-title{font-family:'Fraunces',serif;font-size:15px;}
+  .archive-row-sub{font-size:12px;color:var(--ink-soft);}
 
   /* Quiet secondary destinations — the archive, and its way back */
   .quiet-link-row{margin-top:26px;text-align:center;}
@@ -367,41 +425,114 @@
   }
   .back-link{display:block;padding:0 0 12px;text-align:left;}
 
-  .outfit-fav-btn{
-    position:absolute;top:6px;right:6px;
-    width:28px;height:28px;border-radius:999px;
-    border:none;background:rgba(252,250,244,0.85);
-    display:flex;align-items:center;justify-content:center;
-    font-size:15px;line-height:1;color:var(--ink-soft);
-    cursor:pointer;z-index:2;
-    flex:none;
+  .signout-row{margin-top:34px;text-align:center;}
+  .signout-btn{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;letter-spacing:0.08em;text-transform:uppercase;
+    background:none;border:none;color:var(--ink-soft);
+    cursor:pointer;padding:8px;
   }
-  .outfit-fav-btn.favorited{color:var(--clay);}
 
-  /* Outfits: base choice and a filter button on one row */
-  .outfit-bar{
-    display:flex;align-items:center;justify-content:space-between;
-    gap:10px;margin-bottom:12px;
+  /* Tags */
+  .tag-chips{display:flex;flex-wrap:wrap;gap:7px;}
+  .tag-chip{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    letter-spacing:0.06em;
+    line-height:1;
+    padding:8px 13px;
+    border-radius:999px;
+    /* Border width never changes between states, so selecting a chip does
+       not nudge the ones beside it. */
+    border:1px solid var(--line);
+    background:transparent;
+    color:var(--ink-soft);
+    cursor:pointer;
+    transition:background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
   }
-  .filters-btn{
+  .tag-chip:hover{border-color:var(--sage);color:var(--sage-deep);}
+  .tag-chip.active{
+    background:var(--sage);
+    border-color:var(--sage);
+    color:#fff;
+  }
+
+  /* Read-only tags on an item's detail sheet */
+  .detail-tags{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0;}
+  .detail-tags span{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10px;letter-spacing:0.06em;
+    background:var(--clay-soft);color:var(--sage-deep);
+    padding:4px 10px;border-radius:999px;
+  }
+
+  /* Tag chips inside the add/edit form sit under their input */
+  .form-grid .tag-chips{margin-top:7px;}
+
+  /* Filters: a pill within thumb reach, and the sheet it raises */
+  .filters-fab{
+    position:fixed;
+    right:16px;
+    bottom:calc(78px + env(safe-area-inset-bottom, 0px));  /* clears the nav bar */
+    z-index:95;
     font-family:'Work Sans',sans-serif;
-    font-size:12px;font-weight:600;
-    padding:7px 14px;border-radius:999px;
-    border:1px solid var(--line);background:var(--surface);
-    color:var(--ink-soft);cursor:pointer;
-    white-space:nowrap;
+    font-size:13px;font-weight:600;
+    padding:11px 18px;border-radius:999px;
+    border:1px solid var(--line);
+    background:var(--surface);
+    color:var(--ink);
+    cursor:pointer;white-space:nowrap;
+    box-shadow:0 4px 16px rgba(43,38,32,0.14);
   }
-  .filters-btn.active{background:var(--clay-soft);border-color:var(--clay-soft);color:var(--sage-deep);}
+  .filters-fab.active{background:var(--sage);border-color:var(--sage);color:#fff;}
+
+  .sheet-backdrop{
+    display:none;
+    position:fixed;inset:0;
+    background:rgba(43,38,32,0.32);
+    z-index:110;
+  }
+  .sheet-backdrop.open{display:block;}
+
+  .filter-sheet{
+    position:fixed;
+    left:0;right:0;bottom:0;
+    z-index:120;
+    background:var(--bone);
+    border-radius:18px 18px 0 0;
+    padding:18px 16px calc(18px + env(safe-area-inset-bottom, 0px));
+    max-height:78vh;overflow-y:auto;
+    /* Off-screen rather than hidden, so it slides rather than appears. */
+    transform:translateY(100%);
+    transition:transform 0.22s ease;
+    box-shadow:0 -8px 30px rgba(43,38,32,0.18);
+  }
+  .filter-sheet.open{transform:translateY(0);}
+  .filter-sheet-head{
+    display:flex;align-items:baseline;justify-content:space-between;
+    margin-bottom:14px;
+  }
+  .filter-sheet-title{
+    font-family:'Fraunces', serif;font-weight:500;font-size:19px;
+  }
+  .filter-sheet-clear{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;letter-spacing:0.06em;
+    background:none;border:none;color:var(--clay);
+    cursor:pointer;padding:4px;
+  }
+  .filter-sheet-label{
+    display:block;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10px;letter-spacing:0.1em;text-transform:uppercase;
+    color:var(--ink-soft);
+    margin-bottom:9px;
+  }
+  .filter-section{margin-bottom:18px;}
+  .filter-sheet-done{width:100%;justify-content:center;}
 
   /* Outfit filters */
-  .outfit-filters{
-    background:var(--surface);
-    border:1px solid var(--line);
-    border-radius:10px;
-    padding:14px;
-    margin:0 0 14px;
-  }
-  .base-toggle{display:flex;gap:6px;}
+  .base-toggle{display:flex;gap:6px;margin-bottom:12px;}
   .base-btn{
     font-family:'Work Sans',sans-serif;
     font-size:12px;font-weight:600;
@@ -558,7 +689,6 @@
     </div>
 
     <div class="tabs" id="tabs"></div>
-    <div class="tag-chips tag-row" id="tag-filter" style="display:none;"></div>
 
     <div class="count-line" id="count-line"></div>
     <div class="bulk-bar" id="bulk-bar" style="display:none;">
@@ -582,17 +712,9 @@
   </div>
 
   <div id="outfits-view" style="display:none;">
-    <div class="outfit-bar">
-      <div class="base-toggle">
-        <button class="base-btn active" id="base-topbottom-btn" onclick="setBase('topbottom')">Top + Bottom</button>
-        <button class="base-btn" id="base-dress-btn" onclick="setBase('dress')">Dress</button>
-      </div>
-      <button class="filters-btn" id="filters-toggle" onclick="toggleOutfitFilters()">Filters</button>
-    </div>
-
-    <div class="outfit-filters" id="outfit-filters" style="display:none;">
-      <div class="tag-chips" id="outfit-tag-filter"></div>
-      <div class="filter-grid" id="filter-grid"></div>
+    <div class="base-toggle">
+      <button class="base-btn active" id="base-topbottom-btn" onclick="setBase('topbottom')">Top + Bottom</button>
+      <button class="base-btn" id="base-dress-btn" onclick="setBase('dress')">Dress</button>
     </div>
 
     <div class="count-line" id="outfit-count-line"></div>
@@ -606,7 +728,6 @@
   </div>
 
   <div id="saved-view" style="display:none;">
-    <div class="tag-chips" id="saved-tag-filter"></div>
     <div class="count-line" id="saved-count-line"></div>
     <div class="outfit-gallery" id="saved-gallery"></div>
     <div class="empty" id="saved-empty" style="display:none;">
@@ -629,6 +750,19 @@
     <button class="signout-btn" onclick="signOut()">Sign out</button>
   </div>
 </div>
+
+<div class="sheet-backdrop" id="filter-sheet-backdrop" onclick="closeFilterSheet()"></div>
+
+<div class="filter-sheet" id="filter-sheet">
+  <div class="filter-sheet-head">
+    <span class="filter-sheet-title" id="filter-sheet-title">Filters</span>
+    <button class="filter-sheet-clear" id="filter-sheet-clear" onclick="clearFilters()">Clear all</button>
+  </div>
+  <div class="filter-sheet-body" id="filter-sheet-body"></div>
+  <button class="btn filter-sheet-done" onclick="closeFilterSheet()">Done</button>
+</div>
+
+<button class="filters-fab" id="filters-fab" onclick="openFilterSheet()" style="display:none;">Filters</button>
 
 <nav class="bottom-bar" id="bottom-bar" style="display:none;">
   <button class="bottom-btn active" id="nav-inventory-btn" onclick="setMode('inventory')">Wardrobe</button>
@@ -770,35 +904,99 @@ function setMode(mode){
   if(mode==='outfits'){
     outfitRenderContext = 'tab';
     if(outfitTag && !allTags().includes(outfitTag)) outfitTag = null;
-    renderTagChips('outfit-tag-filter', outfitTag, 'setOutfitTag');
     renderOutfitFilters();
-    renderFiltersButton();
     resetOutfitResults();
   }
+  // Every view: the pill has to disappear where there is nothing to filter
+  // (the archive), and pick up the count of whichever view you have moved to.
+  renderFiltersFab();
 }
 
-// Slot pickers and the tag filter start collapsed: most of the time you are
-// browsing, not narrowing. The button carries a count so an active filter is
-// never hidden without a trace.
-let outfitFiltersOpen = false;
-
-function activeOutfitFilterCount(){
-  const slots = Object.keys(outfitFilters).filter(k => outfitFilters[k].type !== 'any').length;
-  return slots + (outfitTag ? 1 : 0);
+// Filters live in a sheet that rises from the bottom, opened by a pill that
+// sits within thumb reach above the nav bar. A control at the bottom of the
+// screen whose panel opens at the top would make the content jump away from
+// where you tapped, so the two stay together.
+function activeFilterCount(){
+  if(appMode === 'outfits'){
+    const slots = Object.keys(outfitFilters).filter(k => outfitFilters[k].type !== 'any').length;
+    return slots + (outfitTag ? 1 : 0);
+  }
+  if(appMode === 'saved') return savedTag ? 1 : 0;
+  return inventoryTag ? 1 : 0;
 }
 
-function renderFiltersButton(){
-  const btn = document.getElementById('filters-toggle');
-  if(!btn) return;
-  const n = activeOutfitFilterCount();
-  btn.textContent = n ? `Filters · ${n}` : 'Filters';
-  btn.classList.toggle('active', n > 0 || outfitFiltersOpen);
+// The pill only appears where there is something to filter, and always shows
+// how many filters are on so an active one is never hidden by the sheet
+// being closed.
+function renderFiltersFab(){
+  const fab = document.getElementById('filters-fab');
+  if(!fab) return;
+  const relevant = ['inventory', 'outfits', 'saved'].includes(appMode);
+  const hasTags = tagsAvailable && allTags().length > 0;
+  const worthShowing = relevant && (appMode === 'outfits' || hasTags);
+  fab.style.display = worthShowing ? 'block' : 'none';
+  const n = activeFilterCount();
+  fab.textContent = n ? `Filters · ${n}` : 'Filters';
+  fab.classList.toggle('active', n > 0);
 }
 
-function toggleOutfitFilters(){
-  outfitFiltersOpen = !outfitFiltersOpen;
-  document.getElementById('outfit-filters').style.display = outfitFiltersOpen ? 'block' : 'none';
-  renderFiltersButton();
+function renderFilterSheet(){
+  const body = document.getElementById('filter-sheet-body');
+  const clear = document.getElementById('filter-sheet-clear');
+  if(!body) return;
+
+  const tagSection = (id) => `
+    <div class="filter-section">
+      <span class="filter-sheet-label">Tags</span>
+      <div class="tag-chips" id="${id}"></div>
+    </div>`;
+
+  if(appMode === 'outfits'){
+    body.innerHTML = tagSection('outfit-tag-filter') + `
+      <div class="filter-section">
+        <span class="filter-sheet-label">Pieces</span>
+        <div class="filter-grid" id="filter-grid"></div>
+      </div>`;
+    renderTagChips('outfit-tag-filter', outfitTag, 'setOutfitTag');
+    renderOutfitFilters();
+  } else if(appMode === 'saved'){
+    body.innerHTML = tagSection('saved-tag-filter');
+    renderTagChips('saved-tag-filter', savedTag, 'setSavedTag');
+  } else {
+    body.innerHTML = tagSection('tag-filter');
+    renderTagChips('tag-filter', inventoryTag, 'setInventoryTag');
+  }
+
+  clear.style.display = activeFilterCount() ? 'inline' : 'none';
+}
+
+function openFilterSheet(){
+  renderFilterSheet();
+  document.getElementById('filter-sheet').classList.add('open');
+  document.getElementById('filter-sheet-backdrop').classList.add('open');
+}
+
+function closeFilterSheet(){
+  document.getElementById('filter-sheet').classList.remove('open');
+  document.getElementById('filter-sheet-backdrop').classList.remove('open');
+}
+
+function clearFilters(){
+  if(appMode === 'outfits'){
+    outfitTag = null;
+    Object.keys(outfitFilters).forEach(k => { outfitFilters[k] = anyFilter(); });
+    renderFilterSheet();
+    renderFiltersFab();
+    resetOutfitResults();
+  } else if(appMode === 'saved'){
+    savedTag = null;
+    renderFilterSheet();
+    renderSavedOutfits();
+  } else {
+    inventoryTag = null;
+    renderFilterSheet();
+    render();
+  }
 }
 
 function renderArchive(){
@@ -839,7 +1037,7 @@ function setBase(base){
   document.getElementById('base-topbottom-btn').classList.toggle('active', base==='topbottom');
   document.getElementById('base-dress-btn').classList.toggle('active', base==='dress');
   renderOutfitFilters();
-  renderFiltersButton();
+  renderFiltersFab();
   resetOutfitResults();
 }
 
@@ -860,7 +1058,9 @@ function shoeSlotList(){
 }
 
 function renderOutfitFilters(){
+  // The slot pickers only exist while the filter sheet is open.
   const grid = document.getElementById('filter-grid');
+  if(!grid) return;
   const base = outfitBase === 'topbottom' ? ['top','bottom','jumper','jacket'] : ['dress','jumper','jacket'];
   const slotKeys = INCLUDE_SHOES_IN_OUTFITS ? base.concat('shoes') : base;
 
@@ -942,7 +1142,7 @@ function toggleSlotItem(slotKey, itemId){
 function closePickerAndApply(){
   closeModal();
   renderOutfitFilters();
-  renderFiltersButton();
+  renderFiltersFab();
   resetOutfitResults();
 }
 
@@ -1959,23 +2159,9 @@ function renderTabs(){
     </button>
   `).join('');
 
+  // Tags used to sit in a row here; they now live in the filter sheet, so the
+  // wardrobe shows categories alone.
   document.getElementById('tabs').innerHTML = categories;
-
-  // Tags keep their own row. Sharing the category row buried them off the
-  // right-hand edge behind ten category pills, which hid the feature rather
-  // than simplifying it. Labelled and lighter so it does not read as a
-  // second row of navigation.
-  const tags = tagsAvailable ? allTags() : [];
-  const row = document.getElementById('tag-filter');
-  if(row){
-    row.style.display = tags.length ? 'flex' : 'none';
-    row.innerHTML = tags.length ? `
-      <span class="tag-row-label">Tags</span>
-      ${tags.map(t => `
-        <button class="tag-chip ${inventoryTag === t ? 'active' : ''}" onclick='setInventoryTag(${JSON.stringify(t)})'>${esc(t)}</button>
-      `).join('')}
-    ` : '';
-  }
 }
 
 // Shows the count so the archive is discoverable without being loud, and
@@ -2007,13 +2193,13 @@ function renderTagChips(elementId, selected, handler){
 function setInventoryTag(tag){
   inventoryTag = (inventoryTag === tag) ? null : tag;   // tapping the active one clears it
   render();
+  renderFilterSheet();
 }
 
 function setOutfitTag(tag){
   outfitTag = (outfitTag === tag) ? null : tag;
-  renderTagChips('outfit-tag-filter', outfitTag, 'setOutfitTag');
-  renderOutfitFilters();
-  renderFiltersButton();
+  renderFilterSheet();     // redraws the chips and the Clear all control with them
+  renderFiltersFab();
   resetOutfitResults();
 }
 
@@ -2021,6 +2207,8 @@ function setSavedTag(tag){
   savedTag = (savedTag === tag) ? null : tag;
   expandedSavedKey = null;   // an expanded card may be filtered away
   renderSavedOutfits();
+  renderFiltersFab();
+  renderFilterSheet();
 }
 
 function openModal(id){
@@ -2255,6 +2443,7 @@ function render(){
   if(inventoryTag && !allTags().includes(inventoryTag)) inventoryTag = null;
   renderTabs();
   renderArchiveLink();
+  renderFiltersFab();
 
   const search = document.getElementById('filter-search').value.toLowerCase();
   const filtered = visibleFilteredItems(search);
