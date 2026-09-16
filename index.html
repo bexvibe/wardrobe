@@ -900,11 +900,6 @@
          before you start narrowing anything down. -->
     <div class="hero" id="outfit-hero"></div>
 
-    <div class="base-toggle">
-      <button class="base-btn active" id="base-topbottom-btn" onclick="setBase('topbottom')">Top + Bottom</button>
-      <button class="base-btn" id="base-dress-btn" onclick="setBase('dress')">Dress</button>
-    </div>
-
     <div class="inline-filters" data-filter-ns="outfits-inline"></div>
 
     <div class="count-line" id="outfit-count-line"></div>
@@ -1083,7 +1078,10 @@ function tabForItem(item){
 // valid across the switch, in both directions.
 const INCLUDE_SHOES_IN_OUTFITS = false;
 
-let outfitBase = 'topbottom'; // or 'dress'
+// Outfits are one stream of both shapes. This narrows it rather than
+// switching between two pages: 'any' is everything, and the other two are
+// a filter like any other.
+let outfitShape = 'any';   // 'any' | 'topbottom' | 'dress'
 function anyFilter(){ return {type:'any', ids:[]}; }
 let outfitFilters = { top:anyFilter(), bottom:anyFilter(), dress:anyFilter(), jumper:anyFilter(), jacket:anyFilter(), shoes:anyFilter() };
 let outfitGen = null;
@@ -1167,7 +1165,7 @@ function setMode(mode){
 function activeFilterCount(){
   if(appMode === 'outfits'){
     const slots = Object.keys(outfitFilters).filter(k => outfitFilters[k].type !== 'any').length;
-    return slots + (outfitTag ? 1 : 0);
+    return slots + (outfitTag ? 1 : 0) + (outfitShape !== 'any' ? 1 : 0);
   }
   if(appMode === 'saved') return savedTag ? 1 : 0;
   return inventoryTag ? 1 : 0;
@@ -1280,6 +1278,7 @@ function closeFilterSheet(){
 function clearFilters(){
   if(appMode === 'outfits'){
     outfitTag = null;
+    outfitShape = 'any';
     Object.keys(outfitFilters).forEach(k => { outfitFilters[k] = anyFilter(); });
     renderFilterControls();
     renderFiltersFab();
@@ -1328,14 +1327,37 @@ function renderArchive(){
   `).join('');
 }
 
-function setBase(base){
-  outfitBase = base;
-  document.getElementById('base-topbottom-btn').classList.toggle('active', base==='topbottom');
-  document.getElementById('base-dress-btn').classList.toggle('active', base==='dress');
+function setOutfitShape(shape){
+  outfitShape = shape;
+  // Narrowing to one shape clears the slots the other shape owns. Leaving
+  // them set would hide a filter you can no longer see, and quietly empty
+  // the results when you came back to the other shape.
+  if(shape === 'dress'){
+    outfitFilters.top = anyFilter();
+    outfitFilters.bottom = anyFilter();
+  } else if(shape === 'topbottom'){
+    outfitFilters.dress = anyFilter();
+  }
   renderFilterControls();
   renderFiltersFab();
   resetOutfitResults();
 }
+
+// Which shapes the current filters can actually produce.
+//
+// With no shape chosen, narrowing a slot is itself a statement about shape:
+// asking for outfits with a particular top cannot be answered by a dress,
+// and asking for a particular dress cannot be answered by a top and a
+// bottom. So a narrowed slot rules its own shape in and the other out.
+function outfitFamilies(){
+  if(outfitShape !== 'any') return [outfitShape];
+  const fams = [];
+  if(outfitFilters.dress.type === 'any') fams.push('topbottom');
+  if(outfitFilters.top.type === 'any' && outfitFilters.bottom.type === 'any') fams.push('dress');
+  return fams;
+}
+
+const SHAPE_LABELS = { any:'Any', topbottom:'Top + bottom', dress:'Dress' };
 
 const SLOT_META = {
   top:{label:'Top', category:'Tops', allowNone:false},
@@ -1356,10 +1378,21 @@ function shoeSlotList(){
 function renderSlotChips(gridId){
   const grid = document.getElementById(gridId);
   if(!grid) return;
-  const base = outfitBase === 'topbottom' ? ['top','bottom','jumper','jacket'] : ['dress','jumper','jacket'];
-  const slotKeys = INCLUDE_SHOES_IN_OUTFITS ? base.concat('shoes') : base;
 
-  grid.innerHTML = slotKeys.map(key => {
+  // Shape leads the row, because it decides which of the rest apply. With
+  // no shape chosen every slot is offered; choosing one drops the slots
+  // that shape does not have.
+  const shaped = outfitShape === 'dress'      ? ['dress']
+               : outfitShape === 'topbottom'  ? ['top','bottom']
+                                              : ['top','bottom','dress'];
+  const slotKeys = shaped.concat(INCLUDE_SHOES_IN_OUTFITS ? ['jumper','jacket','shoes'] : ['jumper','jacket']);
+
+  const shapeChip = `
+    <button class="filter-chip ${outfitShape !== 'any' ? 'active' : ''}" onclick="openShapePicker()">
+      Shape<span class="chip-state">${SHAPE_LABELS[outfitShape]}</span>
+    </button>`;
+
+  grid.innerHTML = shapeChip + slotKeys.map(key => {
     const meta = SLOT_META[key];
     const f = outfitFilters[key];
     let stateLabel;
@@ -1371,6 +1404,35 @@ function renderSlotChips(gridId){
       ${meta.label}<span class="chip-state">${stateLabel}</span>
     </button>`;
   }).join('');
+}
+
+// Three choices and no gallery, so it gets its own small sheet rather than
+// the slot picker's grid of pieces.
+function openShapePicker(){
+  const modal = document.getElementById('modal');
+  modal.innerHTML = `
+    <div class="sheet-header"><button class="sheet-back" onclick="closePickerAndApply()">← Done</button></div>
+    <div class="modal-body">
+      <div class="modal-name" style="margin-bottom:6px;">Outfit shape</div>
+      <p class="gate-note">Leave this on Any to see both kinds mixed together.</p>
+      <div class="quick-picks" id="shape-quick-picks"></div>
+    </div>
+  `;
+  renderShapeQuickPicks();
+  document.getElementById('modal-backdrop').classList.add('open');
+}
+
+function renderShapeQuickPicks(){
+  const el = document.getElementById('shape-quick-picks');
+  if(!el) return;
+  el.innerHTML = ['any','topbottom','dress'].map(v =>
+    `<button class="base-btn ${outfitShape === v ? 'active' : ''}" onclick="pickOutfitShape('${v}')">${SHAPE_LABELS[v]}</button>`
+  ).join('');
+}
+
+function pickOutfitShape(shape){
+  setOutfitShape(shape);
+  renderShapeQuickPicks();
 }
 
 function openSlotPicker(slotKey){
@@ -1452,35 +1514,44 @@ function slotList(categoryItems, filter, allowNone){
   }
 }
 
+function* familyGenerator(family, jumpers, jackets, shoes){
+  if(family === 'topbottom'){
+    const tops = slotList(outfitPool('Tops'), outfitFilters.top, false);
+    const bottoms = slotList(outfitPool('Bottoms'), outfitFilters.bottom, false);
+    for(const top of tops)
+      for(const bottom of bottoms)
+        for(const jumper of jumpers)
+          for(const jacket of jackets)
+            for(const shoe of shoes)
+              yield {base:'topbottom', top, bottom, jumper, jacket, shoe};
+  } else {
+    const dresses = slotList(outfitPool('Dresses'), outfitFilters.dress, false);
+    for(const dress of dresses)
+      for(const jumper of jumpers)
+        for(const jacket of jackets)
+          for(const shoe of shoes)
+            yield {base:'dress', dress, jumper, jacket, shoe};
+  }
+}
+
 function* comboGenerator(){
   const jumpers = slotList(outfitPool('Jumpers'), outfitFilters.jumper, true);
   const jackets = slotList(outfitPool('Jackets'), outfitFilters.jacket, true);
   const shoes = shoeSlotList();
 
-  if(outfitBase === 'topbottom'){
-    const tops = slotList(outfitPool('Tops'), outfitFilters.top, false);
-    const bottoms = slotList(outfitPool('Bottoms'), outfitFilters.bottom, false);
-    for(const top of tops){
-      for(const bottom of bottoms){
-        for(const jumper of jumpers){
-          for(const jacket of jackets){
-            for(const shoe of shoes){
-              yield {base:'topbottom', top, bottom, jumper, jacket, shoe};
-            }
-          }
-        }
-      }
-    }
-  } else {
-    const dresses = slotList(outfitPool('Dresses'), outfitFilters.dress, false);
-    for(const dress of dresses){
-      for(const jumper of jumpers){
-        for(const jacket of jackets){
-          for(const shoe of shoes){
-            yield {base:'dress', dress, jumper, jacket, shoe};
-          }
-        }
-      }
+  const gens = outfitFamilies().map(f => ({ gen: familyGenerator(f, jumpers, jackets, shoes), done: false }));
+
+  // Taken one at a time from each shape in turn, rather than all of one and
+  // then all of the other. Dresses are a fraction of a percent of the
+  // combinations here, so drawing in proportion would bury them past any
+  // page you would actually scroll to; alternating puts both on the first
+  // screen. Once the shorter one runs out the rest is whatever is left.
+  while(gens.some(g => !g.done)){
+    for(const g of gens){
+      if(g.done) continue;
+      const next = g.gen.next();
+      if(next.done) g.done = true;
+      else yield next.value;
     }
   }
 }
@@ -1540,13 +1611,16 @@ function comboCountWhere(untaggedOnly){
   const shoes = INCLUDE_SHOES_IN_OUTFITS
     ? slotCount('Shoes', outfitFilters.shoes, true, untaggedOnly)
     : 1;
-  if(outfitBase === 'topbottom'){
-    return slotCount('Tops', outfitFilters.top, false, untaggedOnly)
-         * slotCount('Bottoms', outfitFilters.bottom, false, untaggedOnly)
-         * jumpers * jackets * shoes;
-  }
-  return slotCount('Dresses', outfitFilters.dress, false, untaggedOnly)
-       * jumpers * jackets * shoes;
+
+  // Summed over whichever shapes are in play, from the same list the
+  // generator walks — the count and the stream have to agree.
+  return outfitFamilies().reduce((total, family) => {
+    const own = family === 'topbottom'
+      ? slotCount('Tops', outfitFilters.top, false, untaggedOnly)
+        * slotCount('Bottoms', outfitFilters.bottom, false, untaggedOnly)
+      : slotCount('Dresses', outfitFilters.dress, false, untaggedOnly);
+    return total + own * jumpers * jackets * shoes;
+  }, 0);
 }
 
 function totalComboCount(){
@@ -2150,9 +2224,10 @@ function lockFilterForPiece(itemId){
   outfitFilters = { top:anyFilter(), bottom:anyFilter(), dress:anyFilter(), jumper:anyFilter(), jacket:anyFilter(), shoes:anyFilter() };
   const locked = {type:'items', ids:[itemId]};
 
-  if(tab==='Tops'){ outfitBase='topbottom'; outfitFilters.top=locked; }
-  else if(tab==='Bottoms'){ outfitBase='topbottom'; outfitFilters.bottom=locked; }
-  else if(tab==='Dresses'){ outfitBase='dress'; outfitFilters.dress=locked; }
+  outfitShape = 'any';
+  if(tab==='Tops'){ outfitShape='topbottom'; outfitFilters.top=locked; }
+  else if(tab==='Bottoms'){ outfitShape='topbottom'; outfitFilters.bottom=locked; }
+  else if(tab==='Dresses'){ outfitShape='dress'; outfitFilters.dress=locked; }
   else if(tab==='Jumpers'){ outfitFilters.jumper=locked; }
   else if(tab==='Jackets'){ outfitFilters.jacket=locked; }
   else if(tab==='Shoes'){
@@ -2174,8 +2249,6 @@ function findOutfitsWithPiece(itemId){
   closeModal();
   outfitRenderContext = 'tab';
   setMode('outfits');
-  document.getElementById('base-topbottom-btn').classList.toggle('active', outfitBase==='topbottom');
-  document.getElementById('base-dress-btn').classList.toggle('active', outfitBase==='dress');
   renderFilterControls();
   resetOutfitResults();
 }
