@@ -92,6 +92,58 @@
     display:flex;justify-content:space-between;align-items:center;
     gap:10px;margin:14px 0 16px;flex-wrap:wrap;
   }
+
+  /* Round icon buttons. The wardrobe's controls are used constantly and
+     read fine without their labels, so the top of the page gives its room
+     back to the clothes. */
+  .icon-btn{
+    flex:none;
+    width:38px;height:38px;
+    display:flex;align-items:center;justify-content:center;
+    border-radius:999px;
+    border:1px solid var(--line);
+    background:var(--surface);
+    color:var(--ink);
+    cursor:pointer;
+    padding:0;
+    transition:background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+  }
+  .icon-btn svg{width:18px;height:18px;display:block;}
+  .icon-btn:hover{border-color:var(--sage);}
+  /* The one button that makes something new carries the page's only fill. */
+  .icon-btn.primary{background:var(--ink);border-color:var(--ink);color:var(--bone);}
+  .icon-btn.active{background:var(--sage);border-color:var(--sage);color:#fff;}
+  /* A filter that is on has to be visible with the control closed — the
+     same rule the Filters pill follows. */
+  .icon-btn.has-value{border-color:var(--sage);color:var(--sage-deep);}
+  .icon-row{display:flex;gap:8px;align-items:center;}
+
+  /* Search opens over the page rather than sitting on it. The results stay
+     visible underneath, because watching them narrow as you type is the
+     whole point of searching. */
+  .search-overlay{
+    display:none;
+    position:fixed;top:0;left:0;right:0;
+    z-index:105;
+    padding:calc(10px + env(safe-area-inset-top, 0px)) 14px 12px;
+    background:var(--bone);
+    border-bottom:1px solid var(--line);
+    box-shadow:0 6px 20px rgba(43,38,32,0.10);
+  }
+  .search-overlay.open{display:block;}
+  .search-overlay-bar{display:flex;align-items:center;gap:10px;}
+  .search-overlay-bar .search-glyph{flex:none;color:var(--ink-soft);display:block;width:17px;height:17px;}
+  .search-overlay-bar input[type=text]{flex:1;min-width:0;}
+  /* Smaller than a toolbar button: it sits inside the field, not beside it. */
+  .search-clear{width:28px;height:28px;border-color:transparent;background:none;color:var(--ink-soft);}
+  .search-clear svg{width:14px;height:14px;}
+  .search-cancel{
+    flex:none;
+    font-family:'Work Sans',sans-serif;
+    font-size:13px;font-weight:600;
+    background:none;border:none;
+    color:var(--ink-soft);cursor:pointer;padding:6px 2px;
+  }
   input[type=text]{
     font-family:'Work Sans',sans-serif;
     font-size:13px;
@@ -734,12 +786,22 @@
 
 <div class="wrap" id="app-root" style="display:none;">
   <div id="inventory-view">
-    <div class="toolbar-row">
-      <input type="text" id="filter-search" placeholder="Search name or brand..." oninput="render()">
-      <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <button class="btn small" onclick="openItemForm()">+ Add</button>
-        <button class="btn secondary small" id="view-toggle-btn" onclick="toggleViewMode()">List view</button>
-        <button class="btn secondary small" id="edit-toggle-btn" onclick="toggleEditMode()">Edit</button>
+    <div class="toolbar-row" id="wardrobe-toolbar">
+      <div class="icon-row">
+        <button class="icon-btn primary" id="add-item-btn" onclick="openItemForm()" aria-label="Add a piece" title="Add a piece">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <path d="M12 5v14M5 12h14"/>
+          </svg>
+        </button>
+      </div>
+      <div class="icon-row">
+        <button class="icon-btn" id="search-btn" onclick="openSearch()" aria-label="Search" title="Search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>
+          </svg>
+        </button>
+        <button class="icon-btn" id="view-toggle-btn" onclick="toggleViewMode()"></button>
+        <button class="icon-btn" id="edit-toggle-btn" onclick="toggleEditMode()"></button>
       </div>
     </div>
 
@@ -815,6 +877,23 @@
 
   <div class="signout-row">
     <button class="signout-btn" onclick="signOut()">Sign out</button>
+  </div>
+</div>
+
+<div class="search-overlay" id="search-overlay">
+  <div class="search-overlay-bar">
+    <svg class="search-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+      <circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>
+    </svg>
+    <input type="text" id="filter-search" placeholder="Search name or brand..."
+           oninput="render()" onkeydown="if(event.key==='Escape') closeSearch()">
+    <button class="icon-btn search-clear" id="search-clear" onclick="clearSearch()"
+            aria-label="Clear search" title="Clear search" style="display:none;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+        <path d="M6 6l12 12M18 6L6 18"/>
+      </svg>
+    </button>
+    <button class="search-cancel" onclick="closeSearch()">Done</button>
   </div>
 </div>
 
@@ -962,6 +1041,9 @@ function comboMatchesTag(combo){
 // it is visited rarely and does not deserve permanent space in the nav.
 function setMode(mode){
   appMode = mode;
+  // Search belongs to the wardrobe; leaving it open over another page would
+  // be a bar that filters nothing you can see.
+  if(mode !== 'inventory') closeSearch();
   const onInventory = mode === 'inventory' || mode === 'archive';
   document.getElementById('nav-inventory-btn')?.classList.toggle('active', onInventory);
   document.getElementById('nav-outfits-btn')?.classList.toggle('active', mode==='outfits');
@@ -2801,9 +2883,77 @@ function closeModalIfBackdrop(e){
   if(e.target.id === 'modal-backdrop') closeModal();
 }
 
+// ---- Toolbar icons -----------------------------------------
+// Inline rather than an icon font: four glyphs is not worth another request,
+// and stroke="currentColor" lets them follow the button's state.
+const ICONS = {
+  // Shows what tapping switches TO, not the view you are in — a toggle that
+  // pictures its current state reads as a label and gets tapped by mistake.
+  list:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01"/></svg>',
+  grid:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg>',
+  select:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 5.5L10 16l-4.5-4.5"/><path d="M20 12.5V19a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 19V6a1.5 1.5 0 0 1 1.5-1.5H16"/></svg>',
+  done:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>'
+};
+
+function renderToolbarIcons(){
+  const view = document.getElementById('view-toggle-btn');
+  if(view){
+    const toList = viewMode === 'photos';
+    view.innerHTML = toList ? ICONS.list : ICONS.grid;
+    view.setAttribute('aria-label', toList ? 'Switch to list view' : 'Switch to photo view');
+    view.title = toList ? 'List view' : 'Photo view';
+  }
+  const edit = document.getElementById('edit-toggle-btn');
+  if(edit){
+    edit.innerHTML = editMode ? ICONS.done : ICONS.select;
+    edit.setAttribute('aria-label', editMode ? 'Leave select mode' : 'Select pieces');
+    edit.title = editMode ? 'Done' : 'Select';
+    edit.classList.toggle('active', editMode);
+  }
+  const q = ((document.getElementById('filter-search') || {}).value || '').trim();
+  const search = document.getElementById('search-btn');
+  // A search still narrowing the grid has to be visible with the bar shut.
+  if(search) search.classList.toggle('has-value', Boolean(q));
+  const clear = document.getElementById('search-clear');
+  if(clear) clear.style.display = q ? 'flex' : 'none';
+}
+
+function clearSearch(){
+  const input = document.getElementById('filter-search');
+  input.value = '';
+  render();
+  input.focus();
+}
+
+// The bar lands on top of the toolbar it replaces, so the toolbar goes
+// invisible rather than display:none — the row keeps its height and the
+// grid underneath does not jump as the bar opens and closes.
+function setToolbarHidden(hidden){
+  const bar = document.getElementById('wardrobe-toolbar');
+  if(bar) bar.style.visibility = hidden ? 'hidden' : '';
+}
+
+function openSearch(){
+  document.getElementById('search-overlay').classList.add('open');
+  setToolbarHidden(true);
+  // The bar covers the top of the page, so start at the top: the results you
+  // are narrowing should be the ones under your thumb.
+  window.scrollTo({ top: 0 });
+  const input = document.getElementById('filter-search');
+  input.focus();
+  input.select();
+}
+
+function closeSearch(){
+  document.getElementById('search-overlay').classList.remove('open');
+  setToolbarHidden(false);
+  // The query is deliberately kept: closing the bar should not silently undo
+  // the filtering you are looking at. The search button shows it is on.
+  renderToolbarIcons();
+}
+
 function toggleViewMode(){
   viewMode = viewMode === 'photos' ? 'names' : 'photos';
-  document.getElementById('view-toggle-btn').textContent = viewMode === 'photos' ? 'List view' : 'Photo view';
   render();
 }
 
@@ -2811,8 +2961,6 @@ function toggleEditMode(){
   editMode = !editMode;
   selectedIds.clear();
   confirmingDelete = false;
-  document.getElementById('edit-toggle-btn').textContent = editMode ? 'Done' : 'Edit';
-  document.getElementById('edit-toggle-btn').classList.toggle('active', editMode);
   render();
 }
 
@@ -2894,6 +3042,7 @@ function render(){
   renderTabs();
   renderArchiveLink();
   renderFiltersFab();
+  renderToolbarIcons();
 
   const search = document.getElementById('filter-search').value.toLowerCase();
   const filtered = visibleFilteredItems(search);
