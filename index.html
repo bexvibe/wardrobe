@@ -161,7 +161,9 @@
        threshold is the fix — blocking zoom in the viewport tag would take
        away pinch-to-zoom everywhere to solve it in one place. */
     font-size:16px;
-    padding:7px 12px;
+    padding:12px 14px;
+    min-height:44px;
+    box-sizing:border-box;
     border:1px solid var(--line);
     border-radius:6px;
     background:var(--surface);
@@ -194,7 +196,11 @@
     /* Same 16px floor as above — every field that can take focus, or the
        add form and the password screen zoom instead. */
     font-size:16px;
-    padding:8px 10px;
+    /* Roomy enough to hit without aiming: 44px is the smallest target a
+       thumb reliably lands on. */
+    padding:12px 14px;
+    min-height:44px;
+    box-sizing:border-box;
     border:1px solid var(--line);
     border-radius:6px;
     background:var(--page);
@@ -475,12 +481,21 @@
 
   /* Add / edit item form */
   .form-grid{display:flex;flex-direction:column;gap:12px;margin:14px 0;}
+  /* A field label is there to be read, so it is set in the reading face at
+     a readable size — mono, 11px and uppercase made it decoration. */
   .form-grid label{
-    display:flex;flex-direction:column;gap:5px;
-    font-family:'IBM Plex Mono',monospace;
-    font-size:11px;letter-spacing:0.06em;text-transform:uppercase;
+    display:flex;flex-direction:column;gap:6px;
+    font-family:'Work Sans',sans-serif;
+    font-size:13px;font-weight:600;
     color:var(--ink-soft);
   }
+  /* Every field in the form takes the same fill, textarea and select
+     included — they were falling through to the page grey while the text
+     inputs were white, which made Notes look like a different control. */
+  .form-grid input, .form-grid textarea, .form-grid select{
+    background:var(--surface);
+  }
+  .form-grid textarea{min-height:88px;resize:vertical;}
   .form-error{font-size:12px;color:var(--ink);min-height:16px;}
 
   /* Archive */
@@ -541,6 +556,34 @@
 
   /* Tag chips inside the add/edit form sit under their input */
   .form-grid .tag-chips{margin-top:8px;}
+
+  /* The filter controls where the page can see them, rather than behind a
+     button. Sits above the results, so the pill is only needed once you
+     have scrolled past this. */
+  .inline-filters{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:14px 14px 2px;
+    margin:0 0 14px;
+  }
+  /* The sections inside already carry their own bottom margin. */
+  .inline-filters .filter-section:last-child{margin-bottom:12px;}
+
+  /* One outfit at the top of the page, larger than the grid below it. */
+  .hero{margin:0 0 16px;}
+  .hero-label{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10px;letter-spacing:0.1em;text-transform:uppercase;
+    color:var(--ink-soft);
+    margin-bottom:8px;
+  }
+  /* A fixed height, which a grid card gets for free from its row. Without
+     one the card has nothing bounding it and the bottom garment grows to
+     its own full size, pushing the filters below off the screen — the
+     opposite of the point. The flex inside then shares this out exactly as
+     it does in the grid. */
+  .hero-card{cursor:pointer;height:320px;}
 
   /* Filters: a pill within thumb reach, and the sheet it raises */
   .filters-fab{
@@ -853,10 +896,16 @@
   </div>
 
   <div id="outfits-view" style="display:none;">
+    <!-- One outfit, picked afresh each time you arrive: something to react to
+         before you start narrowing anything down. -->
+    <div class="hero" id="outfit-hero"></div>
+
     <div class="base-toggle">
       <button class="base-btn active" id="base-topbottom-btn" onclick="setBase('topbottom')">Top + Bottom</button>
       <button class="base-btn" id="base-dress-btn" onclick="setBase('dress')">Dress</button>
     </div>
+
+    <div class="inline-filters" data-filter-ns="outfits-inline"></div>
 
     <div class="count-line" id="outfit-count-line"></div>
     <div class="outfit-gallery" id="outfit-gallery"></div>
@@ -869,6 +918,7 @@
   </div>
 
   <div id="saved-view" style="display:none;">
+    <div class="inline-filters" data-filter-ns="saved-inline"></div>
     <div class="count-line" id="saved-count-line"></div>
     <div class="outfit-gallery" id="saved-gallery"></div>
     <div class="empty" id="saved-empty" style="display:none;">
@@ -879,7 +929,15 @@
 
   <div id="capsules-view" style="display:none;">
     <div class="toolbar-row">
-      <button class="btn small" onclick="openCapsuleEditor()">+ New capsule</button>
+      <span></span>
+      <div class="icon-row">
+        <button class="icon-btn primary" id="new-capsule-btn" onclick="openCapsuleEditor()"
+                aria-label="New capsule" title="New capsule">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <path d="M12 5v14M5 12h14"/>
+          </svg>
+        </button>
+      </div>
     </div>
     <div class="count-line" id="capsule-count-line"></div>
     <div class="capsule-gallery" id="capsule-gallery"></div>
@@ -928,7 +986,7 @@
     <span class="filter-sheet-title" id="filter-sheet-title">Filters</span>
     <button class="filter-sheet-clear" id="filter-sheet-clear" onclick="clearFilters()">Clear all</button>
   </div>
-  <div class="filter-sheet-body" id="filter-sheet-body"></div>
+  <div class="filter-sheet-body" id="filter-sheet-body" data-filter-ns="sheet"></div>
   <button class="btn filter-sheet-done" onclick="closeFilterSheet()">Done</button>
 </div>
 
@@ -953,17 +1011,17 @@
     <div class="modal-body">
       <div class="modal-name" id="form-title">New piece</div>
       <div class="form-grid">
-        <label>Name<input type="text" id="form-name" placeholder="Black linen shirt"></label>
-        <label>Brand<input type="text" id="form-brand" placeholder="Assembly Label"></label>
+        <label>Name<input type="text" id="form-name"></label>
+        <label>Brand<input type="text" id="form-brand"></label>
         <label>Category<select id="form-category"></select></label>
-        <label>Size<input type="text" id="form-size" placeholder="10"></label>
-        <label>Price<input type="text" id="form-price" placeholder="NZD $40.00"></label>
-        <label>Source<input type="text" id="form-source" placeholder="Depop"></label>
-        <label id="form-tags-field">Tags
-          <input type="text" id="form-tags" placeholder="summer, work">
+        <label>Size<input type="text" id="form-size"></label>
+        <label>Price<input type="text" id="form-price"></label>
+        <label>Source<input type="text" id="form-source"></label>
+        <label id="form-tags-field">Tags, separated by commas
+          <input type="text" id="form-tags">
           <div class="tag-chips" id="form-tag-suggestions"></div>
         </label>
-        <label>Notes<textarea id="form-notes" rows="3" placeholder="Anything worth remembering"></textarea></label>
+        <label>Notes<textarea id="form-notes" rows="3"></textarea></label>
       </div>
       <div class="form-error" id="form-error"></div>
       <div class="modal-actions">
@@ -1080,6 +1138,10 @@ function setMode(mode){
   document.getElementById('capsules-view').style.display = mode==='capsules' ? 'block' : 'none';
   document.getElementById('archive-view').style.display = mode==='archive' ? 'block' : 'none';
 
+  // Arriving anywhere: the inline controls have to be visible and current
+  // before the page underneath them draws.
+  renderFilterControls();
+
   if(mode==='inventory') render();
   if(mode==='archive') renderArchive();
   if(mode==='saved') renderSavedOutfits();
@@ -1087,9 +1149,12 @@ function setMode(mode){
   if(mode==='outfits'){
     outfitRenderContext = 'tab';
     if(outfitTag && !allTags().includes(outfitTag)) outfitTag = null;
-    renderOutfitFilters();
     resetOutfitResults();
   }
+
+  // The pill stands in for the inline controls, so leaving a page has to
+  // forget that they were on screen there.
+  inlineFiltersOnScreen = false;
   // Every view: the pill has to disappear where there is nothing to filter
   // (the archive), and pick up the count of whichever view you have moved to.
   renderFiltersFab();
@@ -1111,50 +1176,98 @@ function activeFilterCount(){
 // The pill only appears where there is something to filter, and always shows
 // how many filters are on so an active one is never hidden by the sheet
 // being closed.
+// True while the page's own filter controls are on screen. The floating
+// pill is a stand-in for them, so it stays out of the way until they scroll
+// off and comes back the moment they return.
+let inlineFiltersOnScreen = false;
+
 function renderFiltersFab(){
   const fab = document.getElementById('filters-fab');
   if(!fab) return;
   const relevant = ['inventory', 'outfits', 'saved'].includes(appMode);
   const hasTags = tagsAvailable && allTags().length > 0;
-  const worthShowing = relevant && (appMode === 'outfits' || hasTags);
+  const worthShowing = relevant && (appMode === 'outfits' || hasTags) && !inlineFiltersOnScreen;
   fab.style.display = worthShowing ? 'block' : 'none';
   const n = activeFilterCount();
   fab.textContent = n ? `Filters · ${n}` : 'Filters';
   fab.classList.toggle('active', n > 0);
 }
 
-function renderFilterSheet(){
-  const body = document.getElementById('filter-sheet-body');
-  const clear = document.getElementById('filter-sheet-clear');
-  if(!body) return;
+// One observer over both inline mounts. Only the visible page's mount can
+// ever intersect, so whichever reports in is the one that counts.
+function watchInlineFilters(){
+  const hosts = Array.from(document.querySelectorAll('[data-filter-ns$="-inline"]'));
+  if(!hosts.length || !window.IntersectionObserver) return;
+  const seen = new WeakMap();
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => seen.set(e.target, e.isIntersecting));
+    const any = hosts.some(h => seen.get(h));
+    if(any !== inlineFiltersOnScreen){
+      inlineFiltersOnScreen = any;
+      renderFiltersFab();
+    }
+  }, { threshold: 0 });
+  hosts.forEach(h => io.observe(h));
+}
 
-  const tagSection = (id) => `
+// The same controls are mounted in more than one place at once: inline at
+// the top of the Outfits and Saved pages, where they are visible without
+// being asked for, and in the sheet the floating pill raises once you have
+// scrolled past them. Every mount reads the same state and is redrawn
+// together, so there is no second copy to keep in step by hand. Ids are
+// namespaced per mount because two of them can be in the DOM at the same
+// time.
+const FILTER_MOUNTS = [
+  { ns: 'outfits-inline', mode: 'outfits' },
+  { ns: 'saved-inline',   mode: 'saved' },
+  { ns: 'sheet',          mode: null },      // follows whichever page you are on
+];
+
+function filterControlsHtml(ns, mode){
+  const tags = `
     <div class="filter-section">
       <span class="filter-sheet-label">Tags</span>
-      <div class="tag-chips" id="${id}"></div>
+      <div class="tag-chips" id="${ns}-tag-chips"></div>
     </div>`;
+  if(mode !== 'outfits') return tags;
+  return tags + `
+    <div class="filter-section">
+      <span class="filter-sheet-label">Pieces</span>
+      <div class="filter-grid" id="${ns}-filter-grid"></div>
+    </div>`;
+}
 
-  if(appMode === 'outfits'){
-    body.innerHTML = tagSection('outfit-tag-filter') + `
-      <div class="filter-section">
-        <span class="filter-sheet-label">Pieces</span>
-        <div class="filter-grid" id="filter-grid"></div>
-      </div>`;
-    renderTagChips('outfit-tag-filter', outfitTag, 'setOutfitTag');
-    renderOutfitFilters();
-  } else if(appMode === 'saved'){
-    body.innerHTML = tagSection('saved-tag-filter');
-    renderTagChips('saved-tag-filter', savedTag, 'setSavedTag');
-  } else {
-    body.innerHTML = tagSection('tag-filter');
-    renderTagChips('tag-filter', inventoryTag, 'setInventoryTag');
-  }
+function renderFilterControls(){
+  FILTER_MOUNTS.forEach(({ ns, mode }) => {
+    const host = document.querySelector(`[data-filter-ns="${ns}"]`);
+    if(!host) return;
+    const m = mode || appMode;
 
-  clear.style.display = activeFilterCount() ? 'inline' : 'none';
+    host.innerHTML = filterControlsHtml(ns, m);
+
+    const selected = m === 'outfits' ? outfitTag : m === 'saved' ? savedTag : inventoryTag;
+    const handler  = m === 'outfits' ? 'setOutfitTag'
+                   : m === 'saved'   ? 'setSavedTag'
+                                     : 'setInventoryTag';
+    renderTagChips(`${ns}-tag-chips`, selected, handler);
+    if(m === 'outfits') renderSlotChips(`${ns}-filter-grid`);
+
+    // An inline mount with nothing to offer would be a labelled empty box.
+    // Outfits always has its Pieces row; Saved has only tags, which may
+    // not exist yet.
+    if(mode){
+      const chips = document.getElementById(`${ns}-tag-chips`);
+      const hasTags = chips && chips.children.length > 0;
+      host.style.display = (m === 'outfits' || hasTags) ? '' : 'none';
+    }
+  });
+
+  const clear = document.getElementById('filter-sheet-clear');
+  if(clear) clear.style.display = activeFilterCount() ? 'inline' : 'none';
 }
 
 function openFilterSheet(){
-  renderFilterSheet();
+  renderFilterControls();
   document.getElementById('filter-sheet').classList.add('open');
   document.getElementById('filter-sheet-backdrop').classList.add('open');
 }
@@ -1168,16 +1281,16 @@ function clearFilters(){
   if(appMode === 'outfits'){
     outfitTag = null;
     Object.keys(outfitFilters).forEach(k => { outfitFilters[k] = anyFilter(); });
-    renderFilterSheet();
+    renderFilterControls();
     renderFiltersFab();
     resetOutfitResults();
   } else if(appMode === 'saved'){
     savedTag = null;
-    renderFilterSheet();
+    renderFilterControls();
     renderSavedOutfits();
   } else {
     inventoryTag = null;
-    renderFilterSheet();
+    renderFilterControls();
     render();
   }
 }
@@ -1219,7 +1332,7 @@ function setBase(base){
   outfitBase = base;
   document.getElementById('base-topbottom-btn').classList.toggle('active', base==='topbottom');
   document.getElementById('base-dress-btn').classList.toggle('active', base==='dress');
-  renderOutfitFilters();
+  renderFilterControls();
   renderFiltersFab();
   resetOutfitResults();
 }
@@ -1240,9 +1353,8 @@ function shoeSlotList(){
     : [null];
 }
 
-function renderOutfitFilters(){
-  // The slot pickers only exist while the filter sheet is open.
-  const grid = document.getElementById('filter-grid');
+function renderSlotChips(gridId){
+  const grid = document.getElementById(gridId);
   if(!grid) return;
   const base = outfitBase === 'topbottom' ? ['top','bottom','jumper','jacket'] : ['dress','jumper','jacket'];
   const slotKeys = INCLUDE_SHOES_IN_OUTFITS ? base.concat('shoes') : base;
@@ -1324,7 +1436,7 @@ function toggleSlotItem(slotKey, itemId){
 
 function closePickerAndApply(){
   closeModal();
-  renderOutfitFilters();
+  renderFilterControls();
   renderFiltersFab();
   resetOutfitResults();
 }
@@ -1449,6 +1561,46 @@ function resetOutfitResults(){
   outfitGen = comboGenerator();
   outfitDisplayed = [];
   loadMoreOutfits();
+  // The pool just changed, so the featured outfit is drawn again from it —
+  // renderOutfits has already run inside loadMoreOutfits, so draw the hero
+  // and then redraw the grid without it.
+  if(outfitRenderContext !== 'modal'){
+    pickHeroCombo();
+    renderHero();
+    renderOutfits();
+  }
+}
+
+// ---- The featured outfit -----------------------------------
+// A single outfit at the top of the page, so arriving gives you something to
+// look at rather than a wall of options. It is re-picked whenever the pool
+// it came from changes — a new visit, a different base, a filter — because
+// a featured outfit that no longer matches the filters below it would just
+// look like a bug.
+let heroCombo = null;
+
+function pickHeroCombo(){
+  // Draw from the generated page rather than re-running the generator: these
+  // are already the combinations that pass the current filters.
+  const pool = outfitDisplayed;
+  heroCombo = pool.length ? pool[Math.floor(Math.random() * pool.length)] : null;
+}
+
+function renderHero(){
+  const host = document.getElementById('outfit-hero');
+  if(!host) return;
+  if(!heroCombo){ host.innerHTML = ''; host.style.display = 'none'; return; }
+  host.style.display = 'block';
+
+  const key = comboKey(heroCombo);
+  const fav = isFavorited(key);
+  host.innerHTML = `
+    <div class="hero-label">An outfit to consider</div>
+    <div class="outfit-card hero-card" onclick='toggleExpandCombo(${JSON.stringify(key)})'>
+      <button class="outfit-fav-btn ${fav ? 'favorited' : ''}"
+              onclick='event.stopPropagation();toggleFavoriteByKey(${JSON.stringify(key)})'>${fav ? '♥' : '♡'}</button>
+      <div class="outfit-thumbs">${outfitThumbsHtml(heroCombo)}</div>
+    </div>`;
 }
 
 function loadMoreOutfits(){
@@ -1520,6 +1672,9 @@ async function toggleFavoriteByKey(key){
   if(!combo) return;
   await setFavorited(key, !isFavorited(key), combo);
   renderOutfits();
+  // The featured outfit is drawn outside the grid, so its heart has to be
+  // told separately — it is the one most likely to be tapped.
+  renderHero();
 }
 
 async function unfavoriteByKey(key){
@@ -1805,7 +1960,7 @@ function openCapsuleEditor(id){
       <div class="modal-name">${capsule ? 'Edit capsule' : 'New capsule'}</div>
       <div class="form-grid">
         <label>Name
-          <input type="text" id="capsule-name-input" placeholder="winter"
+          <input type="text" id="capsule-name-input"
                  value="${esc(capsuleDraft.name)}" oninput="onCapsuleNameInput()">
         </label>
       </div>
@@ -1935,6 +2090,10 @@ function renderOutfits(){
     ? {count:'m-outfit-count-line', gallery:'m-outfit-gallery', empty:null, loadMore:'m-load-more-btn'}
     : {count:'outfit-count-line', gallery:'outfit-gallery', empty:'outfit-empty', loadMore:'load-more-btn'};
 
+  const onPage = outfitRenderContext !== 'modal';
+  const heroKey = onPage && heroCombo ? comboKey(heroCombo) : null;
+  const shown = heroKey ? outfitDisplayed.filter(c => comboKey(c) !== heroKey) : outfitDisplayed;
+
   const countLine = document.getElementById(ids.count);
   const total = totalComboCount();
   if(countLine) countLine.textContent = `${outfitDisplayed.length} shown of ${total.toLocaleString()} possible combinations`;
@@ -1953,7 +2112,7 @@ function renderOutfits(){
   if(emptyState) emptyState.style.display = 'none';
   if(loadMoreBtn) loadMoreBtn.style.display = total > outfitDisplayed.length ? 'inline-block' : 'none';
 
-  gallery.innerHTML = outfitDisplayed.map(combo => {
+  gallery.innerHTML = shown.map(combo => {
     const key = comboKey(combo);
     const pieces = comboPieces(combo);
     const isExpanded = expandedComboKey === key;
@@ -2017,7 +2176,7 @@ function findOutfitsWithPiece(itemId){
   setMode('outfits');
   document.getElementById('base-topbottom-btn').classList.toggle('active', outfitBase==='topbottom');
   document.getElementById('base-dress-btn').classList.toggle('active', outfitBase==='dress');
-  renderOutfitFilters();
+  renderFilterControls();
   resetOutfitResults();
 }
 
@@ -2593,6 +2752,7 @@ async function boot(){
   // Delegated, so it keeps working across every re-render of the grid.
   wireLongPress(document.getElementById('gallery'));
   wireLongPress(document.getElementById('name-list'));
+  watchInlineFilters();
 
   if(!isConfigured()){
     showGate('unconfigured');
@@ -2753,12 +2913,12 @@ function renderTagChips(elementId, selected, handler){
 function setInventoryTag(tag){
   inventoryTag = (inventoryTag === tag) ? null : tag;   // tapping the active one clears it
   render();
-  renderFilterSheet();
+  renderFilterControls();
 }
 
 function setOutfitTag(tag){
   outfitTag = (outfitTag === tag) ? null : tag;
-  renderFilterSheet();     // redraws the chips and the Clear all control with them
+  renderFilterControls();     // redraws the chips and the Clear all control with them
   renderFiltersFab();
   resetOutfitResults();
 }
@@ -2768,7 +2928,7 @@ function setSavedTag(tag){
   expandedSavedKey = null;   // an expanded card may be filtered away
   renderSavedOutfits();
   renderFiltersFab();
-  renderFilterSheet();
+  renderFilterControls();
 }
 
 function openModal(id){
