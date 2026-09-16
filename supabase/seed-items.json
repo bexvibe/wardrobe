@@ -403,7 +403,7 @@
     "name": "So Shady (Ivory) sun hat",
     "brand": "Sophie Store",
     "size": "S/M",
-    "category": "Accessories",
+    "category": "Hats",
     "price": "NZD $25.00",
     "source": "Designer Wardrobe",
     "notes": "Seller: Elizabeth.",
@@ -426,7 +426,7 @@
     "category": "Tops",
     "price": "NZD $35.00",
     "source": "Designer Wardrobe",
-    "notes": "Seller: Darcy H. Photo sourced generically — tag in reference image reads a different brand, verify match.",
+    "notes": "Seller: Darcy H. Photo sourced generically \u2014 tag in reference image reads a different brand, verify match.",
     "photo": "wardrobe-photos/commoners-long-sleeve-white-nobg.webp"
   },
   {
@@ -476,7 +476,7 @@
     "category": "Shoes",
     "price": "NZD $89.99",
     "source": "",
-    "notes": "Colour not specified — used Black variant.",
+    "notes": "Colour not specified \u2014 used Black variant.",
     "photo": "wardrobe-photos/city-beach-dallas-boots-black.webp"
   },
   {
@@ -496,7 +496,7 @@
     "category": "Tops",
     "price": "NZD $259.00",
     "source": "",
-    "notes": "Sourced as 'Petit Polo Knit Top' on St. Agni's own site — verify same item.",
+    "notes": "Sourced as 'Petit Polo Knit Top' on St. Agni's own site \u2014 verify same item.",
     "photo": "wardrobe-photos/st-agni-rib-knit-polo-top-black.webp"
   },
   {
@@ -536,7 +536,7 @@
     "category": "Pants",
     "price": "",
     "source": "",
-    "notes": "Colour not specified — used Black variant.",
+    "notes": "Colour not specified \u2014 used Black variant.",
     "photo": "wardrobe-photos/st-agni-milano-high-waist-pants-black-flat-nobg.webp"
   },
   {
@@ -546,14 +546,14 @@
     "category": "Tops",
     "price": "NZD $120.00",
     "source": "Infinite Definite",
-    "notes": "Black. Generic name — used Merino Wool Silk Long Sleeve Knit as best guess, verify style.",
+    "notes": "Black. Generic name \u2014 used Merino Wool Silk Long Sleeve Knit as best guess, verify style.",
     "photo": "wardrobe-photos/country-road-long-sleeve-knit-black-nobg.webp"
   },
   {
     "name": "Neva Beanie",
     "brand": "Remain",
     "size": "-",
-    "category": "Accessories",
+    "category": "Hats",
     "price": "NZD $75.65",
     "source": "",
     "notes": "",
@@ -596,7 +596,7 @@
     "category": "Pants",
     "price": "",
     "source": "",
-    "notes": "Requested as 'Agnis Flares brown' — closest match is the Chocolate colourway.",
+    "notes": "Requested as 'Agnis Flares brown' \u2014 closest match is the Chocolate colourway.",
     "photo": "wardrobe-photos/indigo-luna-agni-flares-chocolate-nobg.webp"
   },
   {
@@ -683,7 +683,7 @@
     "name": "Bucket Hat Beige",
     "brand": "Lack of Colour",
     "size": "-",
-    "category": "Accessories",
+    "category": "Hats",
     "price": "",
     "source": "",
     "notes": "",
@@ -693,7 +693,7 @@
     "name": "Straw Bucket Hat",
     "brand": "",
     "size": "-",
-    "category": "Accessories",
+    "category": "Hats",
     "price": "",
     "source": "",
     "notes": "",
@@ -703,7 +703,7 @@
     "name": "Black Bucket Hat",
     "brand": "",
     "size": "-",
-    "category": "Accessories",
+    "category": "Hats",
     "price": "",
     "source": "",
     "notes": "",

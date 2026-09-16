@@ -890,7 +890,7 @@ let viewMode = 'photos'; // 'photos' or 'names'
 let editMode = false;
 let selectedIds = new Set();
 
-const TAB_ORDER = ['All','Tops','Bottoms','Jumpers','Jackets','Dresses','Shoes','Accessories','Other','No Image'];
+const TAB_ORDER = ['All','Tops','Bottoms','Jumpers','Jackets','Dresses','Shoes','Hats','Accessories','Other','No Image'];
 
 const CATEGORY_TO_TAB = {
   'Shirts':'Tops','Tops':'Tops',
@@ -899,6 +899,10 @@ const CATEGORY_TO_TAB = {
   'Jackets':'Jackets',
   'Dresses':'Dresses',
   'Shoes':'Shoes',
+  // Hats are their own tab: there are enough of them to be worth finding on
+  // their own, and in a capsule they belong at the top of the flat-lay
+  // rather than lumped in with bags and scarves.
+  'Hats':'Hats','Beanies':'Hats','Caps':'Hats',
   'Accessories':'Accessories','Bags':'Accessories','Sets':'Accessories','Swimwear':'Accessories'
 };
 
@@ -1560,7 +1564,7 @@ function renderSavedOutfits(){
 // than the outfit card's one-garment-per-slot; the order down the card is
 // the same one.
 const CAPSULE_BANDS = [
-  ['Accessories'],                    // hats and bags, at the top
+  ['Hats', 'Accessories'],            // worn highest, so drawn first
   ['Jackets', 'Jumpers', 'Tops'],     // layers outermost first, as on an outfit
   ['Bottoms', 'Dresses'],
   ['Shoes'],                          // at the foot, as worn

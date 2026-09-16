@@ -26,12 +26,22 @@ SRC, DST = sys.argv[1], sys.argv[2]
 CANVAS = 1400          # matches the existing -nobg.png files in wardrobe-photos/
 FILL = 0.88            # fraction of the canvas the garment occupies
 
+# How bright a pixel has to be to count as background. 242 suits a white
+# studio backdrop; a greyer one needs a lower number, or nothing qualifies
+# and the cutout comes back empty. Pass it as a third argument:
+#
+#     python3 scripts/remove-background.py shot.jpg out.png 200
+#
+# The line the script prints tells you whether to reach for it: "background
+# regions: 0" means the threshold is above the backdrop.
+CUT = int(sys.argv[3]) if len(sys.argv) > 3 else 242
+
 rgb = np.array(Image.open(SRC).convert('RGB')).astype(np.int16)
 lum = rgb.mean(axis=2)
 sat = rgb.max(axis=2) - rgb.min(axis=2)          # neutral background, coloured garment
 
 # Background candidates: bright and near-neutral.
-candidate = (lum >= 242) & (sat <= 12)
+candidate = (lum >= CUT) & (sat <= 12)
 
 # Keep only the regions actually connected to the image border. Anything
 # bright but enclosed by the garment (the label) is not background.
