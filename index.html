@@ -206,6 +206,11 @@
     overflow:hidden;
     cursor:pointer;
     position:relative;
+    /* Holding a piece starts a selection, so the phone must not answer the
+       same gesture with its own "save image" sheet or a text selection. */
+    -webkit-touch-callout:none;
+    -webkit-user-select:none;
+    user-select:none;
   }
   .tile img{width:100%;height:100%;object-fit:contain;display:block;}
   .tile .no-photo{
@@ -249,6 +254,9 @@
     display:flex;align-items:center;gap:10px;
     padding:12px 4px;
     cursor:pointer;
+    -webkit-touch-callout:none;
+    -webkit-user-select:none;
+    user-select:none;
   }
   .name-row-thumb{
     width:36px;height:36px;border-radius:6px;object-fit:contain;
@@ -2566,6 +2574,10 @@ async function startApp(){
 }
 
 async function boot(){
+  // Delegated, so it keeps working across every re-render of the grid.
+  wireLongPress(document.getElementById('gallery'));
+  wireLongPress(document.getElementById('name-list'));
+
   if(!isConfigured()){
     showGate('unconfigured');
     return;
@@ -2905,9 +2917,12 @@ function renderToolbarIcons(){
   }
   const edit = document.getElementById('edit-toggle-btn');
   if(edit){
-    edit.innerHTML = editMode ? ICONS.done : ICONS.select;
-    edit.setAttribute('aria-label', editMode ? 'Leave select mode' : 'Select pieces');
-    edit.title = editMode ? 'Done' : 'Select';
+    // No button at rest: hold a piece to start selecting. It appears once
+    // there is a mode to leave, which is the only thing it does.
+    edit.style.display = editMode ? 'flex' : 'none';
+    edit.innerHTML = ICONS.done;
+    edit.setAttribute('aria-label', 'Leave select mode');
+    edit.title = 'Done';
     edit.classList.toggle('active', editMode);
   }
   const q = ((document.getElementById('filter-search') || {}).value || '').trim();
@@ -2964,6 +2979,70 @@ function toggleEditMode(){
   render();
 }
 
+// ---- Long press to select ----------------------------------
+// Selecting several pieces to archive is rare next to browsing and adding,
+// so it has no button of its own at rest. Holding a piece enters the mode
+// already holding the thing you meant to act on, which is both the platform
+// convention and one step shorter than finding a button and then the piece.
+const LONG_PRESS_MS = 450;
+const LONG_PRESS_SLOP = 10;     // a drag this far is a scroll, not a press
+let pressTimer = null;
+let pressOrigin = null;
+let pressSelected = false;      // a press fired; swallow the click behind it
+
+function cancelPress(){
+  clearTimeout(pressTimer);
+  pressTimer = null;
+  pressOrigin = null;
+}
+
+function wireLongPress(container){
+  if(!container) return;
+
+  container.addEventListener('pointerdown', (e) => {
+    // Clear the swallow flag at the start of any new touch. Entering select
+    // mode re-renders the grid, which destroys the element the click was
+    // going to fire on — so that click never arrives and the flag would
+    // otherwise sit set and eat the next genuine tap.
+    pressSelected = false;
+    // In the mode already, or a secondary button: nothing to arm.
+    if(editMode || e.button > 0) return;
+    const row = e.target.closest('[data-id]');
+    if(!row) return;
+    pressOrigin = { x: e.clientX, y: e.clientY, id: row.dataset.id };
+    pressTimer = setTimeout(() => {
+      pressTimer = null;
+      pressSelected = true;
+      editMode = true;
+      confirmingDelete = false;
+      selectedIds.clear();
+      selectedIds.add(pressOrigin.id);
+      render();
+      // Worth a nudge on hardware that has it: entering a mode by holding
+      // still needs to announce itself.
+      if(navigator.vibrate) navigator.vibrate(12);
+    }, LONG_PRESS_MS);
+  });
+
+  container.addEventListener('pointermove', (e) => {
+    if(!pressTimer || !pressOrigin) return;
+    if(Math.hypot(e.clientX - pressOrigin.x, e.clientY - pressOrigin.y) > LONG_PRESS_SLOP) cancelPress();
+  });
+
+  ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev =>
+    container.addEventListener(ev, cancelPress));
+
+  // The tap that comes after a long press would otherwise open the piece, or
+  // immediately deselect it. Caught on the way down, before the tile's own
+  // handler ever sees it.
+  container.addEventListener('click', (e) => {
+    if(!pressSelected) return;
+    pressSelected = false;
+    e.stopPropagation();
+    e.preventDefault();
+  }, true);
+}
+
 function toggleSelectItem(id){
   if(selectedIds.has(id)) selectedIds.delete(id); else selectedIds.add(id);
   render();
@@ -3000,6 +3079,10 @@ async function confirmBulkDelete(){
   if(!await archiveItems(ids)) return;
   selectedIds.clear();
   confirmingDelete = false;
+  // The mode is entered by holding a piece and exists to do one thing, so it
+  // ends when that thing is done rather than leaving you in a select mode
+  // with nothing selected.
+  editMode = false;
   render();
   showToast(`Moved ${ids.length} item${ids.length===1?'':'s'} to Archive`);
 }
@@ -3095,7 +3178,7 @@ function render(){
     gallery.innerHTML = filtered.map(i => {
       const selected = selectedIds.has(i.id);
       return `
-      <div class="tile ${editMode ? 'select-mode' : ''} ${selected ? 'item-selected' : ''}" onclick="${clickHandler(i.id)}">
+      <div class="tile ${editMode ? 'select-mode' : ''} ${selected ? 'item-selected' : ''}" data-id="${i.id}" onclick="${clickHandler(i.id)}">
         ${editMode ? `<span class="select-check ${selected ? 'checked' : ''}">✓</span>` : ''}
         ${i.photo ? `<img src="${esc(i.photo)}" alt="${esc(i.name)}" referrerpolicy="no-referrer" loading="lazy" decoding="async">` : `<span class="no-photo">No photo</span>`}
       </div>
@@ -3107,7 +3190,7 @@ function render(){
     nameList.innerHTML = filtered.map(i => {
       const selected = selectedIds.has(i.id);
       return `
-      <div class="name-row ${editMode ? 'select-mode' : ''} ${selected ? 'item-selected' : ''}" onclick="${clickHandler(i.id)}">
+      <div class="name-row ${editMode ? 'select-mode' : ''} ${selected ? 'item-selected' : ''}" data-id="${i.id}" onclick="${clickHandler(i.id)}">
         ${editMode ? `<span class="select-check ${selected ? 'checked' : ''}">✓</span>` : ''}
         ${i.photo ? `<img class="name-row-thumb" src="${esc(i.photo)}" alt="" referrerpolicy="no-referrer" loading="lazy" decoding="async">` : `<div class="name-row-thumb no-photo-mini">No photo</div>`}
         <div class="name-row-text">
