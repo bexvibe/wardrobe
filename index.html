@@ -38,23 +38,45 @@
     opacity:1;
   }
   .wrap{max-width:960px;margin:0 auto;padding:28px 16px calc(120px + env(safe-area-inset-bottom, 0px));}
-  header{margin-bottom:20px;}
+  /* Every page opens the same way: the folio line, the name of the place set
+     large in Fraunces, one line saying what it holds, then a rule. The block
+     is mostly air on purpose — that space is what tells you a page has
+     started, which the bottom bar alone never quite does. */
+  .page-head{
+    padding:2px 0 22px;
+    margin-bottom:18px;
+    border-bottom:1px solid var(--line);
+  }
+  /* On Archive the way back takes the folio slot — it already reads as one,
+     and two mono lines stacked above the title was one too many. */
+  .page-head .back-link{padding:0;margin:0 0 18px;}
+  /* The same line the login card opens with, so the app keeps signing its
+     name once you are inside it. */
   .eyebrow{
     font-family:'IBM Plex Mono', monospace;
-    font-size:11px;
-    letter-spacing:0.12em;
+    font-size:10px;
+    letter-spacing:0.2em;
     text-transform:uppercase;
-    color:var(--ink);
-    margin-bottom:6px;
+    color:var(--ink-soft);
+    margin:0 0 18px;
   }
   h1{
     font-family:'Fraunces', serif;
-    font-weight:500;
-    font-size:34px;
-    margin:0 0 4px;
-    letter-spacing:-0.01em;
+    font-weight:400;
+    /* Grows with the screen and stops before it can wrap on a phone. */
+    font-size:clamp(34px, 11vw, 46px);
+    line-height:1.04;
+    margin:0;
+    letter-spacing:-0.02em;
   }
-  .sub{color:var(--ink-soft);font-size:13px;margin:0;}
+  .sub{
+    color:var(--ink-soft);
+    font-size:13px;
+    line-height:1.5;
+    margin:12px 0 0;
+    max-width:36ch;      /* breaks where a sentence reads, not at the edge */
+    text-wrap:balance;   /* and evenly, rather than leaving a word stranded */
+  }
 
   /* Tabs */
   .tabs{
@@ -405,7 +427,8 @@
   }
   .toast.show{opacity:1;}
   @media (max-width:520px){
-    h1{font-size:26px;}
+    /* h1 used to be capped at 26px here. It sizes itself with clamp() now,
+       so the cap only ever fought it. */
     .gallery{grid-template-columns:repeat(2, 1fr);}
   }
   @media (min-width:640px){
@@ -583,14 +606,26 @@
      them up — so it always ends exactly where its contents do. */
   .hero-card{cursor:pointer;}
   .hero-card .outfit-thumbs{flex:none;}
-  .hero-card .outfit-lower{
-    flex:none;
-    min-height:0;
-    /* Wider than tall, so a full-length garment does not turn the card into
-       a full screen of its own. */
+  .hero-card .outfit-lower{flex:none;min-height:0;}
+  /* Each garment carries its own ratio and its own ceiling, so the card is
+     the sum of its bands — it can neither spill past its border nor grow
+     until the filters under it are off the screen. The ceiling is a share
+     of the screen rather than a fixed number, because the page has to fit
+     a small phone as well as a large one. svh is the height Safari leaves
+     once the address bar is showing; vh is the fallback for engines that
+     do not know it. */
+  .hero-card .outfit-upper > *,
+  .hero-card .outfit-lower > *{
+    max-height:min(23vh, 200px);
+    max-height:min(23svh, 200px);
+  }
+  .hero-card .outfit-lower > *{
+    width:100%;
+    /* Not height:100% — a percentage against a band with no height of its
+       own is what let the pieces hang out of the card before. */
+    height:auto;
     aspect-ratio:3/2;
   }
-  .hero-card .outfit-lower > *{width:100%;height:100%;}
 
   /* Filters: a pill within thumb reach, and the sheet it raises */
   .filters-fab{
@@ -860,6 +895,12 @@
 
 <div class="wrap" id="app-root" style="display:none;">
   <div id="inventory-view">
+    <header class="page-head">
+      <p class="eyebrow">The Archive</p>
+      <h1>Wardrobe</h1>
+      <p class="sub">Every piece you own, photographed and filed.</p>
+    </header>
+
     <div class="toolbar-row" id="wardrobe-toolbar">
       <div class="icon-row">
         <button class="icon-btn" id="search-btn" onclick="openSearch()" aria-label="Search" title="Search">
@@ -902,6 +943,12 @@
   </div>
 
   <div id="outfits-view" style="display:none;">
+    <header class="page-head">
+      <p class="eyebrow">The Archive</p>
+      <h1>Outfits</h1>
+      <p class="sub">Every combination your wardrobe can make.</p>
+    </header>
+
     <!-- One outfit, picked afresh each time you arrive: something to react to
          before you start narrowing anything down. -->
     <div class="hero" id="outfit-hero"></div>
@@ -919,6 +966,12 @@
   </div>
 
   <div id="saved-view" style="display:none;">
+    <header class="page-head">
+      <p class="eyebrow">The Archive</p>
+      <h1>Saved</h1>
+      <p class="sub">The outfits you kept.</p>
+    </header>
+
     <div class="inline-filters" data-filter-ns="saved-inline"></div>
     <div class="count-line" id="saved-count-line"></div>
     <div class="outfit-gallery" id="saved-gallery"></div>
@@ -929,6 +982,12 @@
   </div>
 
   <div id="capsules-view" style="display:none;">
+    <header class="page-head">
+      <p class="eyebrow">The Archive</p>
+      <h1>Capsules</h1>
+      <p class="sub">Named sets of pieces — winter, evening, work.</p>
+    </header>
+
     <div class="toolbar-row">
       <span></span>
       <div class="icon-row">
@@ -944,17 +1003,22 @@
     <div class="capsule-gallery" id="capsule-gallery"></div>
     <div class="empty" id="capsule-empty" style="display:none;">
       <h3>No capsules yet</h3>
-      <p>A capsule is a named set of pieces — winter, evening, work. Build one and it lives here.</p>
+      <p>Build one and it lives here.</p>
     </div>
   </div>
 
   <div id="archive-view" style="display:none;">
-    <button class="quiet-link back-link" onclick="setMode('inventory')">← Wardrobe</button>
+    <header class="page-head">
+      <button class="quiet-link back-link" onclick="setMode('inventory')">← Wardrobe</button>
+      <h1>Archive</h1>
+      <p class="sub">Pieces you have put away. Nothing is deleted for good.</p>
+    </header>
+
     <div class="count-line" id="archive-count-line"></div>
     <div class="name-list" id="archive-list"></div>
     <div class="empty" id="archive-empty" style="display:none;">
       <h3>Nothing archived</h3>
-      <p>Anything you remove from your wardrobe waits here. Nothing is deleted for good.</p>
+      <p>Anything you remove from your wardrobe waits here.</p>
     </div>
   </div>
 
