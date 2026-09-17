@@ -595,6 +595,9 @@
      they share .filter-chip's type, shape and states — the only difference
      is that tags wrap onto a second row rather than scrolling sideways. */
   .tag-chips{display:flex;flex-wrap:wrap;gap:8px;}
+  /* How you would find the tag editor, since a long press cannot advertise
+     itself. Quieter than the label it sits beside. */
+  .label-hint{text-transform:none;letter-spacing:0.02em;opacity:0.65;}
   /* The way into the tags that did not fit in two rows. Sits under them
      rather than among them, so it cannot itself push a chip onto a third
      row and change the very thing it is counting. */
@@ -1334,10 +1337,10 @@ function setMode(mode){
   restoreScroll(mode);
 }
 
-// A piece in an outfit's list is a way to that piece. It takes you where the
-// piece lives — the wardrobe, on its own category, scrolled to it — and stops
-// there. No sheet: that would be a second view of the piece on top of the
-// page that already shows it.
+// A piece in an outfit's list is a way to that piece: it takes you where the
+// piece lives — the wardrobe, on its own category, scrolled to it — and opens
+// it there. Closing the sheet leaves you looking at the piece in its grid
+// rather than back where you came from.
 function openPieceInWardrobe(itemId){
   const item = ITEMS.find(i => i.id === itemId);
   if(!item){ showToast('That piece is in the archive'); return; }
@@ -1350,11 +1353,12 @@ function openPieceInWardrobe(itemId){
 
   closeModal();
   setMode('inventory');
+  openModal(itemId);
 
   // Land on the piece rather than wherever the wardrobe was last left, and
   // say for a moment which one it was — centred in a grid of eighty is not
-  // by itself an answer. Two frames: setMode restores its own scroll
-  // position in the first one.
+  // by itself an answer, and the sheet is covering it. Two frames: setMode
+  // restores its own scroll position in the first one.
   requestAnimationFrame(() => requestAnimationFrame(() => {
     const rows = document.querySelectorAll('#gallery .tile, #name-list .name-row');
     const tile = Array.from(rows).find(el => el.dataset.id === itemId);
@@ -1414,7 +1418,7 @@ const FILTER_MOUNTS = [
 function filterControlsHtml(ns){
   return `
     <div class="filter-section">
-      <span class="filter-sheet-label">Tags</span>
+      <span class="filter-sheet-label">Tags <span class="label-hint">hold one to edit</span></span>
       <div class="tag-chips" id="${ns}-tag-chips"></div>
       <button class="tag-more" id="${ns}-tag-more" style="display:none;"></button>
     </div>
@@ -1884,6 +1888,31 @@ function pickHeroCombo(){
   if(heroCombo) storeHero(heroCombo);
 }
 
+// What an outfit shows once it is opened: its pieces, each a way to that
+// piece, and the one thing you can do to the combination itself. Shared, so
+// the outfit the page leads with opens exactly like the ones in the grid —
+// it used to set expandedComboKey and then draw nothing, which made the
+// featured outfit the one you could not look into.
+function outfitExpandedPanelHtml(combo, key){
+  return `
+      <div class="outfit-expanded-panel">
+        <button class="outfit-collapse-btn" onclick='event.stopPropagation();toggleExpandCombo(${JSON.stringify(key)})'>Collapse ↑</button>
+        ${comboPieces(combo).map(p => `
+          <div class="outfit-piece-row tappable"
+               onclick='event.stopPropagation();openPieceInWardrobe(${JSON.stringify(p.id)})'>
+            ${p.photo ? `<img src="${esc(p.photo)}" alt="${esc(p.name)}" referrerpolicy="no-referrer" loading="lazy" decoding="async">` : `<div class="no-photo-mini">No photo</div>`}
+            <div class="outfit-piece-info">
+              <div class="p-name">${esc(p.name)}</div>
+            </div>
+            <span class="piece-go" aria-hidden="true">›</span>
+          </div>
+        `).join('')}
+        <div class="modal-actions">
+          <button class="btn small secondary" onclick='event.stopPropagation();hideCombo(${JSON.stringify(key)})'>Hide this combo</button>
+        </div>
+      </div>`;
+}
+
 function renderHero(){
   const host = document.getElementById('outfit-hero');
   if(!host) return;
@@ -1892,11 +1921,13 @@ function renderHero(){
 
   const key = comboKey(heroCombo);
   const fav = isFavorited(key);
+  const isExpanded = expandedComboKey === key;
   host.innerHTML = `
-    <div class="outfit-card hero-card" onclick='toggleExpandCombo(${JSON.stringify(key)})'>
+    <div class="outfit-card hero-card ${isExpanded ? 'expanded' : ''}" onclick='toggleExpandCombo(${JSON.stringify(key)})'>
       <button class="outfit-fav-btn ${fav ? 'favorited' : ''}"
               onclick='event.stopPropagation();toggleFavoriteByKey(${JSON.stringify(key)})'>${fav ? '♥' : '♡'}</button>
       <div class="outfit-thumbs">${outfitThumbsHtml(heroCombo)}</div>
+      ${isExpanded ? outfitExpandedPanelHtml(heroCombo, key) : ''}
     </div>`;
 }
 
@@ -2012,10 +2043,12 @@ async function setSavedOutfitShoe(key, shoeId){
   if(error) return dbFail(error, 'Could not save the shoes — check connection');
 
   const rec = favoriteOutfits.find(f => f.key === key);
+  const wasShoe = rec ? rec.shoe : null;
   if(rec) rec.shoe = shoeId;
   closeModal();
   renderSavedOutfits();
-  showToast(shoeId ? 'Shoes added' : 'Shoes removed');
+  showToast(shoeId ? 'Shoes added' : 'Shoes removed',
+    wasShoe === shoeId ? null : () => setSavedOutfitShoe(key, wasShoe));
   return true;
 }
 
@@ -2140,8 +2173,9 @@ function renderSavedOutfits(){
           </div>
         `).join('')}
         <div class="modal-actions">
+          <!-- One button: the picker's first option is No shoes, so a
+               separate Remove was a second way to do the same thing. -->
           <button class="btn small secondary" onclick='event.stopPropagation();openSavedShoePicker(${JSON.stringify(rec.key)})'>${combo.shoe ? 'Change shoes' : '+ Add shoes'}</button>
-          ${combo.shoe ? `<button class="btn small secondary" onclick='event.stopPropagation();setSavedOutfitShoe(${JSON.stringify(rec.key)}, null)'>Remove shoes</button>` : ''}
         </div>
       </div>
     ` : '';
@@ -2257,7 +2291,7 @@ function renderCapsules(){
         `).join('')}
         <div class="modal-actions">
           <button class="btn small secondary" onclick='event.stopPropagation();openCapsuleEditor(${JSON.stringify(capsule.id)})'>Edit capsule</button>
-          <button class="btn small secondary" onclick='event.stopPropagation();confirmArchiveCapsule(${JSON.stringify(capsule.id)})'>Delete</button>
+          <button class="btn small secondary" onclick='event.stopPropagation();archiveCapsule(${JSON.stringify(capsule.id)})'>Delete</button>
         </div>
       </div>
     ` : '';
@@ -2275,25 +2309,6 @@ function renderCapsules(){
 function toggleExpandCapsule(id){
   expandedCapsuleId = (expandedCapsuleId === id) ? null : id;
   renderCapsules();
-}
-
-function confirmArchiveCapsule(id){
-  const capsule = capsules.find(c => c.id === id);
-  if(!capsule) return;
-  const modal = document.getElementById('modal');
-  modal.innerHTML = `
-    <div class="modal-body">
-      <div class="modal-name">Delete ${esc(capsule.name)}?</div>
-      <p class="gate-note">The capsule is archived, not erased, and none of its pieces
-      leave your wardrobe.</p>
-      <div class="modal-actions">
-        <button class="btn small"
-                onclick='closeModal();archiveCapsule(${JSON.stringify(id)})'>Yes, delete</button>
-        <button class="btn small secondary" onclick="closeModal()">Cancel</button>
-      </div>
-    </div>
-  `;
-  document.getElementById('modal-backdrop').classList.add('open');
 }
 
 // ---- Capsule editor ----------------------------------------
@@ -2471,24 +2486,35 @@ async function unhideCombo(key){
 }
 
 function toggleExpandCombo(key){
-  expandedComboKey = (expandedComboKey === key) ? null : key;
+  const opening = expandedComboKey !== key;
+  expandedComboKey = opening ? key : null;
+  // Either the lead card or the grid may be holding this outfit, so both are
+  // redrawn — the hero is not in the grid's list.
   renderOutfits();
+  if(outfitRenderContext !== 'modal') renderHero();
+
+  // What you just opened can land under the docked filter panel, which is
+  // the one thing on the page that does not scroll with it.
+  if(opening){
+    requestAnimationFrame(() => {
+      const panel = document.querySelector('.outfit-card.expanded .outfit-expanded-panel');
+      if(panel) panel.scrollIntoView({ block: 'nearest' });
+    });
+  }
 }
 
 function renderOutfits(){
   const ids = outfitRenderContext === 'modal'
-    ? {count:'m-outfit-count-line', gallery:'m-outfit-gallery', empty:null, loadMore:'m-load-more-btn'}
-    : {count:'outfit-count-line', gallery:'outfit-gallery', empty:'outfit-empty', loadMore:'load-more-btn'};
+    ? {gallery:'m-outfit-gallery', empty:null, loadMore:'m-load-more-btn'}
+    : {gallery:'outfit-gallery', empty:'outfit-empty', loadMore:'load-more-btn'};
 
   const onPage = outfitRenderContext !== 'modal';
   const heroKey = onPage && heroCombo ? comboKey(heroCombo) : null;
   const shown = heroKey ? outfitDisplayed.filter(c => comboKey(c) !== heroKey) : outfitDisplayed;
 
-  // Only the "Outfits with this piece" sheet still prints a count; the page
-  // itself does not have the element any more.
-  const countLine = document.getElementById(ids.count);
+  // Nothing prints a combination count any more, on the page or in the
+  // "Outfits with this piece" sheet. Load more still needs the total.
   const total = totalComboCount();
-  if(countLine) countLine.textContent = `${outfitDisplayed.length} shown of ${total.toLocaleString()} possible combinations`;
 
   const gallery = document.getElementById(ids.gallery);
   const emptyState = ids.empty ? document.getElementById(ids.empty) : null;
@@ -2506,28 +2532,9 @@ function renderOutfits(){
 
   gallery.innerHTML = shown.map(combo => {
     const key = comboKey(combo);
-    const pieces = comboPieces(combo);
     const isExpanded = expandedComboKey === key;
     const thumbs = outfitThumbsHtml(combo);
-
-    const expandedPanel = isExpanded ? `
-      <div class="outfit-expanded-panel">
-        <button class="outfit-collapse-btn" onclick='event.stopPropagation();toggleExpandCombo(${JSON.stringify(key)})'>Collapse ↑</button>
-        ${pieces.map(p => `
-          <div class="outfit-piece-row tappable"
-               onclick='event.stopPropagation();openPieceInWardrobe(${JSON.stringify(p.id)})'>
-            ${p.photo ? `<img src="${esc(p.photo)}" alt="${esc(p.name)}" referrerpolicy="no-referrer" loading="lazy" decoding="async">` : `<div class="no-photo-mini">No photo</div>`}
-            <div class="outfit-piece-info">
-              <div class="p-name">${esc(p.name)}</div>
-            </div>
-            <span class="piece-go" aria-hidden="true">›</span>
-          </div>
-        `).join('')}
-        <div class="modal-actions">
-          <button class="btn small secondary" onclick='event.stopPropagation();hideCombo(${JSON.stringify(key)})'>Hide this combo</button>
-        </div>
-      </div>
-    ` : '';
+    const expandedPanel = isExpanded ? outfitExpandedPanelHtml(combo, key) : '';
 
     return `<div class="outfit-card ${isExpanded ? 'expanded' : ''}" onclick='toggleExpandCombo(${JSON.stringify(key)})'>
       <button class="outfit-fav-btn ${isFavorited(key) ? 'favorited' : ''}" onclick='event.stopPropagation();toggleFavoriteByKey(${JSON.stringify(key)})'>${isFavorited(key) ? '♥' : '♡'}</button>
@@ -2583,7 +2590,6 @@ function showOutfitsInModal(itemId){
   outfitRenderContext = 'modal';
   container.innerHTML = `
     <div class="outfits-heading">Outfits with this piece</div>
-    <div class="count-line" id="m-outfit-count-line"></div>
     <div class="outfit-gallery" id="m-outfit-gallery"></div>
     <div style="text-align:center;margin-top:12px;">
       <button class="btn small secondary" id="m-load-more-btn" onclick="loadMoreOutfits()" style="display:none;">Load more</button>
@@ -2759,7 +2765,7 @@ function openItemCapsulePicker(itemId){
       <div class="capsule-picks" id="capsule-picks"></div>
       <div class="modal-actions">
         <button class="btn small secondary"
-                onclick='openCapsuleEditor(null, [${JSON.stringify(itemId)}])'>New capsule with this piece</button>
+                onclick='openCapsuleEditor(null, [${JSON.stringify(itemId)}])'>New capsule</button>
       </div>
     </div>
   `;
@@ -3247,6 +3253,7 @@ async function boot(){
   wireLongPress(document.getElementById('name-list'));
   // The docked panel's height decides how much room the page leaves under
   // itself, and that changes with the screen.
+  wireTagLongPress(document.getElementById('filter-sheet'));
   window.addEventListener('resize', syncSheetInset);
   // Kept up to date as you scroll as well as when you leave a page, so a
   // reload inside the same visit lands where you were too.
@@ -3425,6 +3432,179 @@ function setTab(t){
 // Which tag lists the reader has asked to see in full, by element id.
 let tagRowsOpen = {};
 
+// ---- Renaming and removing a tag ---------------------------
+// A tag is only ever typed into a piece, so until now a typo could only be
+// fixed by finding and editing every piece that carried it. Holding a chip
+// opens the tag itself, and one rename rewrites the lot.
+function itemsWithTag(tag){
+  return ITEMS.concat(ARCHIVED).filter(i => (i.tags || []).includes(tag));
+}
+
+function itemById(id){
+  return ITEMS.find(i => i.id === id) || ARCHIVED.find(i => i.id === id) || null;
+}
+
+async function writeTags(changes){
+  const db = client();
+  // One statement per piece. A tag is usually on a handful of them, and a
+  // single upsert would have to send every other column with it.
+  for(const c of changes){
+    const { error } = await db.from('items').update({ tags: c.tags }).eq('id', c.id);
+    if(error) return dbFail(error, 'Could not save the tag — check connection');
+  }
+  return true;
+}
+
+// Rewrites `from` to `to` on every piece carrying it; a null `to` removes it.
+// Returns the list of changes, each carrying what the piece had before, so
+// the whole thing can be put back.
+async function retagAll(from, to){
+  const changes = itemsWithTag(from).map(i => {
+    const was = (i.tags || []).slice();
+    const kept = was.filter(t => t !== from);
+    return { id: i.id, was, tags: to && !kept.includes(to) ? kept.concat([to]) : kept };
+  });
+  if(!changes.length) return [];
+  if(!await writeTags(changes)) return null;
+  changes.forEach(c => { const i = itemById(c.id); if(i) i.tags = c.tags; });
+  return changes;
+}
+
+// A tag can vanish or change its name under a filter that was using it, so
+// the filters follow it and every page that shows tags is redrawn.
+function afterTagChange(){
+  const live = allTags();
+  if(outfitTag && !live.includes(outfitTag)) outfitTag = null;
+  if(savedTag && !live.includes(savedTag)) savedTag = null;
+  renderFilterControls();
+  renderFiltersFab();
+  render();
+  if(appMode === 'outfits') resetOutfitResults();
+  if(appMode === 'saved') renderSavedOutfits();
+}
+
+async function undoRetag(changes, filters){
+  if(!await writeTags(changes.map(c => ({ id: c.id, tags: c.was })))) return;
+  changes.forEach(c => { const i = itemById(c.id); if(i) i.tags = c.was; });
+  if(filters){ outfitTag = filters.outfit; savedTag = filters.saved; }
+  afterTagChange();
+  showToast('Tag put back');
+}
+
+function openTagEditor(tag){
+  const n = itemsWithTag(tag).length;
+  const modal = document.getElementById('modal');
+  modal.innerHTML = `
+    <div class="sheet-header"><button class="sheet-back" onclick="closeModal()">← Back</button></div>
+    <div class="modal-body has-footer">
+      <div class="modal-name" style="margin-bottom:6px;">Edit tag</div>
+      <p class="gate-note">On ${n} piece${n === 1 ? '' : 's'}. Renaming or removing it
+      changes every one of them.</p>
+      <div class="form-grid">
+        <label>Tag<input type="text" id="tag-edit-input" value="${esc(tag)}"></label>
+      </div>
+      <div class="form-error" id="tag-edit-error"></div>
+      <div class="modal-actions">
+        <button class="btn small secondary" onclick='deleteTag(${JSON.stringify(tag)})'>Delete tag</button>
+      </div>
+    </div>
+    <div class="sheet-footer">
+      <div class="sheet-footer-inner">
+        <button class="btn" id="tag-edit-save" onclick='renameTag(${JSON.stringify(tag)})'>Save</button>
+      </div>
+    </div>
+  `;
+  document.getElementById('modal-backdrop').classList.add('open');
+}
+
+async function renameTag(from){
+  const input = document.getElementById('tag-edit-input');
+  const errorEl = document.getElementById('tag-edit-error');
+  // Through the same parser the form uses, so a tag renamed here is stored
+  // exactly as one typed there would be.
+  const parsed = parseTags(input.value);
+  if(parsed.length !== 1){
+    errorEl.textContent = parsed.length ? 'One tag at a time.' : 'Give the tag a name.';
+    return;
+  }
+  const to = parsed[0];
+  if(to === from){ closeModal(); return; }
+
+  const filters = { outfit: outfitTag, saved: savedTag };
+  const btn = document.getElementById('tag-edit-save');
+  btn.disabled = true;
+  const changes = await retagAll(from, to);
+  btn.disabled = false;
+  if(!changes) return;
+
+  if(outfitTag === from) outfitTag = to;
+  if(savedTag === from) savedTag = to;
+  closeModal();
+  afterTagChange();
+  showToast(`Now ${to}`, changes.length ? () => undoRetag(changes, filters) : null);
+}
+
+async function deleteTag(tag){
+  const filters = { outfit: outfitTag, saved: savedTag };
+  const changes = await retagAll(tag, null);
+  if(!changes) return;
+
+  if(outfitTag === tag) outfitTag = null;
+  if(savedTag === tag) savedTag = null;
+  closeModal();
+  afterTagChange();
+  const n = changes.length;
+  showToast(`${tag} removed from ${n} piece${n === 1 ? '' : 's'}`,
+    changes.length ? () => undoRetag(changes, filters) : null);
+}
+
+// The same gesture that starts a selection in the wardrobe. Delegated from
+// the panel, because the chips inside it are redrawn constantly.
+let tagPressTimer = null;
+let tagPressOrigin = null;
+let tagPressFired = false;
+
+function cancelTagPress(){
+  clearTimeout(tagPressTimer);
+  tagPressTimer = null;
+  tagPressOrigin = null;
+}
+
+function wireTagLongPress(container){
+  if(!container) return;
+
+  container.addEventListener('pointerdown', (e) => {
+    tagPressFired = false;
+    if(e.button > 0) return;
+    const chip = e.target.closest('.tag-chip[data-tag]');
+    if(!chip) return;
+    tagPressOrigin = { x: e.clientX, y: e.clientY, tag: chip.dataset.tag };
+    tagPressTimer = setTimeout(() => {
+      tagPressTimer = null;
+      tagPressFired = true;
+      openTagEditor(tagPressOrigin.tag);
+      if(navigator.vibrate) navigator.vibrate(12);
+    }, LONG_PRESS_MS);
+  });
+
+  container.addEventListener('pointermove', (e) => {
+    if(!tagPressTimer || !tagPressOrigin) return;
+    if(Math.hypot(e.clientX - tagPressOrigin.x, e.clientY - tagPressOrigin.y) > LONG_PRESS_SLOP) cancelTagPress();
+  });
+
+  ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev =>
+    container.addEventListener(ev, cancelTagPress));
+
+  // Otherwise the tap under the press would also apply the tag as a filter.
+  // Caught on the way down, before the chip's own handler sees it.
+  container.addEventListener('click', (e) => {
+    if(!tagPressFired) return;
+    tagPressFired = false;
+    e.stopPropagation();
+    e.preventDefault();
+  }, true);
+}
+
 function renderTagChips(elementId, selected, handler){
   const el = document.getElementById(elementId);
   const more = document.getElementById(elementId.replace(/-tag-chips$/, '-tag-more'));
@@ -3437,7 +3617,8 @@ function renderTagChips(elementId, selected, handler){
   }
   el.style.display = 'flex';
   el.innerHTML = tags.map(t => `
-    <button class="tag-chip ${selected === t ? 'active' : ''}" onclick='${handler}(${JSON.stringify(t)})'>${esc(t)}</button>
+    <button class="tag-chip ${selected === t ? 'active' : ''}" data-tag="${esc(t)}"
+            onclick='${handler}(${JSON.stringify(t)})'>${esc(t)}</button>
   `).join('');
   if(more) foldTagChips(elementId);
 }
@@ -3744,7 +3925,6 @@ function toggleViewMode(){
 function toggleEditMode(){
   editMode = !editMode;
   selectedIds.clear();
-  confirmingDelete = false;
   render();
 }
 
@@ -3783,10 +3963,10 @@ function wireLongPress(container){
       pressTimer = null;
       pressSelected = true;
       editMode = true;
-      confirmingDelete = false;
       selectedIds.clear();
       selectedIds.add(pressOrigin.id);
       render();
+
       // Worth a nudge on hardware that has it: entering a mode by holding
       // still needs to announce itself.
       if(navigator.vibrate) navigator.vibrate(12);
@@ -3829,25 +4009,14 @@ function selectAllVisible(){
   render();
 }
 
-let confirmingDelete = false;
-
-function bulkDeleteSelected(){
-  if(selectedIds.size === 0) return;
-  confirmingDelete = true;
-  render();
-}
-
-function cancelBulkDelete(){
-  confirmingDelete = false;
-  render();
-}
-
-async function confirmBulkDelete(){
+// Nothing here asks "are you sure". A confirmation you meet every time
+// stops being read, and archiving is already reversible — so the undo on
+// the toast is the safety net, and the tap you meant goes through.
+async function bulkDeleteSelected(){
   const ids = Array.from(selectedIds);
   if(!ids.length) return;
   if(!await archiveItems(ids)) return;
   selectedIds.clear();
-  confirmingDelete = false;
   // The mode is entered by holding a piece and exists to do one thing, so it
   // ends when that thing is done rather than leaving you in a select mode
   // with nothing selected.
@@ -3907,18 +4076,9 @@ function render(){
 
   bulkBar.style.display = editMode ? 'flex' : 'none';
   if(editMode){
-    if(confirmingDelete){
-      const count = selectedIds.size;
-      bulkBar.innerHTML = `
-        <span>Delete ${count} item${count===1?'':'s'}? This can't be undone.</span>
-        <div style="display:flex;gap:8px;">
-          <button class="btn small secondary" onclick="cancelBulkDelete()">Cancel</button>
-          <button class="btn small" onclick="confirmBulkDelete()">Yes, delete</button>
-        </div>
-      `;
-    } else {
+    {
       // The count lives in the page title while you are selecting, so the
-       // bar is the two actions and nothing else.
+      // bar is the two actions and nothing else.
       bulkBar.innerHTML = `
         <button class="btn small secondary" onclick="selectAllVisible()">Select all</button>
         <button class="btn small" onclick="bulkDeleteSelected()">Delete selected</button>
