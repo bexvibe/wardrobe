@@ -671,22 +671,50 @@
     aspect-ratio:3/2;
   }
 
-  /* Filters: a pill within thumb reach, and the sheet it raises */
+  /* The filters, collapsed. Not a floating button: the same sheet in the
+     same place with the same head, shrunk to its title row, so opening and
+     closing is one object changing size rather than two objects swapping.
+     A lozenge off to one side lined up with nothing and, once a filter was
+     on, was the heaviest thing on the screen. */
   .filters-fab{
     position:fixed;
-    right:16px;
-    bottom:calc(78px + env(safe-area-inset-bottom, 0px));  /* clears the nav bar */
-    z-index:95;
-    font-family:'Work Sans',sans-serif;
-    font-size:13px;font-weight:600;
-    padding:11px 18px;border-radius:999px;
-    border:1px solid var(--line);
-    background:var(--surface);
-    color:var(--ink);
-    cursor:pointer;white-space:nowrap;
-    box-shadow:0 4px 16px rgba(0,0,0,0.12);
+    left:0;right:0;bottom:0;
+    z-index:80;                    /* behind the nav bar, as the panel is */
+    background:var(--page);
+    border-radius:18px 18px 0 0;
+    padding-bottom:calc(80px + env(safe-area-inset-bottom, 0px));
+    box-shadow:0 -8px 30px rgba(0,0,0,0.13);
+    /* The surface runs under the nav bar so it reads as the sheet it is,
+       but only the head takes taps — otherwise the strips either side of
+       the nav would be an invisible hit zone, and the middle of the control
+       would do nothing at all. */
+    pointer-events:none;
   }
-  .filters-fab.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+  .filters-fab-head{
+    pointer-events:auto;
+    width:100%;
+    display:flex;align-items:center;gap:10px;
+    background:none;border:none;
+    padding:14px 16px;
+    font-family:'Fraunces', serif;font-weight:500;font-size:19px;
+    color:var(--ink);
+    text-align:left;
+    cursor:pointer;
+  }
+  /* How many are on, without turning the whole bar black to say it. */
+  .filters-fab-count{
+    flex:none;
+    min-width:22px;height:22px;padding:0 6px;
+    display:inline-flex;align-items:center;justify-content:center;
+    border-radius:999px;
+    background:var(--accent);color:#fff;
+    font-family:'Work Sans',sans-serif;font-size:12px;font-weight:600;
+  }
+  /* The panel's own chevron, pointing the other way. */
+  .filters-fab-chevron{
+    margin-left:auto;flex:none;
+    width:18px;height:18px;display:block;
+  }
 
   /* The filters dock at the bottom rather than opening over the page. On
      Outfits and Faves they are already down when you arrive, because on
@@ -1128,7 +1156,9 @@
   <div class="filter-sheet-body" id="filter-sheet-body" data-filter-ns="sheet"></div>
 </div>
 
-<button class="filters-fab" id="filters-fab" onclick="openFilterSheet()" style="display:none;">Filters</button>
+<div class="filters-fab" id="filters-fab" style="display:none;">
+  <button class="filters-fab-head" id="filters-open-btn" onclick="openFilterSheet()"></button>
+</div>
 
 <nav class="bottom-bar" id="bottom-bar" style="display:none;">
   <button class="bottom-btn active" id="nav-inventory-btn" onclick="setMode('inventory')">Wardrobe</button>
@@ -1408,8 +1438,13 @@ function renderFiltersFab(){
   const worthShowing = filterSheetHasContent() && !filterSheetOpen();
   fab.style.display = worthShowing ? 'block' : 'none';
   const n = activeFilterCount();
-  fab.textContent = n ? `Filters · ${n}` : 'Filters';
-  fab.classList.toggle('active', n > 0);
+  document.getElementById('filters-open-btn').innerHTML = `
+    <span class="filters-fab-label">Filters</span>
+    ${n ? `<span class="filters-fab-count">${n}</span>` : ''}
+    <svg class="filters-fab-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M6 14l6-6 6 6"/>
+    </svg>`;
 }
 
 // One mount, in the docked panel, following whichever page you are on. The
