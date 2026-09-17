@@ -68,11 +68,12 @@
     font-family:'Fraunces', serif;
     font-weight:400;
     /* Grows with the screen and stops before it can wrap on a phone.
-       Sixteen pixels down from where it was: on a 390px phone this lands
-       at about 19px, so the name of the page reads as a label over the
-       clothes rather than as a masthead. */
-    font-size:clamp(17px, 4.9vw, 22px);
-    line-height:1.12;
+       It has been 43, then 35, then 19 — and 19 put it under the weight of
+       the tab pills beneath it, which read as the heading instead. About
+       26px on a 390px phone is the balance: quieter than a masthead, still
+       plainly the name of the page. */
+    font-size:clamp(23px, 6.7vw, 30px);
+    line-height:1.1;
     margin:0;
     letter-spacing:-0.02em;
   }
@@ -817,7 +818,10 @@
     position:fixed;
     left:0;right:0;bottom:0;
     z-index:80;
-    background:var(--page);
+    /* White, so the panel is an object resting on the page rather than the
+       page carrying on behind the nav. The chips inside sit at page grey,
+       which is what now gives them their edge. */
+    background:var(--surface);
     border-radius:18px 18px 0 0;
     padding:14px 16px calc(80px + env(safe-area-inset-bottom, 0px));
     max-height:min(52vh, 420px);
