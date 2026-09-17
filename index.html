@@ -25,6 +25,16 @@
     --ink-soft:#6E6E6E;     /* secondary text, labels */
     --accent:#1A1A1A;       /* a control that is selected or active */
     --ink:#121212;          /* primary text, and a button that acts */
+
+    /* The filters open and close with one motion: the panel rises as the
+       pill shrinks into it. Same curve, same duration, or the two halves
+       read as two events. */
+    --sheet-ease:cubic-bezier(0.32, 0.72, 0, 1);
+    --sheet-ease-ms:260ms;
+  }
+  /* Somebody who has asked for less movement gets the same states, at once. */
+  @media (prefers-reduced-motion: reduce){
+    :root{ --sheet-ease-ms:0ms; }
   }
   *{box-sizing:border-box;}
   html{color-scheme: light;}
@@ -671,49 +681,68 @@
     aspect-ratio:3/2;
   }
 
-  /* The filters, collapsed. Not a floating button: the same sheet in the
-     same place with the same head, shrunk to its title row, so opening and
-     closing is one object changing size rather than two objects swapping.
-     A lozenge off to one side lined up with nothing and, once a filter was
-     on, was the heaviest thing on the screen. */
+  /* The filters, collapsed into a pill. Centred on the nav bar rather than
+     off to one side, so the two floating objects read as a stack. */
   .filters-fab{
     position:fixed;
-    left:0;right:0;bottom:0;
-    z-index:80;                    /* behind the nav bar, as the panel is */
-    background:var(--page);
-    border-radius:18px 18px 0 0;
-    padding-bottom:calc(80px + env(safe-area-inset-bottom, 0px));
-    box-shadow:0 -8px 30px rgba(0,0,0,0.13);
-    /* The surface runs under the nav bar so it reads as the sheet it is,
-       but only the head takes taps — otherwise the strips either side of
-       the nav would be an invisible hit zone, and the middle of the control
-       would do nothing at all. */
-    pointer-events:none;
-  }
-  .filters-fab-head{
-    pointer-events:auto;
-    width:100%;
-    display:flex;align-items:center;gap:10px;
-    background:none;border:none;
-    padding:14px 16px;
-    font-family:'Fraunces', serif;font-weight:500;font-size:19px;
+    left:50%;
+    bottom:calc(78px + env(safe-area-inset-bottom, 0px));  /* clears the nav */
+    z-index:95;
+    display:flex;align-items:center;gap:8px;
+    font-family:'Work Sans',sans-serif;
+    font-size:13px;font-weight:600;
+    /* A fixed height rather than padding alone: the count badge is taller
+       than the label, so the pill was 37px at rest and 42px with a filter
+       on — under a thumb either way, and never the same twice. */
+    min-height:44px;
+    padding:0 18px;border-radius:999px;
+    border:1px solid var(--line);
+    background:var(--surface);
     color:var(--ink);
-    text-align:left;
-    cursor:pointer;
+    cursor:pointer;white-space:nowrap;
+    box-shadow:0 4px 16px rgba(0,0,0,0.12);
+    /* Sized and placed by transform, so growing out of and shrinking back
+       into the panel is one continuous motion rather than a swap. */
+    transform:translateX(-50%);
+    transform-origin:50% 100%;
+    transition:opacity var(--sheet-ease-ms) var(--sheet-ease),
+               transform var(--sheet-ease-ms) var(--sheet-ease),
+               visibility var(--sheet-ease-ms);
   }
-  /* How many are on, without turning the whole bar black to say it. */
+  /* Out of the way while the panel is up. visibility rather than display so
+     it can animate, and so it still counts as hidden to anything asking. */
+  .filters-fab.stood-down{
+    opacity:0;
+    visibility:hidden;
+    pointer-events:none;
+    /* Down and smaller, towards where the panel's head now is. */
+    transform:translateX(-50%) translateY(16px) scale(0.9);
+    /* Leaving is eased IN, so it holds while the panel rises past it and
+       then goes. The shared curve is front-loaded — right for the panel's
+       travel, but it made the pill vanish in the first quarter. */
+    transition:opacity var(--sheet-ease-ms) cubic-bezier(0.4, 0, 1, 1),
+               transform var(--sheet-ease-ms) cubic-bezier(0.4, 0, 1, 1),
+               visibility var(--sheet-ease-ms);
+  }
+  /* A filter is on. A wash and a darker ring, which is how a chip says the
+     same thing — the whole pill going black made it the heaviest thing on a
+     screen of clothes. */
+  .filters-fab.active{
+    background:var(--accent-soft);
+    border-color:var(--accent);
+  }
   .filters-fab-count{
     flex:none;
-    min-width:22px;height:22px;padding:0 6px;
+    min-width:20px;height:20px;padding:0 6px;
     display:inline-flex;align-items:center;justify-content:center;
     border-radius:999px;
     background:var(--accent);color:#fff;
-    font-family:'Work Sans',sans-serif;font-size:12px;font-weight:600;
+    font-size:11px;font-weight:600;
   }
   /* The panel's own chevron, pointing the other way. */
   .filters-fab-chevron{
-    margin-left:auto;flex:none;
-    width:18px;height:18px;display:block;
+    flex:none;width:15px;height:15px;display:block;
+    color:var(--ink-soft);
   }
 
   /* The filters dock at the bottom rather than opening over the page. On
@@ -737,7 +766,7 @@
     overflow-y:auto;
     /* Off-screen rather than hidden, so it slides rather than appears. */
     transform:translateY(100%);
-    transition:transform 0.22s ease;
+    transition:transform var(--sheet-ease-ms) var(--sheet-ease);
     box-shadow:0 -8px 30px rgba(0,0,0,0.13);
   }
   .filter-sheet.open{transform:translateY(0);}
@@ -1156,9 +1185,7 @@
   <div class="filter-sheet-body" id="filter-sheet-body" data-filter-ns="sheet"></div>
 </div>
 
-<div class="filters-fab" id="filters-fab" style="display:none;">
-  <button class="filters-fab-head" id="filters-open-btn" onclick="openFilterSheet()"></button>
-</div>
+<button class="filters-fab stood-down" id="filters-fab" onclick="openFilterSheet()"></button>
 
 <nav class="bottom-bar" id="bottom-bar" style="display:none;">
   <button class="bottom-btn active" id="nav-inventory-btn" onclick="setMode('inventory')">Wardrobe</button>
@@ -1435,10 +1462,15 @@ function activeFilterCount(){
 function renderFiltersFab(){
   const fab = document.getElementById('filters-fab');
   if(!fab) return;
-  const worthShowing = filterSheetHasContent() && !filterSheetOpen();
-  fab.style.display = worthShowing ? 'block' : 'none';
+  // Two levels of gone: a page with nothing to filter never has a pill at
+  // all, while a page whose panel is up has one that has animated away.
+  const relevant = filterSheetHasContent();
+  fab.style.display = relevant ? 'flex' : 'none';
+  fab.classList.toggle('stood-down', !relevant || filterSheetOpen());
+
   const n = activeFilterCount();
-  document.getElementById('filters-open-btn').innerHTML = `
+  fab.classList.toggle('active', n > 0);
+  fab.innerHTML = `
     <span class="filters-fab-label">Filters</span>
     ${n ? `<span class="filters-fab-count">${n}</span>` : ''}
     <svg class="filters-fab-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor"
