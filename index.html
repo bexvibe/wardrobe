@@ -85,12 +85,6 @@
     border-color:var(--ink);
     color:var(--page);
   }
-  .tab .count{
-    font-family:'IBM Plex Mono',monospace;
-    font-size:10px;
-    opacity:0.7;
-    margin-left:4px;
-  }
 
   .toolbar-row{
     display:flex;justify-content:space-between;align-items:center;
@@ -387,13 +381,16 @@
     color:var(--ink-soft);cursor:pointer;
     padding:0 0 8px;
   }
+  /* Saving is the one thing you do most on this page, and it was a 26px
+     target with a 15px glyph — small to hit and easy to miss when scanning
+     for what you had already kept. */
   .outfit-fav-btn{
-    position:absolute;top:8px;right:8px;
-    width:26px;height:26px;
+    position:absolute;top:6px;right:6px;
+    width:40px;height:40px;
     display:flex;align-items:center;justify-content:center;
     border:none;border-radius:999px;
     background:rgba(255,255,255,0.88);
-    font-size:15px;line-height:1;color:var(--ink-soft);
+    font-size:24px;line-height:1;color:var(--ink-soft);
     cursor:pointer;z-index:2;
   }
   .outfit-fav-btn.favorited{color:var(--ink);}
@@ -578,12 +575,22 @@
     color:var(--ink-soft);
     margin-bottom:8px;
   }
-  /* A fixed height, which a grid card gets for free from its row. Without
-     one the card has nothing bounding it and the bottom garment grows to
-     its own full size, pushing the filters below off the screen — the
-     opposite of the point. The flex inside then shares this out exactly as
-     it does in the grid. */
-  .hero-card{cursor:pointer;height:320px;}
+  /* The card takes its height from the pieces in it rather than being given
+     one. A fixed height meant the bands inside were laid out against a box
+     that had already been decided, so anything that did not fit spilled
+     past the border.
+     Each band is sized by its own aspect ratio instead, and the card adds
+     them up — so it always ends exactly where its contents do. */
+  .hero-card{cursor:pointer;}
+  .hero-card .outfit-thumbs{flex:none;}
+  .hero-card .outfit-lower{
+    flex:none;
+    min-height:0;
+    /* Wider than tall, so a full-length garment does not turn the card into
+       a full screen of its own. */
+    aspect-ratio:3/2;
+  }
+  .hero-card .outfit-lower > *{width:100%;height:100%;}
 
   /* Filters: a pill within thumb reach, and the sheet it raises */
   .filters-fab{
@@ -874,7 +881,6 @@
 
     <div class="tabs" id="tabs"></div>
 
-    <div class="count-line" id="count-line"></div>
     <div class="bulk-bar" id="bulk-bar" style="display:none;">
       <span id="bulk-count">0 selected</span>
       <div style="display:flex;gap:8px;">
@@ -1653,11 +1659,53 @@ function resetOutfitResults(){
 // look like a bug.
 let heroCombo = null;
 
+// It holds for a session rather than for a page view: tabbing to the
+// wardrobe and back should not shuffle the one outfit you were looking at.
+// sessionStorage is exactly the right lifetime — it survives navigation
+// within the visit and is gone when the tab closes.
+const HERO_KEY = 'wardrobe-hero-outfit';
+
+// What the stored pick was chosen under. Filters narrow the pool, so a pick
+// made before them may no longer belong to it; comparing signatures is
+// cheaper and more honest than trying to re-test the combination.
+function heroSignature(){
+  return JSON.stringify({ shape: outfitShape, tag: outfitTag, filters: outfitFilters });
+}
+
+function readStoredHero(){
+  try{
+    const raw = sessionStorage.getItem(HERO_KEY);
+    if(!raw) return null;
+    const saved = JSON.parse(raw);
+    if(saved.signature !== heroSignature()) return null;
+    // Rehydrate from ids, the same way a saved outfit does. A piece that has
+    // since been archived or renamed away fails here and we pick again.
+    const combo = favoriteRecordToCombo(saved.combo);
+    const required = combo.base === 'dress' ? [combo.dress] : [combo.top, combo.bottom];
+    return required.every(Boolean) ? combo : null;
+  }catch(e){
+    return null;   // private mode, or a value from an older shape of this code
+  }
+}
+
+function storeHero(combo){
+  try{
+    sessionStorage.setItem(HERO_KEY, JSON.stringify({
+      signature: heroSignature(),
+      combo: comboToFavoriteRecord(combo),
+    }));
+  }catch(e){ /* not being able to remember it is not worth failing over */ }
+}
+
 function pickHeroCombo(){
+  const kept = readStoredHero();
+  if(kept){ heroCombo = kept; return; }
+
   // Draw from the generated page rather than re-running the generator: these
   // are already the combinations that pass the current filters.
   const pool = outfitDisplayed;
   heroCombo = pool.length ? pool[Math.floor(Math.random() * pool.length)] : null;
+  if(heroCombo) storeHero(heroCombo);
 }
 
 function renderHero(){
@@ -2939,17 +2987,8 @@ function exportCSV(){
 }
 
 function renderTabs(){
-  const counts = {All: ITEMS.length};
-  TAB_ORDER.slice(1).forEach(t => counts[t] = 0);
-  ITEMS.forEach(i => {
-    const t = tabForItem(i);
-    counts[t] = (counts[t] || 0) + 1;
-  });
-
   const categories = TAB_ORDER.map(t => `
-    <button class="tab ${activeTab === t ? 'active' : ''}" onclick="setTab('${t}')">
-      ${t}<span class="count">${counts[t] || 0}</span>
-    </button>
+    <button class="tab ${activeTab === t ? 'active' : ''}" onclick="setTab('${t}')">${t}</button>
   `).join('');
 
   // Tags used to sit in a row here; they now live in the filter sheet, so the
@@ -3378,9 +3417,6 @@ function render(){
 
   const search = document.getElementById('filter-search').value.toLowerCase();
   const filtered = visibleFilteredItems(search);
-
-  document.getElementById('count-line').textContent =
-    `${filtered.length} piece${filtered.length===1?'':'s'} in ${activeTab.toLowerCase()}`;
 
   const gallery = document.getElementById('gallery');
   const nameList = document.getElementById('name-list');
