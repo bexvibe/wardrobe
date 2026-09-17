@@ -121,6 +121,17 @@
      is a soft disc behind the glyph. */
   .icon-btn.has-value{background:var(--accent-soft);}
   .icon-row{display:flex;gap:8px;align-items:center;}
+  /* A control that says what it does, for the one place a glyph was not
+     enough: leaving select mode. */
+  .text-btn{
+    flex:none;
+    font-family:'Work Sans',sans-serif;
+    font-size:14px;font-weight:600;
+    min-height:40px;padding:0 16px;
+    border:none;border-radius:999px;
+    background:var(--ink);color:#fff;
+    cursor:pointer;
+  }
 
   /* Search opens over the page rather than sitting on it. The results stay
      visible underneath, because watching them narrow as you type is the
@@ -216,6 +227,11 @@
     grid-template-columns:repeat(auto-fill, minmax(140px, 1fr));
     gap:10px;
   }
+  /* The piece you asked to be taken to, for long enough to see which it is. */
+  .tile.just-arrived, .name-row.just-arrived{
+    outline:2px solid var(--accent);
+    outline-offset:2px;
+  }
   .tile{
     aspect-ratio:1/1;
     background:var(--page);
@@ -302,7 +318,7 @@
   .tile.item-selected{outline:2px solid var(--accent);outline-offset:-2px;}
   .name-row.item-selected{background:var(--accent-soft);}
   .bulk-bar{
-    display:flex;justify-content:space-between;align-items:center;
+    display:flex;justify-content:flex-end;align-items:center;gap:8px;
     background:var(--surface);border:1px solid var(--line);border-radius:8px;
     padding:10px 14px;margin-bottom:14px;
     font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink-soft);
@@ -579,6 +595,18 @@
      they share .filter-chip's type, shape and states — the only difference
      is that tags wrap onto a second row rather than scrolling sideways. */
   .tag-chips{display:flex;flex-wrap:wrap;gap:8px;}
+  /* The way into the tags that did not fit in two rows. Sits under them
+     rather than among them, so it cannot itself push a chip onto a third
+     row and change the very thing it is counting. */
+  .tag-more{
+    display:block;margin-top:10px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;letter-spacing:0.06em;
+    background:none;border:none;
+    color:var(--ink-soft);
+    text-decoration:underline;text-underline-offset:3px;
+    cursor:pointer;padding:4px 0;
+  }
   .tag-chip{
     flex:none;
     font-family:'Work Sans',sans-serif;
@@ -852,6 +880,28 @@
     gap:10px;margin-bottom:8px;
   }
   .capsule-name{font-family:'Fraunces',serif;font-weight:500;font-size:19px;}
+  /* The leftovers, at the end of the page rather than mixed in with the
+     capsules — it is a different kind of thing from a capsule. */
+  /* Capsules as rows to tick, for the one piece you are looking at. */
+  .capsule-picks{display:flex;flex-direction:column;gap:8px;margin:14px 0;}
+  .capsule-pick{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    font-family:'Work Sans',sans-serif;
+    font-size:14px;font-weight:600;text-align:left;
+    min-height:52px;padding:0 16px;
+    border:1px solid var(--line);border-radius:10px;
+    background:var(--surface);color:var(--ink);
+    cursor:pointer;
+  }
+  .capsule-pick.picked{border-color:var(--accent);background:var(--accent-soft);}
+  .capsule-pick-mark{flex:none;font-size:15px;color:var(--ink);width:18px;text-align:right;}
+
+  .loose-section{margin-top:30px;padding-top:22px;border-top:1px solid var(--line);}
+  .loose-section .filter-sheet-label{margin-bottom:14px;}
+  /* Denser than the wardrobe's own grid: this is an index of what is left
+     over, not a gallery to browse, and it can run to most of a wardrobe. */
+  .loose-section .gallery{grid-template-columns:repeat(4, 1fr) !important;gap:8px;}
+  .loose-section .tile{border-radius:8px;}
   /* A flat-lay of the capsule's pieces, laid out as worn like an outfit
      card: hats and accessories along the top, then layers and tops, then
      bottoms and dresses, with shoes at the foot. Every piece is shown —
@@ -929,15 +979,19 @@
 <div class="wrap" id="app-root" style="display:none;">
   <div id="inventory-view">
     <header class="page-head" id="wardrobe-head">
-      <h1>Wardrobe</h1>
+      <h1 id="wardrobe-title">Wardrobe</h1>
       <div class="icon-row">
+        <!-- While you are selecting, this replaces the whole icon row: a
+             labelled Done where the controls were, which is the pattern a
+             phone uses everywhere else. A bare ✕ among three other glyphs
+             was not obviously the way out. -->
+        <button class="text-btn" id="edit-done-btn" onclick="toggleEditMode()" style="display:none;">Done</button>
         <button class="icon-btn" id="search-btn" onclick="openSearch()" aria-label="Search" title="Search">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
             <circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>
           </svg>
         </button>
         <button class="icon-btn" id="view-toggle-btn" onclick="toggleViewMode()"></button>
-        <button class="icon-btn" id="edit-toggle-btn" onclick="toggleEditMode()"></button>
         <button class="icon-btn primary" id="add-item-btn" onclick="openItemForm()" aria-label="Add a piece" title="Add a piece">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
             <path d="M12 5v14M5 12h14"/>
@@ -948,13 +1002,7 @@
 
     <div class="tabs" id="tabs"></div>
 
-    <div class="bulk-bar" id="bulk-bar" style="display:none;">
-      <span id="bulk-count">0 selected</span>
-      <div style="display:flex;gap:8px;">
-        <button class="btn small secondary" onclick="selectAllVisible()">Select all</button>
-        <button class="btn small" onclick="bulkDeleteSelected()">Delete selected</button>
-      </div>
-    </div>
+    <div class="bulk-bar" id="bulk-bar" style="display:none;"></div>
     <div class="gallery" id="gallery"></div>
     <div class="name-list" id="name-list" style="display:none;"></div>
     <div class="empty" id="empty" style="display:none;">
@@ -1014,6 +1062,13 @@
     <div class="empty" id="capsule-empty" style="display:none;">
       <h3>No capsules yet</h3>
       <p>Build one and it lives here.</p>
+    </div>
+
+    <!-- What is left over. A capsule is a decision about a piece, so the
+         pieces you have not decided about belong on this page too. -->
+    <div class="loose-section" id="loose-section" style="display:none;">
+      <span class="filter-sheet-label">Not in a capsule</span>
+      <div class="gallery" id="loose-gallery"></div>
     </div>
   </div>
 
@@ -1101,6 +1156,9 @@
         <label>Notes<textarea id="form-notes" rows="3"></textarea></label>
       </div>
       <div class="form-error" id="form-error"></div>
+      <!-- The things you do TO a piece rather than the fields you type into
+           it. They were on the detail sheet, which is for reading. -->
+      <div class="modal-actions" id="form-item-actions"></div>
     </div>
     <div class="sheet-footer">
       <div class="sheet-footer-inner">
@@ -1187,15 +1245,11 @@ function itemsInTab(tabName){
   return ITEMS.filter(i => tabForItem(i) === tabName);
 }
 
-// Tag filters are kept separate for the wardrobe and the outfit generator,
-// so narrowing one does not silently narrow the other.
-let inventoryTag = null;
+// Outfits and Faves each keep their own tag, so narrowing one does not
+// silently narrow the other. The wardrobe has no filters at all — its own
+// category tabs and its search do that work.
 let outfitTag = null;
 let savedTag = null;
-
-function hasTag(item, tag){
-  return !tag || (item.tags || []).includes(tag);
-}
 
 // The generator draws from everything; the tag is applied to finished
 // combinations instead of to the pool, so an outfit qualifies when any one
@@ -1269,37 +1323,45 @@ function setMode(mode){
   // Outfits and Faves arrive with the filters already down — on those two
   // pages narrowing is the activity, not an afterthought. Everywhere else
   // the panel goes away, because it would be filtering a page you left.
-  if(FILTERS_OPEN_BY_DEFAULT.includes(mode)) openFilterSheet();
-  else closeFilterSheet();
+  if(FILTERS_OPEN_BY_DEFAULT.includes(mode) && !filtersShown[mode]){
+    // Marked only if it really opened, so a page with nothing to show yet
+    // does not spend its one automatic appearance.
+    if(openFilterSheet()) markFiltersShown(mode);
+  } else {
+    closeFilterSheet();
+  }
 
   restoreScroll(mode);
 }
 
-// A piece in an outfit's list is a way to that piece. Opening it means going
-// where it lives — the wardrobe, on its own category — rather than showing a
-// second copy of it inside the outfit.
+// A piece in an outfit's list is a way to that piece. It takes you where the
+// piece lives — the wardrobe, on its own category, scrolled to it — and stops
+// there. No sheet: that would be a second view of the piece on top of the
+// page that already shows it.
 function openPieceInWardrobe(itemId){
   const item = ITEMS.find(i => i.id === itemId);
   if(!item){ showToast('That piece is in the archive'); return; }
 
   activeTab = tabForItem(item);
-  // A filter that would hide the very piece you asked for has to come off,
+  // A search that would hide the very piece you asked for has to come off,
   // or you arrive at a grid that does not contain it.
-  if(inventoryTag && !(item.tags || []).includes(inventoryTag)) inventoryTag = null;
   const search = document.getElementById('filter-search');
   if(search && search.value.trim()) search.value = '';
 
   closeModal();
   setMode('inventory');
-  openModal(itemId);
 
-  // Land on the piece rather than wherever the wardrobe was last left, so
-  // closing the sheet leaves you looking at it. Two frames: setMode restores
-  // its own scroll position in the first one.
+  // Land on the piece rather than wherever the wardrobe was last left, and
+  // say for a moment which one it was — centred in a grid of eighty is not
+  // by itself an answer. Two frames: setMode restores its own scroll
+  // position in the first one.
   requestAnimationFrame(() => requestAnimationFrame(() => {
     const rows = document.querySelectorAll('#gallery .tile, #name-list .name-row');
     const tile = Array.from(rows).find(el => el.dataset.id === itemId);
-    if(tile) tile.scrollIntoView({ block: 'center' });
+    if(!tile) return;
+    tile.scrollIntoView({ block: 'center' });
+    tile.classList.add('just-arrived');
+    setTimeout(() => tile.classList.remove('just-arrived'), 1800);
   }));
 }
 
@@ -1307,8 +1369,18 @@ function openPieceInWardrobe(itemId){
 // the bottom whose panel opened at the top would make the content jump away
 // from where you tapped, so the two stay together.
 //
-// On these two pages the panel is already down when you arrive.
+// On these two pages the panel comes down by itself — but only the first
+// time you arrive in a visit. Having it open on every single trip back was
+// a panel you had to put away again each time.
 const FILTERS_OPEN_BY_DEFAULT = ['outfits', 'saved'];
+const FILTERS_SHOWN_KEY = 'wardrobe-filters-shown';
+let filtersShown = (() => {
+  try{ return JSON.parse(sessionStorage.getItem(FILTERS_SHOWN_KEY) || '{}'); }catch(e){ return {}; }
+})();
+function markFiltersShown(mode){
+  filtersShown[mode] = true;
+  try{ sessionStorage.setItem(FILTERS_SHOWN_KEY, JSON.stringify(filtersShown)); }catch(e){ }
+}
 
 function countNarrowedSlots(filters){
   return Object.keys(filters).filter(k => filters[k].type !== 'any').length;
@@ -1317,7 +1389,7 @@ function countNarrowedSlots(filters){
 function activeFilterCount(){
   if(appMode === 'outfits') return countNarrowedSlots(outfitFilters) + (outfitTag ? 1 : 0);
   if(appMode === 'saved')   return countNarrowedSlots(savedFilters)  + (savedTag ? 1 : 0);
-  return inventoryTag ? 1 : 0;
+  return 0;
 }
 
 // The pill is what the panel collapses into: it appears once the panel is
@@ -1326,8 +1398,7 @@ function activeFilterCount(){
 function renderFiltersFab(){
   const fab = document.getElementById('filters-fab');
   if(!fab) return;
-  const relevant = ['inventory', 'outfits', 'saved'].includes(appMode);
-  const worthShowing = relevant && filterSheetHasContent() && !filterSheetOpen();
+  const worthShowing = filterSheetHasContent() && !filterSheetOpen();
   fab.style.display = worthShowing ? 'block' : 'none';
   const n = activeFilterCount();
   fab.textContent = n ? `Filters · ${n}` : 'Filters';
@@ -1340,16 +1411,13 @@ const FILTER_MOUNTS = [
   { ns: 'sheet', mode: null },
 ];
 
-function filterControlsHtml(ns, mode){
-  const tags = `
+function filterControlsHtml(ns){
+  return `
     <div class="filter-section">
       <span class="filter-sheet-label">Tags</span>
       <div class="tag-chips" id="${ns}-tag-chips"></div>
-    </div>`;
-  // Outfits and Faves both narrow by piece; the wardrobe has its own grid
-  // of pieces already, so there it is tags alone.
-  if(mode !== 'outfits' && mode !== 'saved') return tags;
-  return tags + `
+      <button class="tag-more" id="${ns}-tag-more" style="display:none;"></button>
+    </div>
     <div class="filter-section">
       <span class="filter-sheet-label">Pieces</span>
       <div class="filter-grid" id="${ns}-filter-grid"></div>
@@ -1362,14 +1430,13 @@ function renderFilterControls(){
     if(!host) return;
     const m = mode || appMode;
 
-    host.innerHTML = filterControlsHtml(ns, m);
+    // The panel only exists on the two pages that have filters.
+    if(m !== 'outfits' && m !== 'saved'){ host.innerHTML = ''; return; }
+    host.innerHTML = filterControlsHtml(ns);
 
-    const selected = m === 'outfits' ? outfitTag : m === 'saved' ? savedTag : inventoryTag;
-    const handler  = m === 'outfits' ? 'setOutfitTag'
-                   : m === 'saved'   ? 'setSavedTag'
-                                     : 'setInventoryTag';
-    renderTagChips(`${ns}-tag-chips`, selected, handler);
-    if(m === 'outfits' || m === 'saved') renderSlotChips(`${ns}-filter-grid`);
+    renderTagChips(`${ns}-tag-chips`, m === 'outfits' ? outfitTag : savedTag,
+                   m === 'outfits' ? 'setOutfitTag' : 'setSavedTag');
+    renderSlotChips(`${ns}-filter-grid`);
   });
 
   const clear = document.getElementById('filter-sheet-clear');
@@ -1383,9 +1450,9 @@ function renderFilterControls(){
 // Outfits always has its Pieces row. The other pages offer tags alone, and
 // before anything is tagged that is a labelled empty box — so the panel
 // stays down there rather than opening itself on nothing.
+// Outfits and Faves have filters; nothing else does.
 function filterSheetHasContent(){
-  return appMode === 'outfits' || appMode === 'saved'
-      || (tagsAvailable && allTags().length > 0);
+  return appMode === 'outfits' || appMode === 'saved';
 }
 
 function filterSheetOpen(){
@@ -1404,11 +1471,12 @@ function syncSheetInset(){
 }
 
 function openFilterSheet(){
-  if(!filterSheetHasContent()){ closeFilterSheet(); return; }
+  if(!filterSheetHasContent()){ closeFilterSheet(); return false; }
   renderFilterControls();
   document.getElementById('filter-sheet').classList.add('open');
   syncSheetInset();
   renderFiltersFab();
+  return true;
 }
 
 function closeFilterSheet(){
@@ -1429,10 +1497,6 @@ function clearFilters(){
     savedFilters = emptySlotFilters();
     renderFilterControls();
     renderSavedOutfits();
-  } else {
-    inventoryTag = null;
-    renderFilterControls();
-    render();
   }
 }
 
@@ -2096,9 +2160,14 @@ function renderSavedOutfits(){
 // can hold six tops and no bottoms, so each band is a wrapping row rather
 // than the outfit card's one-garment-per-slot; the order down the card is
 // the same one.
+// One row each, cascading down the card in the order you would put them on
+// over each other: the outermost layer first, the top last. Sharing a row
+// made a jacket and a tee read as alternatives rather than as layers.
 const CAPSULE_BANDS = [
   ['Hats', 'Accessories'],            // worn highest, so drawn first
-  ['Jackets', 'Jumpers', 'Tops'],     // layers outermost first, as on an outfit
+  ['Jackets'],
+  ['Jumpers'],
+  ['Tops'],
   ['Bottoms', 'Dresses'],
   ['Shoes'],                          // at the foot, as worn
 ];
@@ -2120,10 +2189,35 @@ function capsuleBands(pieces){
   return bands;
 }
 
+// Every piece that no capsule has claimed. A capsule is a decision about a
+// piece, so what is left over is the list of decisions still to make.
+function loosePieces(){
+  const claimed = new Set();
+  capsules.forEach(c => c.itemIds.forEach(id => claimed.add(id)));
+  return ITEMS.filter(i => !claimed.has(i.id));
+}
+
+function renderLoosePieces(){
+  const section = document.getElementById('loose-section');
+  const gallery = document.getElementById('loose-gallery');
+  if(!section || !gallery) return;
+
+  const loose = loosePieces();
+  section.style.display = loose.length ? 'block' : 'none';
+  gallery.innerHTML = loose.map(i => `
+    <div class="tile" data-id="${i.id}" onclick="openModal('${i.id}')">
+      ${i.photo
+        ? `<img src="${esc(i.photo)}" alt="${esc(i.name)}" referrerpolicy="no-referrer" loading="lazy" decoding="async">`
+        : `<span class="no-photo">No photo</span>`}
+    </div>`).join('');
+}
+
 function renderCapsules(){
   const gallery = document.getElementById('capsule-gallery');
   const emptyState = document.getElementById('capsule-empty');
   if(!gallery) return;
+
+  renderLoosePieces();
 
   if(capsules.length === 0){
     gallery.innerHTML = '';
@@ -2209,12 +2303,14 @@ function confirmArchiveCapsule(id){
 // capsule leaves no empty row behind.
 let capsuleDraft = null;   // { id, name, itemIds:Set, tab }
 
-function openCapsuleEditor(id){
+function openCapsuleEditor(id, seedItemIds){
   const capsule = id ? capsules.find(c => c.id === id) : null;
   capsuleDraft = {
     id: capsule ? capsule.id : null,
     name: capsule ? capsule.name : '',
-    itemIds: new Set(capsule ? capsule.itemIds : []),
+    // seedItemIds lets "new capsule with this piece" start from the piece
+    // you were looking at rather than from nothing.
+    itemIds: new Set(capsule ? capsule.itemIds : (seedItemIds || [])),
     tab: 'All'
   };
 
@@ -2574,6 +2670,19 @@ function allTags(){
   return Array.from(seen).sort();
 }
 
+// The tag you reach for most should be the one you do not have to open the
+// list to find. Ties fall back to alphabetical, so the order is stable.
+function tagsByUse(){
+  const counts = new Map();
+  ITEMS.concat(ARCHIVED).forEach(i => (i.tags || []).forEach(t => {
+    counts.set(t, (counts.get(t) || 0) + 1);
+  }));
+  return Array.from(counts.keys()).sort((a, b) => {
+    const d = counts.get(b) - counts.get(a);
+    return d !== 0 ? d : a.localeCompare(b);
+  });
+}
+
 function parseTags(text){
   const seen = new Set();
   return String(text || '')
@@ -2605,6 +2714,88 @@ function favoriteToRow(rec){
 // supabase/add-capsules.sql has not been run the destination stays hidden
 // rather than showing a page that cannot save anything.
 let capsulesAvailable = false;
+
+// Which capsules a piece is in. A piece can be in as many as you like, so
+// this is a list rather than an answer.
+function capsulesForItem(itemId){
+  return capsules.filter(c => c.itemIds.includes(itemId));
+}
+
+// One membership, on or off. The editor deals in a whole capsule at once;
+// this is the other direction — one piece, across capsules.
+async function setItemInCapsule(capsuleId, itemId, member){
+  const capsule = capsules.find(c => c.id === capsuleId);
+  if(!capsule) return false;
+  const db = client();
+
+  if(member){
+    const { error } = await db.from('capsule_items')
+      .upsert({ capsule_id: capsuleId, item_id: itemId }, { onConflict: 'capsule_id,item_id' });
+    if(error) return dbFail(error, 'Could not add — check connection');
+    if(!capsule.itemIds.includes(itemId)) capsule.itemIds.push(itemId);
+  } else {
+    const { error } = await db.from('capsule_items')
+      .delete().eq('capsule_id', capsuleId).eq('item_id', itemId);
+    if(error) return dbFail(error, 'Could not remove — check connection');
+    capsule.itemIds = capsule.itemIds.filter(id => id !== itemId);
+  }
+  return true;
+}
+
+// Every capsule as a row you can tick, with the piece's current memberships
+// already ticked. Nothing to confirm: each tap is the change, and the toast
+// offers it back.
+function openItemCapsulePicker(itemId){
+  const item = ITEMS.find(i => i.id === itemId);
+  if(!item) return;
+  const modal = document.getElementById('modal');
+  modal.innerHTML = `
+    <div class="sheet-header">
+      <button class="sheet-back" onclick='openModal(${JSON.stringify(itemId)})'>← Back</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-name" style="margin-bottom:6px;">Capsules</div>
+      <p class="gate-note">${esc(item.name)} can be in as many as you like.</p>
+      <div class="capsule-picks" id="capsule-picks"></div>
+      <div class="modal-actions">
+        <button class="btn small secondary"
+                onclick='openCapsuleEditor(null, [${JSON.stringify(itemId)}])'>New capsule with this piece</button>
+      </div>
+    </div>
+  `;
+  renderItemCapsulePicks(itemId);
+  document.getElementById('modal-backdrop').classList.add('open');
+}
+
+function renderItemCapsulePicks(itemId){
+  const el = document.getElementById('capsule-picks');
+  if(!el) return;
+  if(!capsules.length){
+    el.innerHTML = `<p class="modal-meta">No capsules yet.</p>`;
+    return;
+  }
+  el.innerHTML = capsules.map(c => {
+    const inIt = c.itemIds.includes(itemId);
+    return `<button class="capsule-pick ${inIt ? 'picked' : ''}"
+                    onclick='toggleItemCapsule(${JSON.stringify(c.id)}, ${JSON.stringify(itemId)})'>
+      <span>${esc(c.name)}</span>
+      <span class="capsule-pick-mark">${inIt ? '✓' : ''}</span>
+    </button>`;
+  }).join('');
+}
+
+async function toggleItemCapsule(capsuleId, itemId){
+  const capsule = capsules.find(c => c.id === capsuleId);
+  if(!capsule) return;
+  const wasIn = capsule.itemIds.includes(itemId);
+  if(!await setItemInCapsule(capsuleId, itemId, !wasIn)) return;
+
+  renderItemCapsulePicks(itemId);
+  renderCapsules();
+  // The same tap undoes it, so the undo is this very call again.
+  showToast(wasIn ? `Taken out of ${capsule.name}` : `Added to ${capsule.name}`,
+    () => toggleItemCapsule(capsuleId, itemId));
+}
 
 function capsuleItems(capsule){
   // Archived pieces drop out of a capsule's display without losing their
@@ -3167,7 +3358,10 @@ async function handlePhotoUpload(event){
   try{
     if(!await uploadPhotoFor(itemId, file)) return;
     render();
-    if(document.getElementById('modal-backdrop').classList.contains('open')){
+    // Redraw whichever sheet asked for the photo, so the new one shows.
+    if(document.getElementById('form-backdrop').classList.contains('open')){
+      openItemForm(itemId);
+    } else if(document.getElementById('modal-backdrop').classList.contains('open')){
       openModal(itemId);
     }
     showToast('Photo added');
@@ -3228,21 +3422,65 @@ function setTab(t){
 }
 
 // ---- Tag filters ----
+// Which tag lists the reader has asked to see in full, by element id.
+let tagRowsOpen = {};
+
 function renderTagChips(elementId, selected, handler){
   const el = document.getElementById(elementId);
+  const more = document.getElementById(elementId.replace(/-tag-chips$/, '-tag-more'));
   if(!el) return;
-  const tags = tagsAvailable ? allTags() : [];
-  if(!tags.length){ el.innerHTML = ''; el.style.display = 'none'; return; }
+  const tags = tagsAvailable ? tagsByUse() : [];
+  if(!tags.length){
+    el.innerHTML = ''; el.style.display = 'none';
+    if(more) more.style.display = 'none';
+    return;
+  }
   el.style.display = 'flex';
   el.innerHTML = tags.map(t => `
     <button class="tag-chip ${selected === t ? 'active' : ''}" onclick='${handler}(${JSON.stringify(t)})'>${esc(t)}</button>
   `).join('');
+  if(more) foldTagChips(elementId);
 }
 
-function setInventoryTag(tag){
-  inventoryTag = (inventoryTag === tag) ? null : tag;   // tapping the active one clears it
-  render();
-  renderFilterControls();
+// Two rows of chips is a control; six is a wall. Anything past the second
+// row folds away behind a count, unless the reader has opened it.
+//
+// The rows are found from where the chips actually landed rather than from a
+// number of pixels, so it holds whatever the chip labels turn out to be. All
+// the offsets are read before anything is hidden, because hiding the first
+// chip would move every one after it.
+const TAG_ROWS_SHOWN = 2;
+
+function foldTagChips(elementId){
+  const el = document.getElementById(elementId);
+  const more = document.getElementById(elementId.replace(/-tag-chips$/, '-tag-more'));
+  if(!el || !more) return;
+
+  const chips = Array.from(el.children);
+  chips.forEach(c => { c.hidden = false; });
+
+  const tops = chips.map(c => c.offsetTop);
+  const rows = tops.filter((t, i) => tops.indexOf(t) === i);
+  const open = Boolean(tagRowsOpen[elementId]);
+
+  if(rows.length <= TAG_ROWS_SHOWN){
+    more.style.display = 'none';
+    return;
+  }
+
+  let folded = 0;
+  if(!open){
+    const cut = rows[TAG_ROWS_SHOWN];
+    chips.forEach((c, i) => { if(tops[i] >= cut){ c.hidden = true; folded++; } });
+  }
+
+  more.style.display = 'block';
+  more.textContent = open ? 'Show fewer tags' : `${folded} more tag${folded === 1 ? '' : 's'}`;
+  more.onclick = () => {
+    tagRowsOpen[elementId] = !open;
+    foldTagChips(elementId);
+    syncSheetInset();
+  };
 }
 
 function setOutfitTag(tag){
@@ -3281,10 +3519,16 @@ function openModal(id){
       ${item.price ? `<div class="modal-price">${esc(item.price)}</div>` : ''}
       ${item.notes ? `<div class="modal-notes">${esc(item.notes)}</div>` : ''}
       ${(item.tags || []).length ? `<div class="detail-tags">${item.tags.map(t => `<span>${esc(t)}</span>`).join('')}</div>` : ''}
+      ${capsulesAvailable ? `
+        <div class="detail-capsules">
+          <span class="filter-sheet-label">Capsules</span>
+          ${capsulesForItem(item.id).length
+            ? `<div class="detail-tags">${capsulesForItem(item.id).map(c => `<span>${esc(c.name)}</span>`).join('')}</div>`
+            : `<p class="modal-meta">Not in a capsule yet.</p>`}
+        </div>` : ''}
       <div class="modal-actions">
         <button class="btn small secondary" onclick='openItemForm(${JSON.stringify(item.id)})'>Edit</button>
-        <button class="btn small secondary" onclick='triggerPhotoUpload(${JSON.stringify(item.id)})'>${item.photo ? 'Replace photo' : 'Add photo'}</button>
-        <button class="btn small secondary" onclick='removeItem(${JSON.stringify(item.id)})'>Archive</button>
+        ${capsulesAvailable ? `<button class="btn small secondary" onclick='openItemCapsulePicker(${JSON.stringify(item.id)})'>Add to capsule</button>` : ''}
       </div>
       <div id="modal-outfits-container"></div>
     </div>
@@ -3316,6 +3560,14 @@ function openItemForm(id){
   document.getElementById('form-tags').value = item ? (item.tags || []).join(', ') : '';
   document.getElementById('form-tags-field').style.display = tagsAvailable ? '' : 'none';
   renderTagSuggestions();
+
+  // Only an existing piece has a photo to replace or a place to be archived
+  // to, so a new one gets no action row at all.
+  const actions = document.getElementById('form-item-actions');
+  actions.innerHTML = item ? `
+    <button class="btn small secondary" onclick='triggerPhotoUpload(${JSON.stringify(item.id)})'>${item.photo ? 'Replace photo' : 'Add photo'}</button>
+    <button class="btn small secondary" onclick='archiveFromForm(${JSON.stringify(item.id)})'>Archive</button>
+  ` : '';
 
   const select = document.getElementById('form-category');
   const current = item ? item.category : '';
@@ -3356,6 +3608,13 @@ function toggleFormTag(tag){
 function closeItemForm(){
   document.getElementById('form-backdrop').classList.remove('open');
   editingItemId = null;
+}
+
+// Archiving is reached from the edit sheet now, so the sheet has to go with
+// the piece — removeItem only knows about the detail sheet behind it.
+async function archiveFromForm(id){
+  closeItemForm();
+  await removeItem(id);
 }
 
 async function submitItemForm(){
@@ -3408,8 +3667,6 @@ const ICONS = {
   // pictures its current state reads as a label and gets tapped by mistake.
   list:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01"/></svg>',
   grid:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg>',
-  select:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 5.5L10 16l-4.5-4.5"/><path d="M20 12.5V19a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 19V6a1.5 1.5 0 0 1 1.5-1.5H16"/></svg>',
-  done:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>'
 };
 
 function renderToolbarIcons(){
@@ -3420,15 +3677,22 @@ function renderToolbarIcons(){
     view.setAttribute('aria-label', toList ? 'Switch to list view' : 'Switch to photo view');
     view.title = toList ? 'List view' : 'Photo view';
   }
-  const edit = document.getElementById('edit-toggle-btn');
-  if(edit){
-    // No button at rest: hold a piece to start selecting. It appears once
-    // there is a mode to leave, which is the only thing it does.
-    edit.style.display = editMode ? 'flex' : 'none';
-    edit.innerHTML = ICONS.done;
-    edit.setAttribute('aria-label', 'Leave select mode');
-    edit.title = 'Done';
-    edit.classList.toggle('active', editMode);
+  // Selecting takes the whole head over: the title says how many, and the
+  // only control is a labelled Done. Nothing else in that row does anything
+  // useful while you are selecting, and leaving them there is what made the
+  // way out hard to find.
+  const done = document.getElementById('edit-done-btn');
+  if(done) done.style.display = editMode ? 'flex' : 'none';
+  ['search-btn', 'view-toggle-btn', 'add-item-btn'].forEach(id => {
+    const btn = document.getElementById(id);
+    if(btn) btn.style.display = editMode ? 'none' : 'flex';
+  });
+  const title = document.getElementById('wardrobe-title');
+  if(title){
+    const n = selectedIds.size;
+    title.textContent = editMode
+      ? (n ? `${n} selected` : 'Select pieces')
+      : 'Wardrobe';
   }
   const q = ((document.getElementById('filter-search') || {}).value || '').trim();
   const search = document.getElementById('search-btn');
@@ -3608,7 +3872,6 @@ function topsSubRank(item){
 function visibleFilteredItems(search){
   const filtered = ITEMS.filter(i=>{
     if(activeTab !== 'All' && tabForItem(i) !== activeTab) return false;
-    if(!hasTag(i, inventoryTag)) return false;
     if(search && !(i.name.toLowerCase().includes(search) || (i.brand||'').toLowerCase().includes(search))) return false;
     return true;
   });
@@ -3629,9 +3892,6 @@ function visibleFilteredItems(search){
 }
 
 function render(){
-  // A tag can disappear when its last item is edited or archived. Reset it
-  // before drawing the row that shows it.
-  if(inventoryTag && !allTags().includes(inventoryTag)) inventoryTag = null;
   renderTabs();
   renderArchiveLink();
   renderFiltersFab();
@@ -3657,12 +3917,11 @@ function render(){
         </div>
       `;
     } else {
+      // The count lives in the page title while you are selecting, so the
+       // bar is the two actions and nothing else.
       bulkBar.innerHTML = `
-        <span id="bulk-count">${selectedIds.size} selected</span>
-        <div style="display:flex;gap:8px;">
-          <button class="btn small secondary" onclick="selectAllVisible()">Select all</button>
-          <button class="btn small" onclick="bulkDeleteSelected()">Delete selected</button>
-        </div>
+        <button class="btn small secondary" onclick="selectAllVisible()">Select all</button>
+        <button class="btn small" onclick="bulkDeleteSelected()">Delete selected</button>
       `;
     }
   }
