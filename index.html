@@ -67,9 +67,12 @@
   h1{
     font-family:'Fraunces', serif;
     font-weight:400;
-    /* Grows with the screen and stops before it can wrap on a phone. */
-    font-size:clamp(26px, 9vw, 38px);
-    line-height:1.04;
+    /* Grows with the screen and stops before it can wrap on a phone.
+       Sixteen pixels down from where it was: on a 390px phone this lands
+       at about 19px, so the name of the page reads as a label over the
+       clothes rather than as a masthead. */
+    font-size:clamp(17px, 4.9vw, 22px);
+    line-height:1.12;
     margin:0;
     letter-spacing:-0.02em;
   }
@@ -128,10 +131,6 @@
   .icon-btn.primary{background:var(--ink);border-color:var(--ink);color:#fff;}
   .icon-btn.primary:hover{background:var(--accent);}
   .icon-btn.active{background:var(--accent);border-color:var(--accent);color:#fff;}
-  /* A filter that is on has to be visible with the control closed — the
-     same rule the Filters pill follows. Without a ring to darken, the state
-     is a soft disc behind the glyph. */
-  .icon-btn.has-value{background:var(--accent-soft);}
   .icon-row{display:flex;gap:8px;align-items:center;}
   /* A control that says what it does, for the one place a glyph was not
      enough: leaving select mode. */
@@ -157,19 +156,20 @@
     box-shadow:0 6px 20px rgba(0,0,0,0.09);
   }
   .search-overlay.open{display:block;}
-  .search-overlay-bar{display:flex;align-items:center;gap:10px;}
-  .search-overlay-bar .search-glyph{flex:none;color:var(--ink-soft);display:block;width:17px;height:17px;}
-  .search-overlay-bar input[type=text]{flex:1;min-width:0;}
-  /* Smaller than a toolbar button: it sits inside the field, not beside it. */
-  .search-clear{width:28px;height:28px;border-color:transparent;background:none;color:var(--ink-soft);}
-  .search-clear svg{width:14px;height:14px;}
-  .search-cancel{
-    flex:none;
-    font-family:'Work Sans',sans-serif;
-    font-size:13px;font-weight:600;
-    background:none;border:none;
-    color:var(--ink-soft);cursor:pointer;padding:6px 2px;
+  .search-overlay-bar{display:flex;align-items:center;gap:6px;}
+  /* The field, and the x that lives in it rather than beside it. */
+  .search-field{position:relative;flex:1;min-width:0;}
+  .search-field input[type=text]{width:100%;padding-right:42px;}
+  .search-clear{
+    position:absolute;right:6px;top:50%;
+    transform:translateY(-50%);
+    width:32px;height:32px;
+    display:flex;align-items:center;justify-content:center;
+    border:none;border-radius:999px;
+    background:none;color:var(--ink-soft);
+    cursor:pointer;padding:0;
   }
+  .search-clear svg{width:15px;height:15px;display:block;}
   input[type=text]{
     font-family:'Work Sans',sans-serif;
     /* 16px exactly, and not a pixel less: Safari on iOS zooms the page in
@@ -346,6 +346,37 @@
     overflow-y:auto;
   }
   .modal-backdrop.open{display:block;}
+
+  /* Backing out of something half-written is the one place the app stops
+     and asks. Everything else that throws work away can be undone from the
+     toast; a draft that was never saved has nothing to undo back to.
+     Above the sheets, because it is asking about the sheet you are on. */
+  .confirm-backdrop{
+    display:none;
+    position:fixed;inset:0;
+    background:rgba(0,0,0,0.38);
+    z-index:160;
+    align-items:center;justify-content:center;
+    padding:24px;
+  }
+  .confirm-backdrop.open{display:flex;}
+  .confirm-card{
+    width:100%;max-width:320px;
+    background:var(--surface);
+    border-radius:18px;
+    padding:22px 20px 16px;
+    box-shadow:0 18px 44px rgba(0,0,0,0.22);
+  }
+  .confirm-title{
+    font-family:'Fraunces',serif;font-weight:400;
+    font-size:21px;line-height:1.2;margin:0 0 6px;
+  }
+  .confirm-body{
+    font-family:'Work Sans',sans-serif;font-size:14px;
+    color:var(--ink-soft);margin:0 0 18px;line-height:1.45;
+  }
+  .confirm-actions{display:flex;flex-direction:column;gap:8px;}
+  .confirm-actions .btn{width:100%;min-height:46px;}
   .modal{
     max-width:640px;
     margin:0 auto;
@@ -358,13 +389,17 @@
     padding:12px 16px;
     display:flex;align-items:center;
   }
+  /* Every way back is the same arrow, drawn like the search glyph beside
+     it rather than typed as a character. */
   .sheet-back{
+    display:inline-flex;align-items:center;gap:7px;
     font-family:'Work Sans',sans-serif;
     font-size:13px;font-weight:600;
     background:none;border:none;
     color:var(--ink);cursor:pointer;
     padding:6px 4px;
   }
+  .back-glyph{width:16px;height:16px;flex:none;display:block;}
   .modal-photo{
     aspect-ratio:1/1;
     background:var(--page);
@@ -388,8 +423,9 @@
   .modal-notes{font-size:13px;color:var(--ink-soft);margin:8px 0;font-style:italic;}
   .modal-actions{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;}
   /* An editor's save stays where your thumb is rather than at the end of a
-     form you have to scroll to reach. Cancel is the ← at the top of the
-     sheet: two ways out at the bottom of a long form was one too many. */
+     form you have to scroll to reach. The way out is the back arrow at the
+     top of the sheet: two ways out at the bottom of a long form was one too
+     many. */
   .sheet-footer{
     position:fixed;
     left:0;right:0;bottom:0;
@@ -594,7 +630,7 @@
     color:var(--ink-soft);cursor:pointer;
     padding:8px;
   }
-  .back-link{display:block;padding:0 0 12px;text-align:left;}
+  .back-link{display:inline-flex;align-items:center;gap:7px;padding:0 0 12px;text-align:left;}
 
   .signout-row{margin-top:34px;text-align:center;}
   .signout-btn{
@@ -607,22 +643,23 @@
   /* Tags. Both kinds of chip in the filter sheet are the same control, so
      they share .filter-chip's type, shape and states — the only difference
      is that tags wrap onto a second row rather than scrolling sideways. */
-  .tag-chips{display:flex;flex-wrap:wrap;gap:8px;}
+  /* One row that scrolls sideways, the same as the pieces below it. Tags
+     accumulate, and folding them behind a count meant a control to read
+     before you could read the tags. The most-used come first, so what you
+     reach for most is already under your thumb. */
+  .tag-chips{
+    display:flex;
+    flex-wrap:nowrap;
+    gap:8px;
+    overflow-x:auto;
+    padding-bottom:2px;
+    -webkit-overflow-scrolling:touch;
+    scrollbar-width:none;
+  }
+  .tag-chips::-webkit-scrollbar{display:none;}
   /* How you would find the tag editor, since a long press cannot advertise
      itself. Quieter than the label it sits beside. */
   .label-hint{text-transform:none;letter-spacing:0.02em;opacity:0.65;}
-  /* The way into the tags that did not fit in two rows. Sits under them
-     rather than among them, so it cannot itself push a chip onto a third
-     row and change the very thing it is counting. */
-  .tag-more{
-    display:block;margin-top:10px;
-    font-family:'IBM Plex Mono',monospace;
-    font-size:11px;letter-spacing:0.06em;
-    background:none;border:none;
-    color:var(--ink-soft);
-    text-decoration:underline;text-underline-offset:3px;
-    cursor:pointer;padding:4px 0;
-  }
   .tag-chip{
     flex:none;
     font-family:'Work Sans',sans-serif;
@@ -649,6 +686,28 @@
 
   /* Tag chips inside the add/edit form sit under their input */
   .form-grid .tag-chips{margin-top:8px;}
+  /* The matches under a field you type into. A row that scrolls sideways,
+     like every other row of chips here, rather than a list that pushes the
+     rest of the form down as you type. */
+  .picker-options{
+    display:flex;flex-wrap:nowrap;gap:8px;
+    overflow-x:auto;
+    margin-top:8px;padding-bottom:2px;
+    -webkit-overflow-scrolling:touch;
+    scrollbar-width:none;
+  }
+  .picker-options::-webkit-scrollbar{display:none;}
+  .picker-option{
+    flex:none;
+    font-family:'Work Sans',sans-serif;
+    font-size:12px;font-weight:600;
+    min-height:36px;padding:0 14px;
+    border-radius:10px;
+    border:1px solid var(--line);
+    background:var(--page);
+    color:var(--ink);
+    cursor:pointer;white-space:nowrap;
+  }
 
   /* One outfit at the top of the page, larger than the grid below it. */
   .hero{margin:0 0 16px;}
@@ -839,9 +898,6 @@
     white-space:nowrap;
   }
   .filter-chip.active{border-color:var(--accent);background:var(--accent-soft);}
-  /* A slot the chosen shape does not have. Still tappable — dimmed, not
-     hidden, so you can see it is doing nothing and put it back. */
-  .filter-chip.moot{opacity:0.42;}
   .filter-chip .chip-state{
     font-family:'IBM Plex Mono',monospace;
     font-size:10px;color:var(--ink-soft);font-weight:400;
@@ -1136,7 +1192,7 @@
   </div>
 
   <div id="archive-view" style="display:none;">
-    <button class="quiet-link back-link" onclick="setMode('inventory')">← Wardrobe</button>
+    <button class="quiet-link back-link" onclick="setMode('inventory')"><svg class="back-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>Wardrobe</button>
     <header class="page-head">
       <h1>Archive</h1>
     </header>
@@ -1155,19 +1211,24 @@
 </div>
 
 <div class="search-overlay" id="search-overlay">
+  <!-- Two controls, and each does one thing. Back leaves searching; the x
+       inside the field empties it and leaves you typing. "Done" sat where a
+       Search button would and could have meant either. -->
   <div class="search-overlay-bar">
-    <svg class="search-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-      <circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>
-    </svg>
-    <input type="text" id="filter-search" placeholder="Search name or brand..."
-           oninput="render()" onkeydown="if(event.key==='Escape') closeSearch()">
-    <button class="icon-btn search-clear" id="search-clear" onclick="clearSearch()"
-            aria-label="Clear search" title="Clear search" style="display:none;">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-        <path d="M6 6l12 12M18 6L6 18"/>
-      </svg>
+    <button class="icon-btn" id="search-back" onclick="closeSearch()"
+            aria-label="Close search" title="Close search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
     </button>
-    <button class="search-cancel" onclick="closeSearch()">Done</button>
+    <div class="search-field">
+      <input type="text" id="filter-search" placeholder="Search name or brand..."
+             oninput="render()" onkeydown="if(event.key==='Escape') closeSearch()">
+      <button class="search-clear" id="search-clear" onclick="clearSearch()"
+              aria-label="Clear search" title="Clear search" style="display:none;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+          <path d="M6 6l12 12M18 6L6 18"/>
+        </svg>
+      </button>
+    </div>
   </div>
 </div>
 
@@ -1201,14 +1262,18 @@
 <div class="modal-backdrop" id="form-backdrop">
   <div class="modal">
     <div class="sheet-header">
-      <button class="sheet-back" onclick="closeItemForm()">← Cancel</button>
+      <button class="sheet-back" onclick="closeItemForm()"><svg class="back-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>Back</button>
     </div>
     <div class="modal-body has-footer">
       <div class="modal-name" id="form-title">New piece</div>
       <div class="form-grid">
         <label>Name<input type="text" id="form-name"></label>
         <label>Brand<input type="text" id="form-brand"></label>
-        <label>Category<select id="form-category"></select></label>
+        <label id="form-category-field">Category
+          <input type="text" id="form-category" autocomplete="off"
+                 oninput="renderCategoryOptions()" onfocus="renderCategoryOptions()">
+          <div class="picker-options" id="form-category-options"></div>
+        </label>
         <label>Size<input type="text" id="form-size"></label>
         <label>Price<input type="text" id="form-price"></label>
         <label>Source<input type="text" id="form-source"></label>
@@ -1227,6 +1292,17 @@
       <div class="sheet-footer-inner">
         <button class="btn" id="form-save-btn" onclick="submitItemForm()">Save</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<div class="confirm-backdrop" id="confirm-backdrop" onclick="if(event.target.id==='confirm-backdrop') dismissConfirm()">
+  <div class="confirm-card" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+    <h2 class="confirm-title" id="confirm-title">Go back?</h2>
+    <p class="confirm-body" id="confirm-body"></p>
+    <div class="confirm-actions">
+      <button class="btn" id="confirm-stay" onclick="dismissConfirm()">Keep editing</button>
+      <button class="btn secondary" id="confirm-go" onclick="acceptConfirm()">Go back</button>
     </div>
   </div>
 </div>
@@ -1250,11 +1326,18 @@ let viewMode = 'photos'; // 'photos' or 'names'
 let editMode = false;
 let selectedIds = new Set();
 
-const TAB_ORDER = ['All','Tops','Bottoms','Jumpers','Jackets','Dresses','Shoes','Hats','Accessories','Other','No Image'];
+const TAB_ORDER = ['All','Tops','Pants','Shorts','Jumpers','Jackets','Dresses','Shoes','Hats','Accessories','Other','No Image'];
+
+// The bottom half used to be one tab called Bottoms. Pants and shorts are
+// worn in different weather and wanted at different times, so they are two
+// things to browse and filter — but an outfit still wears one or the other,
+// never one of each, so the generator draws its bottom from both.
+const BOTTOM_TABS = ['Pants','Shorts'];
 
 const CATEGORY_TO_TAB = {
   'Shirts':'Tops','Tops':'Tops',
-  'Jeans':'Bottoms','Pants':'Bottoms','Skirts':'Bottoms','Shorts':'Bottoms',
+  'Jeans':'Pants','Pants':'Pants','Skirts':'Pants',
+  'Shorts':'Shorts',
   'Knitwear':'Jumpers',
   'Jackets':'Jackets',
   'Dresses':'Dresses',
@@ -1317,8 +1400,11 @@ let savedTag = null;
 // The generator draws from everything; the tag is applied to finished
 // combinations instead of to the pool, so an outfit qualifies when any one
 // piece carries it rather than all of them.
+// A slot usually draws from one tab; the bottom draws from two.
 function outfitPool(tabName){
-  return itemsInTab(tabName);
+  return Array.isArray(tabName)
+    ? tabName.flatMap(t => itemsInTab(t))
+    : itemsInTab(tabName);
 }
 
 function comboMatchesTag(combo){
@@ -1490,7 +1576,6 @@ function filterControlsHtml(ns){
     <div class="filter-section">
       <span class="filter-sheet-label">Tags <span class="label-hint">hold one to edit</span></span>
       <div class="tag-chips" id="${ns}-tag-chips"></div>
-      <button class="tag-more" id="${ns}-tag-more" style="display:none;"></button>
     </div>
     <div class="filter-section">
       <span class="filter-sheet-label">Pieces</span>
@@ -1632,26 +1717,13 @@ function familiesFor(f){
 function outfitFamilies(){ return familiesFor(outfitFilters); }
 
 const SLOT_META = {
-  top:{label:'Top', category:'Tops', allowNone:true,
-       note:'None leaves tops out, which leaves dresses.'},
-  bottom:{label:'Bottom', category:'Bottoms', allowNone:true,
-          note:'None leaves bottoms out, which leaves dresses.'},
-  dress:{label:'Dress', category:'Dresses', allowNone:true,
-         note:'None leaves dresses out, which leaves tops and bottoms.'},
+  top:{label:'Top', category:'Tops', allowNone:true},
+  bottom:{label:'Bottom', category:BOTTOM_TABS, allowNone:true},
+  dress:{label:'Dress', category:'Dresses', allowNone:true},
   jumper:{label:'Jumper', category:'Jumpers', allowNone:true},
   jacket:{label:'Jacket', category:'Jackets', allowNone:true},
   shoes:{label:'Shoes', category:'Shoes', allowNone:true}
 };
-
-// A slot the current shape does not have. It keeps its own value and stays
-// tappable — it is only dimmed, so you can see it is not doing anything
-// without having to work out why.
-function slotIsMoot(key){
-  const fams = familiesFor(activeSlotFilters());
-  if(key === 'dress') return !fams.includes('dress');
-  if(key === 'top' || key === 'bottom') return !fams.includes('topbottom');
-  return fams.length === 0;
-}
 
 function shoeSlotList(){
   // Pinned to "no shoes" while shoes are held out of outfits.
@@ -1664,10 +1736,15 @@ function renderSlotChips(gridId){
   const grid = document.getElementById(gridId);
   if(!grid) return;
 
-  // Every slot, every time. The three base slots are what decides the shape,
-  // so hiding any of them would hide the way back.
-  const slotKeys = ['top','bottom','dress']
-    .concat(INCLUDE_SHOES_IN_OUTFITS ? ['jumper','jacket','shoes'] : ['jumper','jacket']);
+  // Every slot an outfit can actually hold, main ones first, and the row
+  // scrolls sideways for the rest.
+  //
+  // Shoes are the odd one: the generator leaves them out, so on Outfits the
+  // chip would filter nothing. A kept outfit can have a pair put on it by
+  // hand, though, so on Faves it is a real filter and belongs in the row.
+  const shoesApply = INCLUDE_SHOES_IN_OUTFITS || appMode === 'saved';
+  const slotKeys = ['top','bottom','dress','jumper','jacket']
+    .concat(shoesApply ? ['shoes'] : []);
 
   grid.innerHTML = slotKeys.map(key => {
     const meta = SLOT_META[key];
@@ -1677,11 +1754,10 @@ function renderSlotChips(gridId){
     else if(f.type === 'none') stateLabel = 'None';
     else stateLabel = `${f.ids.length} selected`;
 
-    const cls = [
-      'filter-chip',
-      f.type !== 'any' ? 'active' : '',
-      slotIsMoot(key) ? 'moot' : '',
-    ].filter(Boolean).join(' ');
+    // Every chip reads the same whatever else is set. A slot the chosen
+    // shape does not have simply filters nothing — dimming it was one more
+    // state to decode for no gain.
+    const cls = ['filter-chip', f.type !== 'any' ? 'active' : ''].filter(Boolean).join(' ');
 
     return `<button class="${cls}" onclick="openSlotPicker('${key}')">
       ${meta.label}<span class="chip-state">${stateLabel}</span>
@@ -1693,10 +1769,9 @@ function openSlotPicker(slotKey){
   const meta = SLOT_META[slotKey];
   const modal = document.getElementById('modal');
   modal.innerHTML = `
-    <div class="sheet-header"><button class="sheet-back" onclick="closePickerAndApply()">← Done</button></div>
+    <div class="sheet-header"><button class="sheet-back" onclick="closePickerAndApply()"><svg class="back-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>Back</button></div>
     <div class="modal-body">
-      <div class="modal-name" style="margin-bottom:${meta.note ? '6' : '14'}px;">Choose ${meta.label}</div>
-      ${meta.note ? `<p class="gate-note">${meta.note}</p>` : ''}
+      <div class="modal-name" style="margin-bottom:14px;">Choose ${meta.label}</div>
       <div class="quick-picks" id="picker-quick-picks"></div>
       <div class="gallery" id="picker-gallery"></div>
     </div>
@@ -1773,7 +1848,7 @@ function slotList(categoryItems, filter, allowNone){
 function* familyGenerator(family, jumpers, jackets, shoes){
   if(family === 'topbottom'){
     const tops = slotList(outfitPool('Tops'), outfitFilters.top, false);
-    const bottoms = slotList(outfitPool('Bottoms'), outfitFilters.bottom, false);
+    const bottoms = slotList(outfitPool(BOTTOM_TABS), outfitFilters.bottom, false);
     for(const top of tops)
       for(const bottom of bottoms)
         for(const jumper of jumpers)
@@ -1873,7 +1948,7 @@ function comboCountWhere(untaggedOnly){
   return outfitFamilies().reduce((total, family) => {
     const own = family === 'topbottom'
       ? slotCount('Tops', outfitFilters.top, false, untaggedOnly)
-        * slotCount('Bottoms', outfitFilters.bottom, false, untaggedOnly)
+        * slotCount(BOTTOM_TABS, outfitFilters.bottom, false, untaggedOnly)
       : slotCount('Dresses', outfitFilters.dress, false, untaggedOnly);
     return total + own * jumpers * jackets * shoes;
   }, 0);
@@ -2129,7 +2204,7 @@ function openSavedShoePicker(key){
   const modal = document.getElementById('modal');
 
   modal.innerHTML = `
-    <div class="sheet-header"><button class="sheet-back" onclick="closeModal()">← Back</button></div>
+    <div class="sheet-header"><button class="sheet-back" onclick="closeModal()"><svg class="back-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>Back</button></div>
     <div class="modal-body">
       <div class="modal-name" style="margin-bottom:6px;">Choose shoes</div>
       <div class="count-line">${shoes.length} pair${shoes.length===1?'':'s'} in your wardrobe</div>
@@ -2272,7 +2347,7 @@ const CAPSULE_BANDS = [
   ['Jackets'],
   ['Jumpers'],
   ['Tops'],
-  ['Bottoms', 'Dresses'],
+  ['Pants', 'Shorts', 'Dresses'],
   ['Shoes'],                          // at the foot, as worn
 ];
 
@@ -2398,11 +2473,15 @@ function openCapsuleEditor(id, seedItemIds){
     itemIds: new Set(capsule ? capsule.itemIds : (seedItemIds || [])),
     tab: 'All'
   };
+  // What it looked like on arrival, so backing out of an untouched draft
+  // does not stop to ask. A capsule started from a piece counts that piece
+  // as where it began, not as something you chose.
+  capsuleDraft.baseline = capsuleDraftSnapshot();
 
   const modal = document.getElementById('modal');
   modal.innerHTML = `
     <div class="sheet-header">
-      <button class="sheet-back" onclick="closeCapsuleEditor()">← Cancel</button>
+      <button class="sheet-back" onclick="closeCapsuleEditor()"><svg class="back-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>Back</button>
     </div>
     <div class="modal-body has-footer">
       <div class="modal-name">${capsule ? 'Edit capsule' : 'New capsule'}</div>
@@ -2486,7 +2565,27 @@ function toggleCapsuleItem(itemId){
   renderCapsuleEditorGallery();
 }
 
+function capsuleDraftSnapshot(){
+  if(!capsuleDraft) return null;
+  return JSON.stringify([capsuleDraft.name,
+                         Array.from(capsuleDraft.itemIds).sort()]);
+}
+
+function capsuleDraftIsDirty(){
+  return Boolean(capsuleDraft) && capsuleDraftSnapshot() !== capsuleDraft.baseline;
+}
+
+// Same bargain as the piece form: the way out asks, saving does not.
 function closeCapsuleEditor(){
+  if(capsuleDraftIsDirty()){
+    askToLeave(capsuleDraft.id ? 'changes to this capsule' : 'new capsule',
+               discardCapsuleEditor);
+    return;
+  }
+  discardCapsuleEditor();
+}
+
+function discardCapsuleEditor(){
   capsuleDraft = null;
   closeModal();
 }
@@ -2518,7 +2617,7 @@ async function submitCapsuleEditor(){
   if(!saved) return;   // saveCapsule has already explained why
 
   const wasNew = !capsuleDraft.id;
-  closeCapsuleEditor();
+  discardCapsuleEditor();
   setMode('capsules');
   showToast(wasNew ? 'Capsule created' : 'Capsule saved',
     previous ? async () => {
@@ -2624,7 +2723,7 @@ function lockFilterForPiece(itemId){
   // Pinning the piece is enough to fix the shape: a chosen top rules the
   // dress out on its own, and a chosen dress rules out tops and bottoms.
   if(tab==='Tops'){ outfitFilters.top=locked; }
-  else if(tab==='Bottoms'){ outfitFilters.bottom=locked; }
+  else if(BOTTOM_TABS.includes(tab)){ outfitFilters.bottom=locked; }
   else if(tab==='Dresses'){ outfitFilters.dress=locked; }
   else if(tab==='Jumpers'){ outfitFilters.jumper=locked; }
   else if(tab==='Jackets'){ outfitFilters.jacket=locked; }
@@ -2827,7 +2926,7 @@ function openItemCapsulePicker(itemId){
   const modal = document.getElementById('modal');
   modal.innerHTML = `
     <div class="sheet-header">
-      <button class="sheet-back" onclick='openModal(${JSON.stringify(itemId)})'>← Back</button>
+      <button class="sheet-back" onclick='openModal(${JSON.stringify(itemId)})'><svg class="back-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>Back</button>
     </div>
     <div class="modal-body">
       <div class="modal-name" style="margin-bottom:6px;">Capsules</div>
@@ -3499,9 +3598,6 @@ function setTab(t){
 }
 
 // ---- Tag filters ----
-// Which tag lists the reader has asked to see in full, by element id.
-let tagRowsOpen = {};
-
 // ---- Renaming and removing a tag ---------------------------
 // A tag is only ever typed into a piece, so until now a typo could only be
 // fixed by finding and editing every piece that carried it. Holding a chip
@@ -3564,7 +3660,7 @@ async function undoRetag(changes, filters){
 function openTagEditor(tag){
   const modal = document.getElementById('modal');
   modal.innerHTML = `
-    <div class="sheet-header"><button class="sheet-back" onclick="closeModal()">← Back</button></div>
+    <div class="sheet-header"><button class="sheet-back" onclick="closeModal()"><svg class="back-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>Back</button></div>
     <div class="modal-body has-footer">
       <div class="modal-name" style="margin-bottom:14px;">Edit tag</div>
       <div class="form-grid">
@@ -3674,12 +3770,10 @@ function wireTagLongPress(container){
 
 function renderTagChips(elementId, selected, handler){
   const el = document.getElementById(elementId);
-  const more = document.getElementById(elementId.replace(/-tag-chips$/, '-tag-more'));
   if(!el) return;
   const tags = tagsAvailable ? tagsByUse() : [];
   if(!tags.length){
     el.innerHTML = ''; el.style.display = 'none';
-    if(more) more.style.display = 'none';
     return;
   }
   el.style.display = 'flex';
@@ -3687,48 +3781,6 @@ function renderTagChips(elementId, selected, handler){
     <button class="tag-chip ${selected === t ? 'active' : ''}" data-tag="${esc(t)}"
             onclick='${handler}(${JSON.stringify(t)})'>${esc(t)}</button>
   `).join('');
-  if(more) foldTagChips(elementId);
-}
-
-// Two rows of chips is a control; six is a wall. Anything past the second
-// row folds away behind a count, unless the reader has opened it.
-//
-// The rows are found from where the chips actually landed rather than from a
-// number of pixels, so it holds whatever the chip labels turn out to be. All
-// the offsets are read before anything is hidden, because hiding the first
-// chip would move every one after it.
-const TAG_ROWS_SHOWN = 2;
-
-function foldTagChips(elementId){
-  const el = document.getElementById(elementId);
-  const more = document.getElementById(elementId.replace(/-tag-chips$/, '-tag-more'));
-  if(!el || !more) return;
-
-  const chips = Array.from(el.children);
-  chips.forEach(c => { c.hidden = false; });
-
-  const tops = chips.map(c => c.offsetTop);
-  const rows = tops.filter((t, i) => tops.indexOf(t) === i);
-  const open = Boolean(tagRowsOpen[elementId]);
-
-  if(rows.length <= TAG_ROWS_SHOWN){
-    more.style.display = 'none';
-    return;
-  }
-
-  let folded = 0;
-  if(!open){
-    const cut = rows[TAG_ROWS_SHOWN];
-    chips.forEach((c, i) => { if(tops[i] >= cut){ c.hidden = true; folded++; } });
-  }
-
-  more.style.display = 'block';
-  more.textContent = open ? 'Show fewer tags' : `${folded} more tag${folded === 1 ? '' : 's'}`;
-  more.onclick = () => {
-    tagRowsOpen[elementId] = !open;
-    foldTagChips(elementId);
-    syncSheetInset();
-  };
 }
 
 function setOutfitTag(tag){
@@ -3753,7 +3805,7 @@ function openModal(id){
   const modal = document.getElementById('modal');
   modal.innerHTML = `
     <div class="sheet-header">
-      <button class="sheet-back" onclick="closeModal()">← Back</button>
+      <button class="sheet-back" onclick="closeModal()"><svg class="back-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>Back</button>
     </div>
     <div class="modal-photo">
       ${item.photo ? `<img src="${esc(item.photo)}" alt="${esc(item.name)}" referrerpolicy="no-referrer" decoding="async">` : `<span class="no-photo">No photo yet</span>`}
@@ -3817,18 +3869,54 @@ function openItemForm(id){
     <button class="btn small secondary" onclick='archiveFromForm(${JSON.stringify(item.id)})'>Archive</button>
   ` : '';
 
-  const select = document.getElementById('form-category');
-  const current = item ? item.category : '';
-  const options = CATEGORY_OPTIONS.includes(current) || !current
-    ? CATEGORY_OPTIONS
-    : [current].concat(CATEGORY_OPTIONS);
-  select.innerHTML = options
-    .map(c => `<option value="${esc(c)}" ${c === current ? 'selected' : ''}>${esc(c)}</option>`)
-    .join('');
+  document.getElementById('form-category').value = item ? item.category : '';
+  renderCategoryOptions();
 
   closeModal();
+  itemFormBaseline = itemFormSnapshot();
   document.getElementById('form-backdrop').classList.add('open');
   setTimeout(() => document.getElementById('form-name').focus(), 50);
+}
+
+// What the form said when it opened. Comparing against it rather than
+// against "is anything typed" means an edit you have put back the way you
+// found it leaves quietly, and a new piece with one field filled does not.
+const ITEM_FORM_FIELDS = ['form-name','form-brand','form-category','form-size',
+                          'form-price','form-source','form-tags','form-notes'];
+let itemFormBaseline = null;
+
+function itemFormSnapshot(){
+  return JSON.stringify(ITEM_FORM_FIELDS.map(id => document.getElementById(id).value));
+}
+
+function itemFormIsDirty(){
+  return itemFormBaseline !== null && itemFormSnapshot() !== itemFormBaseline;
+}
+
+// The category list is long enough to scroll past and short enough to know
+// the name of, so it is a field you type into with the matches underneath —
+// a dropdown made you hunt, and only offered what was already on the list.
+// What you type stands whether or not it matches: a new category is just a
+// word nothing has used yet.
+function renderCategoryOptions(){
+  const input = document.getElementById('form-category');
+  const list = document.getElementById('form-category-options');
+  if(!input || !list) return;
+
+  const typed = input.value.trim().toLowerCase();
+  const matches = CATEGORY_OPTIONS.filter(c => c.toLowerCase().includes(typed));
+  // Nothing left to offer once you have typed the whole of one.
+  const settled = matches.length === 1 && matches[0].toLowerCase() === typed;
+
+  list.style.display = matches.length && !settled ? 'flex' : 'none';
+  list.innerHTML = matches.map(c => `
+    <button type="button" class="picker-option" onclick='pickCategory(${JSON.stringify(c)})'>${esc(c)}</button>
+  `).join('');
+}
+
+function pickCategory(category){
+  document.getElementById('form-category').value = category;
+  renderCategoryOptions();
 }
 
 // Tags you have already used, tappable so they stay consistent rather than
@@ -3853,7 +3941,19 @@ function toggleFormTag(tag){
   renderTagSuggestions();
 }
 
+// The back button asks first if there is anything to lose. Saving and
+// archiving go through discardItemForm, which does not — they are not
+// "backing out", and the work has already gone somewhere.
 function closeItemForm(){
+  if(itemFormIsDirty()){
+    askToLeave(editingItemId ? 'changes to this piece' : 'new piece', discardItemForm);
+    return;
+  }
+  discardItemForm();
+}
+
+function discardItemForm(){
+  itemFormBaseline = null;
   document.getElementById('form-backdrop').classList.remove('open');
   editingItemId = null;
 }
@@ -3861,7 +3961,7 @@ function closeItemForm(){
 // Archiving is reached from the edit sheet now, so the sheet has to go with
 // the piece — removeItem only knows about the detail sheet behind it.
 async function archiveFromForm(id){
-  closeItemForm();
+  discardItemForm();
   await removeItem(id);
 }
 
@@ -3897,14 +3997,41 @@ async function submitItemForm(){
   if(!saved) return;
 
   const wasEditing = Boolean(editingItemId);
-  closeItemForm();
+  discardItemForm();
   render();
   showToast(wasEditing ? 'Saved' : 'Added to wardrobe');
   if(!wasEditing && !saved.photo) triggerPhotoUpload(saved.id);
 }
 
 function closeModalIfBackdrop(e){
-  if(e.target.id === 'modal-backdrop') closeModal();
+  if(e.target.id !== 'modal-backdrop') return;
+  // The capsule editor lives on this sheet and may have work in it, so it
+  // gets asked about here too rather than only at its back button.
+  if(capsuleDraft) closeCapsuleEditor(); else closeModal();
+}
+
+// ---- "Go back?" ---------------------------------------------
+// One dialog, borrowed by whichever editor is asking. It holds the thing to
+// do if you say yes, so the caller stays a one-liner.
+let confirmAction = null;
+
+function askToLeave(noun, onLeave){
+  confirmAction = onLeave;
+  document.getElementById('confirm-body').textContent =
+    `Your ${noun} won't be saved.`;
+  document.getElementById('confirm-backdrop').classList.add('open');
+  setTimeout(() => document.getElementById('confirm-stay').focus(), 50);
+}
+
+function dismissConfirm(){
+  confirmAction = null;
+  document.getElementById('confirm-backdrop').classList.remove('open');
+}
+
+function acceptConfirm(){
+  const go = confirmAction;
+  dismissConfirm();
+  if(go) go();
 }
 
 // ---- Toolbar icons -----------------------------------------
@@ -3942,10 +4069,9 @@ function renderToolbarIcons(){
       ? (n ? `${n} selected` : 'Select pieces')
       : 'Wardrobe';
   }
+  // Leaving search clears it, so a query only ever exists while the bar is
+  // open — there is no "searching, but shut" state left to signal.
   const q = ((document.getElementById('filter-search') || {}).value || '').trim();
-  const search = document.getElementById('search-btn');
-  // A search still narrowing the grid has to be visible with the bar shut.
-  if(search) search.classList.toggle('has-value', Boolean(q));
   const clear = document.getElementById('search-clear');
   if(clear) clear.style.display = q ? 'flex' : 'none';
 }
@@ -3979,9 +4105,12 @@ function openSearch(){
 function closeSearch(){
   document.getElementById('search-overlay').classList.remove('open');
   setToolbarHidden(false);
-  // The query is deliberately kept: closing the bar should not silently undo
-  // the filtering you are looking at. The search button shows it is on.
-  renderToolbarIcons();
+  // Leaving search ends it. Keeping the query meant a wardrobe quietly
+  // filtered by something you could no longer see or edit — the x inside
+  // the field is how you clear it and carry on.
+  const input = document.getElementById('filter-search');
+  if(input.value){ input.value = ''; }
+  render();
 }
 
 function toggleViewMode(){
