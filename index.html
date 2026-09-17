@@ -49,9 +49,8 @@
   .page-head{
     display:flex;align-items:center;justify-content:space-between;
     gap:12px;
-    padding:2px 0 14px;
+    padding:18px 0 14px;
     margin-bottom:16px;
-    border-bottom:1px solid var(--line);
   }
   h1{
     font-family:'Fraunces', serif;
@@ -583,12 +582,6 @@
 
   /* One outfit at the top of the page, larger than the grid below it. */
   .hero{margin:0 0 16px;}
-  .hero-label{
-    font-family:'IBM Plex Mono',monospace;
-    font-size:10px;letter-spacing:0.1em;text-transform:uppercase;
-    color:var(--ink-soft);
-    margin-bottom:8px;
-  }
   /* The card takes its height from the pieces in it rather than being given
      one. A fixed height meant the bands inside were laid out against a box
      that had already been decided, so anything that did not fit spilled
@@ -730,6 +723,9 @@
     white-space:nowrap;
   }
   .filter-chip.active{border-color:var(--accent);background:var(--accent-soft);}
+  /* A slot the chosen shape does not have. Still tappable — dimmed, not
+     hidden, so you can see it is doing nothing and put it back. */
+  .filter-chip.moot{opacity:0.42;}
   .filter-chip .chip-state{
     font-family:'IBM Plex Mono',monospace;
     font-size:10px;color:var(--ink-soft);font-weight:400;
@@ -807,6 +803,13 @@
   .outfit-piece-row .no-photo-mini{
     display:flex;align-items:center;justify-content:center;
     font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--ink-soft);
+  }
+  /* A piece in an outfit's list is the way to that piece in the wardrobe. */
+  .outfit-piece-row.tappable{cursor:pointer;}
+  .outfit-piece-row .piece-go{
+    margin-left:auto;flex:none;
+    font-size:20px;line-height:1;color:var(--ink-soft);
+    padding:0 4px;
   }
   .outfit-piece-info .p-name{font-family:'Fraunces',serif;font-size:14px;}
   .outfit-piece-info .p-meta{font-size:11px;color:var(--ink-soft);}
@@ -952,7 +955,6 @@
          before you start narrowing anything down. -->
     <div class="hero" id="outfit-hero"></div>
 
-    <div class="count-line" id="outfit-count-line"></div>
     <div class="outfit-gallery" id="outfit-gallery"></div>
     <div class="empty" id="outfit-empty" style="display:none;">
       <h3>No outfits match</h3>
@@ -1140,9 +1142,19 @@ const INCLUDE_SHOES_IN_OUTFITS = false;
 // Outfits are one stream of both shapes. This narrows it rather than
 // switching between two pages: 'any' is everything, and the other two are
 // a filter like any other.
-let outfitShape = 'any';   // 'any' | 'topbottom' | 'dress'
 function anyFilter(){ return {type:'any', ids:[]}; }
-let outfitFilters = { top:anyFilter(), bottom:anyFilter(), dress:anyFilter(), jumper:anyFilter(), jacket:anyFilter(), shoes:anyFilter() };
+function emptySlotFilters(){
+  return { top:anyFilter(), bottom:anyFilter(), dress:anyFilter(),
+           jumper:anyFilter(), jacket:anyFilter(), shoes:anyFilter() };
+}
+// Outfits and Faves get the same controls but keep their own settings —
+// narrowing what you are browsing should not quietly narrow what you have
+// kept, or the other way round.
+let outfitFilters = emptySlotFilters();
+let savedFilters  = emptySlotFilters();
+function activeSlotFilters(){
+  return appMode === 'saved' ? savedFilters : outfitFilters;
+}
 let outfitGen = null;
 let outfitDisplayed = [];
 let outfitRenderContext = 'tab'; // 'tab' or 'modal'
@@ -1175,10 +1187,33 @@ function comboMatchesTag(combo){
   return comboPieces(combo).some(p => (p.tags || []).includes(outfitTag));
 }
 
+// Where you had scrolled to on each page. Coming back to a tab should put
+// you back where you were, not at the top of an eighty-piece grid. Held in
+// sessionStorage, so a fresh visit starts every page at the top.
+const SCROLL_KEY = 'wardrobe-scroll';
+let scrollPositions = (() => {
+  try{ return JSON.parse(sessionStorage.getItem(SCROLL_KEY) || '{}'); }catch(e){ return {}; }
+})();
+
+function rememberScroll(mode){
+  if(!mode) return;
+  scrollPositions[mode] = Math.round(window.scrollY);
+  try{ sessionStorage.setItem(SCROLL_KEY, JSON.stringify(scrollPositions)); }catch(e){ }
+}
+
+function restoreScroll(mode){
+  const y = scrollPositions[mode] || 0;
+  // After the page it belongs to has been drawn, so there is something to
+  // scroll through. The browser clamps a position the page is too short for.
+  requestAnimationFrame(() => window.scrollTo({ top: y }));
+}
+
 // Three destinations in the bottom bar. Archive is a fourth view but not a
 // destination: it is reached from a link at the end of the wardrobe, because
 // it is visited rarely and does not deserve permanent space in the nav.
 function setMode(mode){
+  // Leaving a page: note where you had got to on it.
+  if(appMode && appMode !== mode) rememberScroll(appMode);
   appMode = mode;
   // Search belongs to the wardrobe; leaving it open over another page would
   // be a bar that filters nothing you can see.
@@ -1214,6 +1249,36 @@ function setMode(mode){
   // the panel goes away, because it would be filtering a page you left.
   if(FILTERS_OPEN_BY_DEFAULT.includes(mode)) openFilterSheet();
   else closeFilterSheet();
+
+  restoreScroll(mode);
+}
+
+// A piece in an outfit's list is a way to that piece. Opening it means going
+// where it lives — the wardrobe, on its own category — rather than showing a
+// second copy of it inside the outfit.
+function openPieceInWardrobe(itemId){
+  const item = ITEMS.find(i => i.id === itemId);
+  if(!item){ showToast('That piece is in the archive'); return; }
+
+  activeTab = tabForItem(item);
+  // A filter that would hide the very piece you asked for has to come off,
+  // or you arrive at a grid that does not contain it.
+  if(inventoryTag && !(item.tags || []).includes(inventoryTag)) inventoryTag = null;
+  const search = document.getElementById('filter-search');
+  if(search && search.value.trim()) search.value = '';
+
+  closeModal();
+  setMode('inventory');
+  openModal(itemId);
+
+  // Land on the piece rather than wherever the wardrobe was last left, so
+  // closing the sheet leaves you looking at it. Two frames: setMode restores
+  // its own scroll position in the first one.
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    const rows = document.querySelectorAll('#gallery .tile, #name-list .name-row');
+    const tile = Array.from(rows).find(el => el.dataset.id === itemId);
+    if(tile) tile.scrollIntoView({ block: 'center' });
+  }));
 }
 
 // Filters live in a panel docked to the bottom of the screen. A control at
@@ -1223,12 +1288,13 @@ function setMode(mode){
 // On these two pages the panel is already down when you arrive.
 const FILTERS_OPEN_BY_DEFAULT = ['outfits', 'saved'];
 
+function countNarrowedSlots(filters){
+  return Object.keys(filters).filter(k => filters[k].type !== 'any').length;
+}
+
 function activeFilterCount(){
-  if(appMode === 'outfits'){
-    const slots = Object.keys(outfitFilters).filter(k => outfitFilters[k].type !== 'any').length;
-    return slots + (outfitTag ? 1 : 0) + (outfitShape !== 'any' ? 1 : 0);
-  }
-  if(appMode === 'saved') return savedTag ? 1 : 0;
+  if(appMode === 'outfits') return countNarrowedSlots(outfitFilters) + (outfitTag ? 1 : 0);
+  if(appMode === 'saved')   return countNarrowedSlots(savedFilters)  + (savedTag ? 1 : 0);
   return inventoryTag ? 1 : 0;
 }
 
@@ -1258,7 +1324,9 @@ function filterControlsHtml(ns, mode){
       <span class="filter-sheet-label">Tags</span>
       <div class="tag-chips" id="${ns}-tag-chips"></div>
     </div>`;
-  if(mode !== 'outfits') return tags;
+  // Outfits and Faves both narrow by piece; the wardrobe has its own grid
+  // of pieces already, so there it is tags alone.
+  if(mode !== 'outfits' && mode !== 'saved') return tags;
   return tags + `
     <div class="filter-section">
       <span class="filter-sheet-label">Pieces</span>
@@ -1279,7 +1347,7 @@ function renderFilterControls(){
                    : m === 'saved'   ? 'setSavedTag'
                                      : 'setInventoryTag';
     renderTagChips(`${ns}-tag-chips`, selected, handler);
-    if(m === 'outfits') renderSlotChips(`${ns}-filter-grid`);
+    if(m === 'outfits' || m === 'saved') renderSlotChips(`${ns}-filter-grid`);
   });
 
   const clear = document.getElementById('filter-sheet-clear');
@@ -1294,7 +1362,8 @@ function renderFilterControls(){
 // before anything is tagged that is a labelled empty box — so the panel
 // stays down there rather than opening itself on nothing.
 function filterSheetHasContent(){
-  return appMode === 'outfits' || (tagsAvailable && allTags().length > 0);
+  return appMode === 'outfits' || appMode === 'saved'
+      || (tagsAvailable && allTags().length > 0);
 }
 
 function filterSheetOpen(){
@@ -1329,13 +1398,13 @@ function closeFilterSheet(){
 function clearFilters(){
   if(appMode === 'outfits'){
     outfitTag = null;
-    outfitShape = 'any';
     Object.keys(outfitFilters).forEach(k => { outfitFilters[k] = anyFilter(); });
     renderFilterControls();
     renderFiltersFab();
     resetOutfitResults();
   } else if(appMode === 'saved'){
     savedTag = null;
+    savedFilters = emptySlotFilters();
     renderFilterControls();
     renderSavedOutfits();
   } else {
@@ -1378,46 +1447,51 @@ function renderArchive(){
   `).join('');
 }
 
-function setOutfitShape(shape){
-  outfitShape = shape;
-  // Narrowing to one shape clears the slots the other shape owns. Leaving
-  // them set would hide a filter you can no longer see, and quietly empty
-  // the results when you came back to the other shape.
-  if(shape === 'dress'){
-    outfitFilters.top = anyFilter();
-    outfitFilters.bottom = anyFilter();
-  } else if(shape === 'topbottom'){
-    outfitFilters.dress = anyFilter();
-  }
-  renderFilterControls();
-  renderFiltersFab();
-  resetOutfitResults();
-}
-
 // Which shapes the current filters can actually produce.
 //
-// With no shape chosen, narrowing a slot is itself a statement about shape:
-// asking for outfits with a particular top cannot be answered by a dress,
-// and asking for a particular dress cannot be answered by a top and a
-// bottom. So a narrowed slot rules its own shape in and the other out.
-function outfitFamilies(){
-  if(outfitShape !== 'any') return [outfitShape];
+// There is no shape control: the three base slots are the shape control.
+// Narrowing one of them is a statement about shape, because a dress cannot
+// answer a question about a particular top and a top and bottom cannot
+// answer one about a particular dress. So Dress → None is how you ask for
+// tops and bottoms, and Top → None (or Bottom → None) is how you ask for
+// dresses.
+function familiesFor(f){
+  // A top-and-bottom outfit has to have both, and cannot have a dress.
+  const canTopBottom = f.top.type !== 'none' && f.bottom.type !== 'none'
+                    && f.dress.type !== 'items';
+  // A dress outfit has a dress and neither of the other two — so Top → None
+  // does not rule it out, it is what a dress outfit already looks like.
+  const canDress = f.dress.type !== 'none'
+                && f.top.type !== 'items' && f.bottom.type !== 'items';
   const fams = [];
-  if(outfitFilters.dress.type === 'any') fams.push('topbottom');
-  if(outfitFilters.top.type === 'any' && outfitFilters.bottom.type === 'any') fams.push('dress');
+  if(canTopBottom) fams.push('topbottom');
+  if(canDress) fams.push('dress');
   return fams;
 }
 
-const SHAPE_LABELS = { any:'Any', topbottom:'Top + bottom', dress:'Dress' };
+function outfitFamilies(){ return familiesFor(outfitFilters); }
 
 const SLOT_META = {
-  top:{label:'Top', category:'Tops', allowNone:false},
-  bottom:{label:'Bottom', category:'Bottoms', allowNone:false},
-  dress:{label:'Dress', category:'Dresses', allowNone:false},
+  top:{label:'Top', category:'Tops', allowNone:true,
+       note:'None leaves tops out, which leaves dresses.'},
+  bottom:{label:'Bottom', category:'Bottoms', allowNone:true,
+          note:'None leaves bottoms out, which leaves dresses.'},
+  dress:{label:'Dress', category:'Dresses', allowNone:true,
+         note:'None leaves dresses out, which leaves tops and bottoms.'},
   jumper:{label:'Jumper', category:'Jumpers', allowNone:true},
   jacket:{label:'Jacket', category:'Jackets', allowNone:true},
   shoes:{label:'Shoes', category:'Shoes', allowNone:true}
 };
+
+// A slot the current shape does not have. It keeps its own value and stays
+// tappable — it is only dimmed, so you can see it is not doing anything
+// without having to work out why.
+function slotIsMoot(key){
+  const fams = familiesFor(activeSlotFilters());
+  if(key === 'dress') return !fams.includes('dress');
+  if(key === 'top' || key === 'bottom') return !fams.includes('topbottom');
+  return fams.length === 0;
+}
 
 function shoeSlotList(){
   // Pinned to "no shoes" while shoes are held out of outfits.
@@ -1430,60 +1504,29 @@ function renderSlotChips(gridId){
   const grid = document.getElementById(gridId);
   if(!grid) return;
 
-  // Shape leads the row, because it decides which of the rest apply. With
-  // no shape chosen every slot is offered; choosing one drops the slots
-  // that shape does not have.
-  const shaped = outfitShape === 'dress'      ? ['dress']
-               : outfitShape === 'topbottom'  ? ['top','bottom']
-                                              : ['top','bottom','dress'];
-  const slotKeys = shaped.concat(INCLUDE_SHOES_IN_OUTFITS ? ['jumper','jacket','shoes'] : ['jumper','jacket']);
+  // Every slot, every time. The three base slots are what decides the shape,
+  // so hiding any of them would hide the way back.
+  const slotKeys = ['top','bottom','dress']
+    .concat(INCLUDE_SHOES_IN_OUTFITS ? ['jumper','jacket','shoes'] : ['jumper','jacket']);
 
-  const shapeChip = `
-    <button class="filter-chip ${outfitShape !== 'any' ? 'active' : ''}" onclick="openShapePicker()">
-      Shape<span class="chip-state">${SHAPE_LABELS[outfitShape]}</span>
-    </button>`;
-
-  grid.innerHTML = shapeChip + slotKeys.map(key => {
+  grid.innerHTML = slotKeys.map(key => {
     const meta = SLOT_META[key];
-    const f = outfitFilters[key];
+    const f = activeSlotFilters()[key];
     let stateLabel;
     if(f.type === 'any') stateLabel = 'Any';
     else if(f.type === 'none') stateLabel = 'None';
     else stateLabel = `${f.ids.length} selected`;
 
-    return `<button class="filter-chip ${f.type!=='any' ? 'active' : ''}" onclick="openSlotPicker('${key}')">
+    const cls = [
+      'filter-chip',
+      f.type !== 'any' ? 'active' : '',
+      slotIsMoot(key) ? 'moot' : '',
+    ].filter(Boolean).join(' ');
+
+    return `<button class="${cls}" onclick="openSlotPicker('${key}')">
       ${meta.label}<span class="chip-state">${stateLabel}</span>
     </button>`;
   }).join('');
-}
-
-// Three choices and no gallery, so it gets its own small sheet rather than
-// the slot picker's grid of pieces.
-function openShapePicker(){
-  const modal = document.getElementById('modal');
-  modal.innerHTML = `
-    <div class="sheet-header"><button class="sheet-back" onclick="closePickerAndApply()">← Done</button></div>
-    <div class="modal-body">
-      <div class="modal-name" style="margin-bottom:6px;">Outfit shape</div>
-      <p class="gate-note">Leave this on Any to see both kinds mixed together.</p>
-      <div class="quick-picks" id="shape-quick-picks"></div>
-    </div>
-  `;
-  renderShapeQuickPicks();
-  document.getElementById('modal-backdrop').classList.add('open');
-}
-
-function renderShapeQuickPicks(){
-  const el = document.getElementById('shape-quick-picks');
-  if(!el) return;
-  el.innerHTML = ['any','topbottom','dress'].map(v =>
-    `<button class="base-btn ${outfitShape === v ? 'active' : ''}" onclick="pickOutfitShape('${v}')">${SHAPE_LABELS[v]}</button>`
-  ).join('');
-}
-
-function pickOutfitShape(shape){
-  setOutfitShape(shape);
-  renderShapeQuickPicks();
 }
 
 function openSlotPicker(slotKey){
@@ -1492,7 +1535,8 @@ function openSlotPicker(slotKey){
   modal.innerHTML = `
     <div class="sheet-header"><button class="sheet-back" onclick="closePickerAndApply()">← Done</button></div>
     <div class="modal-body">
-      <div class="modal-name" style="margin-bottom:14px;">Choose ${meta.label}</div>
+      <div class="modal-name" style="margin-bottom:${meta.note ? '6' : '14'}px;">Choose ${meta.label}</div>
+      ${meta.note ? `<p class="gate-note">${meta.note}</p>` : ''}
       <div class="quick-picks" id="picker-quick-picks"></div>
       <div class="gallery" id="picker-gallery"></div>
     </div>
@@ -1507,7 +1551,7 @@ function openSlotPicker(slotKey){
 // otherwise there is no way to see which one a slot is currently on.
 function renderQuickPicks(slotKey){
   const meta = SLOT_META[slotKey];
-  const f = outfitFilters[slotKey];
+  const f = activeSlotFilters()[slotKey];
   const el = document.getElementById('picker-quick-picks');
   if(!el) return;
   el.innerHTML = `
@@ -1519,7 +1563,7 @@ function renderQuickPicks(slotKey){
 function renderPickerGallery(slotKey){
   const meta = SLOT_META[slotKey];
   const items = outfitPool(meta.category);
-  const f = outfitFilters[slotKey];
+  const f = activeSlotFilters()[slotKey];
   document.getElementById('picker-gallery').innerHTML = items.map(i => {
     const selected = f.type === 'items' && f.ids.includes(i.id);
     return `<div class="tile picker-tile ${selected ? 'picker-selected' : ''}" onclick="toggleSlotItem('${slotKey}','${i.id}')">
@@ -1530,19 +1574,19 @@ function renderPickerGallery(slotKey){
 }
 
 function setSlotQuick(slotKey, mode){
-  outfitFilters[slotKey] = mode === 'any' ? {type:'any', ids:[]} : {type:'none', ids:[]};
+  activeSlotFilters()[slotKey] = mode === 'any' ? {type:'any', ids:[]} : {type:'none', ids:[]};
   renderQuickPicks(slotKey);
   renderPickerGallery(slotKey);
 }
 
 function toggleSlotItem(slotKey, itemId){
-  const f = outfitFilters[slotKey];
+  const f = activeSlotFilters()[slotKey];
   const ids = (f.type === 'items') ? f.ids.slice() : [];
   const idx = ids.indexOf(itemId);
   if(idx >= 0) ids.splice(idx, 1); else ids.push(itemId);
   // Clearing the last item drops the slot back to 'any', so the quick
   // picks have to refresh alongside the gallery.
-  outfitFilters[slotKey] = ids.length ? {type:'items', ids} : {type:'any', ids:[]};
+  activeSlotFilters()[slotKey] = ids.length ? {type:'items', ids} : {type:'any', ids:[]};
   renderQuickPicks(slotKey);
   renderPickerGallery(slotKey);
 }
@@ -1551,7 +1595,8 @@ function closePickerAndApply(){
   closeModal();
   renderFilterControls();
   renderFiltersFab();
-  resetOutfitResults();
+  if(appMode === 'saved') renderSavedOutfits();
+  else resetOutfitResults();
 }
 
 function slotList(categoryItems, filter, allowNone){
@@ -1714,7 +1759,7 @@ const HERO_KEY = 'wardrobe-hero-outfit';
 // made before them may no longer belong to it; comparing signatures is
 // cheaper and more honest than trying to re-test the combination.
 function heroSignature(){
-  return JSON.stringify({ shape: outfitShape, tag: outfitTag, filters: outfitFilters });
+  return JSON.stringify({ tag: outfitTag, filters: outfitFilters });
 }
 
 function readStoredHero(){
@@ -1762,7 +1807,6 @@ function renderHero(){
   const key = comboKey(heroCombo);
   const fav = isFavorited(key);
   host.innerHTML = `
-    <div class="hero-label">An outfit to consider</div>
     <div class="outfit-card hero-card" onclick='toggleExpandCombo(${JSON.stringify(key)})'>
       <button class="outfit-fav-btn ${fav ? 'favorited' : ''}"
               onclick='event.stopPropagation();toggleFavoriteByKey(${JSON.stringify(key)})'>${fav ? '♥' : '♡'}</button>
@@ -1935,6 +1979,26 @@ function savedOutfitMatchesTag(rec){
   return comboPieces(favoriteRecordToCombo(rec)).some(p => (p.tags || []).includes(savedTag));
 }
 
+// The same piece filters the Outfits page narrows its stream with, applied
+// to an outfit that already exists. The generator reads a slot filter as a
+// list to draw from; here the same filter is a test the slot has to pass.
+const SAVED_SLOT_FIELDS = { top:'top', bottom:'bottom', dress:'dress',
+                            jumper:'jumper', jacket:'jacket', shoes:'shoe' };
+
+function savedOutfitMatchesSlots(rec){
+  return Object.keys(SAVED_SLOT_FIELDS).every(key => {
+    const f = savedFilters[key];
+    if(f.type === 'any') return true;
+    const id = rec[SAVED_SLOT_FIELDS[key]] || null;
+    if(f.type === 'none') return id === null;
+    return Boolean(id) && f.ids.includes(id);
+  });
+}
+
+function savedOutfitMatches(rec){
+  return savedOutfitMatchesTag(rec) && savedOutfitMatchesSlots(rec);
+}
+
 function renderSavedOutfits(){
   const countLine = document.getElementById('saved-count-line');
   const gallery = document.getElementById('saved-gallery');
@@ -1942,14 +2006,16 @@ function renderSavedOutfits(){
   if(!gallery) return;
 
   if(savedTag && !allTags().includes(savedTag)) savedTag = null;
-  renderTagChips('saved-tag-filter', savedTag, 'setSavedTag');
 
-  const shown = favoriteOutfits.filter(savedOutfitMatchesTag);
+  const shown = favoriteOutfits.filter(savedOutfitMatches);
+  const narrowed = Boolean(savedTag) || countNarrowedSlots(savedFilters) > 0;
 
   if(countLine){
-    countLine.textContent = savedTag
-      ? `${shown.length} of ${favoriteOutfits.length} fave${favoriteOutfits.length===1?'':'s'} tagged ${savedTag}`
-      : `${favoriteOutfits.length} fave${favoriteOutfits.length===1?'':'s'}`;
+    const total = favoriteOutfits.length;
+    const plural = total === 1 ? '' : 's';
+    countLine.textContent = narrowed
+      ? `${shown.length} of ${total} fave${plural}${savedTag ? ` tagged ${savedTag}` : ''}`
+      : `${total} fave${plural}`;
   }
 
   if(shown.length === 0){
@@ -1957,9 +2023,11 @@ function renderSavedOutfits(){
     // Say which of the two empty states this is, so a filter that matches
     // nothing does not read as "you have saved nothing".
     document.getElementById('saved-empty-title').textContent =
-      savedTag ? `Nothing tagged ${savedTag}` : 'No faves yet';
-    document.getElementById('saved-empty-note').textContent = savedTag
-      ? 'Every piece in an outfit needs the tag for it to show here.'
+      !narrowed ? 'No faves yet'
+      : savedTag ? `Nothing tagged ${savedTag}`
+                 : 'Nothing matches';
+    document.getElementById('saved-empty-note').textContent = narrowed
+      ? 'Widen the filters at the bottom of the screen, or clear them.'
       : 'Tap the heart on any outfit to keep it here.';
     emptyState.style.display = 'block';
     return;
@@ -1976,11 +2044,13 @@ function renderSavedOutfits(){
       <div class="outfit-expanded-panel">
         <button class="outfit-collapse-btn" onclick='event.stopPropagation();toggleExpandSaved(${JSON.stringify(rec.key)})'>Collapse ↑</button>
         ${pieces.map(p => `
-          <div class="outfit-piece-row">
+          <div class="outfit-piece-row tappable"
+               onclick='event.stopPropagation();openPieceInWardrobe(${JSON.stringify(p.id)})'>
             ${p.photo ? `<img src="${esc(p.photo)}" alt="${esc(p.name)}" referrerpolicy="no-referrer" loading="lazy" decoding="async">` : `<div class="no-photo-mini">No photo</div>`}
             <div class="outfit-piece-info">
               <div class="p-name">${esc(p.name)}</div>
             </div>
+            <span class="piece-go" aria-hidden="true">›</span>
           </div>
         `).join('')}
         <div class="modal-actions">
@@ -2288,6 +2358,8 @@ function renderOutfits(){
   const heroKey = onPage && heroCombo ? comboKey(heroCombo) : null;
   const shown = heroKey ? outfitDisplayed.filter(c => comboKey(c) !== heroKey) : outfitDisplayed;
 
+  // Only the "Outfits with this piece" sheet still prints a count; the page
+  // itself does not have the element any more.
   const countLine = document.getElementById(ids.count);
   const total = totalComboCount();
   if(countLine) countLine.textContent = `${outfitDisplayed.length} shown of ${total.toLocaleString()} possible combinations`;
@@ -2316,11 +2388,13 @@ function renderOutfits(){
       <div class="outfit-expanded-panel">
         <button class="outfit-collapse-btn" onclick='event.stopPropagation();toggleExpandCombo(${JSON.stringify(key)})'>Collapse ↑</button>
         ${pieces.map(p => `
-          <div class="outfit-piece-row">
+          <div class="outfit-piece-row tappable"
+               onclick='event.stopPropagation();openPieceInWardrobe(${JSON.stringify(p.id)})'>
             ${p.photo ? `<img src="${esc(p.photo)}" alt="${esc(p.name)}" referrerpolicy="no-referrer" loading="lazy" decoding="async">` : `<div class="no-photo-mini">No photo</div>`}
             <div class="outfit-piece-info">
               <div class="p-name">${esc(p.name)}</div>
             </div>
+            <span class="piece-go" aria-hidden="true">›</span>
           </div>
         `).join('')}
         <div class="modal-actions">
@@ -2341,13 +2415,14 @@ function lockFilterForPiece(itemId){
   const item = ITEMS.find(i=>i.id===itemId);
   if(!item) return false;
   const tab = tabForItem(item);
-  outfitFilters = { top:anyFilter(), bottom:anyFilter(), dress:anyFilter(), jumper:anyFilter(), jacket:anyFilter(), shoes:anyFilter() };
+  outfitFilters = emptySlotFilters();
   const locked = {type:'items', ids:[itemId]};
 
-  outfitShape = 'any';
-  if(tab==='Tops'){ outfitShape='topbottom'; outfitFilters.top=locked; }
-  else if(tab==='Bottoms'){ outfitShape='topbottom'; outfitFilters.bottom=locked; }
-  else if(tab==='Dresses'){ outfitShape='dress'; outfitFilters.dress=locked; }
+  // Pinning the piece is enough to fix the shape: a chosen top rules the
+  // dress out on its own, and a chosen dress rules out tops and bottoms.
+  if(tab==='Tops'){ outfitFilters.top=locked; }
+  else if(tab==='Bottoms'){ outfitFilters.bottom=locked; }
+  else if(tab==='Dresses'){ outfitFilters.dress=locked; }
   else if(tab==='Jumpers'){ outfitFilters.jumper=locked; }
   else if(tab==='Jackets'){ outfitFilters.jacket=locked; }
   else if(tab==='Shoes'){
@@ -2987,6 +3062,13 @@ async function boot(){
   // The docked panel's height decides how much room the page leaves under
   // itself, and that changes with the screen.
   window.addEventListener('resize', syncSheetInset);
+  // Kept up to date as you scroll as well as when you leave a page, so a
+  // reload inside the same visit lands where you were too.
+  let scrollTick = null;
+  window.addEventListener('scroll', () => {
+    if(scrollTick) return;
+    scrollTick = setTimeout(() => { scrollTick = null; rememberScroll(appMode); }, 250);
+  }, { passive: true });
 
   if(!isConfigured()){
     showGate('unconfigured');
