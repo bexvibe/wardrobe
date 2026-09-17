@@ -418,7 +418,16 @@
   .outfit-fav-btn.favorited{color:var(--ink);}
 
   .toast{
-    position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+    position:fixed;
+    /* Clear of the nav bar. A toast that lands behind it is one you cannot
+       read, and — now that some of them carry an Undo — cannot reach. */
+    bottom:calc(84px + env(safe-area-inset-bottom, 0px));
+    /* Centred by margins between two insets rather than by left:50%, which
+       would leave the box only half the screen to shrink-wrap into and wrap
+       a three-word message. */
+    left:16px;right:16px;margin:0 auto;
+    width:fit-content;max-width:calc(100% - 32px);
+    display:flex;align-items:center;gap:10px;
     background:var(--ink);color:var(--page);
     padding:10px 18px;border-radius:8px;font-size:13px;
     font-family:'Work Sans',sans-serif;
@@ -426,6 +435,21 @@
     z-index:200;
   }
   .toast.show{opacity:1;}
+  /* Taps pass through the toast to the page underneath — except on the one
+     part of it that is a control. */
+  .toast.show .toast-undo{pointer-events:auto;}
+  .toast-msg{min-width:0;}
+  .toast-undo{
+    flex:none;
+    font-family:'Work Sans',sans-serif;
+    font-size:13px;font-weight:600;
+    color:var(--page);
+    background:rgba(255,255,255,0.16);
+    border:none;border-radius:6px;
+    padding:9px 12px;margin:-4px -6px -4px 0;
+    cursor:pointer;
+  }
+  .toast-undo:hover{background:rgba(255,255,255,0.26);}
   @media (max-width:520px){
     /* h1 used to be capped at 26px here. It sizes itself with clamp() now,
        so the cap only ever fought it. */
@@ -968,7 +992,7 @@
   <div id="saved-view" style="display:none;">
     <header class="page-head">
       <p class="eyebrow">The Archive</p>
-      <h1>Saved</h1>
+      <h1>Faves</h1>
       <p class="sub">The outfits you kept.</p>
     </header>
 
@@ -976,8 +1000,8 @@
     <div class="count-line" id="saved-count-line"></div>
     <div class="outfit-gallery" id="saved-gallery"></div>
     <div class="empty" id="saved-empty" style="display:none;">
-      <h3 id="saved-empty-title">No saved outfits yet</h3>
-      <p id="saved-empty-note">Tap the heart on any outfit to save it here.</p>
+      <h3 id="saved-empty-title">No faves yet</h3>
+      <p id="saved-empty-note">Tap the heart on any outfit to keep it here.</p>
     </div>
   </div>
 
@@ -1060,7 +1084,7 @@
 <nav class="bottom-bar" id="bottom-bar" style="display:none;">
   <button class="bottom-btn active" id="nav-inventory-btn" onclick="setMode('inventory')">Wardrobe</button>
   <button class="bottom-btn" id="nav-outfits-btn" onclick="setMode('outfits')">Outfits</button>
-  <button class="bottom-btn" id="nav-saved-btn" onclick="setMode('saved')">Saved</button>
+  <button class="bottom-btn" id="nav-saved-btn" onclick="setMode('saved')">Faves</button>
   <button class="bottom-btn" id="nav-capsules-btn" onclick="setMode('capsules')" style="display:none;">Capsules</button>
 </nav>
 
@@ -1279,7 +1303,7 @@ function watchInlineFilters(){
 }
 
 // The same controls are mounted in more than one place at once: inline at
-// the top of the Outfits and Saved pages, where they are visible without
+// the top of the Outfits and Faves pages, where they are visible without
 // being asked for, and in the sheet the floating pill raises once you have
 // scrolled past them. Every mount reads the same state and is redrawn
 // together, so there is no second copy to keep in step by hand. Ids are
@@ -1321,7 +1345,7 @@ function renderFilterControls(){
     if(m === 'outfits') renderSlotChips(`${ns}-filter-grid`);
 
     // An inline mount with nothing to offer would be a labelled empty box.
-    // Outfits always has its Pieces row; Saved has only tags, which may
+    // Outfits always has its Pieces row; Faves has only tags, which may
     // not exist yet.
     if(mode){
       const chips = document.getElementById(`${ns}-tag-chips`);
@@ -1834,21 +1858,24 @@ function favoriteRecordToCombo(rec){
 // Un-hearting soft-deletes like everything else — the row keeps its
 // archived_at stamp rather than disappearing, and re-hearting the same
 // combination revives it.
-async function setFavorited(key, favorited, combo){
+// `undo` is what the toast offers when a favourite is taken away. It is
+// passed in rather than built here because putting it back has to redraw
+// whichever page you did it from.
+async function setFavorited(key, favorited, combo, undo){
   const db = client();
   if(favorited){
     const rec = comboToFavoriteRecord(combo);
     const { error } = await db.from('saved_outfits').upsert(favoriteToRow(rec), { onConflict: 'combo_key' });
     if(error) return dbFail(error, 'Could not save — check connection');
     if(!isFavorited(key)) favoriteOutfits.push(rec);
-    showToast('Saved to favourites');
+    showToast('Added to Faves');
   } else {
     const { error } = await db.from('saved_outfits')
       .update({ archived_at: new Date().toISOString() })
       .eq('combo_key', key);
     if(error) return dbFail(error, 'Could not remove — check connection');
     favoriteOutfits = favoriteOutfits.filter(f => f.key !== key);
-    showToast('Removed from Saved');
+    showToast('Removed from Faves', undo);
   }
   return true;
 }
@@ -1856,7 +1883,11 @@ async function setFavorited(key, favorited, combo){
 async function toggleFavoriteByKey(key){
   const combo = outfitDisplayed.find(c => comboKey(c) === key);
   if(!combo) return;
-  await setFavorited(key, !isFavorited(key), combo);
+  const wasFavorited = isFavorited(key);
+  // Un-hearting here is undone by hearting the same outfit again, which is
+  // the very call we are in — the outfit stays in the grid either way.
+  const undo = wasFavorited ? () => toggleFavoriteByKey(key) : null;
+  await setFavorited(key, !wasFavorited, combo, undo);
   renderOutfits();
   // The featured outfit is drawn outside the grid, so its heart has to be
   // told separately — it is the one most likely to be tapped.
@@ -1864,7 +1895,13 @@ async function toggleFavoriteByKey(key){
 }
 
 async function unfavoriteByKey(key){
-  if(!await setFavorited(key, false)) return;
+  // Hold the record before it goes: on this page the card disappears with
+  // it, so there is nothing left to read it back off.
+  const rec = favoriteOutfits.find(f => f.key === key);
+  const undo = rec ? async () => {
+    if(await setFavorited(key, true, favoriteRecordToCombo(rec))) renderSavedOutfits();
+  } : null;
+  if(!await setFavorited(key, false, null, undo)) return;
   if(expandedSavedKey === key) expandedSavedKey = null;
   renderSavedOutfits();
 }
@@ -1954,8 +1991,8 @@ function renderSavedOutfits(){
 
   if(countLine){
     countLine.textContent = savedTag
-      ? `${shown.length} of ${favoriteOutfits.length} saved outfit${favoriteOutfits.length===1?'':'s'} tagged ${savedTag}`
-      : `${favoriteOutfits.length} saved outfit${favoriteOutfits.length===1?'':'s'}`;
+      ? `${shown.length} of ${favoriteOutfits.length} fave${favoriteOutfits.length===1?'':'s'} tagged ${savedTag}`
+      : `${favoriteOutfits.length} fave${favoriteOutfits.length===1?'':'s'}`;
   }
 
   if(shown.length === 0){
@@ -1963,10 +2000,10 @@ function renderSavedOutfits(){
     // Say which of the two empty states this is, so a filter that matches
     // nothing does not read as "you have saved nothing".
     document.getElementById('saved-empty-title').textContent =
-      savedTag ? `Nothing tagged ${savedTag}` : 'No saved outfits yet';
+      savedTag ? `Nothing tagged ${savedTag}` : 'No faves yet';
     document.getElementById('saved-empty-note').textContent = savedTag
       ? 'Every piece in an outfit needs the tag for it to show here.'
-      : 'Tap the heart on any outfit to save it here.';
+      : 'Tap the heart on any outfit to keep it here.';
     emptyState.style.display = 'block';
     return;
   }
@@ -2263,7 +2300,21 @@ async function hideCombo(key){
   outfitDisplayed = outfitDisplayed.filter(c => comboKey(c) !== key);
   if(expandedComboKey === key) expandedComboKey = null;
   renderOutfits();
-  showToast('Combo hidden');
+  showToast('Combo hidden', () => unhideCombo(key));
+}
+
+// Hiding is the one action with nothing on screen to reverse it afterwards —
+// a hidden combination is gone from every list — so Undo is the way back.
+async function unhideCombo(key){
+  const { error } = await client()
+    .from('hidden_combos')
+    .delete().eq('combo_key', key);
+  if(error){ dbFail(error, 'Could not unhide — check connection'); return; }
+
+  hiddenCombos = hiddenCombos.filter(k => k !== key);
+  // The combination has to be generated again to come back into the list.
+  resetOutfitResults();
+  showToast('Combo back');
 }
 
 function toggleExpandCombo(key){
@@ -2584,19 +2635,23 @@ async function archiveItems(ids){
   return true;
 }
 
-async function restoreItem(id){
+// The other half of archiveItems, and what Undo on an archive toast runs.
+async function restoreItems(ids){
   const { error } = await client()
     .from('items')
     .update({ archived_at: null })
-    .eq('id', id);
+    .in('id', ids);
   if(error) return dbFail(error, 'Could not restore — check connection');
 
-  const item = ARCHIVED.find(i => i.id === id);
-  if(item){
-    item.archivedAt = null;
-    ARCHIVED = ARCHIVED.filter(i => i.id !== id);
-    ITEMS.push(item);
-  }
+  const coming = ARCHIVED.filter(i => ids.includes(i.id));
+  coming.forEach(i => { i.archivedAt = null; });
+  ARCHIVED = ARCHIVED.filter(i => !ids.includes(i.id));
+  ITEMS = ITEMS.concat(coming);
+  return true;
+}
+
+async function restoreItem(id){
+  if(!await restoreItems([id])) return false;
   renderArchive();
   render();
   showToast('Restored to wardrobe');
@@ -2676,9 +2731,28 @@ async function removeFromCapsule(capsuleId, itemId){
     .delete().eq('capsule_id', capsuleId).eq('item_id', itemId);
   if(error) return dbFail(error, 'Could not remove — check connection');
 
+  const wasAt = capsule.itemIds.indexOf(itemId);
   capsule.itemIds = capsule.itemIds.filter(id => id !== itemId);
   renderCapsules();
-  showToast('Removed from capsule');
+  showToast('Removed from capsule', () => addToCapsule(capsuleId, itemId, wasAt));
+  return true;
+}
+
+// Puts one piece back where it was. `at` is the place it held before, so an
+// undo returns the capsule to the order you were looking at.
+async function addToCapsule(capsuleId, itemId, at){
+  const capsule = capsules.find(c => c.id === capsuleId);
+  if(!capsule) return false;
+
+  const { error } = await client().from('capsule_items')
+    .upsert({ capsule_id: capsuleId, item_id: itemId }, { onConflict: 'capsule_id,item_id' });
+  if(error) return dbFail(error, 'Could not add — check connection');
+
+  if(!capsule.itemIds.includes(itemId)){
+    capsule.itemIds.splice(at == null ? capsule.itemIds.length : at, 0, itemId);
+  }
+  renderCapsules();
+  showToast('Back in the capsule');
   return true;
 }
 
@@ -2690,10 +2764,26 @@ async function archiveCapsule(capsuleId){
     .eq('id', capsuleId);
   if(error) return dbFail(error, 'Could not delete — check connection');
 
+  // Held whole, memberships included, so Undo does not have to rebuild it.
+  const record = capsules.find(c => c.id === capsuleId);
   capsules = capsules.filter(c => c.id !== capsuleId);
   if(expandedCapsuleId === capsuleId) expandedCapsuleId = null;
   renderCapsules();
-  showToast('Capsule archived');
+  showToast('Capsule archived', record ? () => restoreCapsule(record) : null);
+  return true;
+}
+
+// Capsules have no archive page of their own, so the toast is the only way
+// back from one.
+async function restoreCapsule(record){
+  const { error } = await client().from('capsules')
+    .update({ archived_at: null })
+    .eq('id', record.id);
+  if(error) return dbFail(error, 'Could not restore — check connection');
+
+  if(!capsules.some(c => c.id === record.id)) capsules.push(record);
+  renderCapsules();
+  showToast('Capsule restored');
   return true;
 }
 
@@ -2834,7 +2924,7 @@ async function runLegacyMigration(){
   if(validFavorites.length){
     const { error } = await db.from('saved_outfits')
       .upsert(validFavorites.map(favoriteToRow), { onConflict: 'combo_key' });
-    if(!error) done.push(`${validFavorites.length} saved outfits`);
+    if(!error) done.push(`${validFavorites.length} faves`);
   }
 
   let photoCount = 0;
@@ -2974,18 +3064,45 @@ function esc(value){
     .replace(/'/g, '&#39;');
 }
 
-function showToast(msg){
+// Anything that takes something away says so, and offers it back. The offer
+// lasts exactly as long as the toast is up: once it fades the action stands,
+// which is why an undoable toast waits a good deal longer than a plain one.
+let toastTimer = null;
+
+function hideToast(){
+  clearTimeout(toastTimer);
+  document.getElementById('toast').classList.remove('show');
+}
+
+function showToast(msg, undo){
   const t = document.getElementById('toast');
-  t.textContent = msg;
+  clearTimeout(toastTimer);
+  t.innerHTML = '';
+
+  const label = document.createElement('span');
+  label.className = 'toast-msg';
+  label.textContent = msg;
+  t.appendChild(label);
+
+  if(undo){
+    const btn = document.createElement('button');
+    btn.className = 'toast-undo';
+    btn.textContent = 'Undo';
+    // Down first, so the toast is gone before the work starts and a second
+    // tap cannot run the same undo twice.
+    btn.onclick = () => { hideToast(); undo(); };
+    t.appendChild(btn);
+  }
+
   t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'), 1800);
+  toastTimer = setTimeout(hideToast, undo ? 6000 : 1800);
 }
 
 async function removeItem(id){
   if(!await archiveItems([id])) return;
   closeModal();
   render();
-  showToast('Moved to Archive');
+  showToast('Moved to Archive', () => restoreItem(id));
 }
 
 function downloadPhoto(item){
@@ -3436,7 +3553,12 @@ async function confirmBulkDelete(){
   // with nothing selected.
   editMode = false;
   render();
-  showToast(`Moved ${ids.length} item${ids.length===1?'':'s'} to Archive`);
+  showToast(`Moved ${ids.length} item${ids.length===1?'':'s'} to Archive`, async () => {
+    if(!await restoreItems(ids)) return;
+    renderArchive();
+    render();
+    showToast(`${ids.length} piece${ids.length===1?'':'s'} back in your wardrobe`);
+  });
 }
 
 function topsSubRank(item){
