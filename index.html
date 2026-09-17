@@ -360,6 +360,27 @@
   }
   .modal-notes{font-size:13px;color:var(--ink-soft);margin:8px 0;font-style:italic;}
   .modal-actions{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;}
+  /* An editor's save stays where your thumb is rather than at the end of a
+     form you have to scroll to reach. Cancel is the ← at the top of the
+     sheet: two ways out at the bottom of a long form was one too many. */
+  .sheet-footer{
+    position:fixed;
+    left:0;right:0;bottom:0;
+    z-index:6;
+    background:var(--page);
+    border-top:1px solid var(--line);
+    padding:12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+  }
+  .sheet-footer-inner{max-width:640px;margin:0 auto;}
+  /* Full width and a proper thumb target — it is the one thing this screen
+     is for. */
+  .sheet-footer .btn{
+    width:100%;
+    display:flex;align-items:center;justify-content:center;
+    min-height:48px;font-size:14px;
+  }
+  /* Room for it, so the last field is not stuck underneath. */
+  .modal-body.has-footer{padding-bottom:96px;}
   .outfits-heading{
     font-family:'Fraunces', serif;
     font-weight:500;
@@ -420,12 +441,17 @@
   .toast-msg{min-width:0;}
   .toast-undo{
     flex:none;
+    /* 44px of target, which is what a thumb needs, without making the toast
+       itself that tall — the padding gives the height and the negative
+       margin takes it back off the bar. */
+    min-height:44px;min-width:64px;
+    display:flex;align-items:center;justify-content:center;
     font-family:'Work Sans',sans-serif;
     font-size:13px;font-weight:600;
     color:var(--page);
     background:rgba(255,255,255,0.16);
-    border:none;border-radius:6px;
-    padding:9px 12px;margin:-4px -6px -4px 0;
+    border:none;border-radius:8px;
+    padding:0 14px;margin:-7px -8px -7px 0;
     cursor:pointer;
   }
   .toast-undo:hover{background:rgba(255,255,255,0.26);}
@@ -826,10 +852,6 @@
     gap:10px;margin-bottom:8px;
   }
   .capsule-name{font-family:'Fraunces',serif;font-weight:500;font-size:19px;}
-  .capsule-count{
-    font-family:'IBM Plex Mono',monospace;
-    font-size:11px;color:var(--ink-soft);flex:none;
-  }
   /* A flat-lay of the capsule's pieces, laid out as worn like an outfit
      card: hats and accessories along the top, then layers and tops, then
      bottoms and dresses, with shoes at the foot. Every piece is shown —
@@ -988,7 +1010,6 @@
         </button>
       </div>
     </header>
-    <div class="count-line" id="capsule-count-line"></div>
     <div class="capsule-gallery" id="capsule-gallery"></div>
     <div class="empty" id="capsule-empty" style="display:none;">
       <h3>No capsules yet</h3>
@@ -1064,7 +1085,7 @@
     <div class="sheet-header">
       <button class="sheet-back" onclick="closeItemForm()">← Cancel</button>
     </div>
-    <div class="modal-body">
+    <div class="modal-body has-footer">
       <div class="modal-name" id="form-title">New piece</div>
       <div class="form-grid">
         <label>Name<input type="text" id="form-name"></label>
@@ -1080,9 +1101,10 @@
         <label>Notes<textarea id="form-notes" rows="3"></textarea></label>
       </div>
       <div class="form-error" id="form-error"></div>
-      <div class="modal-actions">
+    </div>
+    <div class="sheet-footer">
+      <div class="sheet-footer-inner">
         <button class="btn" id="form-save-btn" onclick="submitItemForm()">Save</button>
-        <button class="btn secondary" onclick="closeItemForm()">Cancel</button>
       </div>
     </div>
   </div>
@@ -2099,14 +2121,9 @@ function capsuleBands(pieces){
 }
 
 function renderCapsules(){
-  const countLine = document.getElementById('capsule-count-line');
   const gallery = document.getElementById('capsule-gallery');
   const emptyState = document.getElementById('capsule-empty');
   if(!gallery) return;
-
-  if(countLine){
-    countLine.textContent = `${capsules.length} capsule${capsules.length===1?'':'s'}`;
-  }
 
   if(capsules.length === 0){
     gallery.innerHTML = '';
@@ -2134,13 +2151,14 @@ function renderCapsules(){
       <div class="outfit-expanded-panel">
         <button class="outfit-collapse-btn" onclick='event.stopPropagation();toggleExpandCapsule(${JSON.stringify(capsule.id)})'>Collapse ↑</button>
         ${pieces.map(p => `
-          <div class="outfit-piece-row">
+          <div class="outfit-piece-row tappable"
+               onclick='event.stopPropagation();openPieceInWardrobe(${JSON.stringify(p.id)})'>
             ${p.photo ? `<img src="${esc(p.photo)}" alt="${esc(p.name)}" referrerpolicy="no-referrer" loading="lazy" decoding="async">` : `<div class="no-photo-mini">No photo</div>`}
             <div class="outfit-piece-info" style="flex:1;min-width:0;">
               <div class="p-name">${esc(p.name)}</div>
               <div class="p-meta">${esc(p.brand || '')}</div>
             </div>
-            <button class="btn small secondary" onclick='event.stopPropagation();removeFromCapsule(${JSON.stringify(capsule.id)}, ${JSON.stringify(p.id)})'>Remove</button>
+            <span class="piece-go" aria-hidden="true">›</span>
           </div>
         `).join('')}
         <div class="modal-actions">
@@ -2153,7 +2171,6 @@ function renderCapsules(){
     return `<div class="outfit-card ${isExpanded ? 'expanded' : ''}" onclick='toggleExpandCapsule(${JSON.stringify(capsule.id)})'>
       <div class="capsule-head">
         <span class="capsule-name">${esc(capsule.name)}</span>
-        <span class="capsule-count">${pieces.length} piece${pieces.length===1?'':'s'}</span>
       </div>
       ${thumbs}
       ${expandedPanel}
@@ -2206,7 +2223,7 @@ function openCapsuleEditor(id){
     <div class="sheet-header">
       <button class="sheet-back" onclick="closeCapsuleEditor()">← Cancel</button>
     </div>
-    <div class="modal-body">
+    <div class="modal-body has-footer">
       <div class="modal-name">${capsule ? 'Edit capsule' : 'New capsule'}</div>
       <div class="form-grid">
         <label>Name
@@ -2218,9 +2235,10 @@ function openCapsuleEditor(id){
       <div class="tabs" id="capsule-tabs"></div>
       <div class="capsule-editor-count" id="capsule-editor-count"></div>
       <div class="gallery" id="capsule-editor-gallery"></div>
-      <div class="modal-actions">
+    </div>
+    <div class="sheet-footer">
+      <div class="sheet-footer-inner">
         <button class="btn" id="capsule-save-btn" onclick="submitCapsuleEditor()">Save capsule</button>
-        <button class="btn secondary" onclick="closeCapsuleEditor()">Cancel</button>
       </div>
     </div>
   `;
@@ -2239,12 +2257,14 @@ function onCapsuleNameInput(){
 function renderCapsuleEditorTabs(){
   const el = document.getElementById('capsule-tabs');
   if(!el) return;
+  // Counted only to leave out a category with nothing in it — the number
+  // itself is not shown, here or on the wardrobe's own tabs.
   const counts = {};
   ITEMS.forEach(i => { const t = tabForItem(i); counts[t] = (counts[t] || 0) + 1; });
   el.innerHTML = TAB_ORDER
     .filter(t => t === 'All' || counts[t])
     .map(t => `<button class="tab ${capsuleDraft.tab === t ? 'active' : ''}" onclick="setCapsuleEditorTab('${t}')">
-      ${t}<span class="count">${t === 'All' ? ITEMS.length : counts[t]}</span>
+      ${t}
     </button>`).join('');
 }
 
@@ -2299,6 +2319,13 @@ async function submitCapsuleEditor(){
   }
   errorEl.textContent = '';
 
+  // Held before the save, because the editor is now the only way a piece
+  // leaves a capsule — so this is where the undo has to be.
+  const previous = capsuleDraft.id ? (() => {
+    const c = capsules.find(x => x.id === capsuleDraft.id);
+    return c ? { id: c.id, name: c.name, itemIds: c.itemIds.slice() } : null;
+  })() : null;
+
   const btn = document.getElementById('capsule-save-btn');
   btn.disabled = true;
   const saved = await saveCapsule({
@@ -2312,7 +2339,10 @@ async function submitCapsuleEditor(){
   const wasNew = !capsuleDraft.id;
   closeCapsuleEditor();
   setMode('capsules');
-  showToast(wasNew ? 'Capsule created' : 'Capsule saved');
+  showToast(wasNew ? 'Capsule created' : 'Capsule saved',
+    previous ? async () => {
+      if(await saveCapsule(previous)){ renderCapsules(); showToast('Capsule put back'); }
+    } : null);
 }
 
 let expandedComboKey = null;
@@ -2751,41 +2781,6 @@ async function saveCapsule({ id, name, itemIds }){
   const idx = capsules.findIndex(c => c.id === capsuleId);
   if(idx > -1) capsules[idx] = record; else capsules.push(record);
   return record;
-}
-
-// Takes one piece out of one capsule. The piece itself, and its place in
-// any other capsule, is untouched.
-async function removeFromCapsule(capsuleId, itemId){
-  const capsule = capsules.find(c => c.id === capsuleId);
-  if(!capsule) return false;
-
-  const { error } = await client().from('capsule_items')
-    .delete().eq('capsule_id', capsuleId).eq('item_id', itemId);
-  if(error) return dbFail(error, 'Could not remove — check connection');
-
-  const wasAt = capsule.itemIds.indexOf(itemId);
-  capsule.itemIds = capsule.itemIds.filter(id => id !== itemId);
-  renderCapsules();
-  showToast('Removed from capsule', () => addToCapsule(capsuleId, itemId, wasAt));
-  return true;
-}
-
-// Puts one piece back where it was. `at` is the place it held before, so an
-// undo returns the capsule to the order you were looking at.
-async function addToCapsule(capsuleId, itemId, at){
-  const capsule = capsules.find(c => c.id === capsuleId);
-  if(!capsule) return false;
-
-  const { error } = await client().from('capsule_items')
-    .upsert({ capsule_id: capsuleId, item_id: itemId }, { onConflict: 'capsule_id,item_id' });
-  if(error) return dbFail(error, 'Could not add — check connection');
-
-  if(!capsule.itemIds.includes(itemId)){
-    capsule.itemIds.splice(at == null ? capsule.itemIds.length : at, 0, itemId);
-  }
-  renderCapsules();
-  showToast('Back in the capsule');
-  return true;
 }
 
 // Archived, never deleted — the memberships come with it, so restoring the
