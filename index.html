@@ -3492,14 +3492,11 @@ async function undoRetag(changes, filters){
 }
 
 function openTagEditor(tag){
-  const n = itemsWithTag(tag).length;
   const modal = document.getElementById('modal');
   modal.innerHTML = `
     <div class="sheet-header"><button class="sheet-back" onclick="closeModal()">← Back</button></div>
     <div class="modal-body has-footer">
-      <div class="modal-name" style="margin-bottom:6px;">Edit tag</div>
-      <p class="gate-note">On ${n} piece${n === 1 ? '' : 's'}. Renaming or removing it
-      changes every one of them.</p>
+      <div class="modal-name" style="margin-bottom:14px;">Edit tag</div>
       <div class="form-grid">
         <label>Tag<input type="text" id="tag-edit-input" value="${esc(tag)}"></label>
       </div>
