@@ -275,18 +275,6 @@
     padding:3px 7px;
     border-radius:999px;
   }
-  .detail-chip{
-    display:inline-block;
-    background:var(--accent-soft);
-    color:var(--ink);
-    font-family:'IBM Plex Mono',monospace;
-    font-size:10px;
-    letter-spacing:0.06em;
-    text-transform:uppercase;
-    padding:4px 10px;
-    border-radius:999px;
-    margin-bottom:8px;
-  }
 
   .empty{text-align:center;padding:60px 20px;color:var(--ink-soft);}
   .empty h3{font-family:'Fraunces', serif;font-weight:500;color:var(--ink);margin-bottom:6px;}
@@ -327,12 +315,41 @@
   .name-row .select-check{position:static;width:20px;height:20px;flex:none;}
   .tile.item-selected{outline:2px solid var(--accent);outline-offset:-2px;}
   .name-row.item-selected{background:var(--accent-soft);}
+  /* Selecting is a mode, so it gets the two fixtures a mode needs: what you
+     are doing and how many, pinned where your thumb is, and the way out
+     pinned where you can always see it. The navigation stands down while
+     it is on — none of those destinations apply to a selection, and
+     leaving them there is what made the way out hard to find. */
   .bulk-bar{
-    display:flex;justify-content:flex-end;align-items:center;gap:8px;
-    background:var(--surface);border:1px solid var(--line);border-radius:8px;
-    padding:10px 14px;margin-bottom:14px;
-    font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink-soft);
+    position:fixed;
+    left:50%;transform:translateX(-50%);
+    bottom:calc(16px + env(safe-area-inset-bottom, 0px));
+    z-index:90;
+    width:calc(100% - 32px);max-width:928px;
+    display:flex;align-items:center;gap:8px;
+    background:var(--surface);border:1px solid var(--line);border-radius:14px;
+    padding:10px 12px;
+    box-shadow:0 6px 24px rgba(0,0,0,0.11);
   }
+  .bulk-count{
+    margin-right:auto;padding-left:4px;
+    font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink-soft);
+    white-space:nowrap;
+  }
+  .btn[disabled]{opacity:0.4;cursor:default;}
+
+  /* The head stays put while you scroll, so Done is never more than a
+     glance away. It keeps the page's own name: what you are doing is said
+     by the bar at the bottom, and a title that changes under you loses the
+     one fixed point on the page. */
+  .page-head.selecting{
+    position:sticky;top:0;z-index:85;
+    margin:0 -16px 16px;padding:14px 16px;
+    background:var(--page);
+    box-shadow:0 6px 16px -12px rgba(0,0,0,0.5);
+  }
+  .bottom-bar.unlocked{display:flex;}
+  body.selecting .bottom-bar{display:none;}
 
   /* Full-screen detail sheet */
   .modal-backdrop{
@@ -410,16 +427,37 @@
     font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink-soft);
   }
   .modal-body{padding:18px;}
-  .modal-brand{
-    font-family:'IBM Plex Mono', monospace;font-size:11px;
+  .modal-name{font-family:'Fraunces', serif;font-size:22px;font-weight:500;margin:0;}
+  /* Brand and category on one quiet line under the name. They answer the
+     same question — what this is — so they read as one thing rather than
+     as two facts in two different fonts. */
+  .detail-sub{
+    font-family:'Work Sans',sans-serif;font-size:13px;color:var(--ink-soft);
+    margin:4px 0 0;
+  }
+
+  /* Everything else is a label and a value, in one aligned pair of columns.
+     Before this, size, source and price were three unlabelled values in
+     three different treatments, and you had to guess which was which. Rows
+     with nothing in them are left out rather than said. */
+  .detail-facts{
+    display:grid;grid-template-columns:auto 1fr;
+    column-gap:16px;row-gap:9px;
+    margin:18px 0 0;
+  }
+  .detail-facts dt{
+    font-family:'IBM Plex Mono',monospace;font-size:10px;
     text-transform:uppercase;letter-spacing:0.08em;color:var(--ink-soft);
+    padding-top:3px;white-space:nowrap;
   }
-  .modal-name{font-family:'Fraunces', serif;font-size:22px;font-weight:500;margin:2px 0 8px;}
-  .modal-meta{font-size:13px;color:var(--ink-soft);margin-bottom:3px;}
-  .modal-price{
-    font-family:'IBM Plex Mono', monospace;font-size:15px;color:var(--ink);margin:8px 0;
+  .detail-facts dd{
+    margin:0;font-family:'Work Sans',sans-serif;font-size:14px;color:var(--ink);
   }
-  .modal-notes{font-size:13px;color:var(--ink-soft);margin:8px 0;font-style:italic;}
+  .detail-facts dd.numeric{font-family:'IBM Plex Mono',monospace;font-size:13px;}
+  /* Pills carry their own spacing elsewhere; inside a row of the grid the
+     row gap is already the spacing. */
+  .detail-facts .detail-tags{margin:0;}
+  .modal-notes{font-size:13px;color:var(--ink-soft);margin:18px 0 0;line-height:1.5;}
   .modal-actions{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;}
   /* An editor's save stays where your thumb is rather than at the end of a
      form you have to scroll to reach. The way out is the back arrow at the
@@ -530,11 +568,15 @@
 
   /* Floating bottom bar — the two places you can be */
   .bottom-bar{
+    /* Hidden until the gate opens, and hidden again while a selection is
+       on. Both go through classes rather than an inline style, so neither
+       can beat the other by where it was written. */
+    display:none;
     position:fixed;
     left:50%;transform:translateX(-50%);
     bottom:calc(16px + env(safe-area-inset-bottom, 0px));
     z-index:90;
-    display:flex;gap:4px;
+    gap:4px;
     padding:5px;
     background:var(--surface);
     border:1px solid var(--line);
@@ -1128,12 +1170,13 @@
 
     <div class="tabs" id="tabs"></div>
 
-    <div class="bulk-bar" id="bulk-bar" style="display:none;"></div>
     <div class="gallery" id="gallery"></div>
     <div class="name-list" id="name-list" style="display:none;"></div>
     <div class="empty" id="empty" style="display:none;">
       <h3>Nothing here yet</h3>
     </div>
+
+    <div class="bulk-bar" id="bulk-bar" style="display:none;"></div>
 
     <!-- Archive is rare, so it sits at the end of the wardrobe rather than
          taking permanent space in the navigation. -->
@@ -1255,7 +1298,7 @@
 
 <button class="filters-fab stood-down" id="filters-fab" onclick="openFilterSheet()"></button>
 
-<nav class="bottom-bar" id="bottom-bar" style="display:none;">
+<nav class="bottom-bar" id="bottom-bar">
   <button class="bottom-btn active" id="nav-inventory-btn" onclick="setMode('inventory')">Wardrobe</button>
   <button class="bottom-btn" id="nav-outfits-btn" onclick="setMode('outfits')">Outfits</button>
   <button class="bottom-btn" id="nav-saved-btn" onclick="setMode('saved')">Faves</button>
@@ -1499,8 +1542,14 @@ function setMode(mode){
   if(appMode && appMode !== mode) rememberScroll(appMode);
   appMode = mode;
   // Search belongs to the wardrobe; leaving it open over another page would
-  // be a bar that filters nothing you can see.
-  if(mode !== 'inventory') closeSearch();
+  // be a bar that filters nothing you can see. A selection belongs to it
+  // just as much, and it hides the navigation while it is on — leaving it
+  // running on another page would hide the way back with it.
+  if(mode !== 'inventory'){
+    closeSearch();
+    if(editMode){ editMode = false; selectedIds.clear(); }
+    document.body.classList.remove('selecting');
+  }
   const onInventory = mode === 'inventory' || mode === 'archive';
   document.getElementById('nav-inventory-btn')?.classList.toggle('active', onInventory);
   document.getElementById('nav-outfits-btn')?.classList.toggle('active', mode==='outfits');
@@ -1548,6 +1597,14 @@ function setMode(mode){
 function openPieceInWardrobe(itemId){
   const item = ITEMS.find(i => i.id === itemId);
   if(!item){ showToast('That piece is in the archive'); return; }
+
+  // Already on this piece — tapping it from its own "outfits with this
+  // piece" list means take me back up to it, not nowhere.
+  if(modalReturnItemId === itemId &&
+     document.getElementById('modal-backdrop').classList.contains('open')){
+    document.getElementById('modal-backdrop').scrollTo({top:0, behavior:'smooth'});
+    return;
+  }
 
   activeTab = tabForItem(item);
   // A search that would hide the very piece you asked for has to come off,
@@ -3480,7 +3537,7 @@ async function runLegacyMigration(){
 // ---- Boot / auth -------------------------------------------
 function showGate(state, message){
   document.getElementById('app-root').style.display = 'none';
-  document.getElementById('bottom-bar').style.display = 'none';
+  document.getElementById('bottom-bar').classList.remove('unlocked');
   document.getElementById('gate').style.display = 'flex';
   document.getElementById('gate-unconfigured').style.display = state === 'unconfigured' ? 'block' : 'none';
   document.getElementById('gate-login').style.display = state === 'login' ? 'block' : 'none';
@@ -3492,7 +3549,7 @@ function showGate(state, message){
 function hideGate(){
   document.getElementById('gate').style.display = 'none';
   document.getElementById('app-root').style.display = 'block';
-  document.getElementById('bottom-bar').style.display = 'flex';
+  document.getElementById('bottom-bar').classList.add('unlocked');
 }
 
 async function signIn(){
@@ -3946,21 +4003,10 @@ function openModal(id){
       ${item.photo ? `<img src="${esc(item.photo)}" alt="${esc(item.name)}" referrerpolicy="no-referrer" decoding="async">` : `<span class="no-photo">No photo yet</span>`}
     </div>
     <div class="modal-body">
-      <span class="detail-chip">${tabForItem(item)}</span>
-      <div class="modal-name">${esc(item.name)}</div>
-      ${item.brand ? `<div class="modal-brand">${esc(item.brand)}</div>` : ''}
-      ${item.size && item.size !== '-' ? `<div class="modal-meta">Size ${esc(item.size)}</div>` : ''}
-      ${item.source ? `<div class="modal-meta">${esc(item.source)}</div>` : ''}
-      ${item.price ? `<div class="modal-price">${esc(item.price)}</div>` : ''}
-      ${item.notes ? `<div class="modal-notes">${esc(item.notes)}</div>` : ''}
-      ${(item.tags || []).length ? `<div class="detail-tags">${item.tags.map(t => `<span>${esc(t)}</span>`).join('')}</div>` : ''}
-      ${capsulesAvailable ? `
-        <div class="detail-capsules">
-          <span class="filter-sheet-label">Capsules</span>
-          ${capsulesForItem(item.id).length
-            ? `<div class="detail-tags">${capsulesForItem(item.id).map(c => `<span>${esc(c.name)}</span>`).join('')}</div>`
-            : `<p class="modal-meta">Not in a capsule yet.</p>`}
-        </div>` : ''}
+      <h2 class="modal-name">${esc(item.name)}</h2>
+      <p class="detail-sub">${[item.brand, tabForItem(item)].filter(Boolean).map(esc).join(' · ')}</p>
+      ${detailFactsHtml(item)}
+      ${item.notes ? `<p class="modal-notes">${esc(item.notes)}</p>` : ''}
       <div class="modal-actions">
         <button class="btn small secondary" onclick='openItemForm(${JSON.stringify(item.id)})'>Edit</button>
         ${capsulesAvailable ? `<button class="btn small secondary" onclick='openItemCapsulePicker(${JSON.stringify(item.id)})'>Add to capsule</button>` : ''}
@@ -3970,6 +4016,26 @@ function openModal(id){
   `;
   document.getElementById('modal-backdrop').classList.add('open');
   showOutfitsInModal(item.id);
+}
+
+// Label and value, one row each, and only the rows that have something in
+// them. A piece with no price and no tags shows a name and a photo, which
+// is all there is to show.
+function detailFactsHtml(item){
+  const pills = list => `<div class="detail-tags">${list.map(t => `<span>${esc(t)}</span>`).join('')}</div>`;
+  const rows = [];
+  if(item.size && item.size !== '-') rows.push(['Size', esc(item.size), '']);
+  if(item.price) rows.push(['Price', esc(item.price), ' class="numeric"']);
+  if(item.source) rows.push(['From', esc(item.source), '']);
+  if((item.tags || []).length) rows.push(['Tags', pills(item.tags), '']);
+  if(capsulesAvailable){
+    const inCapsules = capsulesForItem(item.id);
+    if(inCapsules.length) rows.push(['Capsules', pills(inCapsules.map(c => c.name)), '']);
+  }
+  if(!rows.length) return '';
+  return `<dl class="detail-facts">${
+    rows.map(([label, value, attr]) => `<dt>${label}</dt><dd${attr}>${value}</dd>`).join('')
+  }</dl>`;
 }
 
 function closeModal(){
@@ -4187,23 +4253,21 @@ function renderToolbarIcons(){
     view.setAttribute('aria-label', toList ? 'Switch to list view' : 'Switch to photo view');
     view.title = toList ? 'List view' : 'Photo view';
   }
-  // Selecting takes the whole head over: the title says how many, and the
-  // only control is a labelled Done. Nothing else in that row does anything
-  // useful while you are selecting, and leaving them there is what made the
-  // way out hard to find.
+  // Selecting takes the icon row over: a labelled Done where the controls
+  // were. Nothing else in that row does anything useful while you are
+  // selecting. The head itself sticks to the top of the screen in this
+  // mode, so Done stays reachable however far you have scrolled.
   const done = document.getElementById('edit-done-btn');
   if(done) done.style.display = editMode ? 'flex' : 'none';
   ['search-btn', 'view-toggle-btn', 'add-item-btn'].forEach(id => {
     const btn = document.getElementById(id);
     if(btn) btn.style.display = editMode ? 'none' : 'flex';
   });
-  const title = document.getElementById('wardrobe-title');
-  if(title){
-    const n = selectedIds.size;
-    title.textContent = editMode
-      ? (n ? `${n} selected` : 'Select pieces')
-      : 'Wardrobe';
-  }
+  const head = document.getElementById('wardrobe-head');
+  if(head) head.classList.toggle('selecting', editMode);
+  // The navigation stands down while a selection is on: none of its
+  // destinations apply to one, and the action bar takes its place.
+  document.body.classList.toggle('selecting', editMode);
   // Leaving search clears it, so a query only ever exists while the bar is
   // open — there is no "searching, but shut" state left to signal.
   const q = ((document.getElementById('filter-search') || {}).value || '').trim();
@@ -4258,6 +4322,11 @@ function toggleEditMode(){
   selectedIds.clear();
   render();
 }
+
+// Escape is the other way out, for the desktop this occasionally runs on.
+document.addEventListener('keydown', e => {
+  if(e.key === 'Escape' && editMode){ toggleEditMode(); }
+});
 
 // ---- Long press to select ----------------------------------
 // Selecting several pieces to archive is rare next to browsing and adding,
@@ -4407,14 +4476,17 @@ function render(){
 
   bulkBar.style.display = editMode ? 'flex' : 'none';
   if(editMode){
-    {
-      // The count lives in the page title while you are selecting, so the
-      // bar is the two actions and nothing else.
-      bulkBar.innerHTML = `
-        <button class="btn small secondary" onclick="selectAllVisible()">Select all</button>
-        <button class="btn small" onclick="bulkDeleteSelected()">Delete selected</button>
-      `;
-    }
+    // How many, then what you can do about it — all in one bar, so the
+    // count sits next to the buttons that act on it.
+    const n = selectedIds.size;
+    const allOn = filtered.length > 0 && filtered.every(i => selectedIds.has(i.id));
+    bulkBar.innerHTML = `
+      <span class="bulk-count">${n ? `${n} selected` : 'Select pieces'}</span>
+      <button class="btn small secondary" onclick="selectAllVisible()"
+              ${filtered.length ? '' : 'disabled'}>${allOn ? 'Deselect all' : 'Select all'}</button>
+      <button class="btn small" onclick="bulkDeleteSelected()"
+              ${n ? '' : 'disabled'}>Delete selected</button>
+    `;
   }
 
   if(filtered.length === 0){
