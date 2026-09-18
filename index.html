@@ -68,11 +68,9 @@
     font-family:'Fraunces', serif;
     font-weight:400;
     /* Grows with the screen and stops before it can wrap on a phone.
-       It has been 43, then 35, then 19 — and 19 put it under the weight of
-       the tab pills beneath it, which read as the heading instead. About
-       26px on a 390px phone is the balance: quieter than a masthead, still
-       plainly the name of the page. */
-    font-size:clamp(23px, 6.7vw, 30px);
+       It has been 43, then 35, then 19, then 26 — and back up 8 from there.
+       About 34px on a 390px phone. */
+    font-size:clamp(30px, 8.75vw, 38px);
     line-height:1.1;
     margin:0;
     letter-spacing:-0.02em;
@@ -952,8 +950,13 @@
      outfit shows a larger bottom instead of empty card. */
   .outfit-lower{margin-top:3px;flex:1;min-height:104px;}
   .outfit-lower > *{width:100%;height:100%;}
-  .outfit-feet{margin-top:3px;display:flex;justify-content:center;flex:none;}
-  .outfit-feet > *{width:38%;aspect-ratio:1/1;}
+  /* What you put on afterwards, along the foot of the card. One sits
+     centred like the shoes used to; more share the width. */
+  .outfit-extras{margin-top:3px;display:flex;justify-content:center;gap:3px;flex:none;}
+  .outfit-extras > *{width:38%;aspect-ratio:1/1;}
+  .outfit-extras.n2 > *{width:30%;}
+  .outfit-extras.n3 > *{width:24%;}
+  .outfit-extras.n4 > *{width:20%;}
 
   .outfit-thumbs img{
     object-fit:contain;
@@ -1330,33 +1333,60 @@ let viewMode = 'photos'; // 'photos' or 'names'
 let editMode = false;
 let selectedIds = new Set();
 
-const TAB_ORDER = ['All','Tops','Pants','Shorts','Jumpers','Jackets','Dresses','Shoes','Hats','Accessories','Other','No Image'];
+const TAB_ORDER = ['All','Tops','Pants','Shorts','Skirts','Dresses','Jumpsuits',
+                   'Jumpers','Jackets','Shoes','Hats','Accessories','Swimwear',
+                   'Other','No Image'];
 
-// The bottom half used to be one tab called Bottoms. Pants and shorts are
-// worn in different weather and wanted at different times, so they are two
-// things to browse and filter — but an outfit still wears one or the other,
-// never one of each, so the generator draws its bottom from both.
-const BOTTOM_TABS = ['Pants','Shorts'];
-
+// The word you type on a piece, and the shelf it goes on. Several words can
+// share a shelf — jeans and chinos are both pants — so you can be as
+// specific as you like when adding a piece without splitting the wardrobe
+// into shelves of one.
 const CATEGORY_TO_TAB = {
-  'Shirts':'Tops','Tops':'Tops',
-  'Jeans':'Pants','Pants':'Pants','Skirts':'Pants',
+  'Tops':'Tops','Shirts':'Tops','Blouses':'Tops','T-shirts':'Tops','Tees':'Tops',
+  'Vests':'Tops','Camisoles':'Tops','Bodysuits':'Tops',
+
+  // The bottom half used to be one tab called Bottoms. Pants, shorts and
+  // skirts are worn in different weather and wanted at different times, so
+  // they are three things to browse and filter — but an outfit wears one of
+  // them, never one of each, so they all feed the one bottom slot.
+  'Pants':'Pants','Jeans':'Pants','Trousers':'Pants','Chinos':'Pants','Leggings':'Pants',
   'Shorts':'Shorts',
-  'Knitwear':'Jumpers',
-  'Jackets':'Jackets',
+  'Skirts':'Skirts',
+
+  // A jumpsuit is a whole outfit in one piece, the way a dress is, so it
+  // fills the same place — but it is its own thing to go looking for.
   'Dresses':'Dresses',
-  'Shoes':'Shoes',
+  'Jumpsuits':'Jumpsuits','Playsuits':'Jumpsuits','Overalls':'Jumpsuits',
+
+  'Jumpers':'Jumpers','Knitwear':'Jumpers','Sweaters':'Jumpers',
+  'Cardigans':'Jumpers','Hoodies':'Jumpers','Sweatshirts':'Jumpers',
+  'Jackets':'Jackets','Coats':'Jackets','Blazers':'Jackets',
+
+  'Shoes':'Shoes','Boots':'Shoes','Sneakers':'Shoes','Sandals':'Shoes',
+  'Heels':'Shoes','Flats':'Shoes',
+
   // Hats are their own tab: there are enough of them to be worth finding on
   // their own, and in a capsule they belong at the top of the flat-lay
   // rather than lumped in with bags and scarves.
   'Hats':'Hats','Beanies':'Hats','Caps':'Hats',
-  'Accessories':'Accessories','Bags':'Accessories','Sets':'Accessories','Swimwear':'Accessories'
+
+  'Accessories':'Accessories','Bags':'Accessories','Sets':'Accessories',
+  'Jewellery':'Accessories','Sunglasses':'Accessories','Scarves':'Accessories',
+  'Belts':'Accessories','Gloves':'Accessories','Socks':'Accessories','Tights':'Accessories',
+
+  'Swimwear':'Swimwear'
 };
 
 function tabForItem(item){
   if(!item.photo) return 'No Image';
-  return CATEGORY_TO_TAB[item.category] || 'Other';
+  return shelfForItem(item);
 }
+
+// Where a piece belongs by what it is, whether or not it has a photo yet.
+// The wardrobe sends photoless pieces to their own tab so they are easy to
+// find and fix; anywhere that is asking what a thing IS wants this.
+function shelfForItem(item){ return CATEGORY_TO_TAB[item.category] || 'Other'; }
+function itemsOnShelf(tab){ return ITEMS.filter(i => shelfForItem(i) === tab); }
 
 // ---- Outfit engine state ----
 //
@@ -1373,9 +1403,39 @@ const INCLUDE_SHOES_IN_OUTFITS = false;
 // switching between two pages: 'any' is everything, and the other two are
 // a filter like any other.
 function anyFilter(){ return {type:'any', ids:[]}; }
+
+// You filter by the categories the wardrobe is organised into, not by the
+// five abstract slots an outfit happens to have. Shoes, hats and
+// accessories are not here: the generator does not put them on, so a chip
+// for them could only ever filter nothing. They are attached to an outfit
+// you have kept, by hand, instead.
+const OUTFIT_TABS = ['Tops','Pants','Shorts','Skirts','Dresses','Jumpsuits','Jumpers','Jackets']
+  // Shoes are out of the generator, so there is nothing for a Shoes chip to
+  // filter. Put them back in and the chip comes back with them — that is
+  // what the flag above promises.
+  .concat(INCLUDE_SHOES_IN_OUTFITS ? ['Shoes'] : []);
+
+// Which of an outfit's five places each category fills. Several categories
+// can fill the same one — an outfit wears a bottom, and pants, shorts and
+// skirts are all bottoms.
+const TAB_SLOT = {
+  Tops:'top', Pants:'bottom', Shorts:'bottom', Skirts:'bottom',
+  Dresses:'dress', Jumpsuits:'dress', Jumpers:'jumper', Jackets:'jacket',
+  Shoes:'shoes'
+};
+// A layer you can go without. The rest are what an outfit is.
+const OPTIONAL_SLOTS = ['jumper','jacket','shoes'];
+
+function tabsForSlot(slot){ return OUTFIT_TABS.filter(t => TAB_SLOT[t] === slot); }
+
+// Every category an outfit is built from, owned or not. A shelf you have
+// not filled yet is still a shelf, and the row scrolls.
+function filterTabs(){ return OUTFIT_TABS.slice(); }
+
 function emptySlotFilters(){
-  return { top:anyFilter(), bottom:anyFilter(), dress:anyFilter(),
-           jumper:anyFilter(), jacket:anyFilter(), shoes:anyFilter() };
+  const f = {};
+  OUTFIT_TABS.forEach(t => { f[t] = anyFilter(); });
+  return f;
 }
 // Outfits and Faves get the same controls but keep their own settings —
 // narrowing what you are browsing should not quietly narrow what you have
@@ -1404,12 +1464,6 @@ let savedTag = null;
 // The generator draws from everything; the tag is applied to finished
 // combinations instead of to the pool, so an outfit qualifies when any one
 // piece carries it rather than all of them.
-// A slot usually draws from one tab; the bottom draws from two.
-function outfitPool(tabName){
-  return Array.isArray(tabName)
-    ? tabName.flatMap(t => itemsInTab(t))
-    : itemsInTab(tabName);
-}
 
 function comboMatchesTag(combo){
   if(!outfitTag) return true;
@@ -1578,7 +1632,7 @@ const FILTER_MOUNTS = [
 function filterControlsHtml(ns){
   return `
     <div class="filter-section">
-      <span class="filter-sheet-label">Tags <span class="label-hint">hold one to edit</span></span>
+      <span class="filter-sheet-label">Tags</span>
       <div class="tag-chips" id="${ns}-tag-chips"></div>
     </div>
     <div class="filter-section">
@@ -1705,13 +1759,13 @@ function renderArchive(){
 // tops and bottoms, and Top → None (or Bottom → None) is how you ask for
 // dresses.
 function familiesFor(f){
+  const empty  = slot => slotList(f, slot).filter(Boolean).length === 0;
+  const pinned = slot => tabsForSlot(slot).some(t => (f[t] || {}).type === 'items');
   // A top-and-bottom outfit has to have both, and cannot have a dress.
-  const canTopBottom = f.top.type !== 'none' && f.bottom.type !== 'none'
-                    && f.dress.type !== 'items';
-  // A dress outfit has a dress and neither of the other two — so Top → None
-  // does not rule it out, it is what a dress outfit already looks like.
-  const canDress = f.dress.type !== 'none'
-                && f.top.type !== 'items' && f.bottom.type !== 'items';
+  const canTopBottom = !empty('top') && !empty('bottom') && !pinned('dress');
+  // A dress outfit has a dress and neither of the other two — so ruling
+  // tops out does not rule it out, it is what a dress outfit already is.
+  const canDress = !empty('dress') && !pinned('top') && !pinned('bottom');
   const fams = [];
   if(canTopBottom) fams.push('topbottom');
   if(canDress) fams.push('dress');
@@ -1720,38 +1774,20 @@ function familiesFor(f){
 
 function outfitFamilies(){ return familiesFor(outfitFilters); }
 
-const SLOT_META = {
-  top:{label:'Top', category:'Tops', allowNone:true},
-  bottom:{label:'Bottom', category:BOTTOM_TABS, allowNone:true},
-  dress:{label:'Dress', category:'Dresses', allowNone:true},
-  jumper:{label:'Jumper', category:'Jumpers', allowNone:true},
-  jacket:{label:'Jacket', category:'Jackets', allowNone:true},
-  shoes:{label:'Shoes', category:'Shoes', allowNone:true}
-};
-
 function shoeSlotList(){
   // Pinned to "no shoes" while shoes are held out of outfits.
-  return INCLUDE_SHOES_IN_OUTFITS
-    ? slotList(outfitPool('Shoes'), outfitFilters.shoes, true)
-    : [null];
+  return INCLUDE_SHOES_IN_OUTFITS ? slotList(outfitFilters, 'shoes') : [null];
 }
 
 function renderSlotChips(gridId){
   const grid = document.getElementById(gridId);
   if(!grid) return;
 
-  // Every slot an outfit can actually hold, main ones first, and the row
-  // scrolls sideways for the rest.
-  //
-  // Shoes are the odd one: the generator leaves them out, so on Outfits the
-  // chip would filter nothing. A kept outfit can have a pair put on it by
-  // hand, though, so on Faves it is a real filter and belongs in the row.
-  const shoesApply = INCLUDE_SHOES_IN_OUTFITS || appMode === 'saved';
-  const slotKeys = ['top','bottom','dress','jumper','jacket']
-    .concat(shoesApply ? ['shoes'] : []);
-
-  grid.innerHTML = slotKeys.map(key => {
-    const meta = SLOT_META[key];
+  // One chip per wardrobe category an outfit is built from, in the order
+  // the wardrobe lists them, and the row scrolls sideways for the rest.
+  // A category with nothing in it is left out rather than offered as a
+  // filter that can only ever return nothing.
+  grid.innerHTML = filterTabs().map(key => {
     const f = activeSlotFilters()[key];
     let stateLabel;
     if(f.type === 'any') stateLabel = 'Any';
@@ -1764,18 +1800,17 @@ function renderSlotChips(gridId){
     const cls = ['filter-chip', f.type !== 'any' ? 'active' : ''].filter(Boolean).join(' ');
 
     return `<button class="${cls}" onclick="openSlotPicker('${key}')">
-      ${meta.label}<span class="chip-state">${stateLabel}</span>
+      ${key}<span class="chip-state">${stateLabel}</span>
     </button>`;
   }).join('');
 }
 
 function openSlotPicker(slotKey){
-  const meta = SLOT_META[slotKey];
   const modal = document.getElementById('modal');
   modal.innerHTML = `
     <div class="sheet-header"><button class="sheet-back" onclick="closePickerAndApply()"><svg class="back-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>Back</button></div>
     <div class="modal-body">
-      <div class="modal-name" style="margin-bottom:14px;">Choose ${meta.label}</div>
+      <div class="modal-name" style="margin-bottom:14px;">Choose ${slotKey}</div>
       <div class="quick-picks" id="picker-quick-picks"></div>
       <div class="gallery" id="picker-gallery"></div>
     </div>
@@ -1789,19 +1824,17 @@ function openSlotPicker(slotKey){
 // pieces, so they carry the same selected state the item tiles do —
 // otherwise there is no way to see which one a slot is currently on.
 function renderQuickPicks(slotKey){
-  const meta = SLOT_META[slotKey];
   const f = activeSlotFilters()[slotKey];
   const el = document.getElementById('picker-quick-picks');
   if(!el) return;
   el.innerHTML = `
     <button class="base-btn ${f.type === 'any' ? 'active' : ''}" onclick="setSlotQuick('${slotKey}','any')">Any</button>
-    ${meta.allowNone ? `<button class="base-btn ${f.type === 'none' ? 'active' : ''}" onclick="setSlotQuick('${slotKey}','none')">None</button>` : ''}
+    <button class="base-btn ${f.type === 'none' ? 'active' : ''}" onclick="setSlotQuick('${slotKey}','none')">None</button>
   `;
 }
 
 function renderPickerGallery(slotKey){
-  const meta = SLOT_META[slotKey];
-  const items = outfitPool(meta.category);
+  const items = itemsInTab(slotKey);
   const f = activeSlotFilters()[slotKey];
   document.getElementById('picker-gallery').innerHTML = items.map(i => {
     const selected = f.type === 'items' && f.ids.includes(i.id);
@@ -1838,21 +1871,41 @@ function closePickerAndApply(){
   else resetOutfitResults();
 }
 
-function slotList(categoryItems, filter, allowNone){
-  if(filter.type === 'any'){
-    return allowNone ? [null, ...categoryItems] : categoryItems.slice();
-  } else if(filter.type === 'none'){
-    return [null];
-  } else {
-    const chosen = categoryItems.filter(i => filter.ids.includes(i.id));
-    return chosen.length ? chosen : (allowNone ? [null, ...categoryItems] : categoryItems.slice());
+// What one category leaves for the slot it fills.
+function tabContribution(filters, tab){
+  const items = itemsInTab(tab);
+  const f = filters[tab] || anyFilter();
+  if(f.type === 'none') return [];
+  if(f.type === 'items'){
+    const chosen = items.filter(i => f.ids.includes(i.id));
+    // A selection that has gone stale — the pieces archived, say — falls
+    // back to the whole category rather than silently emptying the page.
+    return chosen.length ? chosen : items;
   }
+  return items;
+}
+
+// What the categories together leave for one slot. Pants, shorts and skirts
+// all feed the bottom, so the bottom gets the union: an outfit wears one of
+// them, never one of each.
+function slotList(filters, slot){
+  const tabs = tabsForSlot(slot);
+  // Asking for particular pieces is asking for those pieces. The other
+  // categories that could fill this place step aside rather than offering
+  // alternatives you did not ask for — pinning a pair of shorts means
+  // outfits with those shorts, not those shorts or any pair of pants.
+  const pinned = tabs.filter(t => (filters[t] || {}).type === 'items');
+  const from = pinned.length ? pinned : tabs;
+  const items = from.reduce((all, t) => all.concat(tabContribution(filters, t)), []);
+  // An optional layer can always be left off — unless you pinned pieces, in
+  // which case you asked to see those, not the outfits without them.
+  return (OPTIONAL_SLOTS.includes(slot) && !pinned.length) ? [null, ...items] : items;
 }
 
 function* familyGenerator(family, jumpers, jackets, shoes){
   if(family === 'topbottom'){
-    const tops = slotList(outfitPool('Tops'), outfitFilters.top, false);
-    const bottoms = slotList(outfitPool(BOTTOM_TABS), outfitFilters.bottom, false);
+    const tops = slotList(outfitFilters, 'top');
+    const bottoms = slotList(outfitFilters, 'bottom');
     for(const top of tops)
       for(const bottom of bottoms)
         for(const jumper of jumpers)
@@ -1860,7 +1913,7 @@ function* familyGenerator(family, jumpers, jackets, shoes){
             for(const shoe of shoes)
               yield {base:'topbottom', top, bottom, jumper, jacket, shoe};
   } else {
-    const dresses = slotList(outfitPool('Dresses'), outfitFilters.dress, false);
+    const dresses = slotList(outfitFilters, 'dress');
     for(const dress of dresses)
       for(const jumper of jumpers)
         for(const jacket of jackets)
@@ -1870,8 +1923,8 @@ function* familyGenerator(family, jumpers, jackets, shoes){
 }
 
 function* comboGenerator(){
-  const jumpers = slotList(outfitPool('Jumpers'), outfitFilters.jumper, true);
-  const jackets = slotList(outfitPool('Jackets'), outfitFilters.jacket, true);
+  const jumpers = slotList(outfitFilters, 'jumper');
+  const jackets = slotList(outfitFilters, 'jacket');
   const shoes = shoeSlotList();
 
   const gens = outfitFamilies().map(f => ({ gen: familyGenerator(f, jumpers, jackets, shoes), done: false }));
@@ -1891,16 +1944,23 @@ function* comboGenerator(){
   }
 }
 
+// The identity of a combination of clothes. The last segment is a shoe slot
+// the generator no longer fills, kept as 'none' so keys written before
+// accessories moved to their own list still match. Accessories never enter
+// it: putting a hat on a kept outfit must not turn it into a different one,
+// or the heart on the matching card in Outfits would go hollow.
 function comboKey(combo){
   const id = x => x ? x.id : 'none';
   if(combo.base === 'dress'){
-    return ['dress', id(combo.dress), id(combo.jumper), id(combo.jacket), id(combo.shoe)].join('|');
+    return ['dress', id(combo.dress), id(combo.jumper), id(combo.jacket), 'none'].join('|');
   }
-  return ['tb', id(combo.top), id(combo.bottom), id(combo.jumper), id(combo.jacket), id(combo.shoe)].join('|');
+  return ['tb', id(combo.top), id(combo.bottom), id(combo.jumper), id(combo.jacket), 'none'].join('|');
 }
 
 function comboPieces(combo){
-  return [combo.top, combo.bottom, combo.dress, combo.jumper, combo.jacket, combo.shoe].filter(Boolean);
+  return [combo.top, combo.bottom, combo.dress, combo.jumper, combo.jacket]
+    .concat(combo.extras || [])
+    .filter(Boolean);
 }
 
 // Lays a combo out the way it is worn — outer layers and the top on one
@@ -1913,8 +1973,9 @@ function outfitLayout(combo){
   return {
     upper,
     lower: (combo.base === 'dress' ? combo.dress : combo.bottom) || null,
-    // Only set on outfits saved before shoes were held out of the generator.
-    feet: combo.shoe || null
+    // Accessories, on their own row under the clothes. A generated outfit
+    // never has any — they are put on a kept one by hand.
+    extras: combo.extras || []
   };
 }
 
@@ -1922,11 +1983,11 @@ function outfitThumbsHtml(combo){
   const cell = p => p.photo
     ? `<img src="${esc(p.photo)}" alt="${esc(p.name)}" referrerpolicy="no-referrer" loading="lazy" decoding="async">`
     : `<div class="no-photo-mini">No photo</div>`;
-  const { upper, lower, feet } = outfitLayout(combo);
+  const { upper, lower, extras } = outfitLayout(combo);
   return [
     upper.length ? `<div class="outfit-upper n${upper.length}">${upper.map(cell).join('')}</div>` : '',
     lower ? `<div class="outfit-lower">${cell(lower)}</div>` : '',
-    feet ? `<div class="outfit-feet">${cell(feet)}</div>` : ''
+    extras.length ? `<div class="outfit-extras n${Math.min(extras.length, 4)}">${extras.map(cell).join('')}</div>` : ''
   ].join('');
 }
 
@@ -1934,26 +1995,23 @@ function outfitThumbsHtml(combo){
 // returned rather than what went into it: narrowing the input can leave a
 // pinned selection empty, which makes slotList fall back to the whole
 // category and throws the arithmetic out.
-function slotCount(tabName, filter, allowNone, untaggedOnly){
-  let list = slotList(outfitPool(tabName), filter, allowNone);
+function slotCount(slot, untaggedOnly){
+  let list = slotList(outfitFilters, slot);
   if(untaggedOnly) list = list.filter(x => !x || !(x.tags || []).includes(outfitTag));
   return list.length;
 }
 
 function comboCountWhere(untaggedOnly){
-  const jumpers = slotCount('Jumpers', outfitFilters.jumper, true, untaggedOnly);
-  const jackets = slotCount('Jackets', outfitFilters.jacket, true, untaggedOnly);
-  const shoes = INCLUDE_SHOES_IN_OUTFITS
-    ? slotCount('Shoes', outfitFilters.shoes, true, untaggedOnly)
-    : 1;
+  const jumpers = slotCount('jumper', untaggedOnly);
+  const jackets = slotCount('jacket', untaggedOnly);
+  const shoes = INCLUDE_SHOES_IN_OUTFITS ? shoeSlotList().length : 1;
 
   // Summed over whichever shapes are in play, from the same list the
   // generator walks — the count and the stream have to agree.
   return outfitFamilies().reduce((total, family) => {
     const own = family === 'topbottom'
-      ? slotCount('Tops', outfitFilters.top, false, untaggedOnly)
-        * slotCount(BOTTOM_TABS, outfitFilters.bottom, false, untaggedOnly)
-      : slotCount('Dresses', outfitFilters.dress, false, untaggedOnly);
+      ? slotCount('top', untaggedOnly) * slotCount('bottom', untaggedOnly)
+      : slotCount('dress', untaggedOnly);
     return total + own * jumpers * jackets * shoes;
   }, 0);
 }
@@ -2107,7 +2165,9 @@ function comboToFavoriteRecord(combo){
     key: comboKey(combo),
     base: combo.base,
     top: id(combo.top), bottom: id(combo.bottom), dress: id(combo.dress),
-    jumper: id(combo.jumper), jacket: id(combo.jacket), shoe: id(combo.shoe)
+    jumper: id(combo.jumper), jacket: id(combo.jacket),
+    // A freshly kept outfit has nothing on it yet.
+    extras: []
   };
 }
 
@@ -2118,7 +2178,8 @@ function favoriteRecordToCombo(rec){
   return {
     base: rec.base,
     top: find(rec.top), bottom: find(rec.bottom), dress: find(rec.dress),
-    jumper: find(rec.jumper), jacket: find(rec.jacket), shoe: find(rec.shoe)
+    jumper: find(rec.jumper), jacket: find(rec.jacket),
+    extras: (rec.extras || []).map(find).filter(Boolean)
   };
 }
 
@@ -2178,66 +2239,115 @@ function toggleExpandSaved(key){
   renderSavedOutfits();
 }
 
-// ---- Shoes on a saved outfit -------------------------------
+// ---- Accessories on a saved outfit -------------------------
 //
-// Outfits generate without shoes, so they get attached here by hand.
-// Only shoe_id changes: combo_key stays the identity of the clothing
-// combination, which keeps the heart on the matching combo in the
-// Outfits tab filled instead of it looking unsaved.
-async function setSavedOutfitShoe(key, shoeId){
+// Outfits generate from clothes alone — a jacket changes whether an outfit
+// works, a necklace does not — so shoes, hats and the rest get put on here,
+// on an outfit you have already decided to keep.
+//
+// Only extra_ids changes: combo_key stays the identity of the clothing
+// combination, which keeps the heart on the matching combo in the Outfits
+// tab filled instead of it looking unsaved.
+
+// The categories an outfit is not generated from. Anything you can own that
+// is not one of the clothes an outfit is built from can be put on one.
+function extraTabs(){
+  return TAB_ORDER.filter(t =>
+    t !== 'All' && t !== 'No Image' &&
+    !OUTFIT_TABS.includes(t) &&
+    itemsOnShelf(t).length);
+}
+
+let extrasPickerTab = null;
+
+async function setOutfitExtras(key, ids, undoLabel){
+  const rec = favoriteOutfits.find(f => f.key === key);
+  if(!rec) return false;
+  const was = (rec.extras || []).slice();
+
   const { error } = await client()
     .from('saved_outfits')
-    .update({ shoe_id: shoeId })
+    .update({ extra_ids: ids })
     .eq('combo_key', key);
-  if(error) return dbFail(error, 'Could not save the shoes — check connection');
+  if(error) return dbFail(error, 'Could not save that — check connection');
 
-  const rec = favoriteOutfits.find(f => f.key === key);
-  const wasShoe = rec ? rec.shoe : null;
-  if(rec) rec.shoe = shoeId;
-  closeModal();
+  rec.extras = ids;
   renderSavedOutfits();
-  showToast(shoeId ? 'Shoes added' : 'Shoes removed',
-    wasShoe === shoeId ? null : () => setSavedOutfitShoe(key, wasShoe));
+  // Undo can be tapped with the picker still open, so the ticks in it are
+  // refreshed here rather than at the tap that opened the toast.
+  renderExtrasPicker(key);
+  if(undoLabel){
+    showToast(undoLabel, () => setOutfitExtras(key, was));
+  }
   return true;
 }
 
-function openSavedShoePicker(key){
+// Each tap is the change — nothing to confirm, and the toast takes it back.
+async function toggleOutfitExtra(key, itemId){
   const rec = favoriteOutfits.find(f => f.key === key);
   if(!rec) return;
-  const shoes = itemsInTab('Shoes');
-  const modal = document.getElementById('modal');
+  const have = (rec.extras || []).slice();
+  const at = have.indexOf(itemId);
+  const adding = at < 0;
+  if(adding) have.push(itemId); else have.splice(at, 1);
 
-  modal.innerHTML = `
+  const item = itemById(itemId);
+  const name = item ? item.name : 'That';
+  await setOutfitExtras(key, have, `${name} ${adding ? 'added' : 'removed'}`);
+}
+
+function openOutfitExtrasPicker(key){
+  const rec = favoriteOutfits.find(f => f.key === key);
+  if(!rec) return;
+  const tabs = extraTabs();
+  extrasPickerTab = tabs.includes(extrasPickerTab) ? extrasPickerTab : (tabs[0] || null);
+
+  document.getElementById('modal').innerHTML = `
     <div class="sheet-header"><button class="sheet-back" onclick="closeModal()"><svg class="back-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>Back</button></div>
     <div class="modal-body">
-      <div class="modal-name" style="margin-bottom:6px;">Choose shoes</div>
-      <div class="count-line">${shoes.length} pair${shoes.length===1?'':'s'} in your wardrobe</div>
-      ${rec.shoe ? `
-        <div class="quick-picks">
-          <button class="base-btn" onclick='setSavedOutfitShoe(${JSON.stringify(key)}, null)'>No shoes</button>
-        </div>
-      ` : ''}
-      ${shoes.length ? `
-        <div class="gallery">
-          ${shoes.map(i => `
-            <div class="tile picker-tile ${rec.shoe === i.id ? 'picker-selected' : ''}"
-                 onclick='setSavedOutfitShoe(${JSON.stringify(key)}, ${JSON.stringify(i.id)})'>
-              ${i.photo
-                ? `<img src="${esc(i.photo)}" alt="${esc(i.name)}" referrerpolicy="no-referrer" loading="lazy" decoding="async">`
-                : `<span class="no-photo">No photo</span>`}
-              ${rec.shoe === i.id ? `<span class="picker-check">✓</span>` : ''}
-            </div>
-          `).join('')}
-        </div>
-      ` : `
-        <div class="empty">
-          <h3>No shoes yet</h3>
-          <p>Add a pair to your wardrobe and it will show up here.</p>
-        </div>
-      `}
+      <div class="modal-name" style="margin-bottom:14px;">Accessories</div>
+      <div class="tabs" id="extras-tabs"></div>
+      <div class="gallery" id="extras-gallery"></div>
     </div>
   `;
+  renderExtrasPicker(key);
   document.getElementById('modal-backdrop').classList.add('open');
+}
+
+function setExtrasPickerTab(key, tab){
+  extrasPickerTab = tab;
+  renderExtrasPicker(key);
+}
+
+function renderExtrasPicker(key){
+  const rec = favoriteOutfits.find(f => f.key === key);
+  const tabsEl = document.getElementById('extras-tabs');
+  const galleryEl = document.getElementById('extras-gallery');
+  if(!rec || !tabsEl || !galleryEl) return;
+
+  const tabs = extraTabs();
+  const on = new Set(rec.extras || []);
+
+  tabsEl.innerHTML = tabs.map(t => `
+    <button class="tab ${extrasPickerTab === t ? 'active' : ''}"
+            onclick='setExtrasPickerTab(${JSON.stringify(key)}, ${JSON.stringify(t)})'>${t}</button>
+  `).join('');
+
+  const items = extrasPickerTab ? itemsOnShelf(extrasPickerTab) : [];
+  galleryEl.innerHTML = items.length ? items.map(i => `
+    <div class="tile picker-tile ${on.has(i.id) ? 'picker-selected' : ''}"
+         onclick='toggleOutfitExtra(${JSON.stringify(key)}, ${JSON.stringify(i.id)})'>
+      ${i.photo
+        ? `<img src="${esc(i.photo)}" alt="${esc(i.name)}" referrerpolicy="no-referrer" loading="lazy" decoding="async">`
+        : `<span class="no-photo">No photo</span>`}
+      ${on.has(i.id) ? `<span class="picker-check">✓</span>` : ''}
+    </div>
+  `).join('') : `
+    <div class="empty">
+      <h3>Nothing here yet</h3>
+      <p>Add something to your wardrobe and it will show up here.</p>
+    </div>
+  `;
 }
 
 // An outfit matches when at least one of its pieces carries the tag, so
@@ -2251,15 +2361,22 @@ function savedOutfitMatchesTag(rec){
 // to an outfit that already exists. The generator reads a slot filter as a
 // list to draw from; here the same filter is a test the slot has to pass.
 const SAVED_SLOT_FIELDS = { top:'top', bottom:'bottom', dress:'dress',
-                            jumper:'jumper', jacket:'jacket', shoes:'shoe' };
+                            jumper:'jumper', jacket:'jacket' };
 
 function savedOutfitMatchesSlots(rec){
-  return Object.keys(SAVED_SLOT_FIELDS).every(key => {
-    const f = savedFilters[key];
-    if(f.type === 'any') return true;
-    const id = rec[SAVED_SLOT_FIELDS[key]] || null;
-    if(f.type === 'none') return id === null;
-    return Boolean(id) && f.ids.includes(id);
+  return OUTFIT_TABS.every(tab => {
+    const f = savedFilters[tab];
+    if(!f || f.type === 'any') return true;
+    // The piece filling the place this category fills — and whether it is
+    // from this category at all. Shorts → None passes an outfit wearing
+    // pants: it has a bottom, but not the kind you ruled out.
+    const field = SAVED_SLOT_FIELDS[TAB_SLOT[tab]];
+    if(!field) return true;
+    const id = rec[field] || null;
+    const item = id ? itemById(id) : null;
+    const fromTab = Boolean(item) && tabForItem(item) === tab;
+    if(f.type === 'none') return !fromTab;
+    return fromTab && f.ids.includes(id);
   });
 }
 
@@ -2321,11 +2438,12 @@ function renderSavedOutfits(){
             <span class="piece-go" aria-hidden="true">›</span>
           </div>
         `).join('')}
-        <div class="modal-actions">
-          <!-- One button: the picker's first option is No shoes, so a
-               separate Remove was a second way to do the same thing. -->
-          <button class="btn small secondary" onclick='event.stopPropagation();openSavedShoePicker(${JSON.stringify(rec.key)})'>${combo.shoe ? 'Change shoes' : '+ Add shoes'}</button>
-        </div>
+        ${extrasAvailable ? `
+          <div class="modal-actions">
+            <!-- One button: the picker toggles, so a separate Remove was a
+                 second way to do the same thing. -->
+            <button class="btn small secondary" onclick='event.stopPropagation();openOutfitExtrasPicker(${JSON.stringify(rec.key)})'>${combo.extras.length ? 'Accessories' : '+ Add accessories'}</button>
+          </div>` : ''}
       </div>
     ` : '';
 
@@ -2351,7 +2469,7 @@ const CAPSULE_BANDS = [
   ['Jackets'],
   ['Jumpers'],
   ['Tops'],
-  ['Pants', 'Shorts', 'Dresses'],
+  ['Pants', 'Shorts', 'Skirts', 'Dresses', 'Jumpsuits'],
   ['Shoes'],                          // at the foot, as worn
 ];
 
@@ -2726,16 +2844,10 @@ function lockFilterForPiece(itemId){
 
   // Pinning the piece is enough to fix the shape: a chosen top rules the
   // dress out on its own, and a chosen dress rules out tops and bottoms.
-  if(tab==='Tops'){ outfitFilters.top=locked; }
-  else if(BOTTOM_TABS.includes(tab)){ outfitFilters.bottom=locked; }
-  else if(tab==='Dresses'){ outfitFilters.dress=locked; }
-  else if(tab==='Jumpers'){ outfitFilters.jumper=locked; }
-  else if(tab==='Jackets'){ outfitFilters.jacket=locked; }
-  else if(tab==='Shoes'){
-    if(!INCLUDE_SHOES_IN_OUTFITS) return false;
-    outfitFilters.shoes=locked;
-  }
-  else { return false; }
+  // A piece from a category outfits are not built from has no outfits to
+  // show, which is why the caller is told so rather than shown an empty page.
+  if(!OUTFIT_TABS.includes(tab)) return false;
+  outfitFilters[tab] = locked;
   return true;
 }
 
@@ -2875,24 +2987,37 @@ function rowToFavorite(row){
     key: row.combo_key,
     base: row.base,
     top: row.top_id, bottom: row.bottom_id, dress: row.dress_id,
-    jumper: row.jumper_id, jacket: row.jacket_id, shoe: row.shoe_id
+    jumper: row.jumper_id, jacket: row.jacket_id,
+    // Everything put on by hand: shoes, a hat, whatever else. Outfits saved
+    // before this was a list carry their shoes here, moved across by
+    // supabase/add-outfit-extras.sql.
+    extras: row.extra_ids || (row.shoe_id ? [row.shoe_id] : [])
   };
 }
 
 function favoriteToRow(rec){
-  return {
+  const row = {
     combo_key: rec.key,
     base: rec.base,
     top_id: rec.top, bottom_id: rec.bottom, dress_id: rec.dress,
-    jumper_id: rec.jumper, jacket_id: rec.jacket, shoe_id: rec.shoe,
+    jumper_id: rec.jumper, jacket_id: rec.jacket,
     archived_at: null
   };
+  // A favourite carried over from the old localStorage build has its shoes
+  // in rec.shoe — the list is where they live now.
+  if(extrasAvailable) row.extra_ids = rec.extras || (rec.shoe ? [rec.shoe] : []);
+  return row;
 }
 
 // Capsules are a later addition, like tags. If the migration in
 // supabase/add-capsules.sql has not been run the destination stays hidden
 // rather than showing a page that cannot save anything.
 let capsulesAvailable = false;
+
+// Accessories on a kept outfit need the extra_ids column. Until
+// supabase/add-outfit-extras.sql has been run the button stays hidden
+// rather than offering something that cannot be saved.
+let extrasAvailable = false;
 
 // Which capsules a piece is in. A piece can be in as many as you like, so
 // this is a list rather than an answer.
@@ -3017,6 +3142,10 @@ async function loadAll(){
 
   tagsAvailable = itemsRes.data.length > 0 &&
     Object.prototype.hasOwnProperty.call(itemsRes.data[0], 'tags');
+  // Nothing kept yet means nothing to be wrong about, so the button shows
+  // and the first write tells us either way.
+  extrasAvailable = outfitsRes.data.length === 0 ||
+    Object.prototype.hasOwnProperty.call(outfitsRes.data[0], 'extra_ids');
 
   const all = itemsRes.data.map(rowToItem);
   await hydratePhotoUrls(all);
@@ -3578,6 +3707,8 @@ function exportCSV(){
 }
 
 function renderTabs(){
+  // Every shelf, whether or not you own something on it yet: an empty
+  // Skirts tab is where a skirt goes, and the row scrolls sideways.
   const categories = TAB_ORDER.map(t => `
     <button class="tab ${activeTab === t ? 'active' : ''}" onclick="setTab('${t}')">${t}</button>
   `).join('');
