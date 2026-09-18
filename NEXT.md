@@ -172,11 +172,61 @@ The app is a static file with no server, so this is the first `/api` route
   on the hero. The grid stays flat-lay: 35,000 photographs of a person is
   slower to scan than 35,000 flat-lays, not faster.
 
-### Before building any of it
+### What is actually available (researched Sept 2026)
 
-Take the base photo and push three or four outfits through a hosted model
-by hand. The whole feature rests on whether the result looks like you
-wearing your clothes or like a mannequin wearing someone else's, and that
-cannot be known from here. An afternoon of testing decides whether this is
-worth a fortnight.
+Two routes, and they fail in different directions.
+
+**A general image model, one call, every garment at once.** Gemini 3.1
+Flash Image ("Nano Banana 2") takes multiple reference images and
+synthesises them into one output, holding coherence across up to 5
+characters and 14 objects. Around $0.039 per image at 1024px on the 2.5
+generation. One call for a whole outfit, so no chaining.
+
+  The catch is fit. The FitVTON paper scores Nano Banana at 2.82 against
+  3.08 for dedicated try-on models, and found it produces a "neutral fit"
+  whatever body and size it is told about — fit does not come from prompts.
+  Reviewers put it as better for creative previews than accurate fitting.
+
+**A dedicated try-on API, one garment per call, chained.** FASHN v1.6 takes
+exactly one `garment_image` with a category of tops / bottoms / one-pieces,
+and cannot composite several. A full outfit is base → bottom → top →
+jumper → jacket, each pass feeding the next. ~$0.075 per image on demand,
+under $0.05 at volume — so roughly $0.30 for a four-layer outfit, about
+eight times the single-call route. Ranked best in category for garment
+drape accuracy in 2026, but output is 576x864, which is low.
+
+  The catch is the chaining itself, and it is documented rather than
+  theoretical: an error in an earlier stage propagates into later ones, and
+  degradation with more references is universal — shape distortion,
+  altered textures, colour drift from the reference. A four-layer outfit is
+  exactly the hard case.
+
+**Purpose-built multi-garment products exist but are thin.** WaveSpeed's
+outfit try-on takes up to 8 garment images per request, though it returns
+video. Kling's IMAGE 3.0 Omni combines a person photo with several
+clothing references. Outfit-level try-on is an active research front right
+now — Garments2Look (CVPR 2026) is the *first* large-scale multi-garment
+dataset — which is why the commercial options are so sparse. Expect this to
+be better in a year.
+
+### Two things to get right whatever you pick
+
+- **Paid tier, not free.** On Gemini's free tier your prompts and responses
+  are used to improve Google's models; on pay-as-you-go they are not. For a
+  photo of yourself in your underwear that is not a detail.
+- **These move fast.** Gemini 2.5 Flash Image is already deprecated and
+  shuts down on 2 October 2026. Whatever the route, the provider call wants
+  to sit behind one function so swapping it is an afternoon.
+
+### The test that decides it
+
+One base photo. Three outfits — one simple (top + pants), one layered
+(top + pants + jumper + jacket), one dress. Run each down both routes and
+put the six results side by side.
+
+What to look at, in order: does it still look like you; do the clothes look
+like *your* clothes rather than similar ones; does the four-layer one
+survive. If the single-call route holds up, it is eight times cheaper and
+one call instead of five. If it does not, the question is whether chained
+fidelity is worth 5x the calls and a 576x864 ceiling.
 
