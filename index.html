@@ -329,9 +329,15 @@
     box-shadow:0 6px 24px rgba(0,0,0,0.11);
   }
   .bulk-count{
-    margin-right:auto;padding-left:4px;
+    margin-right:auto;padding-left:6px;
     font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink-soft);
     white-space:nowrap;
+  }
+  /* These are the two things the mode is for, so they get a real target
+     rather than the small button used inside a sheet. */
+  .bulk-bar .btn{
+    min-height:44px;padding:0 14px;font-size:13px;
+    display:inline-flex;align-items:center;justify-content:center;
   }
   .btn[disabled]{opacity:0.4;cursor:default;}
 
@@ -1560,7 +1566,12 @@ function restoreScroll(mode){
   const y = scrollPositions[mode] || 0;
   // After the page it belongs to has been drawn, so there is something to
   // scroll through. The browser clamps a position the page is too short for.
-  requestAnimationFrame(() => window.scrollTo({ top: y }));
+  requestAnimationFrame(() => {
+    window.scrollTo({ top: y });
+    // Being put back where you left off is not you scrolling away from the
+    // panel, so it does not count as a reason to close it.
+    watchForSheetDismiss();
+  });
 }
 
 // Three destinations in the bottom bar. Archive is a fourth view but not a
@@ -1779,6 +1790,7 @@ function openFilterSheet(){
   document.getElementById('filter-sheet').classList.add('open');
   syncSheetInset();
   renderFiltersFab();
+  watchForSheetDismiss();
   return true;
 }
 
@@ -1787,6 +1799,51 @@ function closeFilterSheet(){
   syncSheetInset();
   renderFiltersFab();
 }
+
+// An open panel is a thing you are doing; going back to the page is
+// finishing it. A tap on the clothes or a scroll puts the panel away by
+// itself, on the same curve it arrived by, rather than making you find the
+// chevron first.
+//
+// Only a real scroll counts: opening the panel changes how much room the
+// page leaves under it, which shifts the page by a few pixels on its own.
+const SHEET_DISMISS_SCROLL = 24;
+let sheetScrollOrigin = 0;
+
+function watchForSheetDismiss(){
+  sheetScrollOrigin = window.scrollY;
+}
+
+function tappedInsideSheet(target){
+  return Boolean(target.closest && (target.closest('#filter-sheet') ||
+                                    target.closest('#filters-fab')));
+}
+
+// A sheet over the top owns the screen, so nothing that happens while one
+// is open is a tap on the page behind it. Checking the sheet rather than
+// the target also covers a long press that opened one mid-gesture: the
+// press starts on a chip and ends on the sheet, so the click that follows
+// belongs to neither and would otherwise read as a tap on the page.
+function sheetOverTheTop(){
+  return Boolean(document.querySelector('.modal-backdrop.open'));
+}
+
+// On click rather than pointerdown: putting the panel away gives the page
+// its full height back, and doing that between finger-down and finger-up
+// moves whatever you were aiming at out from under you. By click the tap
+// has already been aimed, so it lands where you meant it to and the panel
+// closes behind it.
+document.addEventListener('click', e => {
+  if(!filterSheetOpen() || sheetOverTheTop()) return;
+  if(tappedInsideSheet(e.target)) return;
+  closeFilterSheet();
+}, true);
+
+window.addEventListener('scroll', () => {
+  if(!filterSheetOpen() || sheetOverTheTop()) return;
+  if(Math.abs(window.scrollY - sheetScrollOrigin) < SHEET_DISMISS_SCROLL) return;
+  closeFilterSheet();
+}, {passive:true});
 
 function clearFilters(){
   if(appMode === 'outfits'){
@@ -4305,9 +4362,13 @@ function renderToolbarIcons(){
   });
   const head = document.getElementById('wardrobe-head');
   if(head) head.classList.toggle('selecting', editMode);
-  // The title says what the mode is for. Out of it, the page's own name.
+  // No title in the mode: the checkboxes and the action bar say what is
+  // going on, and naming it as well was a third voice saying the same thing.
   const title = document.getElementById('wardrobe-title');
-  if(title) title.textContent = editMode ? 'Delete pieces' : 'Wardrobe';
+  if(title){
+    title.textContent = 'Wardrobe';
+    title.style.display = editMode ? 'none' : '';
+  }
   // The navigation stands down while a selection is on: none of its
   // destinations apply to one, and the action bar takes its place.
   document.body.classList.toggle('selecting', editMode);
