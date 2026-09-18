@@ -29,6 +29,10 @@
     /* The filters open and close with one motion: the panel rises as the
        pill shrinks into it. Same curve, same duration, or the two halves
        read as two events. */
+    /* The air above the first thing on a page. The selecting head cancels
+       it out, so the bar sits where it will sit once it is stuck rather
+       than dropping 28px the moment you scroll. */
+    --page-top:28px;
     --sheet-ease:cubic-bezier(0.32, 0.72, 0, 1);
     --sheet-ease-ms:260ms;
   }
@@ -54,7 +58,7 @@
     /* --sheet-inset is the height of the docked filter panel while it is
        open, set from script. Without it the last row of a grid would sit
        under the panel with no way to scroll it clear. */
-    padding:28px 16px calc(120px + var(--sheet-inset, 0px) + env(safe-area-inset-bottom, 0px));
+    padding:var(--page-top) 16px calc(120px + var(--sheet-inset, 0px) + env(safe-area-inset-bottom, 0px));
   }
   /* Every page opens the same way: its name on the left, whatever the page
      lets you do on the right, and a rule under both. */
@@ -349,7 +353,7 @@
   .page-head.selecting{
     position:sticky;top:0;z-index:85;
     justify-content:flex-start;gap:12px;
-    margin:0 -16px 14px;padding:6px 16px;
+    margin:calc(var(--page-top) * -1) -16px 14px;padding:6px 16px;
     background:var(--page);
     box-shadow:0 6px 16px -12px rgba(0,0,0,0.5);
   }
@@ -741,14 +745,22 @@
     font-size:12px;font-weight:600;
     padding:8px 14px;
     border-radius:10px;
+    /* Nothing filtering, nothing filled: at rest a chip is its outline and
+       no more, so a filled one always means it is on. Transparent rather
+       than white, because the same chip sits on the white panel and on the
+       grey page inside the item form. */
     border:1px solid var(--line);
-    background:var(--page);
-    color:var(--ink);
+    background:transparent;
+    color:var(--ink-soft);
     cursor:pointer;
     white-space:nowrap;
-    transition:background 0.12s ease, border-color 0.12s ease;
+    transition:background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
   }
-  .tag-chip.active{border-color:var(--accent);background:var(--accent-soft);}
+  .tag-chip.active{
+    border-color:var(--accent);
+    background:var(--accent-soft);
+    color:var(--ink);
+  }
 
   /* Read-only tags on an item's detail sheet */
   .detail-tags{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0;}
@@ -967,13 +979,22 @@
     font-size:12px;font-weight:600;
     padding:8px 14px;
     border-radius:10px;
+    /* Same bargain as a tag chip: an outline until it is doing something. */
     border:1px solid var(--line);
-    background:var(--page);
-    color:var(--ink);
+    background:transparent;
+    color:var(--ink-soft);
     cursor:pointer;
     white-space:nowrap;
+    transition:background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
   }
-  .filter-chip.active{border-color:var(--accent);background:var(--accent-soft);}
+  .filter-chip.active{
+    border-color:var(--accent);
+    background:var(--accent-soft);
+    color:var(--ink);
+  }
+  /* The value under the label goes dark with it, so "Any" reads as the
+     quiet default and "None" or a count reads as a choice you made. */
+  .filter-chip.active .chip-state{color:var(--ink);font-weight:500;}
   .filter-chip .chip-state{
     font-family:'IBM Plex Mono',monospace;
     font-size:10px;color:var(--ink-soft);font-weight:400;
@@ -3752,6 +3773,13 @@ function hideToast(){
   document.getElementById('toast').classList.remove('show');
 }
 
+// How long a toast stays. One with an Undo has to outlast reading it,
+// deciding, and reaching for it with the hand that is holding the phone —
+// six seconds ran out mid-reach. One with nothing to do only has to be
+// read.
+const TOAST_MS = 2600;
+const TOAST_UNDO_MS = 10000;
+
 function showToast(msg, undo){
   const t = document.getElementById('toast');
   clearTimeout(toastTimer);
@@ -3773,7 +3801,7 @@ function showToast(msg, undo){
   }
 
   t.classList.add('show');
-  toastTimer = setTimeout(hideToast, undo ? 6000 : 1800);
+  toastTimer = setTimeout(hideToast, undo ? TOAST_UNDO_MS : TOAST_MS);
 }
 
 async function removeItem(id){
