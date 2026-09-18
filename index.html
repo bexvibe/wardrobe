@@ -131,17 +131,6 @@
   .icon-btn.primary:hover{background:var(--accent);}
   .icon-btn.active{background:var(--accent);border-color:var(--accent);color:#fff;}
   .icon-row{display:flex;gap:8px;align-items:center;}
-  /* A control that says what it does, for the one place a glyph was not
-     enough: leaving select mode. */
-  .text-btn{
-    flex:none;
-    font-family:'Work Sans',sans-serif;
-    font-size:14px;font-weight:600;
-    min-height:40px;padding:0 16px;
-    border:none;border-radius:999px;
-    background:var(--ink);color:#fff;
-    cursor:pointer;
-  }
 
   /* Search opens over the page rather than sitting on it. The results stay
      visible underneath, because watching them narrow as you type is the
@@ -222,7 +211,15 @@
     background:var(--page);
     color:var(--ink);
   }
-  input:focus, textarea:focus, select:focus{outline:2px solid var(--accent);outline-offset:1px;}
+  /* A focused field says so without shouting: the ring sits flush against
+     the border and is grey rather than black, so it reads as the field
+     waking up rather than as an alarm. Still 2px and still well clear of
+     the background — a focus ring you cannot see is worse than a loud one,
+     for anyone driving this from a keyboard. */
+  input:focus, textarea:focus, select:focus{
+    outline:2px solid var(--ink-soft);
+    outline-offset:0;
+  }
 
   .count-line{
     font-family:'IBM Plex Mono', monospace;
@@ -338,15 +335,26 @@
   }
   .btn[disabled]{opacity:0.4;cursor:default;}
 
-  /* The head stays put while you scroll, so Done is never more than a
-     glance away. It keeps the page's own name: what you are doing is said
-     by the bar at the bottom, and a title that changes under you loses the
-     one fixed point on the page. */
+  /* The head stays put while you scroll, so the way out is never more than
+     a glance away. It is a contextual bar rather than the page's own head:
+     the back arrow and what you are doing, grouped left, at the size a
+     sheet titles itself — no page title to compete with, so it can be
+     shallow. */
   .page-head.selecting{
     position:sticky;top:0;z-index:85;
-    margin:0 -16px 16px;padding:14px 16px;
+    justify-content:flex-start;gap:12px;
+    margin:0 -16px 14px;padding:6px 16px;
     background:var(--page);
     box-shadow:0 6px 16px -12px rgba(0,0,0,0.5);
+  }
+  .page-head.selecting h1{
+    font-family:'Fraunces', serif;font-size:22px;font-weight:500;
+    letter-spacing:normal;
+  }
+  /* The sheets give this arrow a padded row to sit in; here the row is
+     shallow, so the button carries its own thumb-sized height. */
+  .page-head.selecting .sheet-back{
+    flex:none;min-height:44px;padding:0 12px 0 0;
   }
   .bottom-bar.unlocked{display:flex;}
   body.selecting .bottom-bar{display:none;}
@@ -427,6 +435,27 @@
     font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink-soft);
   }
   .modal-body{padding:18px;}
+
+  /* The current photo and the way to change it, as one wide target. */
+  .form-photo{
+    display:flex;align-items:center;gap:14px;width:100%;
+    margin:14px 0 4px;padding:10px;
+    background:var(--surface);border:1px solid var(--line);border-radius:12px;
+    cursor:pointer;text-align:left;font:inherit;color:var(--ink);
+  }
+  .form-photo-thumb{
+    flex:none;width:64px;height:64px;border-radius:8px;overflow:hidden;
+    background:var(--page);
+    display:flex;align-items:center;justify-content:center;
+  }
+  .form-photo-thumb img{width:100%;height:100%;object-fit:contain;}
+  .form-photo-thumb span{
+    font-family:'IBM Plex Mono',monospace;font-size:9px;
+    color:var(--ink-soft);text-align:center;line-height:1.3;
+  }
+  .form-photo-label{
+    font-family:'Work Sans',sans-serif;font-size:14px;font-weight:600;
+  }
   .modal-name{font-family:'Fraunces', serif;font-size:22px;font-weight:500;margin:0;}
   /* Brand and category on one quiet line under the name. They answer the
      same question — what this is — so they read as one thing rather than
@@ -457,7 +486,6 @@
   /* Pills carry their own spacing elsewhere; inside a row of the grid the
      row gap is already the spacing. */
   .detail-facts .detail-tags{margin:0;}
-  .modal-notes{font-size:13px;color:var(--ink-soft);margin:18px 0 0;line-height:1.5;}
   .modal-actions{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;}
   /* An editor's save stays where your thumb is rather than at the end of a
      form you have to scroll to reach. The way out is the back arrow at the
@@ -824,12 +852,10 @@
                transform var(--sheet-ease-ms) cubic-bezier(0.4, 0, 1, 1),
                visibility var(--sheet-ease-ms);
   }
-  /* A filter is on. A wash and a darker ring, which is how a chip says the
-     same thing — the whole pill going black made it the heaviest thing on a
-     screen of clothes. */
+  /* A filter is on. The wash alone says it — the darker ring on top of it
+     was a second, louder way of saying the same thing. */
   .filters-fab.active{
     background:var(--accent-soft);
-    border-color:var(--accent);
   }
   .filters-fab-count{
     flex:none;
@@ -1147,13 +1173,13 @@
 <div class="wrap" id="app-root" style="display:none;">
   <div id="inventory-view">
     <header class="page-head" id="wardrobe-head">
+      <!-- Leaving a selection is going back out of it, and the app already
+           has one way of saying that: the arrow at the top left of every
+           sheet. A Done button on the right was a second vocabulary for the
+           same idea. -->
+      <button class="sheet-back" id="edit-back-btn" onclick="toggleEditMode()" style="display:none;"><svg class="back-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>Back</button>
       <h1 id="wardrobe-title">Wardrobe</h1>
       <div class="icon-row">
-        <!-- While you are selecting, this replaces the whole icon row: a
-             labelled Done where the controls were, which is the pattern a
-             phone uses everywhere else. A bare ✕ among three other glyphs
-             was not obviously the way out. -->
-        <button class="text-btn" id="edit-done-btn" onclick="toggleEditMode()" style="display:none;">Done</button>
         <button class="icon-btn" id="search-btn" onclick="openSearch()" aria-label="Search" title="Search">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
             <circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>
@@ -1316,6 +1342,10 @@
     </div>
     <div class="modal-body has-footer">
       <div class="modal-name" id="form-title">New piece</div>
+      <!-- The photo is the piece, so it leads: what it looks like now, and
+           the way to change it, before any of the fields. It used to be a
+           bare button at the foot of the form with nothing to show you. -->
+      <div id="form-photo-row"></div>
       <div class="form-grid">
         <label>Name<input type="text" id="form-name"></label>
         <label>Brand<input type="text" id="form-brand"></label>
@@ -1331,7 +1361,6 @@
           <input type="text" id="form-tags">
           <div class="tag-chips" id="form-tag-suggestions"></div>
         </label>
-        <label>Notes<textarea id="form-notes" rows="3"></textarea></label>
       </div>
       <div class="form-error" id="form-error"></div>
       <!-- The things you do TO a piece rather than the fields you type into
@@ -1352,7 +1381,7 @@
     <p class="confirm-body" id="confirm-body"></p>
     <div class="confirm-actions">
       <button class="btn" id="confirm-stay" onclick="dismissConfirm()">Keep editing</button>
-      <button class="btn secondary" id="confirm-go" onclick="acceptConfirm()">Go back</button>
+      <button class="btn secondary" id="confirm-go" onclick="acceptConfirm()">Discard</button>
     </div>
   </div>
 </div>
@@ -2998,7 +3027,6 @@ function rowToItem(row){
     category: row.category || '',
     price: row.price || '',
     source: row.source || '',
-    notes: row.notes || '',
     photo: row.photo || null,
     photoPath: row.photo_path || null,
     tags: Array.isArray(row.tags) ? row.tags : [],
@@ -3725,8 +3753,10 @@ async function handlePhotoUpload(event){
     if(!await uploadPhotoFor(itemId, file)) return;
     render();
     // Redraw whichever sheet asked for the photo, so the new one shows.
+    // The form gets only its thumbnail back: rebuilding it would throw away
+    // whatever you had typed and not yet saved.
     if(document.getElementById('form-backdrop').classList.contains('open')){
-      openItemForm(itemId);
+      renderFormPhotoRow(itemById(itemId));
     } else if(document.getElementById('modal-backdrop').classList.contains('open')){
       openModal(itemId);
     }
@@ -3744,13 +3774,13 @@ function csvEscape(val){
 }
 
 function exportCSV(){
-  const cols = ['name','brand','size','category','price','source','notes','addedAt','hasPhoto'];
+  const cols = ['name','brand','size','category','price','source','addedAt','hasPhoto'];
   const rows = [cols.join(',')];
   ITEMS.forEach(i=>{
     rows.push([
       csvEscape(i.name), csvEscape(i.brand), csvEscape(i.size),
       csvEscape(i.category), csvEscape(i.price), csvEscape(i.source),
-      csvEscape(i.notes), csvEscape(i.addedAt), csvEscape(i.photo ? 'yes' : 'no')
+      csvEscape(i.addedAt), csvEscape(i.photo ? 'yes' : 'no')
     ].join(','));
   });
   const blob = new Blob([rows.join('\n')], {type:'text/csv'});
@@ -4006,7 +4036,6 @@ function openModal(id){
       <h2 class="modal-name">${esc(item.name)}</h2>
       <p class="detail-sub">${[item.brand, tabForItem(item)].filter(Boolean).map(esc).join(' · ')}</p>
       ${detailFactsHtml(item)}
-      ${item.notes ? `<p class="modal-notes">${esc(item.notes)}</p>` : ''}
       <div class="modal-actions">
         <button class="btn small secondary" onclick='openItemForm(${JSON.stringify(item.id)})'>Edit</button>
         ${capsulesAvailable ? `<button class="btn small secondary" onclick='openItemCapsulePicker(${JSON.stringify(item.id)})'>Add to capsule</button>` : ''}
@@ -4057,16 +4086,15 @@ function openItemForm(id){
   document.getElementById('form-size').value = item ? item.size : '';
   document.getElementById('form-price').value = item ? item.price : '';
   document.getElementById('form-source').value = item ? item.source : '';
-  document.getElementById('form-notes').value = item ? item.notes : '';
   document.getElementById('form-tags').value = item ? (item.tags || []).join(', ') : '';
   document.getElementById('form-tags-field').style.display = tagsAvailable ? '' : 'none';
   renderTagSuggestions();
 
-  // Only an existing piece has a photo to replace or a place to be archived
-  // to, so a new one gets no action row at all.
+  // A piece that does not exist yet has no photo to replace and nowhere to
+  // be archived to: it gets neither row, and is offered a photo once saved.
+  renderFormPhotoRow(item);
   const actions = document.getElementById('form-item-actions');
   actions.innerHTML = item ? `
-    <button class="btn small secondary" onclick='triggerPhotoUpload(${JSON.stringify(item.id)})'>${item.photo ? 'Replace photo' : 'Add photo'}</button>
     <button class="btn small secondary" onclick='archiveFromForm(${JSON.stringify(item.id)})'>Archive</button>
   ` : '';
 
@@ -4083,7 +4111,7 @@ function openItemForm(id){
 // against "is anything typed" means an edit you have put back the way you
 // found it leaves quietly, and a new piece with one field filled does not.
 const ITEM_FORM_FIELDS = ['form-name','form-brand','form-category','form-size',
-                          'form-price','form-source','form-tags','form-notes'];
+                          'form-price','form-source','form-tags'];
 let itemFormBaseline = null;
 
 function itemFormSnapshot(){
@@ -4092,6 +4120,19 @@ function itemFormSnapshot(){
 
 function itemFormIsDirty(){
   return itemFormBaseline !== null && itemFormSnapshot() !== itemFormBaseline;
+}
+
+function renderFormPhotoRow(item){
+  const row = document.getElementById('form-photo-row');
+  if(!row) return;
+  if(!item){ row.innerHTML = ''; return; }
+  row.innerHTML = `
+    <button type="button" class="form-photo" onclick='triggerPhotoUpload(${JSON.stringify(item.id)})'>
+      <span class="form-photo-thumb">${item.photo
+        ? `<img src="${esc(item.photo)}" alt="" referrerpolicy="no-referrer" decoding="async">`
+        : `<span>No<br>photo</span>`}</span>
+      <span class="form-photo-label">${item.photo ? 'Replace photo' : 'Add photo'}</span>
+    </button>`;
 }
 
 // The category list is long enough to scroll past and short enough to know
@@ -4180,8 +4221,7 @@ async function submitItemForm(){
     size: document.getElementById('form-size').value.trim(),
     category: document.getElementById('form-category').value,
     price: document.getElementById('form-price').value.trim(),
-    source: document.getElementById('form-source').value.trim(),
-    notes: document.getElementById('form-notes').value.trim()
+    source: document.getElementById('form-source').value.trim()
   };
   // Only send tags once the column exists; writing to a missing column
   // would fail the entire save.
@@ -4253,18 +4293,21 @@ function renderToolbarIcons(){
     view.setAttribute('aria-label', toList ? 'Switch to list view' : 'Switch to photo view');
     view.title = toList ? 'List view' : 'Photo view';
   }
-  // Selecting takes the icon row over: a labelled Done where the controls
-  // were. Nothing else in that row does anything useful while you are
-  // selecting. The head itself sticks to the top of the screen in this
-  // mode, so Done stays reachable however far you have scrolled.
-  const done = document.getElementById('edit-done-btn');
-  if(done) done.style.display = editMode ? 'flex' : 'none';
+  // Selecting replaces the head: the back arrow and what the mode is for,
+  // and none of the controls, because none of them do anything useful while
+  // you are selecting. The head sticks to the top of the screen in this
+  // mode, so the way out stays reachable however far you have scrolled.
+  const back = document.getElementById('edit-back-btn');
+  if(back) back.style.display = editMode ? 'inline-flex' : 'none';
   ['search-btn', 'view-toggle-btn', 'add-item-btn'].forEach(id => {
     const btn = document.getElementById(id);
     if(btn) btn.style.display = editMode ? 'none' : 'flex';
   });
   const head = document.getElementById('wardrobe-head');
   if(head) head.classList.toggle('selecting', editMode);
+  // The title says what the mode is for. Out of it, the page's own name.
+  const title = document.getElementById('wardrobe-title');
+  if(title) title.textContent = editMode ? 'Delete pieces' : 'Wardrobe';
   // The navigation stands down while a selection is on: none of its
   // destinations apply to one, and the action bar takes its place.
   document.body.classList.toggle('selecting', editMode);
