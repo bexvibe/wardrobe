@@ -93,3 +93,90 @@ as though you had asked for it.
 The fix belongs with the work above — the sheet needs its own filter state
 rather than borrowing the page's — but it is worth doing on its own if this
 gets deferred again.
+
+## See it on — generated try-on images
+
+Decided: a real photo of Bex as the base, and the outfit generated onto it
+by an image model. Generated on demand from a "See it on" button, not built
+up front — most of the 35,224 combinations are not worth looking at.
+
+### The shape of it
+
+1. **One base photo**, uploaded once: front-on, full body, underwear,
+   background removed. `remove-background.py` already does the removal.
+2. **Outfit card gets a "See it on" button.** Tapping it sends the base
+   photo and the outfit's garment cut-outs, in worn order, to a serverless
+   route, which calls the image provider and returns a composite.
+3. **Cached forever, keyed by `combo_key`.** An outfit is the same clothes
+   every time, so an image never needs regenerating — only if the base
+   photo changes.
+4. The card shows the generated image once there is one, the flat-lay
+   until then.
+
+### Where the photo goes — do not get this wrong
+
+The `wardrobe-uploads` bucket is **private** (`public: false`), served
+through `createSignedUrl` with a TTL. That is where the base photo belongs,
+via the normal upload path.
+
+The 70 cut-outs in `wardrobe-photos/` are **not** in that bucket — they are
+static files in the repo, served publicly by Vercel to anyone with the URL.
+A photo of yourself in your underwear must never go there, and must never
+be committed. Upload it through the app so it lands in the bucket like any
+other uploaded photo.
+
+Also worth deciding deliberately rather than by accident: the base photo
+gets sent to whichever image provider you pick, and their retention and
+training terms are then the terms your photo lives under. Worth reading
+before the first upload rather than after.
+
+### Schema
+
+- `base_photos (id, photo_path, label, created_at, archived_at)` — plural,
+  so there can be a summer one and a winter one, and so replacing one does
+  not destroy the old. Mirrors how `items.photo_path` already works.
+- `tryon_images (combo_key text primary key, image_path text not null,
+   base_photo_id text not null, created_at)`.
+  - Keyed by `combo_key`, not by saved outfit, so an image survives
+    un-faving and works for outfits that were never kept.
+  - `base_photo_id` so swapping the base photo invalidates the cache
+    without deleting anything — the old images stay with the old body.
+- Feature-flag it the way tags, capsules and extras already are:
+  `tryonAvailable`, set from whether the column exists, so the button stays
+  hidden until the migration has been run.
+
+### The serverless route
+
+The app is a static file with no server, so this is the first `/api` route
+(there is no `api/` directory yet). Vercel supports it.
+
+- The provider key lives in a Vercel environment variable. It cannot go in
+  `config.js` — that file is public.
+- **The route must check the caller is signed in.** Pass the Supabase access
+  token, verify it server-side. Without that, anyone who finds the URL can
+  spend your image credits. Easy to leave until later and then forget.
+- Garment order comes from `outfitLayout` — the app already knows what goes
+  over what.
+- Most try-on models take one garment at a time, so this is likely a chain:
+  base → bottom → top → jumper → jacket → shoes, each pass feeding the next.
+  Each pass costs money and degrades the image slightly, which is the main
+  thing to evaluate.
+
+### Interface notes
+
+- Generation takes seconds to tens of seconds. It needs a real pending
+  state on the card, and it has to survive navigating away and coming back
+  — write the row when it finishes, not when the sheet is still open.
+- A failed generation is a toast, not a lost outfit. The flat-lay stays.
+- The generated image wants to be the thing you see on an expanded card and
+  on the hero. The grid stays flat-lay: 35,000 photographs of a person is
+  slower to scan than 35,000 flat-lays, not faster.
+
+### Before building any of it
+
+Take the base photo and push three or four outfits through a hosted model
+by hand. The whole feature rests on whether the result looks like you
+wearing your clothes or like a mannequin wearing someone else's, and that
+cannot be known from here. An afternoon of testing decides whether this is
+worth a fortnight.
+
