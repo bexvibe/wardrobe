@@ -999,6 +999,12 @@
     font-family:'IBM Plex Mono',monospace;
     font-size:10px;color:var(--ink-soft);font-weight:400;
   }
+  /* Nothing in this category yet. Small and quiet: it is an answer, not a
+     problem to solve. */
+  .picker-empty{
+    font-family:'Work Sans',sans-serif;font-size:12px;
+    color:var(--ink-soft);margin:14px 0 0;
+  }
   .quick-picks{display:flex;gap:8px;margin-bottom:14px;}
   .picker-tile{border:1px solid var(--line);position:relative;}
   .picker-tile.picker-selected{border:2px solid var(--accent);}
@@ -1527,9 +1533,28 @@ const OPTIONAL_SLOTS = ['jumper','jacket','shoes'];
 
 function tabsForSlot(slot){ return OUTFIT_TABS.filter(t => TAB_SLOT[t] === slot); }
 
-// Every category an outfit is built from, owned or not. A shelf you have
-// not filled yet is still a shelf, and the row scrolls.
-function filterTabs(){ return OUTFIT_TABS.slice(); }
+// One order for the categories, used by the wardrobe's own tabs and by the
+// filter rows on Outfits and Faves, so the same list reads the same way
+// wherever you meet it.
+//
+// A category you own nothing in falls to the end rather than sitting
+// between two you reach for — but ahead of No Image, which is a state a
+// piece is in rather than a kind of thing. All stays where it is: it is
+// not a category.
+function orderedTabs(tabs){
+  const rank = t => t === 'All' ? 0
+                  : t === 'No Image' ? 3
+                  : itemsInTab(t).length ? 1 : 2;
+  // Index as the tiebreak, so within a rank the given order is kept.
+  return tabs.map((t, i) => [t, i])
+    .sort((a, b) => rank(a[0]) - rank(b[0]) || a[1] - b[1])
+    .map(pair => pair[0]);
+}
+
+// Every category an outfit is built from, owned or not — a shelf you have
+// not filled yet is still a shelf, and the row scrolls. The empty ones sit
+// at the end, where they are out of the way until you own one.
+function filterTabs(){ return orderedTabs(OUTFIT_TABS); }
 
 function emptySlotFilters(){
   const f = {};
@@ -1976,6 +2001,7 @@ function openSlotPicker(slotKey){
     <div class="modal-body">
       <div class="modal-name" style="margin-bottom:14px;">Choose ${slotKey}</div>
       <div class="quick-picks" id="picker-quick-picks"></div>
+      <p class="picker-empty" id="picker-empty" style="display:none;"></p>
       <div class="gallery" id="picker-gallery"></div>
     </div>
   `;
@@ -1991,15 +2017,27 @@ function renderQuickPicks(slotKey){
   const f = activeSlotFilters()[slotKey];
   const el = document.getElementById('picker-quick-picks');
   if(!el) return;
+  // With nothing in the category, None is not a change you can make — it is
+  // already what you have — so Any is the whole story.
+  const own = itemsInTab(slotKey).length > 0;
   el.innerHTML = `
     <button class="base-btn ${f.type === 'any' ? 'active' : ''}" onclick="setSlotQuick('${slotKey}','any')">Any</button>
-    <button class="base-btn ${f.type === 'none' ? 'active' : ''}" onclick="setSlotQuick('${slotKey}','none')">None</button>
+    ${own ? `<button class="base-btn ${f.type === 'none' ? 'active' : ''}" onclick="setSlotQuick('${slotKey}','none')">None</button>` : ''}
   `;
 }
 
 function renderPickerGallery(slotKey){
   const items = itemsInTab(slotKey);
   const f = activeSlotFilters()[slotKey];
+
+  // Nothing to choose from. One quiet line rather than a blank space you
+  // have to interpret.
+  const note = document.getElementById('picker-empty');
+  if(note){
+    note.style.display = items.length ? 'none' : 'block';
+    note.textContent = `No ${slotKey.toLowerCase()}`;
+  }
+
   document.getElementById('picker-gallery').innerHTML = items.map(i => {
     const selected = f.type === 'items' && f.ids.includes(i.id);
     return `<div class="tile picker-tile ${selected ? 'picker-selected' : ''}" onclick="toggleSlotItem('${slotKey}','${i.id}')">
@@ -3880,8 +3918,9 @@ function exportCSV(){
 
 function renderTabs(){
   // Every shelf, whether or not you own something on it yet: an empty
-  // Skirts tab is where a skirt goes, and the row scrolls sideways.
-  const categories = TAB_ORDER.map(t => `
+  // Skirts tab is where a skirt goes, and the row scrolls sideways. The
+  // ones you own nothing in wait at the end.
+  const categories = orderedTabs(TAB_ORDER).map(t => `
     <button class="tab ${activeTab === t ? 'active' : ''}" onclick="setTab('${t}')">${t}</button>
   `).join('');
 
@@ -4578,7 +4617,8 @@ function visibleFilteredItems(search){
   });
 
   if(activeTab === 'All'){
-    filtered.sort((a, b) => TAB_ORDER.indexOf(tabForItem(a)) - TAB_ORDER.indexOf(tabForItem(b)));
+    const order = orderedTabs(TAB_ORDER);
+    filtered.sort((a, b) => order.indexOf(tabForItem(a)) - order.indexOf(tabForItem(b)));
   }
   if(activeTab === 'All' || activeTab === 'Tops'){
     filtered.sort((a, b) => {
