@@ -77,8 +77,10 @@ async function openPicker(p){
     JSON.stringify(r.extra_ids));
   check('nothing was asked first', await p.evaluate(()=>
     !document.getElementById('confirm-backdrop').classList.contains('open')));
-  check('and the toast can take it back', await p.evaluate(()=>
-    Boolean(document.querySelector('.toast-undo'))));
+  // No toast: the tile ticks under your thumb, and the same tap takes it
+  // off. Saying so as well was the app describing what you just watched.
+  check('and nothing is announced, because you can see it',
+    await p.evaluate(()=>!document.querySelector('.toast.show')));
   check('it is ticked in the picker',
     await p.evaluate(()=>document.querySelectorAll('#extras-gallery .picker-selected').length)===1);
   check('combo_key is left alone, so the heart stays filled in Outfits',
@@ -117,14 +119,13 @@ async function openPicker(p){
   r = await row(p);
   check('tapping a ticked piece takes it off', r.extra_ids.length===1 && r.extra_ids[0]===firstHat,
     JSON.stringify(r.extra_ids));
-  check('with an undo for that too', await p.evaluate(()=>
-    Boolean(document.querySelector('.toast-undo'))));
-  await p.click('.toast-undo'); await p.waitForTimeout(700);
+  check('quietly, again', await p.evaluate(()=>!document.querySelector('.toast.show')));
+  // The undo is the tap itself.
+  await p.click('#extras-gallery .picker-tile'); await p.waitForTimeout(700);
   r = await row(p);
-  check('and undo puts it back', r.extra_ids.length===2, JSON.stringify(r.extra_ids));
-  // Undo can be tapped with the picker still open, so the picker has to
-  // show what just happened rather than the state it was drawn with.
-  check('and the picker shows it back on, without being reopened',
+  check('and tapping once more puts it back', r.extra_ids.length===2,
+    JSON.stringify(r.extra_ids));
+  check('and the picker shows it back on straight away',
     await p.evaluate(()=>document.querySelectorAll('#extras-gallery .picker-selected').length)===1);
 
   // Take everything off again.

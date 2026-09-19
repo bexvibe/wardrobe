@@ -2685,7 +2685,10 @@ async function setFavorited(key, favorited, combo, undo){
     const { error } = await db.from('saved_outfits').upsert(favoriteToRow(rec), { onConflict: 'combo_key' });
     if(error) return dbFail(error, 'Could not save — check connection');
     if(!isFavorited(key)) favoriteOutfits.push(rec);
-    showToast('Added to Faves');
+    // The heart fills where you tapped it. Removing is the asymmetric one:
+    // on the Faves page the card goes with it, so there is nothing left to
+    // tap and the toast keeps its undo.
+
   } else {
     const { error } = await db.from('saved_outfits')
       .update({ archived_at: new Date().toISOString() })
@@ -2749,11 +2752,9 @@ function extraTabs(){
 
 let extrasPickerTab = null;
 
-async function setOutfitExtras(key, ids, undoLabel){
+async function setOutfitExtras(key, ids){
   const rec = favoriteOutfits.find(f => f.key === key);
   if(!rec) return false;
-  const was = (rec.extras || []).slice();
-
   const { error } = await client()
     .from('saved_outfits')
     .update({ extra_ids: ids })
@@ -2762,27 +2763,21 @@ async function setOutfitExtras(key, ids, undoLabel){
 
   rec.extras = ids;
   renderSavedOutfits();
-  // Undo can be tapped with the picker still open, so the ticks in it are
-  // refreshed here rather than at the tap that opened the toast.
   renderExtrasPicker(key);
-  if(undoLabel){
-    showToast(undoLabel, () => setOutfitExtras(key, was));
-  }
   return true;
 }
 
-// Each tap is the change — nothing to confirm, and the toast takes it back.
+// Each tap is the change, and the tile ticks under your thumb as you make
+// it. A toast saying so as well was the app telling you what you had just
+// watched happen — and offering an undo that is the tap you would make
+// anyway. Nothing to confirm, so nothing is said.
 async function toggleOutfitExtra(key, itemId){
   const rec = favoriteOutfits.find(f => f.key === key);
   if(!rec) return;
   const have = (rec.extras || []).slice();
   const at = have.indexOf(itemId);
-  const adding = at < 0;
-  if(adding) have.push(itemId); else have.splice(at, 1);
-
-  const item = itemById(itemId);
-  const name = item ? item.name : 'That';
-  await setOutfitExtras(key, have, `${name} ${adding ? 'added' : 'removed'}`);
+  if(at < 0) have.push(itemId); else have.splice(at, 1);
+  await setOutfitExtras(key, have);
 }
 
 function openOutfitExtrasPicker(key){
@@ -3617,11 +3612,11 @@ async function toggleItemCapsule(capsuleId, itemId){
   const wasIn = capsule.itemIds.includes(itemId);
   if(!await setItemInCapsule(capsuleId, itemId, !wasIn)) return;
 
+  // The row ticks and unticks where you tapped it, and the same tap undoes
+  // it — so there is nothing a toast could add that is not already on the
+  // screen and under your thumb.
   renderItemCapsulePicks(itemId);
   renderCapsules();
-  // The same tap undoes it, so the undo is this very call again.
-  showToast(wasIn ? `Taken out of ${capsule.name}` : `Added to ${capsule.name}`,
-    () => toggleItemCapsule(capsuleId, itemId));
 }
 
 function capsuleItems(capsule){

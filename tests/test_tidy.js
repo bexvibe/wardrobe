@@ -394,10 +394,13 @@ const foldedCount = p => p.evaluate(()=>
     check('the membership row goes with it',
       await p.evaluate(()=>!window.__WARDROBE_STATE.capsule_items
         .some(r=>r.capsule_id==='cap_a' && r.item_id==='seed_0')));
-    check('and it offers the change back', await p.evaluate(()=>
-      Boolean(document.querySelector('.toast-undo'))));
-    await p.click('.toast-undo'); await p.waitForTimeout(700);
-    check('undo puts it back in', await p.evaluate(()=>capsules[0].itemIds.includes('seed_0')));
+    // No toast: the row unticks where you tapped it, and the same tap is
+    // the way back.
+    check('and says nothing about it, because the row already did',
+      await p.evaluate(()=>!document.querySelector('.toast.show')));
+    await p.click('.capsule-pick'); await p.waitForTimeout(700);
+    check('tapping again puts it back in',
+      await p.evaluate(()=>capsules[0].itemIds.includes('seed_0')));
 
     // More than one capsule at a time — that is the point of it.
     await p.evaluate(async()=>{ await saveCapsule({ id:null, name:'Evening', itemIds:[] }); });
