@@ -2801,6 +2801,8 @@ function openOutfitExtrasPicker(key){
   `;
   renderExtrasPicker(key);
   document.getElementById('modal-backdrop').classList.add('open');
+  // Once it is up and the header has a height to measure.
+  stickSheetTabs('extras-tabs');
 }
 
 function setExtrasPickerTab(key, tab){
@@ -2821,6 +2823,8 @@ function renderExtrasPicker(key){
     <button class="tab ${extrasPickerTab === t ? 'active' : ''}"
             onclick='setExtrasPickerTab(${JSON.stringify(key)}, ${JSON.stringify(t)})'>${t}</button>
   `).join('');
+
+  stickSheetTabs('extras-tabs');
 
   const items = extrasPickerTab ? itemsOnShelf(extrasPickerTab) : [];
   galleryEl.innerHTML = items.length ? items.map(i => `
@@ -3148,14 +3152,7 @@ function renderCapsuleEditorTabs(){
 // The header's height is measured because it is a button plus padding, any
 // of which can move — and measured only once the sheet is actually up,
 // since a hidden one is nought tall and the row would stick behind it.
-function stickCapsuleEditorTabs(){
-  const el = document.getElementById('capsule-tabs');
-  const backdrop = document.getElementById('modal-backdrop');
-  if(!el || !backdrop || !backdrop.classList.contains('open')) return;
-  const header = document.querySelector('#modal .sheet-header');
-  if(header) el.style.setProperty('--stuck-top', header.offsetHeight + 'px');
-  stickCategoryRow(el, backdrop);
-}
+function stickCapsuleEditorTabs(){ stickSheetTabs('capsule-tabs'); }
 
 function setCapsuleEditorTab(tab){
   capsuleDraft.tab = tab;
@@ -4254,6 +4251,24 @@ function exportCSV(){
 // eighty tiles on the page; a zero-height marker left where the row would
 // have been says the same thing for nothing.
 const stuckWatchers = new WeakMap();
+
+// A category row inside a sheet rather than on a page: the capsule editor's
+// and the accessories picker's. Both scroll inside the sheet and both stop
+// under the back button that is already stuck at the top of it, at a height
+// measured rather than written down — and measured only once the sheet is
+// up, since a hidden one is nought tall and the row would stick behind it.
+//
+// Every row of categories in the app goes through this or through the
+// wardrobe's own call. A row that scrolls out of reach is the same problem
+// wherever it happens, so it has one answer.
+function stickSheetTabs(rowId){
+  const el = document.getElementById(rowId);
+  const backdrop = document.getElementById('modal-backdrop');
+  if(!el || !backdrop || !backdrop.classList.contains('open')) return;
+  const header = document.querySelector('#modal .sheet-header');
+  if(header) el.style.setProperty('--stuck-top', header.offsetHeight + 'px');
+  stickCategoryRow(el, backdrop);
+}
 
 function stickCategoryRow(row, scroller){
   if(!row) return;
