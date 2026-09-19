@@ -320,7 +320,7 @@ async function setSlot(p, key, choice){
     await p.close();
   }
 
-  // ---- 9. A chip that is on is a chip you can see ----
+  // ---- 9. The rows stay where you left them ----
   {
     const p=await open(b);
     const wide = await p.evaluate(()=>{
@@ -330,48 +330,61 @@ async function setSlot(p, key, choice){
     check('the tag row really is wider than the panel',
       wide.scroll > wide.shown + 100, `${wide.scroll} in ${wide.shown}`);
 
-    // The last of each row: far enough off the right-hand edge that under
-    // the old behaviour nothing on screen said a filter was on at all.
+    // Turning on the last tag in the row used to scroll it into view, which
+    // meant the row moved under your thumb the instant you tapped. It does
+    // not any more — the count beside the section label carries that news
+    // instead, and nothing jumps.
+    await p.evaluate(()=>{ document.getElementById('sheet-tag-chips').scrollLeft = 0; });
     const chose = await p.evaluate(()=>{
       const tag = allTags()[allTags().length - 1];
       const tab = filterTabs()[filterTabs().length - 1];
       outfitTags = [tag];
-      outfitFilters[tab] = {type:'none', ids:[]};
+      outfitFilters[tab] = {type:'items', ids: itemsInTab(tab).slice(0,1).map(i=>i.id)};
       renderFilterControls();
       return {tag, tab};
     });
     await p.waitForTimeout(500);
+    const where = await p.evaluate(()=>({
+      tags: document.getElementById('sheet-tag-chips').scrollLeft,
+      pieces: document.getElementById('sheet-filter-grid').scrollLeft,
+    }));
+    check('turning on a tag at the far end does not move the row',
+      where.tags === 0, `${where.tags}px`);
+    check('and neither does a piece filter', where.pieces === 0, `${where.pieces}px`);
+    check('the filter really is on, it is just not chasing you',
+      await p.evaluate(t=>outfitTags.join()===t.tag && outfitFilters[t.tab].type==='items', chose));
 
-    const seen = await p.evaluate(()=>{
-      const look = id => {
-        const r = document.getElementById(id);
-        const on = r.querySelector('.active');
-        if(!on) return null;
-        const box = r.getBoundingClientRect(), a = on.getBoundingClientRect();
-        return {label: on.textContent.trim(), scrolled: Math.round(r.scrollLeft),
-                whole: a.left >= box.left - 1 && a.right <= box.right + 1};
-      };
-      return {tags: look('sheet-tag-chips'), pieces: look('sheet-filter-grid')};
-    });
-    check('the tag that is on was scrolled into view',
-      seen.tags && seen.tags.whole && seen.tags.label === chose.tag,
-      JSON.stringify(seen.tags));
-    check('and so was the piece chip', seen.pieces && seen.pieces.whole &&
-      seen.pieces.label === chose.tab, JSON.stringify(seen.pieces));
-    check('which means the rows really moved, not that they fit after all',
-      seen.tags.scrolled > 0 && seen.pieces.scrolled > 0,
-      `${seen.tags.scrolled}, ${seen.pieces.scrolled}`);
-
-    // The first of each: nothing to scroll to, so nothing moves.
-    await p.evaluate(()=>{
-      outfitTags = [allTags()[0]];
-      Object.keys(outfitFilters).forEach(k => outfitFilters[k] = {type:'any', ids:[]});
-      outfitFilters[filterTabs()[0]] = {type:'none', ids:[]};
-      renderFilterControls();
-    });
+    // Scrolled along by hand, it stays where you put it — including
+    // across the redraw that tapping a chip causes, which is the whole
+    // point: the row must not move when you touch it.
+    await p.evaluate(()=>{ document.getElementById('sheet-tag-chips').scrollLeft = 200; });
+    await p.waitForTimeout(200);
+    await p.evaluate(()=>renderFilterControls());
     await p.waitForTimeout(400);
-    check('a chip already in view is left where it is',
-      await p.evaluate(()=>document.getElementById('sheet-filter-grid').scrollLeft === 0));
+    check('a redraw leaves it where you scrolled it',
+      await p.evaluate(()=>document.getElementById('sheet-tag-chips').scrollLeft === 200),
+      String(await p.evaluate(()=>document.getElementById('sheet-tag-chips').scrollLeft)));
+
+    // And through a real tap, which is how it actually happens.
+    const before = await p.evaluate(()=>{
+      const r = document.getElementById('sheet-tag-chips');
+      r.scrollLeft = 220;
+      return r.scrollLeft;
+    });
+    await p.waitForTimeout(200);
+    const tapped = await p.evaluate(()=>{
+      const chip = Array.from(document.querySelectorAll('#sheet-tag-chips .tag-chip'))
+        .find(c => { const r = c.getBoundingClientRect();
+                     return r.left > 0 && r.right < innerWidth; });
+      chip.click();
+      return chip.dataset.tag;
+    });
+    await p.waitForTimeout(700);
+    check('tapping a tag you scrolled to does not snatch the row away',
+      await p.evaluate(n=>document.getElementById('sheet-tag-chips').scrollLeft === n, before),
+      `${before} -> ${await p.evaluate(()=>document.getElementById('sheet-tag-chips').scrollLeft)}`);
+    check('and the tap still did what it was for',
+      await p.evaluate(t=>outfitTags.includes(t), tapped), tapped);
     await p.close();
   }
 

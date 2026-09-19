@@ -1962,26 +1962,6 @@ function filterControlsHtml(ns){
     </div>`;
 }
 
-// A row of chips is wider than the panel it sits in — twelve tags is
-// 920px against 358 — so the chip that is actually doing the filtering
-// could sit entirely off the right-hand edge, with nothing on screen to
-// say a filter was on at all. Whatever is on gets scrolled to where you
-// can see it.
-//
-// scrollLeft rather than scrollIntoView, and measured off rectangles
-// rather than offsetLeft: the row's offset parent is the panel, and
-// scrollIntoView would move the panel and the page as well as the row.
-function showActiveChip(row){
-  if(!row) return;
-  const chip = row.querySelector('.active');
-  if(!chip) return;
-  const edge = 16;
-  const box = row.getBoundingClientRect();
-  const on = chip.getBoundingClientRect();
-  if(on.left < box.left + edge) row.scrollLeft -= (box.left + edge) - on.left;
-  else if(on.right > box.right - edge) row.scrollLeft += on.right - (box.right - edge);
-}
-
 // Which end of a row has more behind it, so only that edge fades. Wired
 // once per element; the rows are rebuilt on every render, so the handler
 // goes on and stays on rather than being added again each time.
@@ -2008,17 +1988,28 @@ function renderFilterControls(){
 
     // The panel only exists on the two pages that have filters.
     if(m !== 'outfits' && m !== 'saved'){ host.innerHTML = ''; return; }
+
+    // Tapping a chip redraws both rows from scratch, which would put them
+    // back at the left-hand end — so scrolling along to a tag and tapping
+    // it snatched the row out from under your thumb. Nothing scrolls them
+    // now, in either direction: where you left a row is where it stays,
+    // and the count beside the section label says a filter is on without
+    // moving anything.
+    const rowIds = [`${ns}-tag-chips`, `${ns}-filter-grid`];
+    const wasAt = rowIds.map(id => (document.getElementById(id) || {}).scrollLeft || 0);
+
     host.innerHTML = filterControlsHtml(ns);
 
     renderTagChips(`${ns}-tag-chips`, m === 'outfits' ? outfitTags : savedTags,
                    m === 'outfits' ? 'setOutfitTag' : 'setSavedTag');
     renderSlotChips(`${ns}-filter-grid`);
 
-    // Both rows are wider than the panel, and innerHTML has just put them
-    // back at the left-hand end.
-    [`${ns}-tag-chips`, `${ns}-filter-grid`].forEach(id => {
+    rowIds.forEach((id, i) => {
       const row = document.getElementById(id);
-      showActiveChip(row);
+      if(!row) return;
+      // Clamped by the browser if the row is shorter than it was — a tag
+      // deleted out from under it, say.
+      row.scrollLeft = wasAt[i];
       watchRowEdges(row);
     });
   });
