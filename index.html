@@ -939,12 +939,17 @@
     background:var(--accent-soft);
   }
   .filters-fab-count{
-    flex:none;
+    position:absolute;
+    top:-6px;right:-4px;
     min-width:20px;height:20px;padding:0 6px;
     display:inline-flex;align-items:center;justify-content:center;
     border-radius:999px;
     background:var(--accent);color:#fff;
     font-size:11px;font-weight:600;
+    /* Ringed in the pill's own colour: it straddles the pill's edge, so it
+       should read as sitting on the pill rather than on whatever clothes
+       happen to be behind it. */
+    box-shadow:0 0 0 2px var(--surface);
   }
   /* The panel's own chevron, pointing the other way. */
   .filters-fab-chevron{
@@ -1037,6 +1042,11 @@
     display:flex;
     gap:8px;
     overflow-x:auto;
+    /* A row that scrolls sideways clips what hangs above it, and the count
+       badges hang above it by design. The negative margin gives the room
+       back, so the row sits where it did and the badges are simply no
+       longer cut off. */
+    padding-top:7px;margin-top:-7px;
     padding-bottom:2px;
     -webkit-overflow-scrolling:touch;
     scrollbar-width:none;
@@ -1044,6 +1054,7 @@
   .filter-grid::-webkit-scrollbar{display:none;}
   .filter-chip{
     flex:none;
+    position:relative;
     display:inline-flex;align-items:center;gap:7px;
     min-height:44px;
     font-family:'Work Sans',sans-serif;
@@ -1070,13 +1081,20 @@
      other interface puts on a filter — instead of the words "2 selected".
      Only a chip that is on ever carries one, so the badge never has to say
      nought. Same badge the pill uses for the same job, one size down. */
+  /* On the corner, not in the line. Inside the chip it had to be read as
+     part of the label — "Pants, chevron, 2" — and pushed the chevron away
+     from the word it belongs to. On the outline it is the count of what is
+     behind the control, the way a badge on an icon is. */
   .chip-count{
-    flex:none;
+    position:absolute;
+    top:-5px;right:-4px;
     display:inline-flex;align-items:center;justify-content:center;
     min-width:18px;height:18px;padding:0 5px;
     border-radius:999px;
     background:var(--accent);color:#fff;
     font-size:10px;font-weight:600;line-height:1;
+    /* Against the page, not against the chip it overlaps. */
+    box-shadow:0 0 0 2px var(--surface);
   }
   /* The mark of a chip that opens something. Beside it in the same panel
      sit the tag chips, which toggle where they stand — identical in every

@@ -541,23 +541,39 @@ async function setSlot(p, key, choice){
     });
     await p.waitForTimeout(500);
 
-    const order = el => p.evaluate(sel => {
-      const parts = Array.from(document.querySelector(sel).children)
-        .map(c => c.classList.contains('chip-count') || c.classList.contains('filters-fab-count')
-          ? 'count' : c.tagName === 'svg' ? 'chevron' : 'label');
-      return parts.join(' ');
-    }, el);
+    // The badge is lifted out of the line and hung on the top-right
+    // corner: inside, it had to be read as part of the label — "Pants,
+    // chevron, 2" — and pushed the chevron off the word it belongs to.
+    const badge = (host, mark) => p.evaluate(([h, m]) => {
+      const el = document.querySelector(h), b = el.querySelector(m);
+      if(!b) return null;
+      const box = el.getBoundingClientRect(), r = b.getBoundingClientRect();
+      const inLine = Array.from(el.children).includes(b) &&
+                     getComputedStyle(b).position === 'static';
+      return {
+        floating: getComputedStyle(b).position === 'absolute' && !inLine,
+        // Over the corner: above the top edge and past the right one.
+        aboveTop: r.top < box.top + 1,
+        pastRight: r.right > box.right - 1,
+        said: b.textContent.trim(),
+      };
+    }, [host, mark]);
 
-    check('a piece chip reads label, chevron, count',
-      (await order('#sheet-filter-grid .filter-chip.active')) === 'label chevron count',
-      await order('#sheet-filter-grid .filter-chip.active'));
+    const chip = await badge('#sheet-filter-grid .filter-chip.active', '.chip-count');
+    check('a piece chip hangs its count off the top-right corner',
+      chip.floating && chip.aboveTop && chip.pastRight, JSON.stringify(chip));
+    check('and it is still the right number', chip.said === '2', chip.said);
+    check('the label and its chevron are what is left in the line',
+      (await p.evaluate(()=>Array.from(
+        document.querySelector('#sheet-filter-grid .filter-chip.active').children)
+          .filter(c => getComputedStyle(c).position !== 'absolute')
+          .map(c => c.tagName.toLowerCase()).join(' '))) === 'span svg');
 
     await p.evaluate(()=>closeFilterSheet()); await p.waitForTimeout(700);
-    check('and the pill reads the same way',
-      (await order('#filters-fab')) === 'label chevron count',
-      await order('#filters-fab'));
-    check('the pill really is counting something',
-      await p.evaluate(()=>document.querySelector('.filters-fab-count').textContent.trim()==='2'));
+    const pill = await badge('#filters-fab', '.filters-fab-count');
+    check('and the pill does the same',
+      pill.floating && pill.aboveTop && pill.pastRight, JSON.stringify(pill));
+    check('the pill really is counting something', pill.said === '2', pill.said);
     await p.close();
   }
 
