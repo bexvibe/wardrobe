@@ -745,8 +745,10 @@
     min-height:44px;
     font-family:'Work Sans',sans-serif;
     font-size:12px;font-weight:600;
-    padding:0 14px;
-    border-radius:10px;
+    padding:0 16px;
+    /* Fully round, like the wardrobe's own category tabs, the nav and the
+       Filters pill. A chip is a chip wherever you meet one here. */
+    border-radius:999px;
     /* Nothing filtering, nothing filled: at rest a chip is its outline and
        no more, so a filled one always means it is on. Transparent rather
        than white, because the same chip sits on the white panel and on the
@@ -987,8 +989,8 @@
     min-height:44px;
     font-family:'Work Sans',sans-serif;
     font-size:12px;font-weight:600;
-    padding:0 14px;
-    border-radius:10px;
+    padding:0 16px;
+    border-radius:999px;
     /* Same bargain as a tag chip: an outline until it is doing something. */
     border:1px solid var(--line);
     background:transparent;
@@ -1365,7 +1367,7 @@
   </div>
 </div>
 
-<div class="filter-sheet" id="filter-sheet">
+<div class="filter-sheet" id="filter-sheet" inert>
   <div class="filter-sheet-head">
     <span class="filter-sheet-title" id="filter-sheet-title">Filters</span>
     <button class="filter-sheet-clear" id="filter-sheet-clear" onclick="clearFilters()">Clear all</button>
@@ -1854,11 +1856,43 @@ function syncSheetInset(){
   document.documentElement.style.setProperty('--sheet-inset', inset + 'px');
 }
 
+// A panel that has gone down is out of the conversation. It slides rather
+// than disappears — translateY(100%), so it is still in the document — and
+// that left every control inside it taking a tab stop and being read out,
+// from off the bottom of the screen where nobody could see what they had
+// landed on. `inert` is the whole fix: no focus, no pointer, not announced.
+// The pill comes back as the panel goes down, but it is mid-transition at
+// the moment the class comes off — still computing as hidden, and a hidden
+// element cannot take focus. Wait for the style to settle, then hand over.
+// If it never does, focus stays on the body, which is where it would have
+// gone anyway.
+function focusTheFiltersPill(){
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    const fab = document.getElementById('filters-fab');
+    if(!fab || fab.classList.contains('stood-down')) return;
+    if(getComputedStyle(fab).visibility === 'hidden') return;
+    fab.focus();
+  }));
+}
+
+function syncSheetReach(){
+  const sheet = document.getElementById('filter-sheet');
+  if(!sheet) return;
+  if(filterSheetOpen()){ sheet.removeAttribute('inert'); return; }
+  // Focus cannot ride the panel down with it. Hand it back to the pill the
+  // panel turns into, which is where you would go next anyway — otherwise
+  // it falls to the body and the next Tab starts again from the top.
+  const handOver = sheet.contains(document.activeElement);
+  sheet.setAttribute('inert', '');
+  if(handOver) focusTheFiltersPill();
+}
+
 function openFilterSheet(){
   if(!filterSheetHasContent()){ closeFilterSheet(); return false; }
   renderFilterControls();
   document.getElementById('filter-sheet').classList.add('open');
   syncSheetInset();
+  syncSheetReach();
   renderFiltersFab();
   watchForSheetDismiss();
   return true;
@@ -1868,6 +1902,8 @@ function closeFilterSheet(){
   document.getElementById('filter-sheet').classList.remove('open');
   syncSheetInset();
   renderFiltersFab();
+  // After the pill, so there is somewhere for focus to land.
+  syncSheetReach();
 }
 
 // An open panel is a thing you are doing; going back to the page is
