@@ -51,8 +51,7 @@ const TAGS={seed_22:['summer'], seed_11:['summer'], seed_23:['winter']};
   await p.click('#nav-saved-btn'); await p.waitForTimeout(500);
 
   check('saved tab shows all outfits unfiltered',
-    (await p.textContent('#saved-count-line')).includes('3 faves'),
-    (await p.textContent('#saved-count-line')).trim());
+    (await p.evaluate(()=>document.querySelectorAll('#saved-gallery .outfit-card').length))===3);
   check('the filters are already down, not behind a pill',
     (await p.evaluate(()=>filterSheetOpen())) && !(await p.isVisible('#filters-fab')));
   check('and they offer the saved tags', await p.isVisible('#sheet-tag-chips .tag-chip'));
@@ -63,9 +62,9 @@ const TAGS={seed_22:['summer'], seed_11:['summer'], seed_23:['winter']};
   await p.click('#sheet-tag-chips .tag-chip:has-text("summer")'); await p.waitForTimeout(400);
   // seed_22 is summer, so outfits 1 and 2 both contain a summer piece
   check('outfits containing any summer piece match', await cards()===2, `${await cards()} card(s)`);
-  check('count line explains the filter',
-    (await p.textContent('#saved-count-line')).includes('2 of 3'),
-    (await p.textContent('#saved-count-line')).trim());
+  check('and the third is simply not drawn',
+    await p.evaluate(()=>favoriteOutfits.length===3 &&
+      document.querySelectorAll('#saved-gallery .outfit-card').length===2));
   const shownKey=await p.evaluate(()=>favoriteOutfits.filter(savedOutfitMatchesTag).map(r=>r.key));
   check('the outfit with no summer piece is excluded',
     shownKey.length===2 && !shownKey.includes('tb|seed_23|seed_12|none|none|none'), shownKey.join(' '));
@@ -77,13 +76,11 @@ const TAGS={seed_22:['summer'], seed_11:['summer'], seed_23:['winter']};
   await p.click('#sheet-tag-chips .tag-chip:has-text("winter")'); await p.waitForTimeout(400);
   // seed_23 is winter but outfit 3 contains it, so winter DOES match one
   check('a tag on one piece of one outfit matches that outfit',
-    await p.evaluate(()=>document.querySelectorAll('#saved-gallery .outfit-card').length)===1,
-    (await p.textContent('#saved-count-line')).trim());
+    await p.evaluate(()=>document.querySelectorAll('#saved-gallery .outfit-card').length)===1);
 
   // And asking for both is OR: either tag will do.
   await p.click('#sheet-tag-chips .tag-chip:has-text("summer")'); await p.waitForTimeout(400);
-  check('both tags at once means either of them', await cards()===3,
-    (await p.textContent('#saved-count-line')).trim());
+  check('both tags at once means either of them', await cards()===3, String(await cards()));
 
   // clear
   await p.click('#sheet-tag-chips .tag-chip.active'); await p.waitForTimeout(400);

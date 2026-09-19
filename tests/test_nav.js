@@ -185,7 +185,12 @@ const vis=(p,s)=>p.isVisible(s);
   // --- saved is its own destination ---
   await p.click('#nav-saved-btn'); await p.waitForTimeout(500);
   check('saved is one tap from anywhere', await vis(p,'#saved-view') && !(await vis(p,'#outfits-view')));
-  check('the faves page renders its contents', (await p.textContent('#saved-count-line')).includes('fave'));
+  check('the faves page renders its contents', await p.evaluate(()=>{
+    const cards = document.querySelectorAll('#saved-gallery .outfit-card').length;
+    const empty = document.getElementById('saved-empty');
+    return cards > 0 || (empty.offsetParent !== null &&
+      document.getElementById('saved-empty-title').textContent.trim().length > 0);
+  }));
   check('faves arrives with its filters down too', await sheetOpen());
 
   // And the panel is not left filtering a page you have walked away from.

@@ -131,18 +131,20 @@ const on = p => p.evaluate(()=>Array.from(
     await tap(p, 'winter');
     check('Faves keeps two as well',
       JSON.stringify(await on(p))===JSON.stringify(['summer','winter']));
-    check('and says so in words you would use',
-      /tagged summer or winter/.test(await p.textContent('#saved-count-line')),
-      (await p.textContent('#saved-count-line')).trim());
-
-    // A tag nothing carries: the empty state names all of them.
+    // The page prints no count line any more — the cards are the count —
+    // so the phrase is read where it still earns its place: the empty
+    // state, which has to say which of the two empty states it is.
     await p.evaluate(()=>{ savedTags = ['wool']; renderSavedOutfits(); });
     await p.waitForTimeout(400);
-    await p.evaluate(()=>{ savedTags = ['wool','summer','winter']; renderSavedOutfits(); });
-    await p.waitForTimeout(400);
-    const line = (await p.textContent('#saved-count-line')).trim();
+    check('a tag nothing carries says so by name',
+      /Nothing tagged wool/.test(await p.textContent('#saved-empty-title')),
+      (await p.textContent('#saved-empty-title')).trim());
+
+    const line = await p.evaluate(()=>tagPhrase(['wool','sleet','hail']));
     check('three read as a list with "or" before the last',
-      /wool, summer or winter/.test(line), line);
+      line === 'wool, sleet or hail', line);
+    check('and two read as one or the other',
+      (await p.evaluate(()=>tagPhrase(['wool','sleet']))) === 'wool or sleet');
 
     // And the two pages still keep their own.
     await p.click('#nav-outfits-btn'); await p.waitForTimeout(1200);

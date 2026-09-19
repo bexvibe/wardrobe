@@ -459,30 +459,31 @@ async function setSlot(p, key, choice){
   // ---- 12. The section labels count what is on ----
   {
     const p=await open(b);
-    const labels = () => p.evaluate(()=>{
-      const read = id => {
-        const el = document.getElementById(id);
-        return {text: el.textContent.trim(), shown: el.offsetParent !== null};
-      };
-      return {tags: read('sheet-tag-count'), pieces: read('sheet-piece-count')};
-    });
+    // Part of the heading now, in brackets — TAGS (2) — rather than a
+    // badge beside it. A badge belongs on a control you are about to
+    // press; this is a heading carrying a number.
+    const labels = () => p.evaluate(()=>({
+      tags: document.querySelector('label[for], #sheet-tag-count')
+        .closest('.filter-sheet-label').textContent.trim(),
+      pieces: document.getElementById('sheet-piece-count')
+        .closest('.filter-sheet-label').textContent.trim(),
+    }));
 
     const rest = await labels();
-    check('nothing on means no count beside Tags',
-      !rest.tags.shown && rest.tags.text === '', JSON.stringify(rest.tags));
-    check('nor beside Pieces — a nought is a label saying there is no news',
-      !rest.pieces.shown && rest.pieces.text === '', JSON.stringify(rest.pieces));
+    check('nothing on means the heading is just its name',
+      rest.tags === 'Tags', rest.tags);
+    check('and so is the other one', rest.pieces === 'Pieces', rest.pieces);
 
     await p.evaluate(()=>{ outfitTags = ['summer']; renderFilterControls(); });
     await p.waitForTimeout(400);
-    check('one tag puts a 1 beside Tags',
-      (await labels()).tags.text === '1' && (await labels()).tags.shown,
-      JSON.stringify((await labels()).tags));
-    check('and leaves Pieces alone', !(await labels()).pieces.shown);
+    check('one tag makes it Tags (1)', (await labels()).tags === 'Tags (1)',
+      (await labels()).tags);
+    check('and leaves Pieces alone', (await labels()).pieces === 'Pieces');
 
     await p.evaluate(()=>{ outfitTags = ['summer','linen']; renderFilterControls(); });
     await p.waitForTimeout(400);
-    check('two tags reads 2', (await labels()).tags.text === '2');
+    check('two tags reads Tags (2)', (await labels()).tags === 'Tags (2)',
+      (await labels()).tags);
 
     await p.evaluate(()=>{
       const tabs = filterTabs();
@@ -494,24 +495,21 @@ async function setSlot(p, key, choice){
     // Two categories narrowed, whatever number of pieces is pinned inside
     // them — the chips carry that.
     check('Pieces counts the categories narrowed, not the pieces pinned',
-      (await labels()).pieces.text === '2', (await labels()).pieces.text);
+      (await labels()).pieces === 'Pieces (2)', (await labels()).pieces);
 
     // The point of it: it says so when the chip saying so is off-screen.
-    const hidden = await p.evaluate(()=>{
-      const row = document.getElementById('sheet-filter-grid');
-      row.scrollLeft = 0;
-      const on = row.querySelector('.filter-chip.active');
-      const box = row.getBoundingClientRect(), a = on.getBoundingClientRect();
-      return {label: document.getElementById('sheet-piece-count').offsetParent !== null,
-              chipVisible: a.left >= box.left - 1 && a.right <= box.right + 1};
-    });
-    check('and it is in view even when a filtering chip is not',
-      hidden.label, JSON.stringify(hidden));
+    check('and the heading is in view even when a filtering chip is not',
+      await p.evaluate(()=>{
+        const label = document.getElementById('sheet-piece-count')
+          .closest('.filter-sheet-label').getBoundingClientRect();
+        const sheet = document.getElementById('filter-sheet').getBoundingClientRect();
+        return label.left >= sheet.left && label.right <= sheet.right;
+      }));
 
     await p.click('#filter-sheet-clear'); await p.waitForTimeout(700);
     const after = await labels();
     check('Clear all takes both counts away',
-      !after.tags.shown && !after.pieces.shown, JSON.stringify(after));
+      after.tags === 'Tags' && after.pieces === 'Pieces', JSON.stringify(after));
     await p.close();
   }
 
@@ -522,14 +520,75 @@ async function setSlot(p, key, choice){
     await p.waitForTimeout(400);
     await p.click('#nav-saved-btn'); await p.waitForTimeout(1100);
     check('arriving on Faves, the counts are Faves\' own',
-      await p.evaluate(()=>document.getElementById('sheet-tag-count').offsetParent === null));
+      await p.evaluate(()=>document.getElementById('sheet-tag-count').textContent === ''));
     await p.evaluate(()=>{ savedTags = ['summer']; renderFilterControls(); });
     await p.waitForTimeout(400);
     check('and follow it', await p.evaluate(()=>
-      document.getElementById('sheet-tag-count').textContent.trim() === '1'));
+      document.getElementById('sheet-tag-count').textContent.trim() === '(1)'));
     await p.click('#nav-outfits-btn'); await p.waitForTimeout(1200);
     check('while Outfits still counts its two', await p.evaluate(()=>
-      document.getElementById('sheet-tag-count').textContent.trim() === '2'));
+      document.getElementById('sheet-tag-count').textContent.trim() === '(2)'));
+    await p.close();
+  }
+
+  // ---- 14. A count on a control comes after the chevron ----
+  {
+    const p=await open(b);
+    await p.evaluate(()=>{
+      outfitTags = ['summer'];
+      outfitFilters['Tops'] = {type:'items', ids: itemsInTab('Tops').slice(0,2).map(i=>i.id)};
+      renderFilterControls(); renderFiltersFab();
+    });
+    await p.waitForTimeout(500);
+
+    const order = el => p.evaluate(sel => {
+      const parts = Array.from(document.querySelector(sel).children)
+        .map(c => c.classList.contains('chip-count') || c.classList.contains('filters-fab-count')
+          ? 'count' : c.tagName === 'svg' ? 'chevron' : 'label');
+      return parts.join(' ');
+    }, el);
+
+    check('a piece chip reads label, chevron, count',
+      (await order('#sheet-filter-grid .filter-chip.active')) === 'label chevron count',
+      await order('#sheet-filter-grid .filter-chip.active'));
+
+    await p.evaluate(()=>closeFilterSheet()); await p.waitForTimeout(700);
+    check('and the pill reads the same way',
+      (await order('#filters-fab')) === 'label chevron count',
+      await order('#filters-fab'));
+    check('the pill really is counting something',
+      await p.evaluate(()=>document.querySelector('.filters-fab-count').textContent.trim()==='2'));
+    await p.close();
+  }
+
+  // ---- 15. Everything you tap is a thumb wide ----
+  {
+    const p=await open(b);
+    const small = await p.evaluate(()=>{
+      const out = [];
+      const look = (sel, what) => document.querySelectorAll(sel).forEach(el => {
+        const r = el.getBoundingClientRect();
+        if(r.height && r.height < 44) out.push(`${what}: ${Math.round(r.height)}px`);
+      });
+      look('#tabs .tab', 'wardrobe category');
+      look('.page-head .icon-btn', 'header icon');
+      look('.bottom-btn', 'nav destination');
+      return out;
+    });
+    check('the wardrobe head and its categories are all 44px', small.length === 0,
+      small.join(', '));
+
+    await p.click('#nav-outfits-btn'); await p.waitForTimeout(1300);
+    await p.evaluate(()=>closeFilterSheet()); await p.waitForTimeout(700);
+    const fab = await p.evaluate(()=>{
+      const f = document.getElementById('filters-fab').getBoundingClientRect();
+      const bar = document.getElementById('bottom-bar').getBoundingClientRect();
+      return {h: Math.round(f.height), gap: Math.round(bar.top - f.bottom)};
+    });
+    check('so is the filters pill', fab.h >= 44, `${fab.h}px`);
+    // The nav grew when its buttons did; the pill has to move up with it
+    // or the two end up touching.
+    check('and it still stands clear of the nav', fab.gap >= 10, `${fab.gap}px`);
     await p.close();
   }
 

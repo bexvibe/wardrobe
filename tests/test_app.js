@@ -154,7 +154,7 @@ async function login(page) {
     await page.click('#nav-saved-btn');
     await page.waitForTimeout(300);
     check('saved tab shows the hearted outfit',
-      (await page.textContent('#saved-count-line')).includes('1 fave'));
+      (await page.evaluate(()=>document.querySelectorAll('#saved-gallery .outfit-card').length))===1);
 
     await page.click('#saved-gallery .outfit-fav-btn.favorited');
     await page.waitForTimeout(300);
@@ -221,7 +221,8 @@ async function login(page) {
       await (async () => {
         await page.click('#nav-saved-btn');
         await page.waitForTimeout(300);
-        return (await page.textContent('#saved-count-line')).includes('1 fave');
+        return (await page.evaluate(()=>
+          document.querySelectorAll('#saved-gallery .outfit-card').length))===1;
       })());
     await page.screenshot({ path: shot('v3-migrated.png') });
 

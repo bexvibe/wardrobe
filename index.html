@@ -126,10 +126,14 @@
   }
   .tab{
     flex:none;
+    display:inline-flex;align-items:center;
+    /* A full thumb, like every other chip in the app. It was 33px, which
+       is under the 44 a fingertip actually covers. */
+    min-height:44px;
     font-family:'Work Sans',sans-serif;
     font-size:13px;
     font-weight:600;
-    padding:8px 14px;
+    padding:0 16px;
     border-radius:999px;
     border:1px solid var(--line);
     background:var(--surface);
@@ -148,7 +152,9 @@
      back to the clothes. */
   .icon-btn{
     flex:none;
-    width:38px;height:38px;
+    /* In the same row as the categories, and was under a thumb for the
+       same reason: 38px is smaller than a fingertip covers. */
+    width:44px;height:44px;
     display:flex;align-items:center;justify-content:center;
     border-radius:999px;
     /* No ring at rest: three outlined circles in a row read as a control
@@ -656,12 +662,13 @@
     max-width:calc(100% - 32px);
   }
   .bottom-btn{
-    display:flex;align-items:center;gap:7px;
+    display:flex;align-items:center;justify-content:center;gap:7px;
+    min-height:44px;
     font-family:'Work Sans',sans-serif;
     font-size:13px;font-weight:600;
     /* Four destinations have to fit inside a 390px screen, so the
-       padding is what gives rather than the label. */
-    padding:10px 13px;border-radius:999px;
+       side padding is what gives rather than the label or the height. */
+    padding:0 13px;border-radius:999px;
     border:none;background:none;
     color:var(--ink-soft);cursor:pointer;
     white-space:nowrap;
@@ -888,7 +895,7 @@
   .filters-fab{
     position:fixed;
     left:50%;
-    bottom:calc(78px + env(safe-area-inset-bottom, 0px));  /* clears the nav */
+    bottom:calc(86px + env(safe-area-inset-bottom, 0px));  /* clears the nav */
     z-index:95;
     display:flex;align-items:center;gap:8px;
     font-family:'Work Sans',sans-serif;
@@ -963,7 +970,7 @@
        which is what now gives them their edge. */
     background:var(--surface);
     border-radius:18px 18px 0 0;
-    padding:14px 16px calc(80px + env(safe-area-inset-bottom, 0px));
+    padding:14px 16px calc(88px + env(safe-area-inset-bottom, 0px));
     max-height:min(52vh, 420px);
     max-height:min(52svh, 420px);
     overflow-y:auto;
@@ -1211,20 +1218,10 @@
      the chip doing the filtering can be off to the right with nothing on
      screen to say so — and the row is not allowed to scroll itself to
      prove it. The label never moves, and it is always in view.
-     Quieter than the badges on the chips and the pill: those sit on a
-     control you are about to press, this one sits beside a heading, and
-     black on grey next to 10px grey type was the loudest thing in the
-     panel. The wash a chip wears when it is on says enough. */
-  .label-count{
-    display:inline-flex;align-items:center;justify-content:center;
-    min-width:16px;height:16px;padding:0 5px;
-    margin-left:7px;
-    border-radius:999px;
-    background:var(--accent-soft);color:var(--ink-soft);
-    font-family:'IBM Plex Mono',monospace;
-    font-size:9px;font-weight:600;letter-spacing:0;
-    vertical-align:middle;
-  }
+     Not a badge: the badges sit on controls you are about to press, and
+     one beside a heading was a second kind of thing in the same line.
+     This is the heading, carrying a number — TAGS (2). */
+  .label-count{ font:inherit;color:inherit;letter-spacing:inherit; }
   /* Denser than the wardrobe's own grid: this is an index of what is left
      over, not a gallery to browse, and it can run to most of a wardrobe. */
   .loose-section .gallery{grid-template-columns:repeat(4, 1fr) !important;gap:8px;}
@@ -1365,7 +1362,6 @@
     <header class="page-head">
       <h1>Faves</h1>
     </header>
-    <div class="count-line" id="saved-count-line"></div>
     <div class="outfit-gallery" id="saved-gallery"></div>
     <div class="empty" id="saved-empty" style="display:none;">
       <h3 id="saved-empty-title">No faves yet</h3>
@@ -1948,11 +1944,11 @@ function renderFiltersFab(){
   fab.classList.toggle('active', n > 0);
   fab.innerHTML = `
     <span class="filters-fab-label">Filters</span>
-    ${n ? `<span class="filters-fab-count">${n}</span>` : ''}
     <svg class="filters-fab-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor"
          stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
       <path d="M6 14l6-6 6 6"/>
-    </svg>`;
+    </svg>
+    ${n ? `<span class="filters-fab-count">${n}</span>` : ''}`;
 }
 
 // One mount, in the docked panel, following whichever page you are on. The
@@ -1978,8 +1974,7 @@ function filterControlsHtml(ns){
 function setLabelCount(id, n){
   const el = document.getElementById(id);
   if(!el) return;
-  el.textContent = n ? String(n) : '';
-  el.style.display = n ? 'inline-flex' : 'none';
+  el.textContent = n ? ` (${n})` : '';
 }
 
 // Which end of a row has more behind it, so only that edge fades. Wired
@@ -2276,10 +2271,10 @@ function renderSlotChips(gridId){
     // something" — and reports itself as a door rather than a switch.
     return `<button class="${cls}" data-state="${f.type}" aria-haspopup="dialog"`
       + ` aria-label="${esc(key)}: ${said}" onclick="openSlotPicker('${key}')">`
-      + `<span class="chip-label">${key}</span>${badge}`
+      + `<span class="chip-label">${key}</span>`
       + `<svg class="chip-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor"`
       + ` stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">`
-      + `<path d="M6 10l6 6 6-6"/></svg></button>`;
+      + `<path d="M6 10l6 6 6-6"/></svg>${badge}</button>`;
   }).join('');
 }
 
@@ -2872,7 +2867,6 @@ function savedOutfitMatches(rec){
 }
 
 function renderSavedOutfits(){
-  const countLine = document.getElementById('saved-count-line');
   const gallery = document.getElementById('saved-gallery');
   const emptyState = document.getElementById('saved-empty');
   if(!gallery) return;
@@ -2882,14 +2876,10 @@ function renderSavedOutfits(){
   const shown = favoriteOutfits.filter(savedOutfitMatches);
   const narrowed = savedTags.length > 0 || countNarrowedSlots(savedFilters) > 0;
 
-  if(countLine){
-    const total = favoriteOutfits.length;
-    const plural = total === 1 ? '' : 's';
-    countLine.textContent = narrowed
-      ? `${shown.length} of ${total} fave${plural}${savedTags.length ? ` tagged ${tagPhrase(savedTags)}` : ''}`
-      : `${total} fave${plural}`;
-  }
-
+  // No count line: the cards are the count, and a line saying which
+  // filters were on repeated what the panel above it already shows. The
+  // empty state still says which of the two it is — that one is an answer
+  // rather than a label.
   if(shown.length === 0){
     gallery.innerHTML = '';
     // Say which of the two empty states this is, so a filter that matches
@@ -2929,7 +2919,7 @@ function renderSavedOutfits(){
           <div class="modal-actions">
             <!-- One button: the picker toggles, so a separate Remove was a
                  second way to do the same thing. -->
-            <button class="btn small secondary" onclick='event.stopPropagation();openOutfitExtrasPicker(${JSON.stringify(rec.key)})'>${combo.extras.length ? 'Accessories' : '+ Add accessories'}</button>
+            <button class="btn small secondary" onclick='event.stopPropagation();openOutfitExtrasPicker(${JSON.stringify(rec.key)})'>${combo.extras.length ? 'Edit accessories' : '+ Add accessories'}</button>
           </div>` : ''}
       </div>
     ` : '';

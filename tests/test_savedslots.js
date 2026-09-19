@@ -48,7 +48,7 @@ const cards = p => p.evaluate(()=>document.querySelectorAll('#saved-gallery .out
 const chipLabels = p => p.evaluate(()=>
   Array.from(document.querySelectorAll('#sheet-filter-grid .filter-chip'))
     .map(e=>e.childNodes[0].textContent.trim()));
-const countLine = p => p.textContent('#saved-count-line').then(t=>t.trim());
+// The page no longer prints a count line; the cards are the count.
 
 // Any is the only quick pick — the way back from a pinned selection.
 async function setAny(p, key){
@@ -110,7 +110,9 @@ async function pinFirst(p, key){
     const p=await open(b);
     await pin(p, 'Dresses', 'seed_32');
     check('pinning the dress keeps the dress fave', (await cards(p))===1, String(await cards(p)));
-    check('and says how many of how many', (await countLine(p)).includes('1 of 3'), await countLine(p));
+    check('and the other two are not drawn at all',
+      await p.evaluate(()=>favoriteOutfits.length===3 &&
+        document.querySelectorAll('#saved-gallery .outfit-card').length===1));
 
     await setAny(p, 'Dresses');
     await pin(p, 'Tops', 'seed_22');

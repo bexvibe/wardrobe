@@ -110,7 +110,17 @@ async function openPicker(p){
       return want.every(n=>names.includes(n));
     }));
   check('the button now reads as the way back in',
-    await p.isVisible('#saved-gallery button:has-text("Accessories")'));
+    await p.isVisible('#saved-gallery button:has-text("Edit accessories")'));
+  check('and it said "add" while there were none to edit',
+    await p.evaluate(()=>{
+      const was = favoriteOutfits[0].extras.slice();
+      favoriteOutfits[0].extras = [];
+      renderSavedOutfits();
+      const said = document.querySelector('#saved-gallery .modal-actions button').textContent.trim();
+      favoriteOutfits[0].extras = was;
+      renderSavedOutfits();
+      return said === '+ Add accessories';
+    }));
   await p.screenshot({path:shot('e-3-attached.png')});
 
   // ---- 4. Tapping again takes it off ----
