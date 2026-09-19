@@ -1,2 +1,5 @@
 .rembg-venv/
 .DS_Store
+
+# Screenshots the test suites write as they go
+tests/shots/
