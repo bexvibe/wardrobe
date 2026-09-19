@@ -1671,8 +1671,23 @@ function itemsInTab(tabName){
 // Outfits and Faves each keep their own tag, so narrowing one does not
 // silently narrow the other. The wardrobe has no filters at all — its own
 // category tabs and its search do that work.
-let outfitTag = null;
-let savedTag = null;
+// Several at once, and any one of them is enough. A row of chips reads as
+// multi-select whatever it does, so it used to lie: tapping winter
+// silently dropped summer. Within one filter the values are OR — the same
+// bargain every other faceted filter makes — while the piece chips beside
+// them still narrow by AND.
+let outfitTags = [];
+let savedTags = [];
+
+// "summer", "summer or linen", "summer, linen or wool".
+function tagPhrase(list){
+  if(list.length <= 1) return list[0] || '';
+  return list.slice(0, -1).join(', ') + ' or ' + list[list.length - 1];
+}
+
+function carriesAny(piece, tags){
+  return (piece.tags || []).some(t => tags.includes(t));
+}
 
 // The generator draws from everything; the tag is applied to finished
 // combinations instead of to the pool, so an outfit qualifies when any one
@@ -1683,8 +1698,8 @@ function comboMatchesTag(combo){
   // page's, and applying it to a sheet's "outfits with this piece" could
   // empty that list for a reason nothing on the sheet explains.
   if(outfitRenderContext === 'modal') return true;
-  if(!outfitTag) return true;
-  return comboPieces(combo).some(p => (p.tags || []).includes(outfitTag));
+  if(!outfitTags.length) return true;
+  return comboPieces(combo).some(p => carriesAny(p, outfitTags));
 }
 
 // Where you had scrolled to on each page. Coming back to a tab should put
@@ -1751,7 +1766,7 @@ function setMode(mode){
   if(mode==='capsules') renderCapsules();
   if(mode==='outfits'){
     outfitRenderContext = 'tab';
-    if(outfitTag && !allTags().includes(outfitTag)) outfitTag = null;
+    outfitTags = outfitTags.filter(t => allTags().includes(t));
     resetOutfitResults();
   }
 
@@ -1891,8 +1906,8 @@ function countNarrowedSlots(filters){
 }
 
 function activeFilterCount(){
-  if(appMode === 'outfits') return countNarrowedSlots(outfitFilters) + (outfitTag ? 1 : 0);
-  if(appMode === 'saved')   return countNarrowedSlots(savedFilters)  + (savedTag ? 1 : 0);
+  if(appMode === 'outfits') return countNarrowedSlots(outfitFilters) + (outfitTags.length ? 1 : 0);
+  if(appMode === 'saved')   return countNarrowedSlots(savedFilters)  + (savedTags.length ? 1 : 0);
   return 0;
 }
 
@@ -1985,7 +2000,7 @@ function renderFilterControls(){
     if(m !== 'outfits' && m !== 'saved'){ host.innerHTML = ''; return; }
     host.innerHTML = filterControlsHtml(ns);
 
-    renderTagChips(`${ns}-tag-chips`, m === 'outfits' ? outfitTag : savedTag,
+    renderTagChips(`${ns}-tag-chips`, m === 'outfits' ? outfitTags : savedTags,
                    m === 'outfits' ? 'setOutfitTag' : 'setSavedTag');
     renderSlotChips(`${ns}-filter-grid`);
 
@@ -2126,13 +2141,13 @@ window.addEventListener('scroll', () => {
 
 function clearFilters(){
   if(appMode === 'outfits'){
-    outfitTag = null;
+    outfitTags = [];
     Object.keys(outfitFilters).forEach(k => { outfitFilters[k] = anyFilter(); });
     renderFilterControls();
     renderFiltersFab();
     resetOutfitResults();
   } else if(appMode === 'saved'){
-    savedTag = null;
+    savedTags = [];
     savedFilters = emptySlotFilters();
     renderFilterControls();
     renderSavedOutfits();
@@ -2440,7 +2455,7 @@ function outfitThumbsHtml(combo){
 // category and throws the arithmetic out.
 function slotCount(slot, untaggedOnly){
   let list = slotList(generatorFilters(), slot);
-  if(untaggedOnly) list = list.filter(x => !x || !(x.tags || []).includes(outfitTag));
+  if(untaggedOnly) list = list.filter(x => !x || !carriesAny(x, outfitTags));
   return list.length;
 }
 
@@ -2461,7 +2476,7 @@ function comboCountWhere(untaggedOnly){
 
 function totalComboCount(){
   const all = comboCountWhere(false);
-  if(!outfitTag) return all;
+  if(!outfitTags.length) return all;
   // A combination matches unless the tag appears on none of its pieces, so
   // subtracting the all-untagged combinations gives the exact figure.
   return Math.max(0, all - comboCountWhere(true));
@@ -2499,7 +2514,7 @@ const HERO_KEY = 'wardrobe-hero-outfit';
 // made before them may no longer belong to it; comparing signatures is
 // cheaper and more honest than trying to re-test the combination.
 function heroSignature(){
-  return JSON.stringify({ tag: outfitTag, filters: outfitFilters });
+  return JSON.stringify({ tags: outfitTags, filters: outfitFilters });
 }
 
 function readStoredHero(){
@@ -2796,8 +2811,8 @@ function renderExtrasPicker(key){
 // An outfit matches when at least one of its pieces carries the tag, so
 // tagging a single summer top surfaces every outfit you can wear it in.
 function savedOutfitMatchesTag(rec){
-  if(!savedTag) return true;
-  return comboPieces(favoriteRecordToCombo(rec)).some(p => (p.tags || []).includes(savedTag));
+  if(!savedTags.length) return true;
+  return comboPieces(favoriteRecordToCombo(rec)).some(p => carriesAny(p, savedTags));
 }
 
 // The same piece filters the Outfits page narrows its stream with, applied
@@ -2833,16 +2848,16 @@ function renderSavedOutfits(){
   const emptyState = document.getElementById('saved-empty');
   if(!gallery) return;
 
-  if(savedTag && !allTags().includes(savedTag)) savedTag = null;
+  savedTags = savedTags.filter(t => allTags().includes(t));
 
   const shown = favoriteOutfits.filter(savedOutfitMatches);
-  const narrowed = Boolean(savedTag) || countNarrowedSlots(savedFilters) > 0;
+  const narrowed = savedTags.length > 0 || countNarrowedSlots(savedFilters) > 0;
 
   if(countLine){
     const total = favoriteOutfits.length;
     const plural = total === 1 ? '' : 's';
     countLine.textContent = narrowed
-      ? `${shown.length} of ${total} fave${plural}${savedTag ? ` tagged ${savedTag}` : ''}`
+      ? `${shown.length} of ${total} fave${plural}${savedTags.length ? ` tagged ${tagPhrase(savedTags)}` : ''}`
       : `${total} fave${plural}`;
   }
 
@@ -2852,8 +2867,8 @@ function renderSavedOutfits(){
     // nothing does not read as "you have saved nothing".
     document.getElementById('saved-empty-title').textContent =
       !narrowed ? 'No faves yet'
-      : savedTag ? `Nothing tagged ${savedTag}`
-                 : 'Nothing matches';
+      : savedTags.length ? `Nothing tagged ${tagPhrase(savedTags)}`
+                         : 'Nothing matches';
     document.getElementById('saved-empty-note').textContent = narrowed
       ? 'Try widening the filters.'
       : 'Tap the heart on any outfit to keep it here.';
@@ -4305,8 +4320,8 @@ async function retagAll(from, to){
 // the filters follow it and every page that shows tags is redrawn.
 function afterTagChange(){
   const live = allTags();
-  if(outfitTag && !live.includes(outfitTag)) outfitTag = null;
-  if(savedTag && !live.includes(savedTag)) savedTag = null;
+  outfitTags = outfitTags.filter(t => live.includes(t));
+  savedTags = savedTags.filter(t => live.includes(t));
   renderFilterControls();
   renderFiltersFab();
   render();
@@ -4317,7 +4332,7 @@ function afterTagChange(){
 async function undoRetag(changes, filters){
   if(!await writeTags(changes.map(c => ({ id: c.id, tags: c.was })))) return;
   changes.forEach(c => { const i = itemById(c.id); if(i) i.tags = c.was; });
-  if(filters){ outfitTag = filters.outfit; savedTag = filters.saved; }
+  if(filters){ outfitTags = filters.outfit.slice(); savedTags = filters.saved.slice(); }
   afterTagChange();
   showToast('Tag put back');
 }
@@ -4358,27 +4373,27 @@ async function renameTag(from){
   const to = parsed[0];
   if(to === from){ closeModal(); return; }
 
-  const filters = { outfit: outfitTag, saved: savedTag };
+  const filters = { outfit: outfitTags.slice(), saved: savedTags.slice() };
   const btn = document.getElementById('tag-edit-save');
   btn.disabled = true;
   const changes = await retagAll(from, to);
   btn.disabled = false;
   if(!changes) return;
 
-  if(outfitTag === from) outfitTag = to;
-  if(savedTag === from) savedTag = to;
+  outfitTags = outfitTags.map(t => t === from ? to : t);
+  savedTags = savedTags.map(t => t === from ? to : t);
   closeModal();
   afterTagChange();
   showToast(`Now ${to}`, changes.length ? () => undoRetag(changes, filters) : null);
 }
 
 async function deleteTag(tag){
-  const filters = { outfit: outfitTag, saved: savedTag };
+  const filters = { outfit: outfitTags.slice(), saved: savedTags.slice() };
   const changes = await retagAll(tag, null);
   if(!changes) return;
 
-  if(outfitTag === tag) outfitTag = null;
-  if(savedTag === tag) savedTag = null;
+  outfitTags = outfitTags.filter(t => t !== tag);
+  savedTags = savedTags.filter(t => t !== tag);
   closeModal();
   afterTagChange();
   const n = changes.length;
@@ -4443,20 +4458,25 @@ function renderTagChips(elementId, selected, handler){
   }
   el.style.display = 'flex';
   el.innerHTML = tags.map(t => `
-    <button class="tag-chip ${selected === t ? 'active' : ''}" data-tag="${esc(t)}"
+    <button class="tag-chip ${selected.includes(t) ? 'active' : ''}" data-tag="${esc(t)}"
             onclick='${handler}(${JSON.stringify(t)})'>${esc(t)}</button>
   `).join('');
 }
 
+// Each tap adds or removes one, rather than replacing whatever was there.
+function toggleTag(list, tag){
+  return list.includes(tag) ? list.filter(t => t !== tag) : list.concat(tag);
+}
+
 function setOutfitTag(tag){
-  outfitTag = (outfitTag === tag) ? null : tag;
+  outfitTags = toggleTag(outfitTags, tag);
   renderFilterControls();     // redraws the chips and the Clear all control with them
   renderFiltersFab();
   resetOutfitResults();
 }
 
 function setSavedTag(tag){
-  savedTag = (savedTag === tag) ? null : tag;
+  savedTags = toggleTag(savedTags, tag);
   expandedSavedKey = null;   // an expanded card may be filtered away
   renderSavedOutfits();
   renderFiltersFab();
