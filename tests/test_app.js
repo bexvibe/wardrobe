@@ -90,7 +90,7 @@ async function login(page) {
 
     const count = await shown(page);
     check('items load from the database', count === 80, String(count));
-    await page.screenshot({ path: path.join(SCRATCH, 'v1-inventory.png') });
+    await page.screenshot({ path: shot('v1-inventory.png') });
     await page.close();
   }
 
@@ -123,7 +123,7 @@ async function login(page) {
     await page.waitForTimeout(250);
     check('archive tab lists the archived piece',
       (await page.textContent('#archive-count-line')).includes('1 archived'));
-    await page.screenshot({ path: path.join(SCRATCH, 'v2-archive.png') });
+    await page.screenshot({ path: shot('v2-archive.png') });
 
     await page.click('.archive-row button:has-text("Restore")');
     await page.waitForTimeout(300);
@@ -223,7 +223,7 @@ async function login(page) {
         await page.waitForTimeout(300);
         return (await page.textContent('#saved-count-line')).includes('1 fave');
       })());
-    await page.screenshot({ path: path.join(SCRATCH, 'v3-migrated.png') });
+    await page.screenshot({ path: shot('v3-migrated.png') });
 
     // Reload: the migration must not run a second time. The fake's database is
     // in-memory and starts empty again on reload, while the legacy localStorage
@@ -255,7 +255,7 @@ async function login(page) {
     await page.waitForTimeout(300);
     check('unconfigured install shows setup instructions, not a broken page',
       await page.isVisible('#gate-unconfigured'));
-    await page.screenshot({ path: path.join(SCRATCH, 'v4-unconfigured.png') });
+    await page.screenshot({ path: shot('v4-unconfigured.png') });
     await page.close();
   }
 

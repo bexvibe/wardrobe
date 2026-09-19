@@ -121,7 +121,7 @@ const check=(n,p,d)=>{results.push(p);console.log(`${p?'PASS':'FAIL'}  ${n}${d?'
     });
     check('an outfit carried over from localStorage still shows its shoes',
       s.upper===1 && s.lower===1 && s.feet===1, `upper=${s.upper} lower=${s.lower} feet=${s.feet}`);
-    await p.screenshot({path:'saved-with-shoes.png'});
+    await p.screenshot({path:shot('saved-with-shoes.png')});
     await p.close();
   }
 
