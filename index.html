@@ -1631,7 +1631,18 @@ function activeSlotFilters(){
 let outfitGen = null;
 let outfitDisplayed = [];
 let outfitRenderContext = 'tab'; // 'tab' or 'modal'
-let modalReturnItemId = null;
+
+// The Outfits page and the "Outfits with this piece" list inside a detail
+// sheet run the same generator, but they are asking different questions:
+// the page asks whatever you narrowed it to, the sheet always asks about
+// the one piece. They shared a single object, so opening any piece wiped
+// the page's filters and pinned them to that piece — and the damage
+// survived going back to the page, which then read as though you had asked
+// for it. A sheet gets its own set.
+let modalFilters = emptySlotFilters();
+function generatorFilters(){
+  return outfitRenderContext === 'modal' ? modalFilters : outfitFilters;
+}
 const OUTFIT_PAGE_SIZE = 24;
 
 function itemsInTab(tabName){
@@ -1649,6 +1660,10 @@ let savedTag = null;
 // piece carries it rather than all of them.
 
 function comboMatchesTag(combo){
+  // The same leak as the filters: a tag chosen on the Outfits page is the
+  // page's, and applying it to a sheet's "outfits with this piece" could
+  // empty that list for a reason nothing on the sheet explains.
+  if(outfitRenderContext === 'modal') return true;
   if(!outfitTag) return true;
   return comboPieces(combo).some(p => (p.tags || []).includes(outfitTag));
 }
@@ -1735,44 +1750,104 @@ function setMode(mode){
   restoreScroll(mode);
 }
 
-// A piece in an outfit's list is a way to that piece: it takes you where the
-// piece lives — the wardrobe, on its own category, scrolled to it — and opens
-// it there. Closing the sheet leaves you looking at the piece in its grid
-// rather than back where you came from.
-function openPieceInWardrobe(itemId){
+// ---- The way you came --------------------------------------
+// Every sheet in the app opens over the page rather than beside it, and
+// several of them lead to each other: a piece leads to its edit form, to
+// the capsules it belongs to, and to the other pieces it is worn with.
+// This is the trail of those steps, so the back arrow retraces the path
+// instead of dropping you wherever the last sheet happened to leave you.
+//
+// It is not the browser's history — all of this is one page — but it
+// behaves like it, and it is what lets a piece open over Faves and go back
+// to Faves rather than being answered with the Wardrobe.
+const SHEET_BACKDROPS = ['modal-backdrop', 'form-backdrop'];
+const SHEETS = {
+  item:      { backdrop: 'modal-backdrop', draw: id => drawItemSheet(id) },
+  capsules:  { backdrop: 'modal-backdrop', draw: id => drawItemCapsulePicker(id) },
+  form:      { backdrop: 'form-backdrop',  draw: id => drawItemForm(id) },
+  // Only ever left, never returned to: its draft does not survive the trip.
+  capsule:   { backdrop: 'modal-backdrop', draw: null },
+};
+
+let sheetTrail = [];
+// The page the trail started from, and where you were standing on it.
+let sheetOrigin = null;
+
+function anySheetShowing(){
+  return SHEET_BACKDROPS.some(id =>
+    document.getElementById(id)?.classList.contains('open'));
+}
+
+function showSheetBackdrop(which){
+  SHEET_BACKDROPS.forEach(id => {
+    document.getElementById(id)?.classList.toggle('open', id === which);
+  });
+}
+
+function hideAllSheets(){
+  SHEET_BACKDROPS.forEach(id =>
+    document.getElementById(id)?.classList.remove('open'));
+}
+
+// One step deeper. The first step also notes where you were standing when
+// you took it, because that is what the last step back has to put right.
+function pushSheet(entry){
+  if(!anySheetShowing()){
+    sheetTrail = [];
+    sheetOrigin = { mode: appMode, y: Math.round(window.scrollY) };
+  }
+  sheetTrail.push(entry);
+}
+
+// The back arrow, everywhere inside the sheets. One step at a time: the
+// sheet you came from if there is one, otherwise the page you were on.
+function goBackFromSheet(){
+  sheetTrail.pop();
+  const back = sheetTrail[sheetTrail.length - 1];
+  const spec = back && SHEETS[back.sheet];
+  if(spec && spec.draw){
+    showSheetBackdrop(spec.backdrop);
+    spec.draw(back.id);
+    return;
+  }
+  closeModal();
+}
+
+// Back on the page the trail started from. Nothing moved while the sheets
+// were over it — they cover the viewport rather than pushing it about — so
+// this is only putting right the cases where something did, like a piece
+// archived out from under you.
+function landBackOnPage(){
+  const from = sheetOrigin;
+  sheetOrigin = null;
+  if(!from) return;
+  if(from.mode !== appMode){ setMode(from.mode); return; }
+  requestAnimationFrame(() => {
+    if(Math.abs(window.scrollY - from.y) > 2) window.scrollTo({ top: from.y });
+    watchForSheetDismiss();
+  });
+}
+
+// A piece listed under an outfit, a fave or a capsule is a way to that
+// piece — but not a way off the page you are reading. The sheet opens over
+// whichever tab you are on, and the back arrow brings you back to it.
+//
+// It used to call setMode('inventory'): you were thrown onto the Wardrobe,
+// moved to the piece's own category with your search cleared, and going
+// back left you there rather than where you had been reading.
+function openPieceSheet(itemId){
   const item = ITEMS.find(i => i.id === itemId);
   if(!item){ showToast('That piece is in the archive'); return; }
 
   // Already on this piece — tapping it from its own "outfits with this
   // piece" list means take me back up to it, not nowhere.
-  if(modalReturnItemId === itemId &&
-     document.getElementById('modal-backdrop').classList.contains('open')){
+  const here = sheetTrail[sheetTrail.length - 1];
+  if(here && here.sheet === 'item' && here.id === itemId && anySheetShowing()){
     document.getElementById('modal-backdrop').scrollTo({top:0, behavior:'smooth'});
     return;
   }
 
-  activeTab = tabForItem(item);
-  // A search that would hide the very piece you asked for has to come off,
-  // or you arrive at a grid that does not contain it.
-  const search = document.getElementById('filter-search');
-  if(search && search.value.trim()) search.value = '';
-
-  closeModal();
-  setMode('inventory');
   openModal(itemId);
-
-  // Land on the piece rather than wherever the wardrobe was last left, and
-  // say for a moment which one it was — centred in a grid of eighty is not
-  // by itself an answer, and the sheet is covering it. Two frames: setMode
-  // restores its own scroll position in the first one.
-  requestAnimationFrame(() => requestAnimationFrame(() => {
-    const rows = document.querySelectorAll('#gallery .tile, #name-list .name-row');
-    const tile = Array.from(rows).find(el => el.dataset.id === itemId);
-    if(!tile) return;
-    tile.scrollIntoView({ block: 'center' });
-    tile.classList.add('just-arrived');
-    setTimeout(() => tile.classList.remove('just-arrived'), 1800);
-  }));
 }
 
 // Filters live in a panel docked to the bottom of the screen. A control at
@@ -2054,11 +2129,11 @@ function familiesFor(f){
   return fams;
 }
 
-function outfitFamilies(){ return familiesFor(outfitFilters); }
+function outfitFamilies(){ return familiesFor(generatorFilters()); }
 
 function shoeSlotList(){
   // Pinned to "no shoes" while shoes are held out of outfits.
-  return INCLUDE_SHOES_IN_OUTFITS ? slotList(outfitFilters, 'shoes') : [null];
+  return INCLUDE_SHOES_IN_OUTFITS ? slotList(generatorFilters(), 'shoes') : [null];
 }
 
 function renderSlotChips(gridId){
@@ -2207,8 +2282,8 @@ function slotList(filters, slot){
 
 function* familyGenerator(family, jumpers, jackets, shoes){
   if(family === 'topbottom'){
-    const tops = slotList(outfitFilters, 'top');
-    const bottoms = slotList(outfitFilters, 'bottom');
+    const tops = slotList(generatorFilters(), 'top');
+    const bottoms = slotList(generatorFilters(), 'bottom');
     for(const top of tops)
       for(const bottom of bottoms)
         for(const jumper of jumpers)
@@ -2216,7 +2291,7 @@ function* familyGenerator(family, jumpers, jackets, shoes){
             for(const shoe of shoes)
               yield {base:'topbottom', top, bottom, jumper, jacket, shoe};
   } else {
-    const dresses = slotList(outfitFilters, 'dress');
+    const dresses = slotList(generatorFilters(), 'dress');
     for(const dress of dresses)
       for(const jumper of jumpers)
         for(const jacket of jackets)
@@ -2226,8 +2301,8 @@ function* familyGenerator(family, jumpers, jackets, shoes){
 }
 
 function* comboGenerator(){
-  const jumpers = slotList(outfitFilters, 'jumper');
-  const jackets = slotList(outfitFilters, 'jacket');
+  const jumpers = slotList(generatorFilters(), 'jumper');
+  const jackets = slotList(generatorFilters(), 'jacket');
   const shoes = shoeSlotList();
 
   const gens = outfitFamilies().map(f => ({ gen: familyGenerator(f, jumpers, jackets, shoes), done: false }));
@@ -2299,7 +2374,7 @@ function outfitThumbsHtml(combo){
 // pinned selection empty, which makes slotList fall back to the whole
 // category and throws the arithmetic out.
 function slotCount(slot, untaggedOnly){
-  let list = slotList(outfitFilters, slot);
+  let list = slotList(generatorFilters(), slot);
   if(untaggedOnly) list = list.filter(x => !x || !(x.tags || []).includes(outfitTag));
   return list.length;
 }
@@ -2409,7 +2484,7 @@ function outfitExpandedPanelHtml(combo, key){
         <button class="outfit-collapse-btn" onclick='event.stopPropagation();toggleExpandCombo(${JSON.stringify(key)})'>Collapse ↑</button>
         ${comboPieces(combo).map(p => `
           <div class="outfit-piece-row tappable"
-               onclick='event.stopPropagation();openPieceInWardrobe(${JSON.stringify(p.id)})'>
+               onclick='event.stopPropagation();openPieceSheet(${JSON.stringify(p.id)})'>
             ${p.photo ? `<img src="${esc(p.photo)}" alt="${esc(p.name)}" referrerpolicy="no-referrer" loading="lazy" decoding="async">` : `<div class="no-photo-mini">No photo</div>`}
             <div class="outfit-piece-info">
               <div class="p-name">${esc(p.name)}</div>
@@ -2733,7 +2808,7 @@ function renderSavedOutfits(){
         <button class="outfit-collapse-btn" onclick='event.stopPropagation();toggleExpandSaved(${JSON.stringify(rec.key)})'>Collapse ↑</button>
         ${pieces.map(p => `
           <div class="outfit-piece-row tappable"
-               onclick='event.stopPropagation();openPieceInWardrobe(${JSON.stringify(p.id)})'>
+               onclick='event.stopPropagation();openPieceSheet(${JSON.stringify(p.id)})'>
             ${p.photo ? `<img src="${esc(p.photo)}" alt="${esc(p.name)}" referrerpolicy="no-referrer" loading="lazy" decoding="async">` : `<div class="no-photo-mini">No photo</div>`}
             <div class="outfit-piece-info">
               <div class="p-name">${esc(p.name)}</div>
@@ -2850,7 +2925,7 @@ function renderCapsules(){
         <button class="outfit-collapse-btn" onclick='event.stopPropagation();toggleExpandCapsule(${JSON.stringify(capsule.id)})'>Collapse ↑</button>
         ${pieces.map(p => `
           <div class="outfit-piece-row tappable"
-               onclick='event.stopPropagation();openPieceInWardrobe(${JSON.stringify(p.id)})'>
+               onclick='event.stopPropagation();openPieceSheet(${JSON.stringify(p.id)})'>
             ${p.photo ? `<img src="${esc(p.photo)}" alt="${esc(p.name)}" referrerpolicy="no-referrer" loading="lazy" decoding="async">` : `<div class="no-photo-mini">No photo</div>`}
             <div class="outfit-piece-info" style="flex:1;min-width:0;">
               <div class="p-name">${esc(p.name)}</div>
@@ -2889,6 +2964,7 @@ function toggleExpandCapsule(id){
 let capsuleDraft = null;   // { id, name, itemIds:Set, tab }
 
 function openCapsuleEditor(id, seedItemIds){
+  pushSheet({ sheet: 'capsule', id: id || null });
   const capsule = id ? capsules.find(c => c.id === id) : null;
   capsuleDraft = {
     id: capsule ? capsule.id : null,
@@ -3030,7 +3106,9 @@ function closeCapsuleEditor(){
 
 function discardCapsuleEditor(){
   capsuleDraft = null;
-  closeModal();
+  // Reached from a piece's "New capsule" as often as from the Capsules
+  // page, so back is whichever of those it was.
+  goBackFromSheet();
 }
 
 async function submitCapsuleEditor(){
@@ -3156,31 +3234,40 @@ function renderOutfits(){
   }).join('');
 }
 
+// A set of filters that asks for one piece and nothing else. Returned
+// rather than written into a global, so the caller decides whose filters
+// it is replacing — the page's, or a sheet's own.
 function lockFilterForPiece(itemId){
   const item = ITEMS.find(i=>i.id===itemId);
-  if(!item) return false;
+  if(!item) return null;
   const tab = tabForItem(item);
-  outfitFilters = emptySlotFilters();
-  const locked = {type:'items', ids:[itemId]};
 
   // Pinning the piece is enough to fix the shape: a chosen top rules the
   // dress out on its own, and a chosen dress rules out tops and bottoms.
   // A piece from a category outfits are not built from has no outfits to
   // show, which is why the caller is told so rather than shown an empty page.
-  if(!OUTFIT_TABS.includes(tab)) return false;
-  outfitFilters[tab] = locked;
-  return true;
+  if(!OUTFIT_TABS.includes(tab)) return null;
+
+  const filters = emptySlotFilters();
+  filters[tab] = {type:'items', ids:[itemId]};
+  return filters;
 }
 
 function findOutfitsWithPiece(itemId){
-  if(!lockFilterForPiece(itemId)){
+  const locked = lockFilterForPiece(itemId);
+  if(!locked){
     const item = ITEMS.find(i => i.id === itemId);
     showToast(item && tabForItem(item) === 'Shoes'
       ? 'Shoes are left out of outfits — pick them by hand'
       : "This piece's category isn't used in outfit combos yet");
     return;
   }
-  closeModal();
+  // This one really is the page's filters: you asked the page to show you
+  // outfits with this piece, and the chips should say so when you get there.
+  outfitFilters = locked;
+  // Not a step back: you asked to be taken to the Outfits page, so the way
+  // you came does not apply any more.
+  dropSheetTrail();
   outfitRenderContext = 'tab';
   setMode('outfits');
   renderFilterControls();
@@ -3189,10 +3276,14 @@ function findOutfitsWithPiece(itemId){
 
 function showOutfitsInModal(itemId){
   const container = document.getElementById('modal-outfits-container');
-  if(!lockFilterForPiece(itemId)){
+  const locked = lockFilterForPiece(itemId);
+  if(!locked){
     container.innerHTML = '';
     return;
   }
+  // The sheet's own, so the page it is sitting over keeps whatever you
+  // narrowed it to.
+  modalFilters = locked;
   outfitRenderContext = 'modal';
   container.innerHTML = `
     <div class="outfits-heading">Outfits with this piece</div>
@@ -3370,12 +3461,18 @@ async function setItemInCapsule(capsuleId, itemId, member){
 // already ticked. Nothing to confirm: each tap is the change, and the toast
 // offers it back.
 function openItemCapsulePicker(itemId){
+  if(!ITEMS.find(i => i.id === itemId)) return;
+  pushSheet({ sheet: 'capsules', id: itemId });
+  drawItemCapsulePicker(itemId);
+}
+
+function drawItemCapsulePicker(itemId){
   const item = ITEMS.find(i => i.id === itemId);
   if(!item) return;
   const modal = document.getElementById('modal');
   modal.innerHTML = `
     <div class="sheet-header">
-      <button class="sheet-back" onclick='openModal(${JSON.stringify(itemId)})'><svg class="back-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>Back</button>
+      <button class="sheet-back" onclick="goBackFromSheet()"><svg class="back-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>Back</button>
     </div>
     <div class="modal-body">
       <div class="modal-name" style="margin-bottom:14px;">Capsules</div>
@@ -3999,7 +4096,9 @@ async function handlePhotoUpload(event){
     if(document.getElementById('form-backdrop').classList.contains('open')){
       renderFormPhotoRow(itemById(itemId));
     } else if(document.getElementById('modal-backdrop').classList.contains('open')){
-      openModal(itemId);
+      // Redrawn where it stands, not opened again — the sheet is already on
+      // the trail and pushing it twice would make back go nowhere.
+      drawItemSheet(itemId);
     }
     showToast('Photo added');
   }catch(e){
@@ -4300,13 +4399,20 @@ function setSavedTag(tag){
 }
 
 function openModal(id){
+  if(!ITEMS.find(i => i.id === id)) return;
+  pushSheet({ sheet: 'item', id });
+  drawItemSheet(id);
+}
+
+// Drawing it is separate from arriving at it: the trail redraws a sheet you
+// are coming back to, which is not another step deeper.
+function drawItemSheet(id){
   const item = ITEMS.find(i => i.id === id);
   if(!item) return;
-  modalReturnItemId = id;
   const modal = document.getElementById('modal');
   modal.innerHTML = `
     <div class="sheet-header">
-      <button class="sheet-back" onclick="closeModal()"><svg class="back-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>Back</button>
+      <button class="sheet-back" onclick="goBackFromSheet()"><svg class="back-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>Back</button>
     </div>
     <div class="modal-photo">
       ${item.photo ? `<img src="${esc(item.photo)}" alt="${esc(item.name)}" referrerpolicy="no-referrer" decoding="async">` : `<span class="no-photo">No photo yet</span>`}
@@ -4346,8 +4452,21 @@ function detailFactsHtml(item){
   }</dl>`;
 }
 
+// Out of the sheets altogether, rather than one step back: the piece was
+// archived, or you asked to be taken somewhere else. The whole trail goes
+// with it, and you land back on the page you started from.
 function closeModal(){
-  document.getElementById('modal-backdrop').classList.remove('open');
+  sheetTrail = [];
+  hideAllSheets();
+  landBackOnPage();       // clears the origin itself
+}
+
+// Put the sheets away without retracing anything: you asked to be taken
+// somewhere else, so the way you came no longer applies.
+function dropSheetTrail(){
+  sheetTrail = [];
+  sheetOrigin = null;
+  hideAllSheets();
 }
 
 // ---- Add / edit a piece ------------------------------------
@@ -4355,6 +4474,11 @@ const CATEGORY_OPTIONS = Object.keys(CATEGORY_TO_TAB).sort();
 let editingItemId = null;
 
 function openItemForm(id){
+  pushSheet({ sheet: 'form', id: id || null });
+  drawItemForm(id);
+}
+
+function drawItemForm(id){
   editingItemId = id || null;
   const item = id ? ITEMS.find(i => i.id === id) : null;
 
@@ -4380,9 +4504,10 @@ function openItemForm(id){
   document.getElementById('form-category').value = item ? item.category : '';
   renderCategoryOptions();
 
-  closeModal();
   itemFormBaseline = itemFormSnapshot();
-  document.getElementById('form-backdrop').classList.add('open');
+  // The form and the detail sheet are two backdrops; only one of them is
+  // ever up, and which one is the trail's business now.
+  showSheetBackdrop('form-backdrop');
   setTimeout(() => document.getElementById('form-name').focus(), 50);
 }
 
@@ -4475,14 +4600,21 @@ function closeItemForm(){
 
 function discardItemForm(){
   itemFormBaseline = null;
-  document.getElementById('form-backdrop').classList.remove('open');
   editingItemId = null;
+  // Back to the piece you were editing if that is where you came from,
+  // rather than out to whatever page happens to be underneath.
+  goBackFromSheet();
 }
 
 // Archiving is reached from the edit sheet now, so the sheet has to go with
 // the piece — removeItem only knows about the detail sheet behind it.
 async function archiveFromForm(id){
-  discardItemForm();
+  itemFormBaseline = null;
+  editingItemId = null;
+  // The piece is on its way to the archive, so the sheet about it is not
+  // somewhere to go back to. removeItem puts the rest away and lands you
+  // back on the page you came from.
+  sheetTrail = [];
   await removeItem(id);
 }
 
