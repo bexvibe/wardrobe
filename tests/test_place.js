@@ -41,7 +41,9 @@ const scrollTo = async (p, top) => { await p.evaluate(t=>window.scrollTo({top:t}
     check('no rule under the title',
       await p.evaluate(()=>getComputedStyle(document.querySelector('#inventory-view .page-head'))
         .borderBottomWidth) === '0px');
-    await p.click('#nav-outfits-btn'); await p.waitForTimeout(900);
+    await p.click('#nav-outfits-btn');
+    await p.waitForFunction(()=>outfitDisplayed.length > 0);
+    await p.waitForTimeout(400);
     check('no "an outfit to consider" label over the lead card',
       await p.evaluate(()=>!document.querySelector('.hero-label')));
     check('and no combination count on the page',
@@ -56,14 +58,22 @@ const scrollTo = async (p, top) => { await p.evaluate(t=>window.scrollTo({top:t}
   // ---- 2. A piece under an outfit leads to that piece ----
   {
     const p=await open(b);
-    await p.click('#nav-outfits-btn'); await p.waitForTimeout(900);
+    await p.click('#nav-outfits-btn');
+    // The stream generates in chunks, so wait for it to have produced
+    // something rather than for a number of milliseconds — under a
+    // parallel run 900ms is not always enough, and outfitDisplayed is
+    // empty when this reaches into it.
     // Open a card with more than one piece in it, so "its pieces" is a list
-    // rather than the one garment a bare dress outfit has.
-    await p.evaluate(()=>{
-      const many = outfitDisplayed.find(c => comboPieces(c).length >= 2);
+    // rather than the one garment a bare dress outfit has — and not the
+    // lead card, whose rows are drawn outside the grid this reads.
+    const usable = () => `outfitDisplayed.filter(c => comboPieces(c).length >= 2 &&
+      (!heroCombo || comboKey(c) !== comboKey(heroCombo)))`;
+    await p.waitForFunction(new Function(`return ${usable()}.length > 0`));
+    await p.evaluate(new Function(`
+      const many = ${usable()}[0];
       expandedComboKey = comboKey(many);
       renderOutfits();
-    });
+    `));
     await p.waitForTimeout(500);
 
     const pieces = await p.evaluate(()=>
@@ -113,7 +123,9 @@ const scrollTo = async (p, top) => { await p.evaluate(t=>window.scrollTo({top:t}
     await p.click('#nav-inventory-btn'); await p.waitForTimeout(500);
     await p.click('#search-btn'); await p.waitForTimeout(400);
     await p.fill('#filter-search', 'zzzz-nothing'); await p.waitForTimeout(400);
-    await p.click('#nav-outfits-btn'); await p.waitForTimeout(900);
+    await p.click('#nav-outfits-btn');
+    await p.waitForFunction(()=>outfitDisplayed.length > 0);
+    await p.waitForTimeout(400);
     await p.evaluate(()=>{ expandedComboKey = null; renderOutfits(); });
     await p.waitForTimeout(300);
     await p.click('#outfit-gallery .outfit-card'); await p.waitForTimeout(500);
@@ -167,14 +179,18 @@ const scrollTo = async (p, top) => { await p.evaluate(t=>window.scrollTo({top:t}
       Math.abs((await y(p)) - wardrobeAt) <= 2, `${await y(p)} vs ${wardrobeAt}`);
 
     // Two tabs at once, each with its own place.
-    await p.click('#nav-outfits-btn'); await p.waitForTimeout(900);
+    await p.click('#nav-outfits-btn');
+    await p.waitForFunction(()=>outfitDisplayed.length > 0);
+    await p.waitForTimeout(400);
     await scrollTo(p, 700);
     const outfitsAt = await y(p);
     check('and Outfits keeps its own', outfitsAt > 300, String(outfitsAt));
     await p.click('#nav-inventory-btn'); await p.waitForTimeout(800);
     check('the wardrobe is still at the wardrobe position',
       Math.abs((await y(p)) - wardrobeAt) <= 2, `${await y(p)} vs ${wardrobeAt}`);
-    await p.click('#nav-outfits-btn'); await p.waitForTimeout(900);
+    await p.click('#nav-outfits-btn');
+    await p.waitForFunction(()=>outfitDisplayed.length > 0);
+    await p.waitForTimeout(400);
     // Loosely: a lazily-loaded photo settling after the restore can shift the
     // page by a row. What is being tested is that it came back near where it
     // was rather than to the top.
