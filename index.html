@@ -91,6 +91,39 @@
     scrollbar-width:none;
   }
   .tabs::-webkit-scrollbar{display:none;}
+  /* The categories stay in reach. Eighty tiles is a long way back up just
+     to go from Tops to Jackets, so the row that switches between them
+     stops at the top of its scroller rather than leaving with the page.
+     The title goes and the chips stay: title plus chips would be 78px of a
+     390px phone permanently spoken for, and the title is not a control.
+     The negative margin and matching padding let the background reach the
+     edges — a stuck row with 16px of page showing either side reads as a
+     box that came loose rather than the top of the screen. */
+  .stuck-row{
+    position:sticky;
+    top:var(--stuck-top, 0px);
+    z-index:20;
+    margin-left:-16px;margin-right:-16px;
+    padding-left:16px;padding-right:16px;
+    background:var(--page);
+    /* Only while it is actually stuck. At rest it sits under the title
+       with nothing behind it to lift away from. */
+    transition:box-shadow 0.15s ease;
+  }
+  .stuck-row.is-stuck{box-shadow:0 6px 16px -12px rgba(0,0,0,0.5);}
+  /* Where the row would be if it had not stuck. Nothing to see; it is what
+     the observer watches to know the row has taken over. */
+  .stuck-mark{height:0;}
+  /* In select mode the head is already at the top, so the chips stop under
+     it rather than behind it. */
+  body.selecting #tabs.stuck-row{top:var(--select-head-h, 56px);}
+  /* The capsule editor scrolls inside its own sheet, under a back button
+     that is already stuck at the top of it, and its gutter is 18px. */
+  .modal .stuck-row{
+    z-index:4;
+    margin-left:-18px;margin-right:-18px;
+    padding-left:18px;padding-right:18px;
+  }
   .tab{
     flex:none;
     font-family:'Work Sans',sans-serif;
@@ -2897,6 +2930,8 @@ function openCapsuleEditor(id, seedItemIds){
   renderCapsuleEditorTabs();
   renderCapsuleEditorGallery();
   document.getElementById('modal-backdrop').classList.add('open');
+  // Once it is up and the header has a height to measure.
+  stickCapsuleEditorTabs();
   if(!capsule) document.getElementById('capsule-name-input').focus();
 }
 
@@ -2918,6 +2953,22 @@ function renderCapsuleEditorTabs(){
     .map(t => `<button class="tab ${capsuleDraft.tab === t ? 'active' : ''}" onclick="setCapsuleEditorTab('${t}')">
       ${t}
     </button>`).join('');
+
+  stickCapsuleEditorTabs();
+}
+
+// Same idea as the wardrobe's row, but this one scrolls inside the sheet
+// and stops under the back button rather than at the top of the window.
+// The header's height is measured because it is a button plus padding, any
+// of which can move — and measured only once the sheet is actually up,
+// since a hidden one is nought tall and the row would stick behind it.
+function stickCapsuleEditorTabs(){
+  const el = document.getElementById('capsule-tabs');
+  const backdrop = document.getElementById('modal-backdrop');
+  if(!el || !backdrop || !backdrop.classList.contains('open')) return;
+  const header = document.querySelector('#modal .sheet-header');
+  if(header) el.style.setProperty('--stuck-top', header.offsetHeight + 'px');
+  stickCategoryRow(el, backdrop);
 }
 
 function setCapsuleEditorTab(tab){
@@ -3983,6 +4034,43 @@ function exportCSV(){
   showToast('CSV downloaded');
 }
 
+// A row of categories that stops at the top of its scroller instead of
+// going off it. Two places want this and they differ only in what is
+// scrolling — the wardrobe scrolls the window, the capsule editor scrolls
+// inside its own sheet — and in how far down the row has to stop.
+//
+// Sticky alone would leave the chips floating over the tiles that pass
+// beneath them, so a shadow marks the moment it takes over. Working that
+// out from a scroll handler would mean measuring on every frame with
+// eighty tiles on the page; a zero-height marker left where the row would
+// have been says the same thing for nothing.
+const stuckWatchers = new WeakMap();
+
+function stickCategoryRow(row, scroller){
+  if(!row) return;
+  row.classList.add('stuck-row');
+
+  let mark = row.previousElementSibling;
+  if(!mark || !mark.classList.contains('stuck-mark')){
+    mark = document.createElement('div');
+    mark.className = 'stuck-mark';
+    row.parentNode.insertBefore(mark, row);
+  }
+
+  // Where it comes to rest can change under us — select mode puts a head
+  // above the wardrobe's row — so the watcher is rebuilt when it moves.
+  const top = parseFloat(getComputedStyle(row).top) || 0;
+  const had = stuckWatchers.get(row);
+  if(had && had.top === top && had.scroller === scroller) return;
+  if(had) had.io.disconnect();
+
+  const io = new IntersectionObserver(([e]) => {
+    row.classList.toggle('is-stuck', !e.isIntersecting);
+  }, {root: scroller || null, rootMargin: `-${Math.round(top) + 1}px 0px 0px 0px`});
+  io.observe(mark);
+  stuckWatchers.set(row, {io, top, scroller});
+}
+
 function renderTabs(){
   // Every shelf, whether or not you own something on it yet: an empty
   // Skirts tab is where a skirt goes, and the row scrolls sideways. The
@@ -4506,6 +4594,15 @@ function renderToolbarIcons(){
   // The navigation stands down while a selection is on: none of its
   // destinations apply to one, and the action bar takes its place.
   document.body.classList.toggle('selecting', editMode);
+  // The categories stick under that head rather than behind it, so the row
+  // needs to know how deep it is. Measured rather than written down: it is
+  // a back button plus padding, any of which can move.
+  if(head && editMode){
+    document.documentElement.style.setProperty('--select-head-h', head.offsetHeight + 'px');
+  }
+  // After the classes above, because where the row comes to rest depends
+  // on them.
+  stickCategoryRow(document.getElementById('tabs'), null);
   // Leaving search clears it, so a query only ever exists while the bar is
   // open — there is no "searching, but shut" state left to signal.
   const q = ((document.getElementById('filter-search') || {}).value || '').trim();
