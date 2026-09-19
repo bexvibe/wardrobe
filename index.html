@@ -741,9 +741,11 @@
   .label-hint{text-transform:none;letter-spacing:0.02em;opacity:0.65;}
   .tag-chip{
     flex:none;
+    display:inline-flex;align-items:center;
+    min-height:44px;
     font-family:'Work Sans',sans-serif;
     font-size:12px;font-weight:600;
-    padding:8px 14px;
+    padding:0 14px;
     border-radius:10px;
     /* Nothing filtering, nothing filled: at rest a chip is its outline and
        no more, so a filled one always means it is on. Transparent rather
@@ -925,17 +927,22 @@
     font-family:'Fraunces', serif;font-weight:500;font-size:19px;
     margin-right:auto;
   }
+  /* A full thumb's worth of target. The negative margin keeps the head the
+     height the title gives it, so the bigger target costs the panel no
+     room — it just reaches further than it is drawn. */
   .filter-sheet-clear{
+    align-items:center;
+    min-height:44px;margin:-11px 0;
     font-family:'IBM Plex Mono',monospace;
     font-size:11px;letter-spacing:0.06em;
     background:none;border:none;color:var(--ink);
-    cursor:pointer;padding:4px;
+    cursor:pointer;padding:0 6px;
   }
   /* The way down. A panel that opens itself has to be as easy to put away
      as it was to get. */
   .filter-sheet-collapse{
     flex:none;
-    width:34px;height:34px;margin:-6px -6px -6px 0;
+    width:44px;height:44px;margin:-11px -11px -11px 0;
     display:flex;align-items:center;justify-content:center;
     border:none;border-radius:999px;
     background:none;color:var(--ink);
@@ -956,9 +963,11 @@
   /* Outfit filters */
   .base-toggle{display:flex;gap:6px;margin-bottom:12px;}
   .base-btn{
+    display:inline-flex;align-items:center;
+    min-height:44px;
     font-family:'Work Sans',sans-serif;
     font-size:12px;font-weight:600;
-    padding:7px 12px;border-radius:999px;
+    padding:0 16px;border-radius:999px;
     border:1px solid var(--line);background:var(--page);
     color:var(--ink-soft);cursor:pointer;
   }
@@ -974,10 +983,11 @@
   .filter-grid::-webkit-scrollbar{display:none;}
   .filter-chip{
     flex:none;
-    display:flex;flex-direction:column;align-items:flex-start;gap:2px;
+    display:inline-flex;align-items:center;gap:7px;
+    min-height:44px;
     font-family:'Work Sans',sans-serif;
     font-size:12px;font-weight:600;
-    padding:8px 14px;
+    padding:0 14px;
     border-radius:10px;
     /* Same bargain as a tag chip: an outline until it is doing something. */
     border:1px solid var(--line);
@@ -995,12 +1005,24 @@
     background:var(--accent-soft);
     color:var(--ink);
   }
-  /* The value under the label goes dark with it, so "Any" reads as the
-     quiet default and "None" or a count reads as a choice you made. */
-  .filter-chip.active .chip-state{color:var(--ink);font-weight:500;}
-  .filter-chip .chip-state{
-    font-family:'IBM Plex Mono',monospace;
-    font-size:10px;color:var(--ink-soft);font-weight:400;
+  /* How many pieces are pinned, as a number in a badge — the count every
+     other interface puts on a filter — instead of the words "2 selected".
+     Only a chip that is on ever carries one, so the badge never has to say
+     nought. Same badge the pill uses for the same job, one size down. */
+  .chip-count{
+    flex:none;
+    display:inline-flex;align-items:center;justify-content:center;
+    min-width:18px;height:18px;padding:0 5px;
+    border-radius:999px;
+    background:var(--accent);color:#fff;
+    font-size:10px;font-weight:600;line-height:1;
+  }
+  /* Ruling a category out is the one state a number cannot carry, so the
+     label is struck through instead: the chip is on, and what it is on
+     about is going without. */
+  .filter-chip.excluded .chip-label{
+    text-decoration:line-through;
+    text-decoration-thickness:1.5px;
   }
   /* Nothing in this category yet. Small and quiet: it is an answer, not a
      problem to solve. */
@@ -1802,7 +1824,7 @@ function renderFilterControls(){
   });
 
   const clear = document.getElementById('filter-sheet-clear');
-  if(clear) clear.style.display = activeFilterCount() ? 'inline' : 'none';
+  if(clear) clear.style.display = activeFilterCount() ? 'inline-flex' : 'none';
 
   // Tagging a piece can give the panel a row it did not have, which changes
   // how much room the page has to leave under it.
@@ -1980,19 +2002,27 @@ function renderSlotChips(gridId){
   // filter that can only ever return nothing.
   grid.innerHTML = filterTabs().map(key => {
     const f = activeSlotFilters()[key];
-    let stateLabel;
-    if(f.type === 'any') stateLabel = 'Any';
-    else if(f.type === 'none') stateLabel = 'None';
-    else stateLabel = `${f.ids.length} selected`;
 
+    // Off is an outline; on is filled. What it is on about is a count in a
+    // badge, or a line through the label if the answer is "none of these" —
+    // no chip has to spell out "Any", which was the loudest word in the row
+    // and the one that meant nothing was happening.
     // Every chip reads the same whatever else is set. A slot the chosen
     // shape does not have simply filters nothing — dimming it was one more
     // state to decode for no gain.
-    const cls = ['filter-chip', f.type !== 'any' ? 'active' : ''].filter(Boolean).join(' ');
+    const cls = ['filter-chip',
+                 f.type !== 'any' ? 'active' : '',
+                 f.type === 'none' ? 'excluded' : ''].filter(Boolean).join(' ');
+    const badge = f.type === 'items' ? `<span class="chip-count">${f.ids.length}</span>` : '';
+    // The words survive for anything reading the page aloud, where a struck
+    // label and a badge do not carry.
+    const said = f.type === 'any' ? 'any'
+               : f.type === 'none' ? 'none'
+               : `${f.ids.length} selected`;
 
-    return `<button class="${cls}" onclick="openSlotPicker('${key}')">
-      ${key}<span class="chip-state">${stateLabel}</span>
-    </button>`;
+    return `<button class="${cls}" data-state="${f.type}" aria-pressed="${f.type !== 'any'}"`
+      + ` aria-label="${esc(key)}: ${said}" onclick="openSlotPicker('${key}')">`
+      + `<span class="chip-label">${key}</span>${badge}</button>`;
   }).join('');
 }
 
