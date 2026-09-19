@@ -769,6 +769,25 @@
     scrollbar-width:none;
   }
   .tag-chips::-webkit-scrollbar{display:none;}
+  /* A row of chips is usually wider than the panel — twelve tags is 920px
+     against 358 — and with the scrollbar hidden nothing said so. The edge
+     with more behind it fades out, so the row admits there is more of it.
+     Only that edge: a fade at the start when you are already at the start
+     is a hint about nothing. */
+  .chip-row.more-right:not(.more-left){
+    -webkit-mask-image:linear-gradient(to right, #000 calc(100% - 30px), transparent);
+            mask-image:linear-gradient(to right, #000 calc(100% - 30px), transparent);
+  }
+  .chip-row.more-left:not(.more-right){
+    -webkit-mask-image:linear-gradient(to right, transparent, #000 30px);
+            mask-image:linear-gradient(to right, transparent, #000 30px);
+  }
+  .chip-row.more-left.more-right{
+    -webkit-mask-image:linear-gradient(to right, transparent, #000 30px,
+                                       #000 calc(100% - 30px), transparent);
+            mask-image:linear-gradient(to right, transparent, #000 30px,
+                                       #000 calc(100% - 30px), transparent);
+  }
   /* How you would find the tag editor, since a long press cannot advertise
      itself. Quieter than the label it sits beside. */
   .label-hint{text-transform:none;letter-spacing:0.02em;opacity:0.65;}
@@ -1910,12 +1929,50 @@ function filterControlsHtml(ns){
   return `
     <div class="filter-section">
       <span class="filter-sheet-label">Tags</span>
-      <div class="tag-chips" id="${ns}-tag-chips"></div>
+      <div class="tag-chips chip-row" id="${ns}-tag-chips"></div>
     </div>
     <div class="filter-section">
       <span class="filter-sheet-label">Pieces</span>
-      <div class="filter-grid" id="${ns}-filter-grid"></div>
+      <div class="filter-grid chip-row" id="${ns}-filter-grid"></div>
     </div>`;
+}
+
+// A row of chips is wider than the panel it sits in — twelve tags is
+// 920px against 358 — so the chip that is actually doing the filtering
+// could sit entirely off the right-hand edge, with nothing on screen to
+// say a filter was on at all. Whatever is on gets scrolled to where you
+// can see it.
+//
+// scrollLeft rather than scrollIntoView, and measured off rectangles
+// rather than offsetLeft: the row's offset parent is the panel, and
+// scrollIntoView would move the panel and the page as well as the row.
+function showActiveChip(row){
+  if(!row) return;
+  const chip = row.querySelector('.active');
+  if(!chip) return;
+  const edge = 16;
+  const box = row.getBoundingClientRect();
+  const on = chip.getBoundingClientRect();
+  if(on.left < box.left + edge) row.scrollLeft -= (box.left + edge) - on.left;
+  else if(on.right > box.right - edge) row.scrollLeft += on.right - (box.right - edge);
+}
+
+// Which end of a row has more behind it, so only that edge fades. Wired
+// once per element; the rows are rebuilt on every render, so the handler
+// goes on and stays on rather than being added again each time.
+function markRowEdges(row){
+  const hidden = row.scrollWidth - row.clientWidth;
+  row.classList.toggle('more-left', row.scrollLeft > 2);
+  row.classList.toggle('more-right', row.scrollLeft < hidden - 2);
+}
+
+function watchRowEdges(row){
+  if(!row) return;
+  if(!row.dataset.edgesWatched){
+    row.dataset.edgesWatched = '1';
+    row.addEventListener('scroll', () => markRowEdges(row), {passive:true});
+  }
+  markRowEdges(row);
 }
 
 function renderFilterControls(){
@@ -1931,6 +1988,14 @@ function renderFilterControls(){
     renderTagChips(`${ns}-tag-chips`, m === 'outfits' ? outfitTag : savedTag,
                    m === 'outfits' ? 'setOutfitTag' : 'setSavedTag');
     renderSlotChips(`${ns}-filter-grid`);
+
+    // Both rows are wider than the panel, and innerHTML has just put them
+    // back at the left-hand end.
+    [`${ns}-tag-chips`, `${ns}-filter-grid`].forEach(id => {
+      const row = document.getElementById(id);
+      showActiveChip(row);
+      watchRowEdges(row);
+    });
   });
 
   const clear = document.getElementById('filter-sheet-clear');
