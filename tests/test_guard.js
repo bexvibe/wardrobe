@@ -45,8 +45,10 @@ const confirmText = p => p.evaluate(()=>({
       await p.evaluate(()=>typeof slotIsMoot === 'undefined'));
 
     // Pin the shape to dresses — the state that used to dim Top and Bottom.
-    await p.evaluate(()=>{ outfitFilters['Tops'] = {type:'none', ids:[]};
-                           renderFilterControls(); resetOutfitResults(); });
+    // Pinning a dress does it: a chosen dress rules tops and bottoms out.
+    await p.evaluate(()=>{
+      outfitFilters['Dresses'] = {type:'items', ids: itemsInTab('Dresses').slice(0,2).map(i=>i.id)};
+      renderFilterControls(); resetOutfitResults(); });
     await p.waitForTimeout(500);
     const chips = await p.evaluate(()=>
       Array.from(document.querySelectorAll('#sheet-filter-grid .filter-chip')).map(e=>({

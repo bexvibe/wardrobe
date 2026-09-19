@@ -89,13 +89,15 @@ const heroKey = p => p.evaluate(()=>heroCombo ? comboKey(heroCombo) : null);
   // re-pick is forced rather than merely likely.
   const wasDress = await p.evaluate(()=>heroCombo.base==='dress');
   const opposite = wasDress ? 'topbottom' : 'dress';
-  // Shape is set through the base slots now: None on Dress leaves tops and
-  // bottoms, None on Top leaves dresses.
+  // Shape follows from pinning: asking for a particular dress is asking
+  // for a dress outfit, and asking for a particular top rules dresses out.
+  // Ruling a category out altogether is no longer offered.
   await p.evaluate(d=>{
     outfitFilters = emptySlotFilters();
-    // Currently a dress? Rule dresses out. Currently a top and bottom? Rule
-    // tops out, which leaves dresses.
-    outfitFilters[d ? 'Dresses' : 'Tops'] = {type:'none', ids:[]};
+    // Currently a dress? Pin a top, which leaves top-and-bottom outfits.
+    // Currently a top and bottom? Pin a dress.
+    const tab = d ? 'Tops' : 'Dresses';
+    outfitFilters[tab] = {type:'items', ids: itemsInTab(tab).slice(0,2).map(i=>i.id)};
     renderFilterControls();
     resetOutfitResults();
   }, wasDress); await p.waitForTimeout(800);

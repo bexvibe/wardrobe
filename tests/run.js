@@ -21,6 +21,7 @@ const http = require('http');
 const ROOT = path.resolve(__dirname, '..');
 const PORT = 8933;
 const HERE = __dirname;
+const FAILS = path.join(HERE, 'shots');
 const args = process.argv.slice(2);
 const serial = args.includes('--serial');
 const verbose = args.includes('--verbose');
@@ -111,6 +112,15 @@ function report(r){
   r.fails.forEach(l => console.log('       ' + l));
   r.noise.slice(0, 4).forEach(l => console.log('       ' + l.trim()));
   if(!r.ran && !r.noise.length) console.log(r.out.split('\n').slice(-12).join('\n       '));
+  // Everything it said, kept. A suite that fails once in six runs under
+  // load and passes on its own is exactly the one you cannot afford to
+  // have to reproduce before you can read it.
+  try{
+    fs.mkdirSync(FAILS, {recursive: true});
+    const at = path.join(FAILS, r.file.replace(/\.js$/, '') + '.log');
+    fs.writeFileSync(at, r.out);
+    console.log(`       full output: ${path.relative(ROOT, at)}`);
+  }catch(e){ }
 }
 
 (async () => {

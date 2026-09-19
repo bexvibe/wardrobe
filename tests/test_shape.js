@@ -1,7 +1,8 @@
-// One stream of both shapes, and no shape control: the three base slots are
-// the shape control. Dress → None asks for tops and bottoms, Top → None asks
-// for dresses. The count line and the stream have to agree exactly, and the
-// implicit rule (narrowing a slot rules its own shape in) has to hold.
+// One stream of both shapes, and no shape control: the base slots are the
+// shape control. Pinning a top asks for tops and bottoms, pinning a dress
+// asks for dresses — narrowing a slot rules its own shape in, and that is
+// the only way shape is chosen now that ruling a category out is gone.
+// The count line and the stream have to agree exactly.
 const { chromium } = require('playwright');
 const fs=require('fs'), path=require('path');
 const REPO = require('path').join(__dirname, '..');
@@ -18,15 +19,11 @@ const chipState = (p, label) => p.evaluate(l=>{
     .find(e=>e.childNodes[0].textContent.trim()===l);
   if(!chip) return null;
   // The chip no longer spells its state out — it is an outline, or filled
-  // with a count, or filled with the label struck through. Read it back off
-  // the attribute and put the old words on it, so the checks below still
-  // read as sentences.
+  // with a count. Read it back off the attribute and put the old words on
+  // it, so the checks below still read as sentences.
   const badge = chip.querySelector('.chip-count');
   return {
-    state: chip.dataset.state === 'any' ? 'Any'
-         : chip.dataset.state === 'none' ? 'None'
-         : `${badge.textContent.trim()} selected`,
-    struck: chip.classList.contains('excluded'),
+    state: chip.dataset.state === 'any' ? 'Any' : `${badge.textContent.trim()} selected`,
     badge: badge ? badge.textContent.trim() : null,
     active: chip.classList.contains('active'),
     // Dimming a slot the shape cannot use is gone: every chip reads at
@@ -36,22 +33,25 @@ const chipState = (p, label) => p.evaluate(l=>{
 }, label);
 const bases = p => p.evaluate(()=>outfitDisplayed.map(c=>c.base));
 
-// Through the real picker, the way she would: open the category, tap None,
-// come back. The bottom half is three categories now — pants, shorts and
-// skirts — so "no bottom at all" means saying None to each of them.
-async function setSlot(p, label, choice){
-  const cats = {Top:['Tops'], Bottom:['Pants','Shorts','Skirts'], Dress:['Dresses']}[label];
-  for(const cat of cats){
-    // A category you own nothing in has no None to choose: it is already
-    // none, so the picker does not offer the choice.
-    if(!(await p.evaluate(c => itemsInTab(c).length > 0, cat))) continue;
-    await p.evaluate(k=>openSlotPicker(k), cat);
-    await p.waitForTimeout(350);
-    await p.click(`#picker-quick-picks .base-btn:has-text("${choice}")`);
-    await p.waitForTimeout(250);
-    await p.click('.modal .sheet-back');
-    await p.waitForTimeout(500);
-  }
+// Through the real picker, the way she would: open the category, tap the
+// first piece in it, come back. Pinning is the only narrowing there is.
+async function pin(p, cat){
+  await p.evaluate(k=>openSlotPicker(k), cat);
+  await p.waitForTimeout(400);
+  await p.click('#picker-gallery .picker-tile');
+  await p.waitForTimeout(250);
+  await p.click('.modal .sheet-back');
+  await p.waitForTimeout(700);
+}
+
+// And Any is the way back from it.
+async function unpin(p, cat){
+  await p.evaluate(k=>openSlotPicker(k), cat);
+  await p.waitForTimeout(400);
+  await p.click('#picker-quick-picks .base-btn:has-text("Any")');
+  await p.waitForTimeout(250);
+  await p.click('.modal .sheet-back');
+  await p.waitForTimeout(700);
 }
 
 (async()=>{
@@ -105,41 +105,42 @@ async function setSlot(p, label, choice){
     firstPage.includes('topbottom') && firstPage.includes('dress'),
     `${firstPage.filter(x=>x==='topbottom').length} top+bottom, ${firstPage.filter(x=>x==='dress').length} dress on page 1`);
 
-  // ---- 2. None on a base slot is the shape control ----
-  await setSlot(p, 'Dress', 'None');
-  check('Dress → None leaves tops and bottoms only',
-    (await bases(p)).every(x=>x==='topbottom') && (await bases(p)).length>0);
-  check('the Dress chip says so', (await chipState(p,'Dresses')).state==='None');
-  check('without dimming itself, though this shape has no dress',
-    !(await chipState(p,'Dresses')).dimmed);
-  check('Top and Bottom read the same as ever', !(await chipState(p,'Tops')).dimmed);
-  const tbOnly = await p.evaluate(()=>{
-    let n=0; for(const c of comboGenerator()) n++;
-    return {n, reported: totalComboCount()};
-  });
-  check('the count follows the narrowing', tbOnly.n === tbOnly.reported,
-    `walked ${tbOnly.n}, reported ${tbOnly.reported}`);
-
-  await setSlot(p, 'Dress', 'Any');
-  await setSlot(p, 'Top', 'None');
-  check('Top → None narrows the other way, to dresses',
+  // ---- 2. Pinning a base slot is the shape control ----
+  await pin(p, 'Dresses');
+  check('pinning a dress leaves dress outfits only',
     (await bases(p)).every(x=>x==='dress') && (await bases(p)).length>0);
-  check('the Dress chip is untouched', (await chipState(p,'Dresses')).state==='Any');
-  check('and Top and Bottom are not dimmed for being the narrowed pair',
-    !(await chipState(p,'Tops')).dimmed && !(await chipState(p,'Pants')).dimmed);
+  check('the Dress chip says so, with a count',
+    (await chipState(p,'Dresses')).badge === '1',
+    JSON.stringify(await chipState(p,'Dresses')));
+  check('without dimming itself or anything else',
+    !(await chipState(p,'Dresses')).dimmed && !(await chipState(p,'Tops')).dimmed);
   const drOnly = await p.evaluate(()=>{
     let n=0; for(const c of comboGenerator()) n++;
     return {n, reported: totalComboCount()};
   });
-  check('the count follows that too', drOnly.n === drOnly.reported,
+  check('the count follows the narrowing', drOnly.n === drOnly.reported,
     `walked ${drOnly.n}, reported ${drOnly.reported}`);
 
-  await setSlot(p, 'Bottom', 'None');
-  check('Bottom → None says the same thing, not something new',
-    (await bases(p)).every(x=>x==='dress'));
+  await unpin(p, 'Dresses');
+  await pin(p, 'Tops');
+  check('pinning a top narrows the other way, to tops and bottoms',
+    (await bases(p)).every(x=>x==='topbottom') && (await bases(p)).length>0);
+  check('the Dress chip is untouched', (await chipState(p,'Dresses')).state==='Any');
+  check('and nothing is dimmed for being the narrowed pair',
+    !(await chipState(p,'Tops')).dimmed && !(await chipState(p,'Pants')).dimmed);
+  const tbOnly = await p.evaluate(()=>{
+    let n=0; for(const c of comboGenerator()) n++;
+    return {n, reported: totalComboCount()};
+  });
+  check('the count follows that too', tbOnly.n === tbOnly.reported,
+    `walked ${tbOnly.n}, reported ${tbOnly.reported}`);
 
-  await setSlot(p, 'Top', 'Any');
-  await setSlot(p, 'Bottom', 'Any');
+  await pin(p, 'Pants');
+  check('pinning a bottom as well says the same shape, not a new one',
+    (await bases(p)).every(x=>x==='topbottom'));
+
+  await unpin(p, 'Tops');
+  await unpin(p, 'Pants');
   check('back to Any everywhere restores both shapes', await p.evaluate(()=>{
     const s=new Set(outfitDisplayed.map(c=>c.base)); return s.has('topbottom') && s.has('dress');
   }));
@@ -173,15 +174,6 @@ async function setSlot(p, label, choice){
   check('a top and a dress at once is honestly empty',
     await p.evaluate(()=>outfitDisplayed.length===0 && totalComboCount()===0));
 
-  await p.evaluate(()=>{
-    outfitFilters = emptySlotFilters();
-    outfitFilters['Tops'] = {type:'none', ids:[]};
-    outfitFilters['Dresses'] = {type:'none', ids:[]};
-    resetOutfitResults(); renderFilterControls();
-  });
-  await p.waitForTimeout(700);
-  check('no top and no dress leaves nothing an outfit could be',
-    await p.evaluate(()=>outfitDisplayed.length===0 && totalComboCount()===0));
   // The empty page says it. Dimming three chips said it a second time, in
   // a language you had to learn first.
   check('and no chip is dimmed to explain it',

@@ -1,7 +1,7 @@
 // A filter chip says whether it is on, and how much, without saying it in
 // words. Off is an outline. On with pieces pinned is filled and carries the
 // count in a badge. On with a category ruled out is filled with its label
-// struck through. Nowhere does the row print "Any", "None" or "2 selected".
+// Nowhere does the row print "Any" or "2 selected".
 // And every one of them — chips, tags, Clear all, the arrow, the picker's
 // own buttons — is a full thumb's worth of target.
 const { chromium } = require('playwright');
@@ -48,7 +48,6 @@ const chip = (p, label) => p.evaluate(l => {
     filled: !/rgba\(0, 0, 0, 0\)|transparent/.test(cs.backgroundColor),
     ringed: !/rgba\(0, 0, 0, 0\)|transparent/.test(cs.borderTopColor),
     badge: badge ? badge.textContent.trim() : null,
-    struck: lab ? getComputedStyle(lab).textDecorationLine.includes('line-through') : false,
     // Not aria-pressed: this chip opens a picker, it does not toggle.
     opens: el.getAttribute('aria-haspopup'),
     pressed: el.getAttribute('aria-pressed'),
@@ -92,11 +91,9 @@ async function setSlot(p, key, choice){
     check('the word "Any" is nowhere in the filter panel',
       !(await p.evaluate(()=>/\bAny\b/.test(
         document.getElementById('filter-sheet').innerText))));
-    check('nor "selected", nor a standalone "None"',
-      !(await p.evaluate(()=>{
-        const t = document.getElementById('filter-sheet').innerText;
-        return /selected/i.test(t) || /\bNone\b/.test(t);
-      })));
+    check('nor "selected"',
+      !(await p.evaluate(()=>/selected/i.test(
+        document.getElementById('filter-sheet').innerText))));
     await p.close();
   }
 
@@ -131,26 +128,26 @@ async function setSlot(p, key, choice){
     await p.close();
   }
 
-  // ---- 3. Ruling a category out: filled, and struck through ----
+  // ---- 3. Any is the way back ----
   {
     const p=await open(b);
-    await setSlot(p, 'Dresses', 'None');
-    const c = await chip(p, 'Dresses');
-    check('a category ruled out is filled like any other chip that is on',
-      c.filled && c.state==='none');
-    check('and its label is struck through instead of carrying a number',
-      c.struck && c.badge === null, JSON.stringify(c));
-    check('the label itself is still the category, unabbreviated',
-      c.text === 'Dresses', c.text);
-    check('and the filter did what it says',
+    await p.evaluate(()=>{
+      outfitFilters['Dresses'] = {type:'items', ids:itemsInTab('Dresses').slice(0,2).map(i=>i.id)};
+      renderFilterControls();
+      resetOutfitResults();   // the chips redraw on their own; the stream does not
+    });
+    await p.waitForTimeout(900);
+    const on = await chip(p, 'Dresses');
+    check('a narrowed category is filled and counted', on.filled && on.badge === '2',
+      JSON.stringify(on));
+    check('and pinning a dress is what asks for a dress outfit',
       await p.evaluate(()=>outfitDisplayed.length > 0 &&
-        outfitDisplayed.every(o=>o.base === 'topbottom')));
+        outfitDisplayed.every(o => o.base === 'dress')));
 
-    // Back to Any, and the strike goes with it.
     await setSlot(p, 'Dresses', 'Any');
-    const back = await chip(p, 'Dresses');
-    check('setting it back to Any returns it to a plain outline',
-      !back.filled && !back.struck && back.state==='any', JSON.stringify(back));
+    const off = await chip(p, 'Dresses');
+    check('Any returns it to a plain outline with no count',
+      !off.filled && off.badge === null && off.state === 'any', JSON.stringify(off));
     await p.close();
   }
 
@@ -159,18 +156,17 @@ async function setSlot(p, key, choice){
     const p=await open(b);
     await p.evaluate(()=>{
       outfitFilters['Tops'] = {type:'items', ids:itemsInTab('Tops').slice(0,2).map(i=>i.id)};
-      outfitFilters['Jackets'] = {type:'none', ids:[]};
+      outfitFilters['Jackets'] = {type:'items', ids:itemsInTab('Jackets').slice(0,1).map(i=>i.id)};
       renderFilterControls();
     });
     await p.waitForTimeout(400);
     check('two chips are on', await p.evaluate(()=>
       document.querySelectorAll('#sheet-filter-grid .filter-chip.active').length)===2);
     await p.click('#filter-sheet-clear'); await p.waitForTimeout(700);
-    check('and Clear all leaves nothing filled, struck or badged',
+    check('and Clear all leaves nothing filled or badged',
       await p.evaluate(()=>Array.from(
         document.querySelectorAll('#sheet-filter-grid .filter-chip'))
-          .every(e=>!e.classList.contains('active') && !e.classList.contains('excluded') &&
-                    !e.querySelector('.chip-count'))));
+          .every(e=>!e.classList.contains('active') && !e.querySelector('.chip-count'))));
     await p.close();
   }
 
@@ -216,8 +212,8 @@ async function setSlot(p, key, choice){
     const quick = await p.evaluate(()=>Array.from(
       document.querySelectorAll('#picker-quick-picks .base-btn'))
         .map(e=>Math.round(e.getBoundingClientRect().height)));
-    check('the picker\'s own Any and None are 44px as well',
-      quick.length===2 && quick.every(n=>n>=44), JSON.stringify(quick));
+    check('the picker\'s own Any is 44px as well',
+      quick.length===1 && quick.every(n=>n>=44), JSON.stringify(quick));
     await p.close();
   }
 

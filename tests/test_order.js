@@ -2,7 +2,7 @@
 // own tabs, the filter row on Outfits, the filter row on Faves. A category
 // you own nothing in falls to the end — ahead of No Image, which is a state
 // a piece is in rather than a kind of thing. And a category with nothing in
-// it says so, and does not offer None, because None is already what it is.
+// it says so, and has nothing to choose from.
 const { chromium } = require('playwright');
 const fs=require('fs'), path=require('path');
 const REPO = require('path').join(__dirname, '..');
@@ -152,8 +152,7 @@ function wellOrdered(list, owned){
     check('small and light rather than a heading',
       empty.shown && empty.size <= 13 && empty.muted, `${empty.size}px`);
     check('there is nothing to choose from', empty.tiles===0);
-    // None would be a change to what it already is.
-    check('and None is not offered, because None is what it is',
+    check('and Any is the only quick pick, as everywhere',
       JSON.stringify(empty.quick)===JSON.stringify(['Any']), empty.quick.join(', '));
     await p.close();
   }
@@ -170,29 +169,46 @@ function wellOrdered(list, owned){
       tiles: document.querySelectorAll('#picker-gallery .picker-tile').length,
     }));
     check('no note where there is something to show', !full.note);
-    check('both Any and None on offer',
-      JSON.stringify(full.quick)===JSON.stringify(['Any','None']), full.quick.join(', '));
+    check('Any and nothing else, the same as an empty one',
+      JSON.stringify(full.quick)===JSON.stringify(['Any']), full.quick.join(', '));
     check('and the pieces to choose from', full.tiles > 0, String(full.tiles));
 
-    // None still does what it says.
-    await p.click('#picker-quick-picks .base-btn:has-text("None")');
+    // Narrowing is done by picking, and Any is the way back from it.
+    await p.click('#picker-gallery .picker-tile'); await p.waitForTimeout(300);
+    check('picking a piece narrows the category',
+      await p.evaluate(()=>outfitFilters['Tops'].type==='items' &&
+                           outfitFilters['Tops'].ids.length===1));
+    await p.click('#picker-quick-picks .base-btn:has-text("Any")');
     await p.waitForTimeout(300);
-    check('None still narrows the page to the other shape',
-      await p.evaluate(()=>outfitFilters['Tops'].type==='none'));
+    check('and Any is the way back to the whole of it',
+      await p.evaluate(()=>outfitFilters['Tops'].type==='any'));
     await p.close();
   }
 
-  // ---- 6. Filtering by an empty category changes nothing ----
+  // ---- 6. An empty category cannot narrow anything ----
   {
     const p=await open(b);
     await p.click('#nav-outfits-btn'); await p.waitForTimeout(1500);
     const before = await p.evaluate(()=>totalComboCount());
-    await p.evaluate(()=>{ outfitFilters['Skirts']={type:'none', ids:[]};
-                           renderFilterControls(); resetOutfitResults(); });
-    await p.waitForTimeout(700);
-    check('ruling out a category you own none of leaves the page alone',
+
+    // With None gone, the only way to narrow a category is to pick a piece
+    // from it — and a category you own none of has none to pick. So it is
+    // offered, and it simply cannot do anything.
+    await p.evaluate(()=>openSlotPicker('Skirts')); await p.waitForTimeout(500);
+    check('the picker opens on nothing to choose',
+      await p.evaluate(()=>document.querySelectorAll('#picker-gallery .picker-tile').length===0));
+    check('with Any already on, and no other way to change it',
+      await p.evaluate(()=>{
+        const btns = Array.from(document.querySelectorAll('#picker-quick-picks .base-btn'));
+        return btns.length===1 && btns[0].textContent.trim()==='Any' &&
+               btns[0].classList.contains('active');
+      }));
+    await p.click('.modal .sheet-back'); await p.waitForTimeout(800);
+    check('so the page is exactly as you left it',
       (await p.evaluate(()=>totalComboCount()))===before,
       `${await p.evaluate(()=>totalComboCount())} vs ${before}`);
+    check('and the category stayed on Any',
+      await p.evaluate(()=>outfitFilters['Skirts'].type==='any'));
     await p.close();
   }
 

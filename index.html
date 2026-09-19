@@ -1081,13 +1081,6 @@
     color:var(--ink-soft);
   }
   .filter-chip.active .chip-caret{color:var(--ink);}
-  /* Ruling a category out is the one state a number cannot carry, so the
-     label is struck through instead: the chip is on, and what it is on
-     about is going without. */
-  .filter-chip.excluded .chip-label{
-    text-decoration:line-through;
-    text-decoration-thickness:1.5px;
-  }
   /* Nothing in this category yet. Small and quiet: it is an answer, not a
      problem to solve. */
   .picker-empty{
@@ -1218,13 +1211,16 @@
      the chip doing the filtering can be off to the right with nothing on
      screen to say so — and the row is not allowed to scroll itself to
      prove it. The label never moves, and it is always in view.
-     The same badge the pill and the chips use, one size down again. */
+     Quieter than the badges on the chips and the pill: those sit on a
+     control you are about to press, this one sits beside a heading, and
+     black on grey next to 10px grey type was the loudest thing in the
+     panel. The wash a chip wears when it is on says enough. */
   .label-count{
     display:inline-flex;align-items:center;justify-content:center;
     min-width:16px;height:16px;padding:0 5px;
-    margin-left:8px;
+    margin-left:7px;
     border-radius:999px;
-    background:var(--accent);color:#fff;
+    background:var(--accent-soft);color:var(--ink-soft);
     font-family:'IBM Plex Mono',monospace;
     font-size:9px;font-weight:600;letter-spacing:0;
     vertical-align:middle;
@@ -2262,22 +2258,17 @@ function renderSlotChips(gridId){
   grid.innerHTML = filterTabs().map(key => {
     const f = activeSlotFilters()[key];
 
-    // Off is an outline; on is filled. What it is on about is a count in a
-    // badge, or a line through the label if the answer is "none of these" —
-    // no chip has to spell out "Any", which was the loudest word in the row
-    // and the one that meant nothing was happening.
+    // Off is an outline; on is filled, with a count in a badge. No chip
+    // has to spell out "Any", which was the loudest word in the row and
+    // the one that meant nothing was happening.
     // Every chip reads the same whatever else is set. A slot the chosen
     // shape does not have simply filters nothing — dimming it was one more
     // state to decode for no gain.
-    const cls = ['filter-chip',
-                 f.type !== 'any' ? 'active' : '',
-                 f.type === 'none' ? 'excluded' : ''].filter(Boolean).join(' ');
+    const cls = ['filter-chip', f.type !== 'any' ? 'active' : ''].filter(Boolean).join(' ');
     const badge = f.type === 'items' ? `<span class="chip-count">${f.ids.length}</span>` : '';
-    // The words survive for anything reading the page aloud, where a struck
-    // label and a badge do not carry.
-    const said = f.type === 'any' ? 'any'
-               : f.type === 'none' ? 'none'
-               : `${f.ids.length} selected`;
+    // The words survive for anything reading the page aloud, where a badge
+    // does not carry.
+    const said = f.type === 'any' ? 'any' : `${f.ids.length} selected`;
 
     // A tag chip is a tap and done; this one is a door to a picker. Until
     // it said so the two rows made the same promise for different
@@ -2315,13 +2306,12 @@ function renderQuickPicks(slotKey){
   const f = activeSlotFilters()[slotKey];
   const el = document.getElementById('picker-quick-picks');
   if(!el) return;
-  // With nothing in the category, None is not a change you can make — it is
-  // already what you have — so Any is the whole story.
-  const own = itemsInTab(slotKey).length > 0;
-  el.innerHTML = `
-    <button class="base-btn ${f.type === 'any' ? 'active' : ''}" onclick="setSlotQuick('${slotKey}','any')">Any</button>
-    ${own ? `<button class="base-btn ${f.type === 'none' ? 'active' : ''}" onclick="setSlotQuick('${slotKey}','none')">None</button>` : ''}
-  `;
+  // Any is the whole story: the way back from a pinned selection to the
+  // whole category. Ruling a category out altogether used to sit beside
+  // it, and was the one filter that narrowed by subtraction — a different
+  // idea in the same row of buttons.
+  el.innerHTML =
+    `<button class="base-btn ${f.type === 'any' ? 'active' : ''}" onclick="setSlotAny('${slotKey}')">Any</button>`;
 }
 
 function renderPickerGallery(slotKey){
@@ -2345,8 +2335,8 @@ function renderPickerGallery(slotKey){
   }).join('');
 }
 
-function setSlotQuick(slotKey, mode){
-  activeSlotFilters()[slotKey] = mode === 'any' ? {type:'any', ids:[]} : {type:'none', ids:[]};
+function setSlotAny(slotKey){
+  activeSlotFilters()[slotKey] = anyFilter();
   renderQuickPicks(slotKey);
   renderPickerGallery(slotKey);
 }
@@ -2375,7 +2365,6 @@ function closePickerAndApply(){
 function tabContribution(filters, tab){
   const items = itemsInTab(tab);
   const f = filters[tab] || anyFilter();
-  if(f.type === 'none') return [];
   if(f.type === 'items'){
     const chosen = items.filter(i => f.ids.includes(i.id));
     // A selection that has gone stale — the pieces archived, say — falls
@@ -2867,15 +2856,14 @@ function savedOutfitMatchesSlots(rec){
   return OUTFIT_TABS.every(tab => {
     const f = savedFilters[tab];
     if(!f || f.type === 'any') return true;
-    // The piece filling the place this category fills — and whether it is
-    // from this category at all. Shorts → None passes an outfit wearing
-    // pants: it has a bottom, but not the kind you ruled out.
+    // The piece filling the place this category fills, and whether it is
+    // from this category at all — an outfit wearing pants does not match a
+    // filter pinned to a pair of shorts, even though both are a bottom.
     const field = SAVED_SLOT_FIELDS[TAB_SLOT[tab]];
     if(!field) return true;
     const id = rec[field] || null;
     const item = id ? itemById(id) : null;
     const fromTab = Boolean(item) && tabForItem(item) === tab;
-    if(f.type === 'none') return !fromTab;
     return fromTab && f.ids.includes(id);
   });
 }

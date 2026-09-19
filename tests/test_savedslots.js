@@ -12,8 +12,7 @@ const seed=fs.readFileSync(REPO + '/supabase/seed-items.json','utf8');
 const results=[]; const check=(n,p,d)=>{results.push(p);console.log(`${p?'PASS':'FAIL'}  ${n}${d?'  — '+d:''}`);};
 
 // Three kept outfits: two top+bottom (one with a jumper over it, one bare)
-// and one dress. Enough for None, Any and a pinned piece to each mean
-// something.
+// and one dress. Enough for Any and a pinned piece to each mean something.
 const FAVS = [
   {combo_key:'tb|seed_22|seed_11|none|seed_1|none', base:'topbottom',
    top_id:'seed_22', bottom_id:'seed_11', dress_id:null,
@@ -51,13 +50,23 @@ const chipLabels = p => p.evaluate(()=>
     .map(e=>e.childNodes[0].textContent.trim()));
 const countLine = p => p.textContent('#saved-count-line').then(t=>t.trim());
 
-async function setSlot(p, key, choice){
+// Any is the only quick pick — the way back from a pinned selection.
+async function setAny(p, key){
   await p.evaluate(k=>openSlotPicker(k), key);
   await p.waitForTimeout(350);
-  await p.click(`#picker-quick-picks .base-btn:has-text("${choice}")`);
+  await p.click('#picker-quick-picks .base-btn:has-text("Any")');
   await p.waitForTimeout(250);
   await p.click('.modal .sheet-back');
   await p.waitForTimeout(600);
+}
+
+// Narrowing is pinning, so say which piece.
+async function pin(p, key, id){
+  await p.evaluate(([k, i]) => {
+    activeSlotFilters()[k] = {type:'items', ids:[i]};
+    renderFilterControls(); renderSavedOutfits();
+  }, [key, id]);
+  await p.waitForTimeout(500);
 }
 
 async function pinFirst(p, key){
@@ -96,30 +105,32 @@ async function pinFirst(p, key){
     await p.close();
   }
 
-  // ---- 2. None on a base slot narrows by shape, as on Outfits ----
+  // ---- 2. Pinning a base slot narrows by shape, as on Outfits ----
   {
     const p=await open(b);
-    await setSlot(p, 'Dresses', 'None');
-    check('Dress → None keeps the top-and-bottom faves', (await cards(p))===2, String(await cards(p)));
-    check('and says how many of how many', (await countLine(p)).includes('2 of 3'), await countLine(p));
+    await pin(p, 'Dresses', 'seed_32');
+    check('pinning the dress keeps the dress fave', (await cards(p))===1, String(await cards(p)));
+    check('and says how many of how many', (await countLine(p)).includes('1 of 3'), await countLine(p));
 
-    await setSlot(p, 'Dresses', 'Any');
-    await setSlot(p, 'Tops', 'None');
-    check('Top → None keeps the dress fave', (await cards(p))===1, String(await cards(p)));
-    check('which is the dress one',
-      await p.evaluate(()=>favoriteOutfits.filter(savedOutfitMatches)[0].base==='dress'));
+    await setAny(p, 'Dresses');
+    await pin(p, 'Tops', 'seed_22');
+    check('pinning a top keeps the fave wearing it', (await cards(p))===1, String(await cards(p)));
+    check('which is a top-and-bottom one',
+      await p.evaluate(()=>favoriteOutfits.filter(savedOutfitMatches)[0].base==='topbottom'));
     await p.close();
   }
 
-  // ---- 3. None on a layer means the outfit really has nothing there ----
+  // ---- 3. A layer is the same question as any other slot ----
   {
     const p=await open(b);
     check('one of the three wears a jumper',
       await p.evaluate(()=>favoriteOutfits.filter(r=>r.jumper).length)===1);
-    await setSlot(p, 'Jumpers', 'None');
-    check('Jumper → None drops the one wearing one', (await cards(p))===2, String(await cards(p)));
+    await pin(p, 'Jumpers', 'seed_1');
+    check('pinning that jumper keeps only the fave wearing it',
+      (await cards(p))===1, String(await cards(p)));
     const worn = await p.evaluate(()=>favoriteOutfits.filter(savedOutfitMatches).map(r=>r.jumper));
-    check('and the ones left have no jumper at all', worn.every(x=>!x), JSON.stringify(worn));
+    check('and it really is the one wearing it',
+      worn.length===1 && worn[0], JSON.stringify(worn));
     await p.close();
   }
 
@@ -152,12 +163,12 @@ async function pinFirst(p, key){
   // ---- 5. Nothing dims here either ----
   {
     const p=await open(b);
-    await setSlot(p, 'Tops', 'None');
+    await pin(p, 'Dresses', 'seed_32');
     const state = await p.evaluate(()=>
       Array.from(document.querySelectorAll('#sheet-filter-grid .filter-chip'))
         .map(e=>({label: e.childNodes[0].textContent.trim(),
                   opacity: getComputedStyle(e).opacity})));
-    check('with only dresses able to match, every chip still reads full strength',
+    check('with only the dress able to match, every chip still reads full strength',
       state.every(c=>c.opacity === '1'), JSON.stringify(state));
     check('and the filter itself still works', (await cards(p))===1, String(await cards(p)));
     await p.close();
@@ -166,8 +177,8 @@ async function pinFirst(p, key){
   // ---- 6. The two pages keep their own settings ----
   {
     const p=await open(b);
-    await setSlot(p, 'Dresses', 'None');
-    check('the fave filter is set', await p.evaluate(()=>savedFilters['Dresses'].type)==='none');
+    await pin(p, 'Dresses', 'seed_32');
+    check('the fave filter is set', await p.evaluate(()=>savedFilters['Dresses'].type)==='items');
 
     await p.click('#nav-outfits-btn'); await p.waitForTimeout(900);
     check('the Outfits slots are untouched',
@@ -178,11 +189,13 @@ async function pinFirst(p, key){
                   !e.querySelector('.chip-count'))));
 
     // Narrow Outfits, go back, and the fave filter is still its own.
-    await setSlot(p, 'Tops', 'None');
+    await p.evaluate(()=>{ outfitFilters['Tops'] = {type:'items', ids:['seed_22']};
+                           renderFilterControls(); });
+    await p.waitForTimeout(400);
     await p.click('#nav-saved-btn'); await p.waitForTimeout(700);
     check('the fave filter survived the round trip',
-      await p.evaluate(()=>savedFilters['Dresses'].type==='none' && savedFilters['Tops'].type==='any'));
-    check('and is still filtering the page', (await cards(p))===2, String(await cards(p)));
+      await p.evaluate(()=>savedFilters['Dresses'].type==='items' && savedFilters['Tops'].type==='any'));
+    check('and is still filtering the page', (await cards(p))===1, String(await cards(p)));
 
     // Coming back a second time in the same visit, the panel stays down —
     // it only comes up by itself the first time — so the pill is already
@@ -198,7 +211,7 @@ async function pinFirst(p, key){
   // ---- 7. Clear all clears both kinds on this page ----
   {
     const p=await open(b);
-    await setSlot(p, 'Dresses', 'None');
+    await pin(p, 'Dresses', 'seed_32');
     await p.click('#sheet-tag-chips .tag-chip'); await p.waitForTimeout(500);
     check('a tag and a slot are both on', await p.evaluate(()=>activeFilterCount())>=2,
       String(await p.evaluate(()=>activeFilterCount())));

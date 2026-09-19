@@ -47,45 +47,42 @@ const state=p=>p.evaluate(()=>[...document.querySelectorAll('#picker-quick-picks
   await signIn(p);
   await p.click('#nav-outfits-btn'); await p.waitForTimeout(700);
 
-  // Jumper allows "none", so it shows both quick picks
+  // Any is the only quick pick now. Ruling a category out altogether sat
+  // beside it and was the one filter that narrowed by subtraction — a
+  // different idea in the same row of buttons.
   await openFilters(p); await p.click('.filter-chip:has-text("Jumper")'); await p.waitForTimeout(400);
   let s=await state(p);
-  check('picker offers both Any and None', s.length===2 && s[0].label==='Any' && s[1].label==='None',
-    JSON.stringify(s));
-  check('Any shows as selected by default', s[0].active && !s[1].active, JSON.stringify(s));
+  check('the picker offers Any and nothing else',
+    s.length===1 && s[0].label==='Any', JSON.stringify(s));
+  check('Any shows as selected by default', s[0].active, JSON.stringify(s));
+  check('and None is not on offer anywhere in the picker',
+    !(await p.evaluate(()=>/\bNone\b/.test(document.querySelector('.modal').innerText))));
   await p.screenshot({path:shot('qp-any.png')});
 
-  await p.click('#picker-quick-picks button:has-text("None")'); await p.waitForTimeout(300);
-  s=await state(p);
-  check('choosing None moves the selected state', !s[0].active && s[1].active, JSON.stringify(s));
-  await p.screenshot({path:shot('qp-none.png')});
-
-  // picking a specific item clears both
+  // Picking a specific item takes Any off.
   await p.click('#picker-gallery .picker-tile'); await p.waitForTimeout(300);
   s=await state(p);
   const tileChecked=await p.evaluate(()=>document.querySelectorAll('#picker-gallery .picker-selected').length);
-  check('picking an item deselects Any and None', !s[0].active && !s[1].active && tileChecked===1,
+  check('picking an item deselects Any', !s[0].active && tileChecked===1,
     JSON.stringify(s)+` tiles=${tileChecked}`);
 
-  // removing it returns to Any
+  // And taking it off again returns to Any.
   await p.click('#picker-gallery .picker-tile.picker-selected'); await p.waitForTimeout(300);
   s=await state(p);
-  check('clearing the last item returns Any to selected', s[0].active && !s[1].active, JSON.stringify(s));
+  check('clearing the last item returns Any to selected', s[0].active, JSON.stringify(s));
 
-  // reopening reflects a persisted None
-  await p.click('#picker-quick-picks button:has-text("None")'); await p.waitForTimeout(200);
+  // A pinned selection survives shutting the picker and opening it again.
+  await p.click('#picker-gallery .picker-tile'); await p.waitForTimeout(250);
   await p.click('.modal .sheet-back'); await p.waitForTimeout(500);
   await openFilters(p); await p.click('.filter-chip:has-text("Jumper")'); await p.waitForTimeout(400);
-  s=await state(p);
-  check('reopening the picker still shows None selected', !s[0].active && s[1].active, JSON.stringify(s));
+  check('reopening the picker still shows what you pinned',
+    await p.evaluate(()=>document.querySelectorAll('#picker-gallery .picker-selected').length===1));
 
-  // Top can be "none" too now — that is how you ask for dresses — so it
-  // offers the same pair as a layer does.
+  // Every category is the same: one quick pick, whatever it is for.
   await p.click('.modal .sheet-back'); await p.waitForTimeout(400);
   await openFilters(p); await p.click('.filter-chip:has-text("Top")'); await p.waitForTimeout(400);
   s=await state(p);
-  check('Top offers Any and None, with Any selected',
-    s.length===2 && s[0].label==='Any' && s[0].active && s[1].label==='None' && !s[1].active,
+  check('a base category offers the same one', s.length===1 && s[0].label==='Any' && s[0].active,
     JSON.stringify(s));
 
   await b.close();
