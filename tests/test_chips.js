@@ -460,6 +460,83 @@ async function setSlot(p, key, choice){
     await p.close();
   }
 
+  // ---- 12. The section labels count what is on ----
+  {
+    const p=await open(b);
+    const labels = () => p.evaluate(()=>{
+      const read = id => {
+        const el = document.getElementById(id);
+        return {text: el.textContent.trim(), shown: el.offsetParent !== null};
+      };
+      return {tags: read('sheet-tag-count'), pieces: read('sheet-piece-count')};
+    });
+
+    const rest = await labels();
+    check('nothing on means no count beside Tags',
+      !rest.tags.shown && rest.tags.text === '', JSON.stringify(rest.tags));
+    check('nor beside Pieces — a nought is a label saying there is no news',
+      !rest.pieces.shown && rest.pieces.text === '', JSON.stringify(rest.pieces));
+
+    await p.evaluate(()=>{ outfitTags = ['summer']; renderFilterControls(); });
+    await p.waitForTimeout(400);
+    check('one tag puts a 1 beside Tags',
+      (await labels()).tags.text === '1' && (await labels()).tags.shown,
+      JSON.stringify((await labels()).tags));
+    check('and leaves Pieces alone', !(await labels()).pieces.shown);
+
+    await p.evaluate(()=>{ outfitTags = ['summer','linen']; renderFilterControls(); });
+    await p.waitForTimeout(400);
+    check('two tags reads 2', (await labels()).tags.text === '2');
+
+    await p.evaluate(()=>{
+      const tabs = filterTabs();
+      outfitFilters[tabs[0]] = {type:'items', ids: itemsInTab(tabs[0]).slice(0,3).map(i=>i.id)};
+      outfitFilters[tabs[1]] = {type:'items', ids: itemsInTab(tabs[1]).slice(0,1).map(i=>i.id)};
+      renderFilterControls();
+    });
+    await p.waitForTimeout(400);
+    // Two categories narrowed, whatever number of pieces is pinned inside
+    // them — the chips carry that.
+    check('Pieces counts the categories narrowed, not the pieces pinned',
+      (await labels()).pieces.text === '2', (await labels()).pieces.text);
+
+    // The point of it: it says so when the chip saying so is off-screen.
+    const hidden = await p.evaluate(()=>{
+      const row = document.getElementById('sheet-filter-grid');
+      row.scrollLeft = 0;
+      const on = row.querySelector('.filter-chip.active');
+      const box = row.getBoundingClientRect(), a = on.getBoundingClientRect();
+      return {label: document.getElementById('sheet-piece-count').offsetParent !== null,
+              chipVisible: a.left >= box.left - 1 && a.right <= box.right + 1};
+    });
+    check('and it is in view even when a filtering chip is not',
+      hidden.label, JSON.stringify(hidden));
+
+    await p.click('#filter-sheet-clear'); await p.waitForTimeout(700);
+    const after = await labels();
+    check('Clear all takes both counts away',
+      !after.tags.shown && !after.pieces.shown, JSON.stringify(after));
+    await p.close();
+  }
+
+  // ---- 13. Faves counts its own, not the Outfits page's ----
+  {
+    const p=await open(b);
+    await p.evaluate(()=>{ outfitTags = ['summer','linen']; renderFilterControls(); });
+    await p.waitForTimeout(400);
+    await p.click('#nav-saved-btn'); await p.waitForTimeout(1100);
+    check('arriving on Faves, the counts are Faves\' own',
+      await p.evaluate(()=>document.getElementById('sheet-tag-count').offsetParent === null));
+    await p.evaluate(()=>{ savedTags = ['summer']; renderFilterControls(); });
+    await p.waitForTimeout(400);
+    check('and follow it', await p.evaluate(()=>
+      document.getElementById('sheet-tag-count').textContent.trim() === '1'));
+    await p.click('#nav-outfits-btn'); await p.waitForTimeout(1200);
+    check('while Outfits still counts its two', await p.evaluate(()=>
+      document.getElementById('sheet-tag-count').textContent.trim() === '2'));
+    await p.close();
+  }
+
   await b.close();
   const failed=results.filter(r=>!r).length;
   console.log(`\n${results.length-failed}/${results.length} checks passed`);

@@ -1214,6 +1214,21 @@
   /* Set apart by the room around it rather than a rule above it. */
   .loose-section{margin-top:52px;}
   .loose-section .filter-sheet-label{margin-bottom:14px;}
+  /* How many of that row is on. The row itself is wider than the panel, so
+     the chip doing the filtering can be off to the right with nothing on
+     screen to say so — and the row is not allowed to scroll itself to
+     prove it. The label never moves, and it is always in view.
+     The same badge the pill and the chips use, one size down again. */
+  .label-count{
+    display:inline-flex;align-items:center;justify-content:center;
+    min-width:16px;height:16px;padding:0 5px;
+    margin-left:8px;
+    border-radius:999px;
+    background:var(--accent);color:#fff;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:9px;font-weight:600;letter-spacing:0;
+    vertical-align:middle;
+  }
   /* Denser than the wardrobe's own grid: this is an index of what is left
      over, not a gallery to browse, and it can run to most of a wardrobe. */
   .loose-section .gallery{grid-template-columns:repeat(4, 1fr) !important;gap:8px;}
@@ -1953,13 +1968,22 @@ const FILTER_MOUNTS = [
 function filterControlsHtml(ns){
   return `
     <div class="filter-section">
-      <span class="filter-sheet-label">Tags</span>
+      <span class="filter-sheet-label">Tags<span class="label-count" id="${ns}-tag-count"></span></span>
       <div class="tag-chips chip-row" id="${ns}-tag-chips"></div>
     </div>
     <div class="filter-section">
-      <span class="filter-sheet-label">Pieces</span>
+      <span class="filter-sheet-label">Pieces<span class="label-count" id="${ns}-piece-count"></span></span>
       <div class="filter-grid chip-row" id="${ns}-filter-grid"></div>
     </div>`;
+}
+
+// Nothing when nothing is on: a nought beside "TAGS" is a label saying
+// there is no news, which is worse than no label at all.
+function setLabelCount(id, n){
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.textContent = n ? String(n) : '';
+  el.style.display = n ? 'inline-flex' : 'none';
 }
 
 // Which end of a row has more behind it, so only that edge fades. Wired
@@ -2012,6 +2036,16 @@ function renderFilterControls(){
       row.scrollLeft = wasAt[i];
       watchRowEdges(row);
     });
+
+    // How many of each row is on, beside the row's own name. A row is
+    // wider than the panel, so the chip that is filtering may be off to
+    // the right with nothing on screen to say so. The label is always
+    // there, and it does not move when you tap.
+    const on = m === 'outfits'
+      ? { tags: outfitTags.length, pieces: countNarrowedSlots(outfitFilters) }
+      : { tags: savedTags.length,  pieces: countNarrowedSlots(savedFilters) };
+    setLabelCount(`${ns}-tag-count`, on.tags);
+    setLabelCount(`${ns}-piece-count`, on.pieces);
   });
 
   const clear = document.getElementById('filter-sheet-clear');
