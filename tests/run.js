@@ -36,23 +36,36 @@ if(!suites.length){
   process.exit(1);
 }
 
-const alive = () => new Promise(done => {
-  const req = http.get(`http://127.0.0.1:${PORT}/index.html`, r => {
+const alive = port => new Promise(done => {
+  const req = http.get(`http://127.0.0.1:${port}/index.html`, r => {
     r.resume(); done(r.statusCode === 200);
   });
   req.on('error', () => done(false));
   req.setTimeout(1000, () => { req.destroy(); done(false); });
 });
 
-async function serve(){
-  if(await alive()) return null;
-  const srv = spawn('python3', ['-m', 'http.server', String(PORT)],
+// Every port the suites actually ask for, not just the usual one. Two of
+// them were written against a second port, and passed for months on a
+// server somebody had started by hand — which is the kind of pass that
+// turns into a mystery failure on a fresh machine.
+function portsInUse(){
+  const found = new Set([PORT]);
+  for(const f of fs.readdirSync(HERE).filter(f => /^test_.*\.js$/.test(f))){
+    const src = fs.readFileSync(path.join(HERE, f), 'utf8');
+    for(const m of src.matchAll(/localhost:(\d{4,5})/g)) found.add(Number(m[1]));
+  }
+  return [...found].sort();
+}
+
+async function serve(port){
+  if(await alive(port)) return null;
+  const srv = spawn('python3', ['-m', 'http.server', String(port)],
                     {cwd: ROOT, stdio: 'ignore', detached: true});
   for(let i = 0; i < 40; i++){
     await new Promise(r => setTimeout(r, 150));
-    if(await alive()) return srv;
+    if(await alive(port)) return srv;
   }
-  throw new Error(`Nothing serving ${ROOT} on ${PORT}`);
+  throw new Error(`Nothing serving ${ROOT} on ${port}`);
 }
 
 // A suite reports "N/M checks passed" on its last line and exits non-zero
@@ -101,9 +114,11 @@ function report(r){
 }
 
 (async () => {
-  const srv = await serve();
+  const ports = portsInUse();
+  const servers = (await Promise.all(ports.map(serve))).filter(Boolean);
   const started = Date.now();
-  console.log(`${suites.length} suites, ${serial ? 'one at a time' : '4 at a time'}\n`);
+  console.log(`${suites.length} suites, ${serial ? 'one at a time' : '4 at a time'}` +
+              `, serving ${ports.join(' and ')}\n`);
 
   const queue = suites.slice();
   const done = [];
@@ -127,6 +142,6 @@ function report(r){
   // reuses it, and the ad-hoc probes and screenshot scripts in here expect
   // to find it — tearing it down just moved the wasted minute somewhere
   // else. `pkill -f "http.server 8933"` if it ever needs to go.
-  if(srv) srv.unref();
+  servers.forEach(s => s.unref());
   process.exit(bad.length ? 1 : 0);
 })();

@@ -43,7 +43,7 @@ const state=p=>p.evaluate(()=>[...document.querySelectorAll('#picker-quick-picks
   const p=await b.newPage({viewport:{width:390,height:900},deviceScaleFactor:2});
   p.on('pageerror',e=>console.log('  PAGEERROR:',e.message));
   await prepare(p);
-  await p.goto('http://localhost:8935/index.html'); await p.waitForTimeout(400);
+  await p.goto('http://localhost:8933/index.html'); await p.waitForTimeout(400);
   await signIn(p);
   await p.click('#nav-outfits-btn'); await p.waitForTimeout(700);
 

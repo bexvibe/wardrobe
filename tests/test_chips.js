@@ -49,7 +49,10 @@ const chip = (p, label) => p.evaluate(l => {
     ringed: !/rgba\(0, 0, 0, 0\)|transparent/.test(cs.borderTopColor),
     badge: badge ? badge.textContent.trim() : null,
     struck: lab ? getComputedStyle(lab).textDecorationLine.includes('line-through') : false,
+    // Not aria-pressed: this chip opens a picker, it does not toggle.
+    opens: el.getAttribute('aria-haspopup'),
     pressed: el.getAttribute('aria-pressed'),
+    caret: Boolean(el.querySelector('.chip-caret')),
     said: el.getAttribute('aria-label'),
     text: el.textContent.trim(),
     h: Math.round(el.getBoundingClientRect().height),
@@ -120,10 +123,10 @@ async function setSlot(p, key, choice){
       return (await chip(p,'Tops')).badge === '1';
     })());
     check('a chip that is on says so to a screen reader too',
-      c.pressed === 'true' && /3 selected/.test(c.said), c.said);
+      c.opens === 'dialog' && /3 selected/.test(c.said), c.said);
     check('and one that is off says that', await (async()=>{
       const off = await chip(p, 'Dresses');
-      return off.pressed === 'false' && /any/i.test(off.said);
+      return off.opens === 'dialog' && /any/i.test(off.said);
     })());
     await p.close();
   }
@@ -409,6 +412,38 @@ async function setSlot(p, key, choice){
     check('and a row that fits has none',
       (await edges('sheet-tag-chips')).cls === '',
       (await edges('sheet-tag-chips')).cls);
+    await p.close();
+  }
+
+  // ---- 11. A chip that opens something says so ----
+  {
+    const p=await open(b);
+    const look = await p.evaluate(()=>{
+      const piece = document.querySelector('#sheet-filter-grid .filter-chip');
+      const tag = document.querySelector('#sheet-tag-chips .tag-chip');
+      const c = piece.querySelector('.chip-caret');
+      return {
+        pieceCaret: Boolean(c),
+        caretSize: c ? Math.round(c.getBoundingClientRect().width) : 0,
+        tagCaret: Boolean(tag.querySelector('.chip-caret')),
+        pieceOpens: piece.getAttribute('aria-haspopup'),
+        pieceToggles: piece.getAttribute('aria-pressed'),
+        tagToggles: tag.getAttribute('aria-pressed'),
+      };
+    });
+    check('a piece chip carries the caret of something that opens',
+      look.pieceCaret && look.caretSize > 6, JSON.stringify(look));
+    check('and a tag chip, which toggles where it stands, does not',
+      !look.tagCaret);
+    check('the markup says the same thing: a door, not a switch',
+      look.pieceOpens === 'dialog' && look.pieceToggles === null,
+      `haspopup=${look.pieceOpens} pressed=${look.pieceToggles}`);
+
+    // And it really is a door.
+    await p.click('#sheet-filter-grid .filter-chip'); await p.waitForTimeout(600);
+    check('tapping it opens the picker rather than toggling in place',
+      await p.evaluate(()=>document.getElementById('modal-backdrop').classList.contains('open') &&
+        Boolean(document.getElementById('picker-gallery'))));
     await p.close();
   }
 

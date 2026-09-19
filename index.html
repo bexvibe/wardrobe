@@ -1071,6 +1071,16 @@
     background:var(--accent);color:#fff;
     font-size:10px;font-weight:600;line-height:1;
   }
+  /* The mark of a chip that opens something. Beside it in the same panel
+     sit the tag chips, which toggle where they stand — identical in every
+     other respect, which made one row promise what the other does. */
+  .chip-caret{
+    flex:none;
+    width:11px;height:11px;display:block;
+    margin-left:-2px;
+    color:var(--ink-soft);
+  }
+  .filter-chip.active .chip-caret{color:var(--ink);}
   /* Ruling a category out is the one state a number cannot carry, so the
      label is struck through instead: the chip is on, and what it is on
      about is going without. */
@@ -2244,9 +2254,16 @@ function renderSlotChips(gridId){
                : f.type === 'none' ? 'none'
                : `${f.ids.length} selected`;
 
-    return `<button class="${cls}" data-state="${f.type}" aria-pressed="${f.type !== 'any'}"`
+    // A tag chip is a tap and done; this one is a door to a picker. Until
+    // it said so the two rows made the same promise for different
+    // behaviour, so it carries the caret that means "this opens
+    // something" — and reports itself as a door rather than a switch.
+    return `<button class="${cls}" data-state="${f.type}" aria-haspopup="dialog"`
       + ` aria-label="${esc(key)}: ${said}" onclick="openSlotPicker('${key}')">`
-      + `<span class="chip-label">${key}</span>${badge}</button>`;
+      + `<span class="chip-label">${key}</span>${badge}`
+      + `<svg class="chip-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor"`
+      + ` stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">`
+      + `<path d="M6 10l6 6 6-6"/></svg></button>`;
   }).join('');
 }
 
