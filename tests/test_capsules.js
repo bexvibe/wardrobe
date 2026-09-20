@@ -88,9 +88,13 @@ const db = p => p.evaluate(()=>({
     await p.click('#capsule-editor-gallery .picker-tile:nth-child(2)');
     await p.click('#capsule-editor-gallery .picker-tile:nth-child(3)');
     await p.waitForTimeout(200);
-    check('selected pieces are counted back',
-      (await p.textContent('#capsule-editor-count')).includes('3 pieces selected'),
-      (await p.textContent('#capsule-editor-count')).trim());
+    // No count line: the tiles tick where you tap them, which is the same
+    // news said once instead of twice.
+    check('nothing counts them back at you',
+      await p.evaluate(()=>!document.getElementById('capsule-editor-count')));
+    check('the draft holds all three all the same',
+      await p.evaluate(()=>capsuleDraft.itemIds.size===3),
+      String(await p.evaluate(()=>capsuleDraft.itemIds.size)));
     check('selected tiles are marked',
       await p.evaluate(()=>document.querySelectorAll('#capsule-editor-gallery .picker-selected').length)===3);
 

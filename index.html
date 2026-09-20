@@ -1291,12 +1291,6 @@
   }
 
   /* Capsule editor: a name, then the wardrobe to pick from. */
-  .capsule-editor-count{
-    font-family:'IBM Plex Mono',monospace;
-    font-size:11px;letter-spacing:0.04em;
-    color:var(--ink-soft);
-    margin:12px 0 10px;
-  }
 </style>
 </head>
 <body>
@@ -2112,12 +2106,17 @@ function syncSheetInset(){
 // If it never does, focus stays on the body, which is where it would have
 // gone anyway.
 function focusTheFiltersPill(){
-  requestAnimationFrame(() => requestAnimationFrame(() => {
+  // Kept trying rather than guessed at: two frames was enough on a quiet
+  // machine and not on a busy one, and a missed handover leaves focus on
+  // the body, where the next Tab starts again from the top of the page.
+  const deadline = Date.now() + 600;
+  const attempt = () => {
     const fab = document.getElementById('filters-fab');
     if(!fab || fab.classList.contains('stood-down')) return;
-    if(getComputedStyle(fab).visibility === 'hidden') return;
-    fab.focus();
-  }));
+    if(getComputedStyle(fab).visibility !== 'hidden'){ fab.focus(); return; }
+    if(Date.now() < deadline) requestAnimationFrame(attempt);
+  };
+  requestAnimationFrame(attempt);
 }
 
 function syncSheetReach(){
@@ -3151,7 +3150,6 @@ function openCapsuleEditor(id, seedItemIds){
       </div>
       <div class="form-error" id="capsule-error"></div>
       <div class="tabs" id="capsule-tabs"></div>
-      <div class="capsule-editor-count" id="capsule-editor-count"></div>
       <div class="gallery" id="capsule-editor-gallery"></div>
     </div>
     <div class="sheet-footer">
@@ -3205,19 +3203,14 @@ function setCapsuleEditorTab(tab){
 
 function renderCapsuleEditorGallery(){
   const gallery = document.getElementById('capsule-editor-gallery');
-  const countEl = document.getElementById('capsule-editor-count');
   if(!gallery) return;
 
   const pool = capsuleDraft.tab === 'All'
     ? ITEMS
     : ITEMS.filter(i => tabForItem(i) === capsuleDraft.tab);
 
-  if(countEl){
-    const n = capsuleDraft.itemIds.size;
-    countEl.textContent = n
-      ? `${n} piece${n===1?'':'s'} selected`
-      : 'Tap pieces to add them';
-  }
+  // No count and no instruction: the tiles tick where you tap them, and
+  // that is the same news said once instead of twice.
 
   gallery.innerHTML = pool.map(i => {
     const selected = capsuleDraft.itemIds.has(i.id);
