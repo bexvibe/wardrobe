@@ -157,7 +157,7 @@ async function pinFirst(p, key){
       });
       await p.waitForTimeout(400);
       return (await cards(p))===0 &&
-        (await p.textContent('#saved-empty-title')).trim() === 'Nothing matches';
+        (await p.textContent('#saved-empty-title')).trim() === 'No outfits match';
     })());
     await p.close();
   }

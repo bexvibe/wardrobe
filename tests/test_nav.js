@@ -162,7 +162,12 @@ const vis=(p,s)=>p.isVisible(s);
   check('the last outfit can be scrolled out from under the panel',
     clears.lastBottom <= clears.sheetTop,
     `last card ends ${clears.lastBottom}, panel starts ${clears.sheetTop}`);
-  await p.evaluate(()=>window.scrollTo({top:0})); await p.waitForTimeout(400);
+  // A wheel rather than window.scrollTo: the app asks whether a finger, a
+  // wheel or a key did the scrolling, because the page also moves for
+  // reasons that are not you.
+  await p.mouse.move(195, 400);
+  await p.mouse.wheel(0, -900);
+  await p.waitForTimeout(600);
   // That scroll put the panel away by itself, which is what a scroll is for
   // now. Bring it back before testing the way it is put away by hand.
   check('scrolling the page had already closed it', !(await sheetOpen()));

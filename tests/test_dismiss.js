@@ -27,6 +27,15 @@ async function open(b){
   return p;
 }
 const isOpen = p => p.evaluate(()=>filterSheetOpen());
+// Scrolled with a wheel rather than window.scrollBy: the app asks whether
+// a finger, a wheel or a key did it, because the page also moves for
+// reasons that are not you — a filter shortening it, or the browser
+// keeping your place when content above changes.
+async function scrollBy(p, dy){
+  await p.mouse.move(195, 400);
+  await p.mouse.wheel(0, dy);
+  await p.waitForTimeout(300);
+}
 async function reopen(p){
   if(!(await isOpen(p))){ await p.click('#filters-fab'); await p.waitForTimeout(700); }
 }
@@ -93,15 +102,15 @@ async function reopen(p){
   // ---- 3. A scroll closes it, a nudge does not ----
   {
     const p=await open(b);
-    await p.evaluate(()=>window.scrollBy({top:10})); await p.waitForTimeout(500);
+    await scrollBy(p, 10); await p.waitForTimeout(500);
     check('a few pixels of drift leaves it alone', await isOpen(p),
       String(await p.evaluate(()=>Math.round(scrollY))));
-    await p.evaluate(()=>window.scrollBy({top:300})); await p.waitForTimeout(700);
+    await scrollBy(p, 300); await p.waitForTimeout(700);
     check('scrolling the page closes it', !(await isOpen(p)),
       String(await p.evaluate(()=>Math.round(scrollY))));
 
     // And it stays closed while you carry on scrolling.
-    await p.evaluate(()=>window.scrollBy({top:400})); await p.waitForTimeout(500);
+    await scrollBy(p, 400); await p.waitForTimeout(500);
     check('and it stays closed', !(await isOpen(p)));
     await p.close();
   }
@@ -110,7 +119,7 @@ async function reopen(p){
   {
     const p=await open(b);
     // Leave Outfits partway down, so coming back restores a position.
-    await p.evaluate(()=>window.scrollBy({top:600})); await p.waitForTimeout(700);
+    await scrollBy(p, 600); await p.waitForTimeout(700);
     await p.click('#nav-inventory-btn'); await p.waitForTimeout(800);
     await p.click('#nav-outfits-btn'); await p.waitForTimeout(1200);
     check('coming back puts you where you were',
@@ -129,8 +138,43 @@ async function reopen(p){
     await reopen(p);
     check('the panel opens on Faves too', await isOpen(p));
     await p.click('#saved-empty-title').catch(()=>{});
-    await p.evaluate(()=>window.scrollBy({top:200})); await p.waitForTimeout(700);
+    await scrollBy(p, 200); await p.waitForTimeout(700);
     check('and closes the same way', !(await isOpen(p)));
+    await p.close();
+  }
+
+  // ---- A filter that shortens the page is not you scrolling away ----
+  {
+    const p=await open(b);
+    // Down the page far enough that narrowing it will make the browser
+    // clamp the scroll position — which used to arrive as a scroll nobody
+    // made and put the panel away mid-tap.
+    await p.evaluate(()=>window.scrollTo({top:1200})); await p.waitForTimeout(700);
+    await reopen(p);
+    check('the panel is up, well down the page',
+      (await isOpen(p)) && (await p.evaluate(()=>scrollY)) > 600,
+      String(await p.evaluate(()=>Math.round(scrollY))));
+
+    const before = await p.evaluate(()=>document.documentElement.scrollHeight);
+    await p.evaluate(()=>document
+      .querySelector('#sheet-tag-chips .tag-chip[data-tag="summer"]').click());
+    await p.waitForTimeout(1200);
+    const after = await p.evaluate(()=>({
+      h: document.documentElement.scrollHeight,
+      y: Math.round(scrollY),
+      open: filterSheetOpen(),
+      on: outfitTags.slice(),
+    }));
+    check('the filter really did shorten the page', after.h < before,
+      `${before} -> ${after.h}`);
+    check('and the panel stayed up through it', after.open, JSON.stringify(after));
+    check('with the tag actually on', after.on.join() === 'summer', after.on.join());
+
+    // And a real scroll still puts it away, which is the whole point of
+    // the behaviour being there.
+    await scrollBy(p, -300);
+    await p.waitForTimeout(700);
+    check('a scroll you did make still closes it', !(await isOpen(p)));
     await p.close();
   }
 

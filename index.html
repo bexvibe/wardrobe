@@ -317,7 +317,19 @@
   }
 
   .empty{text-align:center;padding:60px 20px;color:var(--ink-soft);}
-  .empty h3{font-family:'Fraunces', serif;font-weight:500;color:var(--ink);margin-bottom:6px;}
+  .empty h3{font-family:'Fraunces', serif;font-weight:500;color:var(--ink);margin-bottom:0;}
+  /* The line says what is missing; the button is how you fix it. A second
+     line explaining the first was the app talking to itself. */
+  .empty-action{
+    margin-top:18px;
+    width:52px;height:52px;
+    display:inline-flex;align-items:center;justify-content:center;
+    border:none;border-radius:999px;
+    background:var(--ink);color:#fff;
+    cursor:pointer;padding:0;
+  }
+  .empty-action:hover{background:var(--accent);}
+  .empty-action svg{width:22px;height:22px;display:block;}
 
   /* Name list view */
   .name-list{display:flex;flex-direction:column;}
@@ -1346,7 +1358,10 @@
     <div class="gallery" id="gallery"></div>
     <div class="name-list" id="name-list" style="display:none;"></div>
     <div class="empty" id="empty" style="display:none;">
-      <h3>Nothing here yet</h3>
+      <h3>Add pieces</h3>
+      <button class="empty-action" onclick="openItemForm()" aria-label="Add a piece" title="Add a piece">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+      </button>
     </div>
 
     <div class="bulk-bar" id="bulk-bar" style="display:none;"></div>
@@ -1369,7 +1384,11 @@
 
     <div class="outfit-gallery" id="outfit-gallery"></div>
     <div class="empty" id="outfit-empty" style="display:none;">
-      <h3>No outfits match</h3>
+      <h3 id="outfit-empty-title">No outfits match</h3>
+      <button class="empty-action" id="outfit-empty-action" style="display:none;"
+              onclick="openItemForm()" aria-label="Add a piece" title="Add a piece">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+      </button>
     </div>
     <div style="text-align:center;margin-top:16px;">
       <button class="btn secondary" id="load-more-btn" onclick="loadMoreOutfits()" style="display:none;">Load more</button>
@@ -1382,8 +1401,7 @@
     </header>
     <div class="outfit-gallery" id="saved-gallery"></div>
     <div class="empty" id="saved-empty" style="display:none;">
-      <h3 id="saved-empty-title">No faves yet</h3>
-      <p id="saved-empty-note">Tap the heart on any outfit to keep it here.</p>
+      <h3 id="saved-empty-title">No faves</h3>
     </div>
   </div>
 
@@ -1401,8 +1419,10 @@
     </header>
     <div class="capsule-gallery" id="capsule-gallery"></div>
     <div class="empty" id="capsule-empty" style="display:none;">
-      <h3>No capsules yet</h3>
-      <p>Build one and it lives here.</p>
+      <h3>Build a capsule</h3>
+      <button class="empty-action" onclick="openCapsuleEditor()" aria-label="New capsule" title="New capsule">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+      </button>
     </div>
 
     <!-- What is left over. A capsule is a decision about a piece, so the
@@ -1422,8 +1442,7 @@
     <div class="count-line" id="archive-count-line"></div>
     <div class="name-list" id="archive-list"></div>
     <div class="empty" id="archive-empty" style="display:none;">
-      <h3>Nothing archived</h3>
-      <p>Anything you remove from your wardrobe waits here.</p>
+      <h3>No archives</h3>
     </div>
   </div>
 
@@ -1713,12 +1732,6 @@ function itemsInTab(tabName){
 // them still narrow by AND.
 let outfitTags = [];
 let savedTags = [];
-
-// "summer", "summer or linen", "summer, linen or wool".
-function tagPhrase(list){
-  if(list.length <= 1) return list[0] || '';
-  return list.slice(0, -1).join(', ') + ' or ' + list[list.length - 1];
-}
 
 function carriesAny(piece, tags){
   return (piece.tags || []).some(t => tags.includes(t));
@@ -2152,6 +2165,34 @@ function watchForSheetDismiss(){
   sheetScrollOrigin = window.scrollY;
 }
 
+// The page moves for reasons that are not you. Narrowing it makes it
+// shorter and the browser clamps the scroll to the new bottom; changing
+// what is above the viewport makes the browser compensate to keep your
+// place — Chrome calls that scroll anchoring. Both arrive at the scroll
+// handler looking exactly like a scroll, and both were putting the panel
+// away mid-tap, which is what "sometimes it collapses when I pick a tag"
+// was.
+//
+// Trying to tell them apart from the numbers does not hold: a clamp has a
+// signature, anchoring does not. So the question is asked directly — did a
+// finger, a wheel or a key do this — because that is what the behaviour is
+// about. Scrolling away closes the panel; the page shifting under it is
+// not you going anywhere.
+let lastScrollGesture = 0;
+const SCROLL_GESTURE_GRACE = 700;
+const SCROLL_KEYS = ['ArrowUp','ArrowDown','PageUp','PageDown','Home','End',' ','Spacebar'];
+
+function noteScrollGesture(){ lastScrollGesture = Date.now(); }
+['wheel', 'touchmove'].forEach(type =>
+  window.addEventListener(type, noteScrollGesture, {passive:true, capture:true}));
+window.addEventListener('keydown', e => {
+  if(SCROLL_KEYS.includes(e.key)) noteScrollGesture();
+}, {capture:true});
+
+function scrolledByHand(){
+  return Date.now() - lastScrollGesture < SCROLL_GESTURE_GRACE;
+}
+
 function tappedInsideSheet(target){
   return Boolean(target.closest && (target.closest('#filter-sheet') ||
                                     target.closest('#filters-fab')));
@@ -2179,6 +2220,8 @@ document.addEventListener('click', e => {
 
 window.addEventListener('scroll', () => {
   if(!filterSheetOpen() || sheetOverTheTop()) return;
+  // Only a scroll you made counts. See noteScrollGesture above.
+  if(!scrolledByHand()){ watchForSheetDismiss(); return; }
   if(Math.abs(window.scrollY - sheetScrollOrigin) < SHEET_DISMISS_SCROLL) return;
   closeFilterSheet();
 }, {passive:true});
@@ -2845,8 +2888,7 @@ function renderExtrasPicker(key){
     </div>
   `).join('') : `
     <div class="empty">
-      <h3>Nothing here yet</h3>
-      <p>Add something to your wardrobe and it will show up here.</p>
+      <h3>No accessories</h3>
     </div>
   `;
 }
@@ -2902,13 +2944,11 @@ function renderSavedOutfits(){
     gallery.innerHTML = '';
     // Say which of the two empty states this is, so a filter that matches
     // nothing does not read as "you have saved nothing".
+    // Two states, two lines: nothing kept, or nothing that gets past the
+    // filters. Which tag or piece did it is in the panel above, so the
+    // line does not repeat it.
     document.getElementById('saved-empty-title').textContent =
-      !narrowed ? 'No faves yet'
-      : savedTags.length ? `Nothing tagged ${tagPhrase(savedTags)}`
-                         : 'Nothing matches';
-    document.getElementById('saved-empty-note').textContent = narrowed
-      ? 'Try widening the filters.'
-      : 'Tap the heart on any outfit to keep it here.';
+      narrowed ? 'No outfits match' : 'No faves';
     emptyState.style.display = 'block';
     return;
   }
@@ -3035,7 +3075,7 @@ function renderCapsules(){
            ${capsuleBands(pieces).map(row =>
              `<div class="capsule-band">${row.map(cell).join('')}</div>`).join('')}
          </div>`
-      : `<div class="capsule-empty-note">No pieces in this capsule yet — tap to add some.</div>`;
+      : `<div class="capsule-empty-note">Tap to add pieces</div>`;
 
     const expandedPanel = isExpanded ? `
       <div class="outfit-expanded-panel">
@@ -3323,7 +3363,16 @@ function renderOutfits(){
 
   if(outfitDisplayed.length === 0){
     gallery.innerHTML = '';
-    if(emptyState) emptyState.style.display = 'block';
+    if(emptyState){
+      // Nothing to build from is a different problem from a filter nothing
+      // gets past, and only the first one is solved by adding a piece.
+      const bare = ITEMS.length === 0 || comboCountWhere(false) === 0;
+      const title = document.getElementById('outfit-empty-title');
+      const action = document.getElementById('outfit-empty-action');
+      if(title) title.textContent = bare ? 'Add pieces to see outfits' : 'No outfits match';
+      if(action) action.style.display = bare ? 'inline-flex' : 'none';
+      emptyState.style.display = 'block';
+    }
     if(loadMoreBtn) loadMoreBtn.style.display = 'none';
     return;
   }
