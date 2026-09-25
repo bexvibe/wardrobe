@@ -4,6 +4,7 @@
 // database and not just on screen, and that the toast is somewhere a thumb
 // can reach it.
 const { chromium } = require('playwright');
+const { toFaves } = require('./nav');
 const fs=require('fs'), path=require('path');
 const REPO = require('path').join(__dirname, '..');
 const SHOTS = require('path').join(__dirname, 'shots');
@@ -175,7 +176,7 @@ async function holdFirstTile(p){
       }, key));
 
     // Now the same thing from the Faves page, where the card disappears.
-    await p.click('#nav-saved-btn'); await p.waitForTimeout(600);
+    await toFaves(p, 600);
     check('the outfit is listed under Faves',
       (await p.locator('#saved-gallery .outfit-card').count()) === 1);
     await p.click('#saved-gallery .outfit-fav-btn'); await p.waitForTimeout(500);
@@ -281,9 +282,12 @@ async function holdFirstTile(p){
   // ---- 8. Saved is called Faves now ----
   {
     const p=await open(b);
-    check('the nav calls it Faves',
-      (await p.textContent('#nav-saved-btn')).trim() === 'Faves');
-    await p.click('#nav-saved-btn'); await p.waitForTimeout(600);
+    // The bar no longer spells it out — the switch is a heart, which is
+    // the same mark the cards use — so the page is where the word lives.
+    await toFaves(p, 600);
+    check('the switch is the heart the cards use',
+      (await p.textContent('#nav-saved-btn')).trim() === '\u2665',
+      (await p.textContent('#nav-saved-btn')).trim());
     check('so does the page',
       (await p.textContent('#saved-view h1')).trim() === 'Faves');
     check('and the empty state',

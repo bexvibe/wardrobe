@@ -8,6 +8,7 @@
 // asymmetric case, because on Faves the card goes with it and there is
 // nothing left to tap.
 const { chromium } = require('playwright');
+const { toFaves } = require('./nav');
 const fs=require('fs'), path=require('path');
 const REPO = require('path').join(__dirname, '..');
 const SHOTS = require('path').join(__dirname, 'shots');
@@ -48,7 +49,7 @@ const hush = p => p.evaluate(()=>{
   // ---- 1. The accessories picker says nothing ----
   {
     const p=await open(b);
-    await p.click('#nav-saved-btn'); await p.waitForTimeout(900);
+    await toFaves(p, 900);
     await p.evaluate(()=>closeFilterSheet()); await p.waitForTimeout(400);
     await p.click('#saved-gallery .outfit-card'); await p.waitForTimeout(500);
     await p.click('#saved-gallery .modal-actions button'); await p.waitForTimeout(600);
@@ -118,7 +119,7 @@ const hush = p => p.evaluate(()=>{
 
     // Taking one away on Faves is the asymmetric one: the card goes too, so
     // there is nothing left to tap and the undo has to live somewhere.
-    await p.click('#nav-saved-btn'); await p.waitForTimeout(900);
+    await toFaves(p, 900);
     await p.evaluate(()=>closeFilterSheet()); await p.waitForTimeout(400);
     await hush(p);
     await p.click('#saved-gallery .outfit-fav-btn'); await p.waitForTimeout(800);

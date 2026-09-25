@@ -5,6 +5,7 @@
 // than behind it. Anywhere a fourth row appears, it wants this too, which
 // the last section here is for.
 const { chromium } = require('playwright');
+const { toFaves } = require('./nav');
 const fs=require('fs'), path=require('path');
 const REPO = require('path').join(__dirname, '..');
 const SHOTS = require('path').join(__dirname, 'shots');
@@ -195,7 +196,7 @@ const rowTop = (p, sel) => p.evaluate(s =>
     await p.evaluate(()=>closeFilterSheet()); await p.waitForTimeout(500);
     await p.click('.outfit-gallery .outfit-fav-btn');
     await p.waitForFunction(()=>favoriteOutfits.length === 1);
-    await p.click('#nav-saved-btn'); await p.waitForTimeout(900);
+    await toFaves(p, 900);
     await p.evaluate(()=>openOutfitExtrasPicker(favoriteOutfits[0].key));
     await p.waitForTimeout(700);
     // Land on the fullest shelf, so there is a sheet worth scrolling.

@@ -1,6 +1,7 @@
 // Verifies renaming a piece: the edit form pre-fills, the new name is
 // written to the database, and it propagates everywhere the name shows.
 const { chromium } = require('playwright');
+const { toFaves } = require('./nav');
 // Search now lives behind an icon, in a bar that opens over the page.
 async function typeSearch(page, text){
   const open = await page.evaluate(()=>document.getElementById('search-overlay').classList.contains('open'));
@@ -70,7 +71,7 @@ const check=(n,p,d)=>{results.push(p);console.log(`${p?'PASS':'FAIL'}  ${n}${d?'
 
   // propagates into an outfit saved before the rename
   await typeSearch(p, '');
-  await p.click('#nav-saved-btn'); await p.waitForTimeout(500);
+  await toFaves(p, 500);
   await p.click('#saved-gallery .outfit-card'); await p.waitForTimeout(400);
   const pieceNames = await p.$$eval('#saved-gallery .p-name', els=>els.map(e=>e.textContent.trim()));
   check('saved outfit shows the new name', pieceNames.includes(NEW_NAME), pieceNames.join(' | '));

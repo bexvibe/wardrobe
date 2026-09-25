@@ -4,6 +4,7 @@
 // time. And the "outfits with this piece" list inside a sheet stops
 // borrowing the Outfits page's filters, which it used to wipe.
 const { chromium } = require('playwright');
+const { toFaves } = require('./nav');
 const fs=require('fs'), path=require('path');
 const REPO = require('path').join(__dirname, '..');
 const SHOTS = require('path').join(__dirname, 'shots');
@@ -58,7 +59,7 @@ async function keepOne(p){
   {
     const p=await open(b);
     await keepOne(p);
-    await p.click('#nav-saved-btn'); await p.waitForTimeout(900);
+    await toFaves(p, 900);
     await p.evaluate(()=>closeFilterSheet()); await p.waitForTimeout(400);
     const wasTab = await p.evaluate(()=>activeTab);
     await p.click('#saved-gallery .outfit-card'); await p.waitForTimeout(500);

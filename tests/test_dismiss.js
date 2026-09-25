@@ -3,6 +3,7 @@
 // the same curve it arrived by — but a tap inside it, or a scroll of a row
 // inside it, is still you using it.
 const { chromium } = require('playwright');
+const { toFaves } = require('./nav');
 const fs=require('fs'), path=require('path');
 const REPO = require('path').join(__dirname, '..');
 const SHOTS = require('path').join(__dirname, 'shots');
@@ -134,7 +135,7 @@ async function reopen(p){
   // ---- 5. Faves behaves the same way ----
   {
     const p=await open(b);
-    await p.click('#nav-saved-btn'); await p.waitForTimeout(1000);
+    await toFaves(p, 1000);
     await reopen(p);
     check('the panel opens on Faves too', await isOpen(p));
     await p.click('#saved-empty-title').catch(()=>{});

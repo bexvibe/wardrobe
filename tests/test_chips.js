@@ -5,6 +5,7 @@
 // And every one of them — chips, tags, Clear all, the arrow, the picker's
 // own buttons — is a full thumb's worth of target.
 const { chromium } = require('playwright');
+const { toFaves } = require('./nav');
 const fs=require('fs'), path=require('path');
 const REPO = require('path').join(__dirname, '..');
 const SHOTS = require('path').join(__dirname, 'shots');
@@ -220,9 +221,9 @@ async function setSlot(p, key, choice){
   // ---- 6. Faves reads the same way ----
   {
     const p=await open(b);
-    await p.click('#nav-saved-btn'); await p.waitForTimeout(1200);
+    await toFaves(p, 1200);
     await p.evaluate(()=>{
-      savedFilters['Tops'] = {type:'items', ids:itemsInTab('Tops').slice(0,4).map(i=>i.id)};
+      outfitFilters['Tops'] = {type:'items', ids:itemsInTab('Tops').slice(0,4).map(i=>i.id)};
       renderFilterControls();
     });
     await p.waitForTimeout(400);
@@ -513,21 +514,25 @@ async function setSlot(p, key, choice){
     await p.close();
   }
 
-  // ---- 13. Faves counts its own, not the Outfits page's ----
+  // ---- 13. One count, over both halves of the switch ----
   {
     const p=await open(b);
     await p.evaluate(()=>{ outfitTags = ['summer','linen']; renderFilterControls(); });
     await p.waitForTimeout(400);
-    await p.click('#nav-saved-btn'); await p.waitForTimeout(1100);
-    check('arriving on Faves, the counts are Faves\' own',
-      await p.evaluate(()=>document.getElementById('sheet-tag-count').textContent === ''));
-    await p.evaluate(()=>{ savedTags = ['summer']; renderFilterControls(); });
+    const count = () => p.evaluate(()=>
+      document.getElementById('sheet-tag-count').textContent.trim());
+    check('two tags on, two counted', (await count()) === '(2)', await count());
+
+    await toFaves(p, 1100);
+    check('and still two after the switch', (await count()) === '(2)', await count());
+
+    // Dropping one from this side drops it for both, because there is only
+    // one of it.
+    await p.evaluate(()=>{ outfitTags = ['summer']; renderFilterControls(); });
     await p.waitForTimeout(400);
-    check('and follow it', await p.evaluate(()=>
-      document.getElementById('sheet-tag-count').textContent.trim() === '(1)'));
+    check('dropping one leaves one', (await count()) === '(1)', await count());
     await p.click('#nav-outfits-btn'); await p.waitForTimeout(1200);
-    check('while Outfits still counts its two', await p.evaluate(()=>
-      document.getElementById('sheet-tag-count').textContent.trim() === '(2)'));
+    check('on the other side too', (await count()) === '(1)', await count());
     await p.close();
   }
 

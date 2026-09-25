@@ -1,4 +1,5 @@
 const { chromium } = require('playwright');
+const { toFaves } = require('./nav');
 const fs = require('fs');
 const path = require('path');
 const REPO = require('path').join(__dirname, '..');
@@ -151,8 +152,7 @@ async function login(page) {
     check('hearting writes a saved_outfits row', saved.length === 1 && !saved[0].archived_at,
       saved.length ? saved[0].combo_key : 'none');
 
-    await page.click('#nav-saved-btn');
-    await page.waitForTimeout(300);
+    await toFaves(page, 300);
     check('saved tab shows the hearted outfit',
       (await page.evaluate(()=>document.querySelectorAll('#saved-gallery .outfit-card').length))===1);
 
@@ -219,8 +219,7 @@ async function login(page) {
     check('old localStorage kept as a backup', migrated.legacyKept);
     check('saved tab shows the migrated outfit',
       await (async () => {
-        await page.click('#nav-saved-btn');
-        await page.waitForTimeout(300);
+        await toFaves(page, 300);
         return (await page.evaluate(()=>
           document.querySelectorAll('#saved-gallery .outfit-card').length))===1;
       })());

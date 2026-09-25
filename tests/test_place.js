@@ -2,6 +2,7 @@
 // way to that piece in the wardrobe, and coming back to a tab should put you
 // where you were on it — for this visit only.
 const { chromium } = require('playwright');
+const { toFaves } = require('./nav');
 const fs=require('fs'), path=require('path');
 const REPO = require('path').join(__dirname, '..');
 const SHOTS = require('path').join(__dirname, 'shots');
@@ -152,7 +153,7 @@ const scrollTo = async (p, top) => { await p.evaluate(t=>window.scrollTo({top:t}
       setFavorited(comboKey(combo), true, combo);
     });
     await p.waitForFunction(()=>favoriteOutfits && favoriteOutfits.length === 1);
-    await p.click('#nav-saved-btn'); await p.waitForTimeout(700);
+    await toFaves(p, 700);
     await p.click('#saved-gallery .outfit-card');
     // Waited for rather than slept through: under a parallel run the
     // expand can take longer than any number you would have picked.

@@ -3,6 +3,7 @@
 // ordered by use, a capsule's layers cascading, the pieces no capsule has
 // claimed, and a piece's capsules editable from the piece itself.
 const { chromium } = require('playwright');
+const { toFaves } = require('./nav');
 const fs=require('fs'), path=require('path');
 const REPO = require('path').join(__dirname, '..');
 const SHOTS = require('path').join(__dirname, 'shots');
@@ -83,10 +84,10 @@ const foldedCount = p => p.evaluate(()=>
     check('and raising it by hand still works', await sheetOpen(p));
 
     // Faves has its own once, independent of Outfits.
-    await p.click('#nav-saved-btn'); await p.waitForTimeout(800);
+    await toFaves(p, 800);
     check('Faves gets its own first time', await sheetOpen(p));
     await p.click('#nav-outfits-btn'); await p.waitForTimeout(800);
-    await p.click('#nav-saved-btn'); await p.waitForTimeout(800);
+    await toFaves(p, 800);
     check('and only the once', !(await sheetOpen(p)));
 
     // A new visit starts over.
@@ -304,7 +305,7 @@ const foldedCount = p => p.evaluate(()=>
       !['Shoes','Hats','Accessories','Swimwear'].some(t => onOutfits.labels.includes(t)),
       onOutfits.labels.join(', '));
 
-    await p.click('#nav-saved-btn'); await p.waitForTimeout(800);
+    await toFaves(p, 800);
     const onFaves = await p.evaluate(()=>
       Array.from(document.getElementById('sheet-filter-grid').children)
         .map(c => c.childNodes[0].textContent.trim()));

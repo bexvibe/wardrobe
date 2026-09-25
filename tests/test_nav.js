@@ -1,5 +1,6 @@
 // Navigation: three destinations, no sub-tabs, archive demoted to a link.
 const { chromium } = require('playwright');
+const { toFaves } = require('./nav');
 // The filters dock at the bottom of the screen and open themselves on
 // Outfits and Faves. Everywhere else the pill raises them.
 async function openFilters(page){
@@ -42,13 +43,15 @@ const vis=(p,s)=>p.isVisible(s);
 
   // --- one navigation surface ---
   check('bottom bar visible once signed in', await vis(p,'#bottom-bar'));
-  check('four destinations, all of them visible',
+  // Three now: what you kept is a state of Outfits rather than a place of
+  // its own, and it is reached by the switch inside that destination.
+  check('three destinations, all of them visible',
     await p.evaluate(()=>{
       const btns=Array.from(document.querySelectorAll('#bottom-bar .bottom-btn'));
-      return btns.length===4 && btns.every(x=>x.offsetParent !== null);
+      return btns.length===3 && btns.every(x=>x.offsetParent !== null);
     }),
     await p.evaluate(()=>Array.from(document.querySelectorAll('#bottom-bar .bottom-btn'))
-      .map(x=>x.textContent.trim()).join(', ')));
+      .map(x=>x.textContent.trim().replace(/\s+/g,' ')).join(' | ')));
   check('no sub-tabs anywhere',
     await p.evaluate(()=>document.querySelectorAll('.subtabs, .subtab').length)===0);
 
@@ -188,7 +191,7 @@ const vis=(p,s)=>p.isVisible(s);
   check('and the pill stands down again', !(await vis(p,'#filters-fab')));
 
   // --- saved is its own destination ---
-  await p.click('#nav-saved-btn'); await p.waitForTimeout(500);
+  await toFaves(p, 500);
   check('saved is one tap from anywhere', await vis(p,'#saved-view') && !(await vis(p,'#outfits-view')));
   check('the faves page renders its contents', await p.evaluate(()=>{
     const cards = document.querySelectorAll('#saved-gallery .outfit-card').length;
@@ -209,7 +212,12 @@ const vis=(p,s)=>p.isVisible(s);
   await p.waitForTimeout(800);
   check('"Outfits with this piece" lands on Outfits',
     await vis(p,'#outfits-view') &&
-    await p.evaluate(()=>document.getElementById('nav-outfits-btn').classList.contains('active')));
+    // The destination is lit, and the switch inside it is on All.
+    await p.evaluate(()=>{
+      const dest = document.querySelector('#bottom-bar .bottom-btn.split');
+      const all = document.getElementById('nav-outfits-btn');
+      return Boolean(dest) && dest.classList.contains('active') && all.classList.contains('on');
+    }));
 
   await b.close();
   const failed=results.filter(r=>!r).length;

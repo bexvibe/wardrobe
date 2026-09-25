@@ -4,6 +4,7 @@
 // keep their own settings — narrowing what you are browsing must not narrow
 // what you have kept.
 const { chromium } = require('playwright');
+const { toFaves } = require('./nav');
 const fs=require('fs'), path=require('path');
 const REPO = require('path').join(__dirname, '..');
 const SHOTS = require('path').join(__dirname, 'shots');
@@ -40,7 +41,7 @@ async function open(b){
   await p.goto('http://localhost:8933/index.html'); await p.waitForTimeout(400);
   await p.fill('#gate-password','correct-horse'); await p.click('#gate-submit');
   await p.waitForSelector('#app-root',{state:'visible'}); await p.waitForTimeout(700);
-  await p.click('#nav-saved-btn'); await p.waitForTimeout(700);
+  await toFaves(p, 700);
   return p;
 }
 
@@ -98,7 +99,7 @@ async function pinFirst(p, key){
     // they go on a kept outfit by hand, they are not something it is made of.
     await p.click('#nav-outfits-btn'); await p.waitForTimeout(900);
     const onOutfits = await chipLabels(p);
-    await p.click('#nav-saved-btn'); await p.waitForTimeout(700);
+    await toFaves(p, 700);
     check('literally the same row as the Outfits page',
       JSON.stringify(onOutfits)===JSON.stringify(await chipLabels(p)), onOutfits.join(', '));
     check('and neither page offers Shoes', !onOutfits.includes('Shoes'));
@@ -140,7 +141,7 @@ async function pinFirst(p, key){
   {
     const p=await open(b);
     await p.evaluate(()=>{
-      savedFilters['Tops'] = {type:'items', ids:['seed_22']};
+      outfitFilters['Tops'] = {type:'items', ids:['seed_22']};
       renderFilterControls(); renderSavedOutfits();
     });
     await p.waitForTimeout(500);
@@ -152,7 +153,7 @@ async function pinFirst(p, key){
         .querySelector('.chip-count').textContent.trim())) === '1');
     check('a piece no fave wears is empty rather than wrong', await (async()=>{
       await p.evaluate(()=>{
-        savedFilters['Tops'] = {type:'items', ids:['seed_29']};
+        outfitFilters['Tops'] = {type:'items', ids:['seed_29']};
         renderSavedOutfits();
       });
       await p.waitForTimeout(400);
@@ -176,36 +177,41 @@ async function pinFirst(p, key){
     await p.close();
   }
 
-  // ---- 6. The two pages keep their own settings ----
+  // ---- 6. One panel, carried across the switch ----
   {
     const p=await open(b);
     await pin(p, 'Dresses', 'seed_32');
-    check('the fave filter is set', await p.evaluate(()=>savedFilters['Dresses'].type)==='items');
+    check('the filter is set', await p.evaluate(()=>outfitFilters['Dresses'].type)==='items');
 
     await p.click('#nav-outfits-btn'); await p.waitForTimeout(900);
-    check('the Outfits slots are untouched',
-      await p.evaluate(()=>Object.keys(outfitFilters).every(k=>outfitFilters[k].type==='any')));
-    check('and every Outfits chip is back to an outline with no badge',
-      await p.evaluate(()=>Array.from(document.querySelectorAll('#sheet-filter-grid .filter-chip'))
-        .every(e=>e.dataset.state==='any' && !e.classList.contains('active') &&
-                  !e.querySelector('.chip-count'))));
+    check('it is still set on the other half of the switch',
+      await p.evaluate(()=>outfitFilters['Dresses'].type==='items'));
+    check('and the chip says so there too',
+      await p.evaluate(()=>{
+        const chip = Array.from(document.querySelectorAll('#sheet-filter-grid .filter-chip'))
+          .find(e=>e.childNodes[0].textContent.trim()==='Dresses');
+        return chip.classList.contains('active') && Boolean(chip.querySelector('.chip-count'));
+      }));
+    check('and it is narrowing what is generated',
+      await p.evaluate(()=>outfitDisplayed.length > 0 &&
+        outfitDisplayed.every(c=>!c.dress || c.dress.id==='seed_32')));
 
-    // Narrow Outfits, go back, and the fave filter is still its own.
+    // Narrowing further from this side, and back again: still one set.
     await p.evaluate(()=>{ outfitFilters['Tops'] = {type:'items', ids:['seed_22']};
                            renderFilterControls(); });
     await p.waitForTimeout(400);
-    await p.click('#nav-saved-btn'); await p.waitForTimeout(700);
-    check('the fave filter survived the round trip',
-      await p.evaluate(()=>savedFilters['Dresses'].type==='items' && savedFilters['Tops'].type==='any'));
-    check('and is still filtering the page', (await cards(p))===1, String(await cards(p)));
+    await toFaves(p, 700);
+    check('both survive the round trip',
+      await p.evaluate(()=>outfitFilters['Dresses'].type==='items' && outfitFilters['Tops'].type==='items'));
+    check('and the kept ones are narrowed by both', (await cards(p))===0, String(await cards(p)));
 
     // Coming back a second time in the same visit, the panel stays down —
     // it only comes up by itself the first time — so the pill is already
-    // standing in for it, counting whichever page you are on.
+    // standing in for it.
     check('the panel does not open itself a second time',
       !(await p.evaluate(()=>filterSheetOpen())));
-    check('the collapsed panel counts the fave filters, not the outfit ones',
-      (await p.textContent('#filters-fab')).replace(/\s+/g,'') === 'Filters1',
+    check('and the collapsed panel counts both',
+      (await p.textContent('#filters-fab')).replace(/\s+/g,'') === 'Filters2',
       (await p.textContent('#filters-fab')).replace(/\s+/g,' ').trim());
     await p.close();
   }
@@ -219,7 +225,7 @@ async function pinFirst(p, key){
       String(await p.evaluate(()=>activeFilterCount())));
     await p.click('#filter-sheet-clear'); await p.waitForTimeout(600);
     check('Clear all takes the slots as well as the tag',
-      await p.evaluate(()=>savedTags.length===0 && Object.keys(savedFilters).every(k=>savedFilters[k].type==='any')));
+      await p.evaluate(()=>outfitTags.length===0 && Object.keys(outfitFilters).every(k=>outfitFilters[k].type==='any')));
     check('and every fave is back', (await cards(p))===3, String(await cards(p)));
     await p.close();
   }

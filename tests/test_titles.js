@@ -3,6 +3,7 @@
 // or that the room the block takes pushes something that mattered off the
 // bottom of the phone.
 const { chromium } = require('playwright');
+const { toFaves } = require('./nav');
 const fs=require('fs'), path=require('path');
 const REPO = require('path').join(__dirname, '..');
 const SHOTS = require('path').join(__dirname, 'shots');
@@ -46,13 +47,16 @@ const rect = (p, sel) => p.evaluate(s=>{
   // ---- 1. One title per page, and it names the page ----
   {
     const p=await open(b);
+    // Faves is the other half of the Outfits destination rather than a
+    // destination of its own, so it is reached through the switch — but it
+    // still names itself, because the two halves hold different lists.
     const steps = [
-      ['Wardrobe', '#nav-inventory-btn'],
-      ['Outfits',  '#nav-outfits-btn'],
-      ['Faves',    '#nav-saved-btn'],
+      ['Wardrobe', p => p.click('#nav-inventory-btn')],
+      ['Outfits',  p => p.click('#nav-outfits-btn')],
+      ['Faves',    p => toFaves(p, 600)],
     ];
-    for(const [name, btn] of steps){
-      await p.click(btn); await p.waitForTimeout(600);
+    for(const [name, go] of steps){
+      await go(p); await p.waitForTimeout(600);
       const titles = await visibleTitles(p);
       check(`${name} opens with its own title`,
         titles.length===1 && titles[0]===name, titles.join(' / '));

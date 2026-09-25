@@ -3,6 +3,7 @@
 // and any one of them is enough — OR within the filter, the way every
 // faceted filter works, while the piece chips beside them still narrow.
 const { chromium } = require('playwright');
+const { toFaves } = require('./nav');
 const fs=require('fs'), path=require('path');
 const REPO = require('path').join(__dirname, '..');
 const SHOTS = require('path').join(__dirname, 'shots');
@@ -126,7 +127,7 @@ const on = p => p.evaluate(()=>Array.from(
     await p.click('.outfit-gallery .outfit-fav-btn');
     await p.waitForFunction(()=>favoriteOutfits.length === 1);
 
-    await p.click('#nav-saved-btn'); await p.waitForTimeout(1100);
+    await toFaves(p, 1100);
     await tap(p, 'summer');
     await tap(p, 'winter');
     check('Faves keeps two as well',
@@ -134,7 +135,7 @@ const on = p => p.evaluate(()=>Array.from(
     // The empty state no longer names the tags — the panel above it is
     // showing them, and the line says what happened rather than repeating
     // what you chose.
-    await p.evaluate(()=>{ savedTags = ['wool']; renderSavedOutfits(); });
+    await p.evaluate(()=>{ outfitTags = ['wool']; renderSavedOutfits(); });
     await p.waitForTimeout(400);
     check('a tag nothing carries empties the page',
       (await p.evaluate(()=>document.querySelectorAll('#saved-gallery .outfit-card').length))===0);
@@ -142,10 +143,11 @@ const on = p => p.evaluate(()=>Array.from(
       (await p.textContent('#saved-empty-title')).trim() === 'No outfits match',
       (await p.textContent('#saved-empty-title')).trim());
 
-    // And the two pages still keep their own.
+    // One panel over both halves: the tag is still on when you switch.
     await p.click('#nav-outfits-btn'); await p.waitForTimeout(1200);
-    check('the Outfits row is not wearing the Faves tags',
-      (await on(p)).length === 0, (await on(p)).join(', '));
+    check('the tag carries across the switch',
+      JSON.stringify(await on(p)) === JSON.stringify(['wool']),
+      (await on(p)).join(', '));
     await p.close();
   }
 

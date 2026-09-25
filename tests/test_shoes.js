@@ -1,4 +1,5 @@
 const { chromium } = require('playwright');
+const { toFaves } = require('./nav');
 const fs=require('fs'), path=require('path');
 const REPO = require('path').join(__dirname, '..');
 const SHOTS = require('path').join(__dirname, 'shots');
@@ -71,7 +72,7 @@ async function run(browser, shoesOn){
 
     // a pre-existing saved outfit keeps its shoe
     await page.evaluate(()=>closeFilterSheet()); await page.waitForTimeout(300);
-    await page.click('#nav-saved-btn'); await page.waitForTimeout(400);
+    await toFaves(page, 400);
     const saved = await page.evaluate(()=>({
       count: favoriteOutfits.length,
       thumbs: document.querySelectorAll('#saved-gallery .outfit-thumbs img, #saved-gallery .outfit-thumbs .no-photo-mini').length

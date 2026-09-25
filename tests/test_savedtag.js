@@ -1,4 +1,5 @@
 const { chromium } = require('playwright');
+const { toFaves } = require('./nav');
 // The filters dock at the bottom of the screen and open themselves on
 // Outfits and Faves. Everywhere else the pill raises them.
 async function openFilters(page){
@@ -48,7 +49,7 @@ const TAGS={seed_22:['summer'], seed_11:['summer'], seed_23:['winter']};
   await p.goto('http://localhost:8933/index.html'); await p.waitForTimeout(400);
   await p.fill('#gate-password','correct-horse'); await p.click('#gate-submit');
   await p.waitForSelector('#app-root',{state:'visible'}); await p.waitForTimeout(400);
-  await p.click('#nav-saved-btn'); await p.waitForTimeout(500);
+  await toFaves(p, 500);
 
   check('saved tab shows all outfits unfiltered',
     (await p.evaluate(()=>document.querySelectorAll('#saved-gallery .outfit-card').length))===3);
@@ -86,18 +87,20 @@ const TAGS={seed_22:['summer'], seed_11:['summer'], seed_23:['winter']};
   await p.click('#sheet-tag-chips .tag-chip.active'); await p.waitForTimeout(400);
   await p.click('#sheet-tag-chips .tag-chip.active'); await p.waitForTimeout(400);
   check('tapping each active chip clears it', await cards()===3 &&
-    await p.evaluate(()=>savedTags.length===0));
+    await p.evaluate(()=>outfitTags.length===0));
 
-  // independence from the other two filters
+  // The wardrobe has no filters of its own and is not touched by these.
+  // The two halves of Outfits share one panel, so the tag follows you
+  // across the switch rather than being asked for twice.
   await p.click('#sheet-tag-chips .tag-chip:has-text("summer")'); await p.waitForTimeout(300);
   await closeFilters(p);
   await p.click('#nav-inventory-btn'); await p.waitForTimeout(400);
-  check('wardrobe filter untouched', (await shown(p)) === 80);
+  check('the wardrobe is not filtered by it', (await shown(p)) === 80);
   await p.click('#nav-outfits-btn'); await p.waitForTimeout(700);
-  const outfitChipActive=await p.evaluate(()=>outfitTags.length > 0);
-  check('outfits filter untouched', !outfitChipActive);
-  await p.click('#nav-saved-btn'); await p.waitForTimeout(400);
-  check('saved filter survives tab switching', await cards()===2);
+  check('the tag is still on over on All',
+    await p.evaluate(()=>outfitTags.includes('summer')));
+  await toFaves(p, 400);
+  check('and still narrowing the kept ones', await cards()===2);
 
   await b.close();
   const failed=results.filter(r=>!r).length;

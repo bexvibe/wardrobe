@@ -33,6 +33,13 @@
        it out, so the bar sits where it will sit once it is stuck rather
        than dropping 28px the moment you scroll. */
     --page-top:28px;
+
+    /* The bottom bar is 62px tall and floats 16px off the bottom, so
+       anything else that floats — the toast, the filters pill, the bottom
+       of the panel — has to start above 78px. One number, because three
+       hardcoded ones drifted apart the moment the bar changed height. */
+    --above-nav:94px;
+
     --sheet-ease:cubic-bezier(0.32, 0.72, 0, 1);
     --sheet-ease-ms:260ms;
   }
@@ -612,7 +619,7 @@
     position:fixed;
     /* Clear of the nav bar. A toast that lands behind it is one you cannot
        read, and — now that some of them carry an Undo — cannot reach. */
-    bottom:calc(84px + env(safe-area-inset-bottom, 0px));
+    bottom:calc(var(--above-nav) + env(safe-area-inset-bottom, 0px));
     /* Centred by margins between two insets rather than by left:50%, which
        would leave the box only half the screen to shrink-wrap into and wrap
        a three-word message. */
@@ -687,6 +694,38 @@
   }
   .bottom-btn.active{background:var(--accent);color:#fff;}
   .bottom-icon{font-size:14px;line-height:1;}
+
+  /* The destination you are on opens to hold its switch. Every destination
+     grows to match, so the bar keeps one height rather than stepping up
+     around the one that is open. */
+  .bottom-btn{min-height:52px;}
+  .bottom-btn.split{padding:0 4px 0 12px;gap:7px;cursor:default;}
+  .nav-segs{
+    display:flex;gap:2px;
+    padding:4px;
+    background:rgba(255,255,255,0.15);
+    border-radius:999px;
+  }
+  .nav-seg{
+    /* A full thumb, both halves. The bar gives up side padding elsewhere
+       before either of these gives up a pixel. */
+    min-height:44px;min-width:44px;
+    padding:0 8px;
+    display:flex;align-items:center;justify-content:center;
+    border:none;background:none;border-radius:999px;
+    font-family:'Work Sans',sans-serif;
+    font-size:12px;font-weight:600;
+    color:rgba(255,255,255,0.72);
+    cursor:pointer;
+    transition:background var(--sheet-ease-ms) var(--sheet-ease),
+               color var(--sheet-ease-ms) var(--sheet-ease);
+  }
+  .nav-seg.on{background:#fff;color:var(--ink);}
+  /* The heart the cards use. Dimmed rather than drawn as an outline when
+     it is off, so the two segments read as one switch with a lit half
+     instead of as two different marks. */
+  .nav-heart{font-size:17px;line-height:1;opacity:0.82;}
+  .nav-seg.on .nav-heart{opacity:1;}
 
   /* Password gate */
   .gate{
@@ -888,11 +927,14 @@
      of the screen rather than a fixed number, because the page has to fit
      a small phone as well as a large one. svh is the height Safari leaves
      once the address bar is showing; vh is the fallback for engines that
-     do not know it. */
+     do not know it.
+     21 rather than 23: this page's header now carries the button that
+     builds an outfit, which makes it the same height as every other
+     page's and costs the card the difference. */
   .hero-card .outfit-upper > *,
   .hero-card .outfit-lower > *{
-    max-height:min(23vh, 200px);
-    max-height:min(23svh, 200px);
+    max-height:min(21vh, 200px);
+    max-height:min(21svh, 200px);
   }
   .hero-card .outfit-lower > *{
     width:100%;
@@ -907,7 +949,7 @@
   .filters-fab{
     position:fixed;
     left:50%;
-    bottom:calc(86px + env(safe-area-inset-bottom, 0px));  /* clears the nav */
+    bottom:calc(var(--above-nav) + env(safe-area-inset-bottom, 0px));  /* clears the nav */
     z-index:95;
     display:flex;align-items:center;gap:8px;
     font-family:'Work Sans',sans-serif;
@@ -987,7 +1029,7 @@
        which is what now gives them their edge. */
     background:var(--surface);
     border-radius:18px 18px 0 0;
-    padding:14px 16px calc(88px + env(safe-area-inset-bottom, 0px));
+    padding:14px 16px calc(var(--above-nav) + env(safe-area-inset-bottom, 0px));
     max-height:min(52vh, 420px);
     max-height:min(52svh, 420px);
     overflow-y:auto;
@@ -1382,6 +1424,16 @@
   <div id="outfits-view" style="display:none;">
     <header class="page-head">
       <h1>Outfits</h1>
+      <!-- The same way in as on the other half of the switch. Building one
+           by hand is a thing you do to the wardrobe, not to a page. -->
+      <div class="icon-row">
+        <button class="icon-btn primary" id="build-outfit-btn-all" onclick="openOutfitBuilder()"
+                aria-label="Build an outfit" title="Build an outfit">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <path d="M12 5v14M5 12h14"/>
+          </svg>
+        </button>
+      </div>
     </header>
 
     <!-- One outfit, picked afresh each time you arrive: something to react to
@@ -1508,10 +1560,8 @@
 <button class="filters-fab stood-down" id="filters-fab" onclick="openFilterSheet()"></button>
 
 <nav class="bottom-bar" id="bottom-bar">
-  <button class="bottom-btn active" id="nav-inventory-btn" onclick="setMode('inventory')">Wardrobe</button>
-  <button class="bottom-btn" id="nav-outfits-btn" onclick="setMode('outfits')">Outfits</button>
-  <button class="bottom-btn" id="nav-saved-btn" onclick="setMode('saved')">Faves</button>
-  <button class="bottom-btn" id="nav-capsules-btn" onclick="setMode('capsules')" style="display:none;">Capsules</button>
+  <!-- Drawn by renderBottomBar: the destination you are on may hold a
+       switch, so the bar cannot be static markup. -->
 </nav>
 
 <div class="modal-backdrop" id="modal-backdrop" onclick="closeModalIfBackdrop(event)">
@@ -1711,14 +1761,13 @@ function emptySlotFilters(){
   OUTFIT_TABS.forEach(t => { f[t] = anyFilter(); });
   return f;
 }
-// Outfits and Faves get the same controls but keep their own settings —
-// narrowing what you are browsing should not quietly narrow what you have
-// kept, or the other way round.
+// One set of filters for one page. All and Faves are two halves of a
+// switch rather than two destinations, so the chips you set while browsing
+// are still set when you look at what you kept — you did not go anywhere,
+// and re-answering the same question on the other side of a switch was the
+// clearest sign that the two pages had been built as strangers.
 let outfitFilters = emptySlotFilters();
-let savedFilters  = emptySlotFilters();
-function activeSlotFilters(){
-  return appMode === 'saved' ? savedFilters : outfitFilters;
-}
+function activeSlotFilters(){ return outfitFilters; }
 let outfitGen = null;
 let outfitDisplayed = [];
 let outfitRenderContext = 'tab'; // 'tab' or 'modal'
@@ -1740,16 +1789,15 @@ function itemsInTab(tabName){
   return ITEMS.filter(i => tabForItem(i) === tabName);
 }
 
-// Outfits and Faves each keep their own tag, so narrowing one does not
-// silently narrow the other. The wardrobe has no filters at all — its own
-// category tabs and its search do that work.
+// The tags, shared by both halves of the switch for the same reason the
+// piece filters are. The wardrobe has no filters at all — its own category
+// tabs and its search do that work.
 // Several at once, and any one of them is enough. A row of chips reads as
 // multi-select whatever it does, so it used to lie: tapping winter
 // silently dropped summer. Within one filter the values are OR — the same
 // bargain every other faceted filter makes — while the piece chips beside
 // them still narrow by AND.
 let outfitTags = [];
-let savedTags = [];
 
 function carriesAny(piece, tags){
   return (piece.tags || []).some(t => tags.includes(t));
@@ -1797,6 +1845,49 @@ function restoreScroll(mode){
 // Three destinations in the bottom bar. Archive is a fourth view but not a
 // destination: it is reached from a link at the end of the wardrobe, because
 // it is visited rarely and does not deserve permanent space in the nav.
+//
+// Outfits is one destination holding two states. What you kept is a subset
+// of what the generator makes — the heart marks a combination rather than
+// moving it somewhere else — so Faves was never a second place to go. It
+// is a switch inside the destination, and it only appears once you are
+// there: a bar with room for it at all times would have to give up the
+// side padding that keeps three labels apart on a small phone.
+//
+// The two halves share everything a page has — the filter panel, the
+// header, the card and its actions — and differ only in where the outfits
+// come from. All draws from the generator, which is endless; Faves draws
+// from the rows you kept. That is why this is a switch over a source
+// rather than one more chip in the panel: a filter over an endless stream
+// could generate for a long time without turning up the twelve you wanted.
+function renderBottomBar(){
+  const bar = document.getElementById('bottom-bar');
+  if(!bar) return;
+  const onOutfits = appMode === 'outfits' || appMode === 'saved';
+  const kept = appMode === 'saved';
+  const seg = (id, on, label, extra) =>
+    `<button class="nav-seg ${on ? 'on' : ''}" id="${id}" type="button"
+             aria-pressed="${on}" ${extra || ''}>${label}</button>`;
+
+  bar.innerHTML = `
+    <button class="bottom-btn ${appMode === 'inventory' || appMode === 'archive' ? 'active' : ''}"
+            id="nav-inventory-btn" type="button" onclick="setMode('inventory')">Wardrobe</button>
+    ${onOutfits
+      ? `<span class="bottom-btn active split">Outfits
+           <span class="nav-segs" role="group" aria-label="Which outfits">
+             ${seg('nav-outfits-btn', !kept, 'All', `onclick="setMode('outfits')"`)}
+             ${seg('nav-saved-btn', kept, '<span class="nav-heart">&hearts;</span>',
+                   `onclick="setMode('saved')" aria-label="Faves"`)}
+           </span>
+         </span>`
+      : `<button class="bottom-btn" id="nav-outfits-btn" type="button"
+                 onclick="setMode('outfits')">Outfits</button>`}
+    ${capsulesAvailable
+      ? `<button class="bottom-btn ${appMode === 'capsules' ? 'active' : ''}"
+                 id="nav-capsules-btn" type="button" onclick="setMode('capsules')">Capsules</button>`
+      : ''}
+  `;
+}
+
 function setMode(mode){
   // Leaving a page: note where you had got to on it.
   if(appMode && appMode !== mode) rememberScroll(appMode);
@@ -1811,10 +1902,7 @@ function setMode(mode){
     document.body.classList.remove('selecting');
   }
   const onInventory = mode === 'inventory' || mode === 'archive';
-  document.getElementById('nav-inventory-btn')?.classList.toggle('active', onInventory);
-  document.getElementById('nav-outfits-btn')?.classList.toggle('active', mode==='outfits');
-  document.getElementById('nav-saved-btn')?.classList.toggle('active', mode==='saved');
-  document.getElementById('nav-capsules-btn')?.classList.toggle('active', mode==='capsules');
+  renderBottomBar();
 
   document.getElementById('inventory-view').style.display = mode==='inventory' ? 'block' : 'none';
   document.getElementById('outfits-view').style.display = mode==='outfits' ? 'block' : 'none';
@@ -1998,9 +2086,8 @@ function withoutTabs(){
 }
 
 function activeFilterCount(){
-  if(appMode === 'outfits') return countNarrowedSlots(outfitFilters) + (outfitTags.length ? 1 : 0);
-  if(appMode === 'saved')   return countNarrowedSlots(savedFilters)  + (savedTags.length ? 1 : 0);
-  return 0;
+  if(appMode !== 'outfits' && appMode !== 'saved') return 0;
+  return countNarrowedSlots(outfitFilters) + (outfitTags.length ? 1 : 0);
 }
 
 // The pill is what the panel collapses into: it appears once the panel is
@@ -2094,8 +2181,7 @@ function renderFilterControls(){
 
     host.innerHTML = filterControlsHtml(ns);
 
-    renderTagChips(`${ns}-tag-chips`, m === 'outfits' ? outfitTags : savedTags,
-                   m === 'outfits' ? 'setOutfitTag' : 'setSavedTag');
+    renderTagChips(`${ns}-tag-chips`, outfitTags, 'setOutfitTag');
     renderSlotChips(`${ns}-filter-grid`);
     renderWithoutChips(`${ns}-without-chips`);
 
@@ -2112,8 +2198,8 @@ function renderFilterControls(){
     // wider than the panel, so the chip that is filtering may be off to
     // the right with nothing on screen to say so. The label is always
     // there, and it does not move when you tap.
-    const slots = m === 'outfits' ? outfitFilters : savedFilters;
-    setLabelCount(`${ns}-tag-count`, (m === 'outfits' ? outfitTags : savedTags).length);
+    const slots = outfitFilters;
+    setLabelCount(`${ns}-tag-count`, outfitTags.length);
     setLabelCount(`${ns}-piece-count`, countPinnedSlots(slots));
     setLabelCount(`${ns}-without-count`, countWithoutSlots(slots));
   });
@@ -2287,9 +2373,10 @@ function clearFilters(){
     renderFiltersFab();
     resetOutfitResults();
   } else if(appMode === 'saved'){
-    savedTags = [];
-    savedFilters = emptySlotFilters();
+    outfitTags = [];
+    outfitFilters = emptySlotFilters();
     renderFilterControls();
+    renderFiltersFab();
     renderSavedOutfits();
   }
 }
@@ -3232,8 +3319,8 @@ function renderExtrasPicker(key){
 // An outfit matches when at least one of its pieces carries the tag, so
 // tagging a single summer top surfaces every outfit you can wear it in.
 function savedOutfitMatchesTag(rec){
-  if(!savedTags.length) return true;
-  return comboPieces(favoriteRecordToCombo(rec)).some(p => carriesAny(p, savedTags));
+  if(!outfitTags.length) return true;
+  return comboPieces(favoriteRecordToCombo(rec)).some(p => carriesAny(p, outfitTags));
 }
 
 // The same piece filters the Outfits page narrows its stream with, applied
@@ -3244,7 +3331,7 @@ const SAVED_SLOT_FIELDS = { top:'top', bottom:'bottom', dress:'dress',
 
 function savedOutfitMatchesSlots(rec){
   return OUTFIT_TABS.every(tab => {
-    const f = savedFilters[tab];
+    const f = outfitFilters[tab];
     if(!f || f.type === 'any') return true;
     // The piece filling the place this category fills, and whether it is
     // from this category at all — an outfit wearing pants does not match a
@@ -3263,6 +3350,10 @@ function savedOutfitMatchesSlots(rec){
 }
 
 function savedOutfitMatches(rec){
+  // Hidden means hidden. It used to mean hidden from the generator only,
+  // so a combination you had dismissed went on sitting on the other half
+  // of the switch — the one place you were sure to look.
+  if(hiddenCombos.includes(rec.key)) return false;
   return savedOutfitMatchesTag(rec) && savedOutfitMatchesSlots(rec);
 }
 
@@ -3271,10 +3362,10 @@ function renderSavedOutfits(){
   const emptyState = document.getElementById('saved-empty');
   if(!gallery) return;
 
-  savedTags = savedTags.filter(t => allTags().includes(t));
+  outfitTags = outfitTags.filter(t => allTags().includes(t));
 
   const shown = favoriteOutfits.filter(savedOutfitMatches);
-  const narrowed = savedTags.length > 0 || countNarrowedSlots(savedFilters) > 0;
+  const narrowed = outfitTags.length > 0 || countNarrowedSlots(outfitFilters) > 0;
 
   // No count line: the cards are the count, and a line saying which
   // filters were on repeated what the panel above it already shows. The
@@ -4449,9 +4540,8 @@ async function startApp(){
     return;
   }
   // Capsules need their migration to have been run; without it the
-  // destination stays out of the nav rather than leading to a dead page.
-  const capsulesBtn = document.getElementById('nav-capsules-btn');
-  if(capsulesBtn) capsulesBtn.style.display = capsulesAvailable ? 'flex' : 'none';
+  // destination is left out of the bar rather than leading to a dead page.
+  // renderBottomBar reads capsulesAvailable, and setMode below draws it.
 
   // Go through the nav rather than calling render() directly, so the bottom
   // bar, the sub-tabs and the visible panel all start in agreement.
@@ -4752,7 +4842,6 @@ async function retagAll(from, to){
 function afterTagChange(){
   const live = allTags();
   outfitTags = outfitTags.filter(t => live.includes(t));
-  savedTags = savedTags.filter(t => live.includes(t));
   renderFilterControls();
   renderFiltersFab();
   render();
@@ -4763,7 +4852,7 @@ function afterTagChange(){
 async function undoRetag(changes, filters){
   if(!await writeTags(changes.map(c => ({ id: c.id, tags: c.was })))) return;
   changes.forEach(c => { const i = itemById(c.id); if(i) i.tags = c.was; });
-  if(filters){ outfitTags = filters.outfit.slice(); savedTags = filters.saved.slice(); }
+  if(filters) outfitTags = filters.slice();
   afterTagChange();
   showToast('Tag put back');
 }
@@ -4804,7 +4893,7 @@ async function renameTag(from){
   const to = parsed[0];
   if(to === from){ closeModal(); return; }
 
-  const filters = { outfit: outfitTags.slice(), saved: savedTags.slice() };
+  const filters = outfitTags.slice();
   const btn = document.getElementById('tag-edit-save');
   btn.disabled = true;
   const changes = await retagAll(from, to);
@@ -4812,19 +4901,17 @@ async function renameTag(from){
   if(!changes) return;
 
   outfitTags = outfitTags.map(t => t === from ? to : t);
-  savedTags = savedTags.map(t => t === from ? to : t);
   closeModal();
   afterTagChange();
   showToast(`Now ${to}`, changes.length ? () => undoRetag(changes, filters) : null);
 }
 
 async function deleteTag(tag){
-  const filters = { outfit: outfitTags.slice(), saved: savedTags.slice() };
+  const filters = outfitTags.slice();
   const changes = await retagAll(tag, null);
   if(!changes) return;
 
   outfitTags = outfitTags.filter(t => t !== tag);
-  savedTags = savedTags.filter(t => t !== tag);
   closeModal();
   afterTagChange();
   const n = changes.length;
@@ -4899,19 +4986,18 @@ function toggleTag(list, tag){
   return list.includes(tag) ? list.filter(t => t !== tag) : list.concat(tag);
 }
 
+// One tag list, applied to whichever half of the switch you are looking
+// at. The generator is re-run for All; the kept list is only redrawn.
 function setOutfitTag(tag){
   outfitTags = toggleTag(outfitTags, tag);
   renderFilterControls();     // redraws the chips and the Clear all control with them
   renderFiltersFab();
-  resetOutfitResults();
-}
-
-function setSavedTag(tag){
-  savedTags = toggleTag(savedTags, tag);
-  expandedSavedKey = null;   // an expanded card may be filtered away
-  renderSavedOutfits();
-  renderFiltersFab();
-  renderFilterControls();
+  if(appMode === 'saved'){
+    expandedSavedKey = null;  // an expanded card may be filtered away
+    renderSavedOutfits();
+  } else {
+    resetOutfitResults();
+  }
 }
 
 function openModal(id){

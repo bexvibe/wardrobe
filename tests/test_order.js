@@ -4,6 +4,7 @@
 // a piece is in rather than a kind of thing. And a category with nothing in
 // it says so, and has nothing to choose from.
 const { chromium } = require('playwright');
+const { toFaves } = require('./nav');
 const fs=require('fs'), path=require('path');
 const REPO = require('path').join(__dirname, '..');
 const SHOTS = require('path').join(__dirname, 'shots');
@@ -89,7 +90,7 @@ function wellOrdered(list, owned){
       onOutfits.length === (await p.evaluate(()=>OUTFIT_TABS.length)),
       `${onOutfits.length} of ${await p.evaluate(()=>OUTFIT_TABS.length)}`);
 
-    await p.click('#nav-saved-btn'); await p.waitForTimeout(1200);
+    await toFaves(p, 1200);
     const onFaves = await filterChips(p);
     check('Faves is the same row in the same order',
       JSON.stringify(onFaves)===JSON.stringify(onOutfits), onFaves.join(', '));

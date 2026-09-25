@@ -8,6 +8,7 @@
 // category out drops whatever was pinned in it, and pinning something drops
 // the rule.
 const { chromium } = require('playwright');
+const { toFaves } = require('./nav');
 const fs=require('fs'), path=require('path');
 const REPO = require('path').join(__dirname, '..');
 const fake=fs.readFileSync(path.join(__dirname,'fake-supabase.js'),'utf8');
@@ -186,7 +187,7 @@ const label = (p, id) => p.evaluate(i =>
   // ---- 4. Faves asks the same question of outfits already kept ----
   {
     const p=await open(b);
-    await p.click('#nav-saved-btn'); await p.waitForTimeout(1200);
+    await toFaves(p, 1200);
     const cards = () => p.evaluate(()=>
       document.querySelectorAll('#saved-gallery .outfit-card').length);
     check('three kept to start with', (await cards()) === 3, String(await cards()));
@@ -204,10 +205,15 @@ const label = (p, id) => p.evaluate(i =>
         return left.length===1 && left[0].base==='topbottom' && !left[0].jacket;
       }));
 
-    // Faves and Outfits keep their own, as with every other filter.
+    // The two halves of the switch share one panel, so what you set here
+    // is still set over there — you did not go anywhere.
     await p.click('#nav-outfits-btn'); await p.waitForTimeout(1300);
-    check('the Outfits row is not wearing the Faves rules',
-      (await on(p)).length === 0, (await on(p)).join(', '));
+    check('the rules carry across the switch',
+      JSON.stringify(await on(p)) === JSON.stringify(['Dresses','Jackets']),
+      (await on(p)).join(', '));
+    check('and they are narrowing this side too',
+      await p.evaluate(()=>outfitDisplayed.length > 0 &&
+        outfitDisplayed.every(c => c.base === 'topbottom' && !c.jacket)));
     await p.close();
   }
 

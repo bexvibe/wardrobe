@@ -1,4 +1,5 @@
 const { chromium } = require('playwright');
+const { toFaves } = require('./nav');
 const fs=require('fs'), pathmod=require('path');
 const REPO = require('path').join(__dirname, '..');
 const SHOTS = require('path').join(__dirname, 'shots');
@@ -110,7 +111,7 @@ const check=(n,p,d)=>{results.push(p);console.log(`${p?'PASS':'FAIL'}  ${n}${d?'
     await prepare(p);
     await p.goto('http://localhost:8933/index.html'); await p.waitForTimeout(400);
     await signIn(p);
-    await p.click('#nav-saved-btn'); await p.waitForTimeout(600);
+    await toFaves(p, 600);
     const s=await p.evaluate(()=>{
       const card=document.querySelector('#saved-gallery .outfit-card');
       return {

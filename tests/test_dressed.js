@@ -11,6 +11,7 @@
 // about keeping, and an outfit wears the same accessories wherever it
 // appears.
 const { chromium } = require('playwright');
+const { toFaves } = require('./nav');
 const fs=require('fs'), path=require('path');
 const REPO = require('path').join(__dirname, '..');
 const fake=fs.readFileSync(path.join(__dirname,'fake-supabase.js'),'utf8');
@@ -89,7 +90,7 @@ const rows = p => p.evaluate(()=>window.__WARDROBE_STATE.outfit_extras.slice());
     await p.waitForFunction(()=>favoriteOutfits.length === 1);
     await p.waitForTimeout(600);
 
-    await p.click('#nav-saved-btn'); await p.waitForTimeout(1200);
+    await toFaves(p, 1200);
     await p.evaluate(()=>closeFilterSheet()); await p.waitForTimeout(400);
     check('keeping it does not undress it', await p.evaluate(()=>
       document.querySelectorAll('#saved-gallery .outfit-extras img').length === 1));
@@ -156,7 +157,7 @@ const rows = p => p.evaluate(()=>window.__WARDROBE_STATE.outfit_extras.slice());
       `top_id:'seed_22',bottom_id:'seed_11',dress_id:null,jumper_id:null,jacket_id:null,` +
       `shoe_id:'seed_9',extra_ids:[],archived_at:null,created_at:'2026-01-01'}];` +
       `window.__SEED_EXTRAS=[{combo_key:'${KEY}',extra_ids:['seed_9']}];`);
-    await p.click('#nav-saved-btn'); await p.waitForTimeout(1200);
+    await toFaves(p, 1200);
     await p.evaluate(()=>closeFilterSheet()); await p.waitForTimeout(400);
     check('the stored key is not the key it would be given today',
       await p.evaluate(()=>{

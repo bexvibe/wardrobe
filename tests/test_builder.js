@@ -13,6 +13,7 @@
 // like, an outfit takes one from each place — so a second tap in the same
 // category has to move the tick rather than add to it.
 const { chromium } = require('playwright');
+const { toFaves } = require('./nav');
 const fs=require('fs'), path=require('path');
 const REPO = require('path').join(__dirname, '..');
 const fake=fs.readFileSync(path.join(__dirname,'fake-supabase.js'),'utf8');
@@ -30,7 +31,7 @@ async function open(b){
   await p.goto('http://localhost:8933/index.html'); await p.waitForTimeout(400);
   await p.fill('#gate-password','correct-horse'); await p.click('#gate-submit');
   await p.waitForSelector('#app-root',{state:'visible'}); await p.waitForTimeout(800);
-  await p.click('#nav-saved-btn'); await p.waitForTimeout(900);
+  await toFaves(p, 900);
   await p.evaluate(()=>closeFilterSheet()); await p.waitForTimeout(400);
   await p.click('#build-outfit-btn'); await p.waitForTimeout(800);
   return p;
@@ -63,7 +64,7 @@ const ticked = p => p.evaluate(()=>Array.from(document.querySelectorAll('#builde
     await p.goto('http://localhost:8933/index.html'); await p.waitForTimeout(400);
     await p.fill('#gate-password','correct-horse'); await p.click('#gate-submit');
     await p.waitForSelector('#app-root',{state:'visible'}); await p.waitForTimeout(800);
-    await p.click('#nav-saved-btn'); await p.waitForTimeout(900);
+    await toFaves(p, 900);
     await p.evaluate(()=>closeFilterSheet()); await p.waitForTimeout(400);
 
     check('Faves offers a way to build one', await p.isVisible('#build-outfit-btn'));

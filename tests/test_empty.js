@@ -2,6 +2,7 @@
 // you can do something about it, a button that does it. No second line —
 // explaining the first was the app talking to itself.
 const { chromium } = require('playwright');
+const { toFaves } = require('./nav');
 const fs=require('fs'), path=require('path');
 const REPO = require('path').join(__dirname, '..');
 const fake=fs.readFileSync(path.join(__dirname,'fake-supabase.js'),'utf8');
@@ -57,7 +58,7 @@ const said = (p, sel) => p.evaluate(s => {
       await p.evaluate(()=>document.getElementById('outfit-empty-action')
         .style.display !== 'none'));
 
-    await p.click('#nav-saved-btn'); await p.waitForTimeout(900);
+    await toFaves(p, 900);
     await p.evaluate(()=>closeFilterSheet()); await p.waitForTimeout(500);
     check('Faves says No faves',
       (await said(p, '#saved-empty-title')) === 'No faves',
@@ -120,13 +121,13 @@ const said = (p, sel) => p.evaluate(s => {
     });
     await p.click('.outfit-gallery .outfit-fav-btn');
     await p.waitForFunction(()=>favoriteOutfits.length === 1);
-    await p.click('#nav-saved-btn'); await p.waitForTimeout(1000);
+    await toFaves(p, 1000);
     // A real piece that the kept outfit does not wear — a made-up tag would
     // be dropped as not existing, and the page would read as unfiltered.
     await p.evaluate(()=>{
       const worn = new Set(comboPieces(favoriteRecordToCombo(favoriteOutfits[0])).map(i=>i.id));
       const other = itemsInTab('Tops').find(i => !worn.has(i.id));
-      savedFilters['Tops'] = {type:'items', ids:[other.id]};
+      outfitFilters['Tops'] = {type:'items', ids:[other.id]};
       renderSavedOutfits();
     });
     await p.waitForTimeout(500);
@@ -134,7 +135,7 @@ const said = (p, sel) => p.evaluate(s => {
       (await said(p, '#saved-empty-title')) === 'No outfits match',
       await said(p, '#saved-empty-title'));
     check('and without it, it is back to No faves', await (async()=>{
-      await p.evaluate(()=>{ savedFilters = emptySlotFilters();
+      await p.evaluate(()=>{ outfitFilters = emptySlotFilters();
                              favoriteOutfits = []; renderSavedOutfits(); });
       await p.waitForTimeout(400);
       return (await said(p, '#saved-empty-title')) === 'No faves';
@@ -174,7 +175,7 @@ const said = (p, sel) => p.evaluate(s => {
     await p.evaluate(()=>closeFilterSheet()); await p.waitForTimeout(500);
     await p.click('.outfit-gallery .outfit-fav-btn');
     await p.waitForFunction(()=>favoriteOutfits.length === 1);
-    await p.click('#nav-saved-btn'); await p.waitForTimeout(900);
+    await toFaves(p, 900);
     await p.evaluate(()=>closeFilterSheet()); await p.waitForTimeout(400);
     await p.click('#saved-gallery .outfit-card'); await p.waitForTimeout(500);
     await p.click('#saved-gallery .modal-actions button'); await p.waitForTimeout(700);

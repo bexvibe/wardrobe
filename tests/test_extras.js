@@ -3,6 +3,7 @@
 // already decided to keep — and an outfit can carry as many as it needs,
 // where it used to hold exactly one pair of shoes.
 const { chromium } = require('playwright');
+const { toFaves } = require('./nav');
 const fs=require('fs'), path=require('path');
 const REPO = require('path').join(__dirname, '..');
 const SHOTS = require('path').join(__dirname, 'shots');
@@ -46,7 +47,7 @@ async function openPicker(p){
   await p.goto('http://localhost:8933/index.html'); await p.waitForTimeout(400);
   await p.fill('#gate-password','correct-horse'); await p.click('#gate-submit');
   await p.waitForSelector('#app-root',{state:'visible'}); await p.waitForTimeout(400);
-  await p.click('#nav-saved-btn'); await p.waitForTimeout(600);
+  await toFaves(p, 600);
 
   check('a saved outfit starts with nothing on it', (await onCard(p))===0);
 
@@ -162,7 +163,7 @@ async function openPicker(p){
   await openPicker(p);
   await p.click('#extras-gallery .picker-tile'); await p.waitForTimeout(600);
   await p.reload(); await p.waitForTimeout(1000);
-  await p.click('#nav-saved-btn'); await p.waitForTimeout(600);
+  await toFaves(p, 600);
   check('what you put on survives a reload', (await onCard(p))===1, String(await onCard(p)));
 
   await b.close();
