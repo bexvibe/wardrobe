@@ -2793,8 +2793,30 @@ function comboKey(combo){
 
 function comboPieces(combo){
   return [combo.top, combo.bottom, combo.dress, combo.jumper, combo.jacket]
-    .concat(combo.extras || [])
+    .concat(comboExtras(combo))
     .filter(Boolean);
+}
+
+// Archived pieces still resolve: archiving something should not quietly
+// tear a piece out of an outfit that is wearing it.
+function pieceById(id){
+  if(!id) return null;
+  return ITEMS.find(i => i.id === id) || ARCHIVED.find(i => i.id === id) || null;
+}
+
+// What has been put on this combination by hand, resolved to pieces.
+//
+// Looked up by key rather than carried on the combo, which is what lets a
+// generated outfit and a kept one wear the same hat: they are the same
+// combination, and the accessories belong to the combination. A combo that
+// carries its own list — a draft being previewed — is taken at its word.
+function comboExtras(combo){
+  if(combo.extras) return combo.extras;
+  // A kept outfit knows its own key and says so. Recomputing one would be
+  // wrong for anything saved back when the shoe was part of the key: the
+  // stored key still carries it, the recomputed one does not, and the two
+  // would not find each other.
+  return extrasFor(combo.key || comboKey(combo)).map(pieceById).filter(Boolean);
 }
 
 // Lays a combo out the way it is worn — outer layers and the top on one
@@ -2807,9 +2829,9 @@ function outfitLayout(combo){
   return {
     upper,
     lower: (combo.base === 'dress' ? combo.dress : combo.bottom) || null,
-    // Accessories, on their own row under the clothes. A generated outfit
-    // never has any — they are put on a kept one by hand.
-    extras: combo.extras || []
+    // Accessories, on their own row under the clothes. Any outfit can have
+    // them, kept or not — they hang off the combination.
+    extras: comboExtras(combo)
   };
 }
 
@@ -2934,10 +2956,20 @@ function pickHeroCombo(){
 // the outfit the page leads with opens exactly like the ones in the grid —
 // it used to set expandedComboKey and then draw nothing, which made the
 // featured outfit the one you could not look into.
-function outfitExpandedPanelHtml(combo, key){
+// One panel, drawn the same on both pages. The two differ only in which
+// collapse they call and whether hiding is offered — an outfit you kept on
+// purpose is not one you are looking to dismiss.
+//
+// Accessories are offered on every outfit, not just a kept one. They hang
+// off the combination, so putting a hat on something does not decide
+// anything about whether you are keeping it.
+function outfitExpandedPanelHtml(combo, key, opts){
+  const o = opts || {};
+  const collapse = o.collapse || `toggleExpandCombo(${JSON.stringify(key)})`;
+  const worn = extrasFor(key).length;
   return `
       <div class="outfit-expanded-panel">
-        <button class="outfit-collapse-btn" onclick='event.stopPropagation();toggleExpandCombo(${JSON.stringify(key)})'>Collapse ↑</button>
+        <button class="outfit-collapse-btn" onclick='event.stopPropagation();${collapse}'>Collapse ↑</button>
         ${comboPieces(combo).map(p => `
           <div class="outfit-piece-row tappable"
                onclick='event.stopPropagation();openPieceSheet(${JSON.stringify(p.id)})'>
@@ -2949,7 +2981,8 @@ function outfitExpandedPanelHtml(combo, key){
           </div>
         `).join('')}
         <div class="modal-actions">
-          <button class="btn small secondary" onclick='event.stopPropagation();hideCombo(${JSON.stringify(key)})'>Hide this combo</button>
+          ${extrasAvailable ? `<button class="btn small secondary" onclick='event.stopPropagation();openOutfitExtrasPicker(${JSON.stringify(key)})'>${worn ? 'Edit accessories' : '+ Add accessories'}</button>` : ''}
+          ${o.canHide ? `<button class="btn small secondary" onclick='event.stopPropagation();hideCombo(${JSON.stringify(key)})'>Hide this combo</button>` : ''}
         </div>
       </div>`;
 }
@@ -2968,7 +3001,7 @@ function renderHero(){
       <button class="outfit-fav-btn ${fav ? 'favorited' : ''}"
               onclick='event.stopPropagation();toggleFavoriteByKey(${JSON.stringify(key)})'>${fav ? '♥' : '♡'}</button>
       <div class="outfit-thumbs">${outfitThumbsHtml(heroCombo)}</div>
-      ${isExpanded ? outfitExpandedPanelHtml(heroCombo, key) : ''}
+      ${isExpanded ? outfitExpandedPanelHtml(heroCombo, key, {canHide:true}) : ''}
     </div>`;
 }
 
@@ -3006,14 +3039,16 @@ function comboToFavoriteRecord(combo){
 }
 
 function favoriteRecordToCombo(rec){
-  // Archived pieces still resolve here: archiving an item should not
-  // quietly tear a piece out of an outfit you already saved.
-  const find = id => id ? (ITEMS.find(i => i.id === id) || ARCHIVED.find(i => i.id === id)) : null;
+  // No extras: a kept outfit is the clothing and nothing else, and what has
+  // been put on it is looked up from the combination like it is for any
+  // other outfit. That is what keeps the two the same outfit.
   return {
+    // The key it was stored under, which is not always the key this
+    // clothing would be given today — see comboExtras.
+    key: rec.key,
     base: rec.base,
-    top: find(rec.top), bottom: find(rec.bottom), dress: find(rec.dress),
-    jumper: find(rec.jumper), jacket: find(rec.jacket),
-    extras: (rec.extras || []).map(find).filter(Boolean)
+    top: pieceById(rec.top), bottom: pieceById(rec.bottom), dress: pieceById(rec.dress),
+    jumper: pieceById(rec.jumper), jacket: pieceById(rec.jacket)
   };
 }
 
@@ -3076,15 +3111,21 @@ function toggleExpandSaved(key){
   renderSavedOutfits();
 }
 
-// ---- Accessories on a saved outfit -------------------------
+// ---- Accessories on an outfit ------------------------------
 //
 // Outfits generate from clothes alone — a jacket changes whether an outfit
-// works, a necklace does not — so shoes, hats and the rest get put on here,
-// on an outfit you have already decided to keep.
+// works, a necklace does not — so shoes, hats and the rest get put on by
+// hand, here.
 //
-// Only extra_ids changes: combo_key stays the identity of the clothing
-// combination, which keeps the heart on the matching combo in the Outfits
-// tab filled instead of it looking unsaved.
+// They belong to the combination rather than to a kept outfit. There are
+// three things you can do to a combination: keep it, hide it, and dress
+// it, and all three are now a mark against a combo_key in a table of their
+// own. So dressing something decides nothing about keeping it, and the
+// same outfit wears the same hat wherever you meet it.
+//
+// Nothing here touches combo_key, which stays the identity of the clothing
+// alone — a hat is not what makes one outfit a different outfit from
+// another.
 
 // The categories an outfit is not generated from. Anything you can own that
 // is not one of the clothes an outfit is built from can be put on one.
@@ -3097,17 +3138,28 @@ function extraTabs(){
 
 let extrasPickerTab = null;
 
+// combo_key -> the ids put on it. A combination with nothing on it has no
+// row at all rather than a row holding an empty list, the same bargain
+// hidden_combos makes.
+let outfitExtras = {};
+
+function extrasFor(key){ return outfitExtras[key] || []; }
+
 async function setOutfitExtras(key, ids){
-  const rec = favoriteOutfits.find(f => f.key === key);
-  if(!rec) return false;
-  const { error } = await client()
-    .from('saved_outfits')
-    .update({ extra_ids: ids })
-    .eq('combo_key', key);
+  const db = client();
+  const { error } = ids.length
+    ? await db.from('outfit_extras').upsert(
+        { combo_key: key, extra_ids: ids, updated_at: new Date().toISOString() },
+        { onConflict: 'combo_key' })
+    : await db.from('outfit_extras').delete().eq('combo_key', key);
   if(error) return dbFail(error, 'Could not save that — check connection');
 
-  rec.extras = ids;
-  renderSavedOutfits();
+  if(ids.length) outfitExtras[key] = ids; else delete outfitExtras[key];
+
+  // The outfit wearing this is on whichever page you did it from, and may
+  // be on both at once — the lead card holds a copy of the grid's outfit.
+  if(appMode === 'saved') renderSavedOutfits();
+  else { renderOutfits(); renderHero(); }
   renderExtrasPicker(key);
   return true;
 }
@@ -3117,17 +3169,13 @@ async function setOutfitExtras(key, ids){
 // watched happen — and offering an undo that is the tap you would make
 // anyway. Nothing to confirm, so nothing is said.
 async function toggleOutfitExtra(key, itemId){
-  const rec = favoriteOutfits.find(f => f.key === key);
-  if(!rec) return;
-  const have = (rec.extras || []).slice();
+  const have = extrasFor(key).slice();
   const at = have.indexOf(itemId);
   if(at < 0) have.push(itemId); else have.splice(at, 1);
   await setOutfitExtras(key, have);
 }
 
 function openOutfitExtrasPicker(key){
-  const rec = favoriteOutfits.find(f => f.key === key);
-  if(!rec) return;
   const tabs = extraTabs();
   extrasPickerTab = tabs.includes(extrasPickerTab) ? extrasPickerTab : (tabs[0] || null);
 
@@ -3151,13 +3199,12 @@ function setExtrasPickerTab(key, tab){
 }
 
 function renderExtrasPicker(key){
-  const rec = favoriteOutfits.find(f => f.key === key);
   const tabsEl = document.getElementById('extras-tabs');
   const galleryEl = document.getElementById('extras-gallery');
-  if(!rec || !tabsEl || !galleryEl) return;
+  if(!tabsEl || !galleryEl) return;
 
   const tabs = extraTabs();
-  const on = new Set(rec.extras || []);
+  const on = new Set(extrasFor(key));
 
   tabsEl.innerHTML = tabs.map(t => `
     <button class="tab ${extrasPickerTab === t ? 'active' : ''}"
@@ -3249,31 +3296,15 @@ function renderSavedOutfits(){
 
   gallery.innerHTML = shown.map(rec => {
     const combo = favoriteRecordToCombo(rec);
-    const pieces = comboPieces(combo);
     const isExpanded = expandedSavedKey === rec.key;
     const thumbs = outfitThumbsHtml(combo);
 
-    const expandedPanel = isExpanded ? `
-      <div class="outfit-expanded-panel">
-        <button class="outfit-collapse-btn" onclick='event.stopPropagation();toggleExpandSaved(${JSON.stringify(rec.key)})'>Collapse ↑</button>
-        ${pieces.map(p => `
-          <div class="outfit-piece-row tappable"
-               onclick='event.stopPropagation();openPieceSheet(${JSON.stringify(p.id)})'>
-            ${p.photo ? `<img src="${esc(p.photo)}" alt="${esc(p.name)}" referrerpolicy="no-referrer" loading="lazy" decoding="async">` : `<div class="no-photo-mini">No photo</div>`}
-            <div class="outfit-piece-info">
-              <div class="p-name">${esc(p.name)}</div>
-            </div>
-            <span class="piece-go" aria-hidden="true">›</span>
-          </div>
-        `).join('')}
-        ${extrasAvailable ? `
-          <div class="modal-actions">
-            <!-- One button: the picker toggles, so a separate Remove was a
-                 second way to do the same thing. -->
-            <button class="btn small secondary" onclick='event.stopPropagation();openOutfitExtrasPicker(${JSON.stringify(rec.key)})'>${combo.extras.length ? 'Edit accessories' : '+ Add accessories'}</button>
-          </div>` : ''}
-      </div>
-    ` : '';
+    // The same panel the Outfits page draws, minus hiding: you kept this
+    // one on purpose.
+    const expandedPanel = isExpanded
+      ? outfitExpandedPanelHtml(combo, rec.key,
+          { collapse: `toggleExpandSaved(${JSON.stringify(rec.key)})` })
+      : '';
 
     return `<div class="outfit-card ${isExpanded ? 'expanded' : ''}" onclick='toggleExpandSaved(${JSON.stringify(rec.key)})'>
       <button class="outfit-fav-btn favorited" onclick='event.stopPropagation();unfavoriteByKey(${JSON.stringify(rec.key)})'>♥</button>
@@ -3670,7 +3701,7 @@ function renderOutfits(){
     const key = comboKey(combo);
     const isExpanded = expandedComboKey === key;
     const thumbs = outfitThumbsHtml(combo);
-    const expandedPanel = isExpanded ? outfitExpandedPanelHtml(combo, key) : '';
+    const expandedPanel = isExpanded ? outfitExpandedPanelHtml(combo, key, {canHide:true}) : '';
 
     return `<div class="outfit-card ${isExpanded ? 'expanded' : ''}" onclick='toggleExpandCombo(${JSON.stringify(key)})'>
       <button class="outfit-fav-btn ${isFavorited(key) ? 'favorited' : ''}" onclick='event.stopPropagation();toggleFavoriteByKey(${JSON.stringify(key)})'>${isFavorited(key) ? '♥' : '♡'}</button>
@@ -3844,11 +3875,10 @@ function rowToFavorite(row){
     key: row.combo_key,
     base: row.base,
     top: row.top_id, bottom: row.bottom_id, dress: row.dress_id,
-    jumper: row.jumper_id, jacket: row.jacket_id,
-    // Everything put on by hand: shoes, a hat, whatever else. Outfits saved
-    // before this was a list carry their shoes here, moved across by
-    // supabase/add-outfit-extras.sql.
-    extras: row.extra_ids || (row.shoe_id ? [row.shoe_id] : [])
+    jumper: row.jumper_id, jacket: row.jacket_id
+    // extra_ids is not read: accessories live in outfit_extras now, against
+    // the combination rather than against this row. The column still holds
+    // what it held before the move, and is left alone.
   };
 }
 
@@ -3860,9 +3890,6 @@ function favoriteToRow(rec){
     jumper_id: rec.jumper, jacket_id: rec.jacket,
     archived_at: null
   };
-  // A favourite carried over from the old localStorage build has its shoes
-  // in rec.shoe — the list is where they live now.
-  if(extrasAvailable) row.extra_ids = rec.extras || (rec.shoe ? [rec.shoe] : []);
   return row;
 }
 
@@ -3871,9 +3898,9 @@ function favoriteToRow(rec){
 // rather than showing a page that cannot save anything.
 let capsulesAvailable = false;
 
-// Accessories on a kept outfit need the extra_ids column. Until
-// supabase/add-outfit-extras.sql has been run the button stays hidden
-// rather than offering something that cannot be saved.
+// Accessories need the outfit_extras table. Until
+// supabase/add-outfit-extras-table.sql has been run the button stays
+// hidden rather than offering something that cannot be saved.
 let extrasAvailable = false;
 
 // Which capsules a piece is in. A piece can be in as many as you like, so
@@ -3990,10 +4017,11 @@ async function hydratePhotoUrls(items){
 
 async function loadAll(){
   const db = client();
-  const [itemsRes, outfitsRes, hiddenRes, capsulesRes, membersRes] = await Promise.all([
+  const [itemsRes, outfitsRes, hiddenRes, extrasRes, capsulesRes, membersRes] = await Promise.all([
     db.from('items').select('*').order('created_at', { ascending: true }),
     db.from('saved_outfits').select('*').is('archived_at', null).order('created_at', { ascending: true }),
     db.from('hidden_combos').select('combo_key'),
+    db.from('outfit_extras').select('combo_key, extra_ids'),
     db.from('capsules').select('*').is('archived_at', null).order('created_at', { ascending: true }),
     db.from('capsule_items').select('*').order('created_at', { ascending: true })
   ]);
@@ -4004,10 +4032,17 @@ async function loadAll(){
 
   tagsAvailable = itemsRes.data.length > 0 &&
     Object.prototype.hasOwnProperty.call(itemsRes.data[0], 'tags');
-  // Nothing kept yet means nothing to be wrong about, so the button shows
-  // and the first write tells us either way.
-  extrasAvailable = outfitsRes.data.length === 0 ||
-    Object.prototype.hasOwnProperty.call(outfitsRes.data[0], 'extra_ids');
+
+  // The table answers for itself: a database without it errors here, and
+  // the accessories button stays away rather than offering something that
+  // cannot be saved.
+  extrasAvailable = !extrasRes.error;
+  outfitExtras = {};
+  if(extrasAvailable){
+    (extrasRes.data || []).forEach(r => {
+      if((r.extra_ids || []).length) outfitExtras[r.combo_key] = r.extra_ids;
+    });
+  }
 
   const all = itemsRes.data.map(rowToItem);
   await hydratePhotoUrls(all);
@@ -4313,6 +4348,18 @@ async function runLegacyMigration(){
     const { error } = await db.from('saved_outfits')
       .upsert(validFavorites.map(favoriteToRow), { onConflict: 'combo_key' });
     if(!error) done.push(`${validFavorites.length} faves`);
+
+    // A favourite from the old build wears its shoes in rec.shoe. They are
+    // accessories now, and they belong to the combination rather than to
+    // the row above — the same move supabase/add-outfit-extras-table.sql
+    // makes for outfits that were already in the database.
+    const shod = validFavorites.filter(f => f.shoe);
+    if(shod.length && extrasAvailable){
+      const { error: extrasError } = await db.from('outfit_extras')
+        .upsert(shod.map(f => ({ combo_key: f.key, extra_ids: [f.shoe] })),
+                { onConflict: 'combo_key' });
+      if(!extrasError) shod.forEach(f => { outfitExtras[f.key] = [f.shoe]; });
+    }
   }
 
   let photoCount = 0;

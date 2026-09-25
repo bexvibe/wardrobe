@@ -16,7 +16,14 @@ const SAVED=[{combo_key:'tb|seed_22|seed_11|none|none|none', base:'topbottom',
   shoe_id:null, extra_ids:[], archived_at:null, created_at:new Date().toISOString()}];
 const KEY='tb|seed_22|seed_11|none|none|none';
 const results=[]; const check=(n,p,d)=>{results.push(p);console.log(`${p?'PASS':'FAIL'}  ${n}${d?'  — '+d:''}`);};
-const row=p=>p.evaluate(k=>window.__WARDROBE_STATE.saved_outfits.find(r=>r.combo_key===k), KEY);
+// Accessories hang off the combination now, in their own table — a
+// combination with nothing on it has no row at all.
+const row=p=>p.evaluate(k=>
+  window.__WARDROBE_STATE.outfit_extras.find(r=>r.combo_key===k)
+    || {combo_key:k, extra_ids:[]}, KEY);
+// The kept outfit itself, which taking accessories off must not touch.
+const savedRow=p=>p.evaluate(k=>
+  window.__WARDROBE_STATE.saved_outfits.find(r=>r.combo_key===k), KEY);
 const onCard=p=>p.evaluate(()=>document.querySelectorAll('#saved-gallery .outfit-extras > *').length);
 // The card stays expanded after a change, so only click when it is collapsed.
 async function ensureExpanded(p){
@@ -106,18 +113,19 @@ async function openPicker(p){
     await p.evaluate(()=>{
       const names = Array.from(document.querySelectorAll('#saved-gallery .outfit-piece-row .p-name'))
         .map(e=>e.textContent.trim());
-      const want = favoriteOutfits[0].extras.map(id=>itemById(id).name);
+      const want = extrasFor(favoriteOutfits[0].key).map(id=>itemById(id).name);
       return want.every(n=>names.includes(n));
     }));
   check('the button now reads as the way back in',
     await p.isVisible('#saved-gallery button:has-text("Edit accessories")'));
   check('and it said "add" while there were none to edit',
     await p.evaluate(()=>{
-      const was = favoriteOutfits[0].extras.slice();
-      favoriteOutfits[0].extras = [];
+      const key = favoriteOutfits[0].key;
+      const was = extrasFor(key).slice();
+      delete outfitExtras[key];
       renderSavedOutfits();
       const said = document.querySelector('#saved-gallery .modal-actions button').textContent.trim();
-      favoriteOutfits[0].extras = was;
+      outfitExtras[key] = was;
       renderSavedOutfits();
       return said === '+ Add accessories';
     }));
@@ -146,8 +154,9 @@ async function openPicker(p){
   r = await row(p);
   check('an outfit can be stripped back to bare', r.extra_ids.length===0, JSON.stringify(r.extra_ids));
   check('the row disappears with them', (await onCard(p))===0);
+  const kept = await savedRow(p);
   check('and the outfit itself survives it all',
-    r.archived_at===null && r.top_id==='seed_22' && r.combo_key===KEY);
+    Boolean(kept) && kept.archived_at===null && kept.top_id==='seed_22' && kept.combo_key===KEY);
 
   // ---- 5. It is really saved ----
   await openPicker(p);

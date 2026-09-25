@@ -19,6 +19,13 @@
       })),
       saved_outfits: (window.__SEED_OUTFITS || []).slice(),
       hidden_combos: [],
+      // Accessories belong to a combination rather than to a kept outfit.
+      // __NO_EXTRAS stands in for a database where
+      // supabase/add-outfit-extras-table.sql has not been run: the table is
+      // absent and every query against it errors, as Postgres would.
+      ...(window.__NO_EXTRAS ? {} : {
+        outfit_extras: (window.__SEED_EXTRAS || []).slice(),
+      }),
       // Set __NO_CAPSULES to stand in for a database where
       // supabase/add-capsules.sql has not been run: the tables are absent
       // and every query against them errors, as Postgres would.

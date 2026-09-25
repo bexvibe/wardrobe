@@ -59,13 +59,13 @@ const hush = p => p.evaluate(()=>{
     check('because the tile says it instead',
       await p.evaluate(()=>document.querySelectorAll('#extras-gallery .picker-selected').length===1));
     check('and it really was added',
-      await p.evaluate(()=>favoriteOutfits[0].extras.length===1));
+      await p.evaluate(()=>extrasFor(favoriteOutfits[0].key).length===1));
 
     await p.click('#extras-gallery .picker-tile'); await p.waitForTimeout(700);
     check('taking it off is just as quiet', !(await toastUp(p)).shown);
     check('and the tick goes with it',
       await p.evaluate(()=>document.querySelectorAll('#extras-gallery .picker-selected').length===0 &&
-                           favoriteOutfits[0].extras.length===0));
+                           extrasFor(favoriteOutfits[0].key).length===0));
     await p.close();
   }
 

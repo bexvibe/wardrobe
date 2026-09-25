@@ -8,10 +8,15 @@ const fake=fs.readFileSync(path.join(__dirname,'fake-supabase.js'),'utf8');
 const seed=fs.readFileSync(REPO + '/supabase/seed-items.json','utf8');
 const html=fs.readFileSync(REPO + '/index.html','utf8');
 
-// An outfit saved back when shoes were part of combos.
-const LEGACY = [{combo_key:'tb|seed_22|seed_11|none|none|seed_9', base:'topbottom',
+// An outfit saved back when shoes were part of combos. Its shoe sits in
+// outfit_extras, which is where supabase/add-outfit-extras-table.sql puts
+// a shoe_id when it runs — the app reads accessories from there and does
+// not look at the old column.
+const LEGACY_KEY = 'tb|seed_22|seed_11|none|none|seed_9';
+const LEGACY = [{combo_key:LEGACY_KEY, base:'topbottom',
   top_id:'seed_22', bottom_id:'seed_11', dress_id:null, jumper_id:null, jacket_id:null,
   shoe_id:'seed_9', archived_at:null, created_at:new Date().toISOString()}];
+const LEGACY_EXTRAS = [{combo_key:LEGACY_KEY, extra_ids:['seed_9']}];
 
 const results=[];
 const check=(n,p,d)=>{results.push(p);console.log(`${p?'PASS':'FAIL'}  ${n}${d?'  — '+d:''}`);};
@@ -25,7 +30,8 @@ async function run(browser, shoesOn){
   if(!patched.includes(`INCLUDE_SHOES_IN_OUTFITS = ${shoesOn}`)) throw new Error('flag patch failed');
   await page.route('**/index.html', r=>r.fulfill({contentType:'text/html',body:patched}));
   await page.route('**/vendor/supabase-js-*.js', r=>r.fulfill({contentType:'application/javascript',
-    body:`window.__SEED_ITEMS=${seed};window.__SEED_OUTFITS=${JSON.stringify(LEGACY)};\n${fake}`}));
+    body:`window.__SEED_ITEMS=${seed};window.__SEED_OUTFITS=${JSON.stringify(LEGACY)};`+
+         `window.__SEED_EXTRAS=${JSON.stringify(LEGACY_EXTRAS)};\n${fake}`}));
   await page.route('**/config.js', r=>r.fulfill({contentType:'application/javascript',
     body:`window.WARDROBE_CONFIG={supabaseUrl:'https://fake.supabase.co',supabaseAnonKey:'anon',authEmail:'wardrobe@the-archive.app'};`}));
   await page.goto('http://localhost:8933/index.html');
