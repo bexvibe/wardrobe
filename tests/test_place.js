@@ -142,12 +142,15 @@ const scrollTo = async (p, top) => { await p.evaluate(t=>window.scrollTo({top:t}
     await p.click('#nav-outfits-btn');
     await p.waitForSelector('.outfit-gallery .outfit-fav-btn');
     await p.waitForTimeout(900);
-    // The docked panel covers the bottom third of the screen, and a
-    // generated card's height depends on which clothes it drew — so the
-    // heart on the second card is sometimes under the panel. Put the panel
-    // away first, the way you would before tapping something beneath it.
     await p.evaluate(()=>closeFilterSheet()); await p.waitForTimeout(500);
-    await p.click('.outfit-gallery .outfit-fav-btn');
+    // Kept through the code rather than by tapping a heart: this section is
+    // about the rows a kept outfit lists, and which card the heart at the
+    // top of the gallery belongs to is not fixed — a dress worn on its own
+    // has a single row, and the check below wants a list.
+    await p.evaluate(()=>{
+      const combo = outfitDisplayed.find(c => comboPieces(c).length >= 2);
+      setFavorited(comboKey(combo), true, combo);
+    });
     await p.waitForFunction(()=>favoriteOutfits && favoriteOutfits.length === 1);
     await p.click('#nav-saved-btn'); await p.waitForTimeout(700);
     await p.click('#saved-gallery .outfit-card');

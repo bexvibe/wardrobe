@@ -240,15 +240,15 @@ const rowTop = (p, sel) => p.evaluate(s =>
   // ---- 6. Every category row in the app sticks ----
   {
     const p=await open(b);
-    // The three of them: the wardrobe's own, the capsule editor's and the
-    // accessories picker's. If a fourth is ever added, this fails until it
-    // is wired up too.
+    // The four of them: the wardrobe's own, the capsule editor's, the
+    // accessories picker's and the outfit builder's. If a fifth is ever
+    // added, this fails until it is wired up too.
     // Read from the file rather than the page: sticking a row rewrites its
     // class attribute, so the live DOM cannot be asked what was written.
     const src = fs.readFileSync(REPO + '/index.html', 'utf8');
     const rows = [...src.matchAll(/class="tabs" id="([a-z-]+)"/g)].map(m => m[1]);
     check('every row of categories in the app is accounted for',
-      rows.length === 3, rows.join(', '));
+      rows.length === 4, rows.join(', '));
     check('and every one of them is wired to stick',
       rows.every(id => src.includes(`stickSheetTabs('${id}')`) ||
                        src.includes(`stickCategoryRow(document.getElementById('${id}')`)),

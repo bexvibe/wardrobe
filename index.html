@@ -1118,6 +1118,18 @@
     color:var(--ink-soft);
   }
   .filter-chip.active .chip-caret{color:var(--ink);}
+  /* Building an outfit by hand. The outfit as it stands, small: it is here
+     to be glanced at, and a full-size card pushed the pieces you are
+     choosing from off the screen. */
+  .builder-preview{max-width:150px;margin:14px auto 4px;}
+  .builder-preview .outfit-lower{min-height:0;}
+  .builder-preview .outfit-upper > *,
+  .builder-preview .outfit-lower > *{max-height:86px;}
+  /* A category you have already taken something from, marked on the tab, so
+     what you picked two categories ago is visible from wherever you are. */
+  .tab-tick{color:var(--accent);font-size:11px;margin-left:5px;}
+  .tab.active .tab-tick{color:inherit;}
+
   /* Nothing in this category yet. Small and quiet: it is an answer, not a
      problem to solve. */
   .picker-empty{
@@ -1392,10 +1404,22 @@
   <div id="saved-view" style="display:none;">
     <header class="page-head">
       <h1>Faves</h1>
+      <div class="icon-row">
+        <button class="icon-btn primary" id="build-outfit-btn" onclick="openOutfitBuilder()"
+                aria-label="Build an outfit" title="Build an outfit">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <path d="M12 5v14M5 12h14"/>
+          </svg>
+        </button>
+      </div>
     </header>
     <div class="outfit-gallery" id="saved-gallery"></div>
     <div class="empty" id="saved-empty" style="display:none;">
       <h3 id="saved-empty-title">No faves</h3>
+      <button class="empty-action" id="saved-empty-action" onclick="openOutfitBuilder()"
+              aria-label="Build an outfit" title="Build an outfit">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+      </button>
     </div>
   </div>
 
@@ -1841,8 +1865,9 @@ const SHEETS = {
   item:      { backdrop: 'modal-backdrop', draw: id => drawItemSheet(id) },
   capsules:  { backdrop: 'modal-backdrop', draw: id => drawItemCapsulePicker(id) },
   form:      { backdrop: 'form-backdrop',  draw: id => drawItemForm(id) },
-  // Only ever left, never returned to: its draft does not survive the trip.
+  // Only ever left, never returned to: their drafts do not survive the trip.
   capsule:   { backdrop: 'modal-backdrop', draw: null },
+  builder:   { backdrop: 'modal-backdrop', draw: null },
 };
 
 let sheetTrail = [];
@@ -2366,6 +2391,205 @@ function renderSlotChips(gridId){
       + ` stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">`
       + `<path d="M6 10l6 6 6-6"/></svg>${badge}</button>`;
   }).join('');
+}
+
+// ---- Building an outfit by hand ------------------------------------
+//
+// The generator makes every combination the wardrobe allows, which is how
+// you find outfits you had not thought of. This is the other direction:
+// you already know what you want to wear, and want it kept.
+//
+// It builds the same thing the generator does — a combo of the same shape,
+// which means the same combo_key — so a hand-built outfit IS the generated
+// one. The heart on Outfits comes up filled by itself when that
+// combination surfaces; there is nothing to sync, because there is only
+// one record.
+//
+// That only holds if the builder can make nothing the generator cannot, so
+// the shapes are the generator's shapes: a top and a bottom, or a dress,
+// with a jumper and a jacket over either. Picking a dress clears the top
+// and bottom and the other way about — one shape, chosen by what you pick,
+// rather than a mode you set first.
+// Picking one of these empties the others: an outfit is a dress or it is a
+// top and a bottom, never both.
+const BUILDER_EXCLUDES = {dress: ['top','bottom'], top: ['dress'], bottom: ['dress']};
+
+let outfitDraft = null;   // { picks:{top,bottom,dress,jumper,jacket}, tab }
+
+// The same sheet as the capsule editor: the wardrobe's own category row
+// across the top, the pieces under it as tiles, and you tap the ones you
+// want. A capsule takes as many as you like from anywhere; an outfit takes
+// one from each place, so a second tap in the same category moves the tick
+// rather than adding to it.
+function openOutfitBuilder(){
+  outfitDraft = { picks: {top:null, bottom:null, dress:null, jumper:null, jacket:null},
+                  tab: builderTabs()[0] || null };
+  pushSheet({ sheet: 'builder', id: null });
+
+  document.getElementById('modal').innerHTML = `
+    <div class="sheet-header"><button class="sheet-back" onclick="closeOutfitBuilder()"><svg class="back-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>Back</button></div>
+    <div class="modal-body has-footer">
+      <div class="modal-name">Build an outfit</div>
+      <div id="builder-preview-slot"></div>
+      <div class="tabs" id="builder-tabs"></div>
+      <div class="gallery" id="builder-gallery"></div>
+    </div>
+    <div class="sheet-footer">
+      <div class="sheet-footer-inner">
+        <button class="btn" id="builder-save-btn" onclick="saveBuiltOutfit()" disabled>Keep outfit</button>
+      </div>
+    </div>
+  `;
+  renderBuilderTabs();
+  renderBuilderGallery();
+  renderBuilderState();
+  showSheetBackdrop('modal-backdrop');
+  // Once it is up and the header has a height to measure.
+  stickBuilderTabs();
+}
+
+// Only the categories an outfit is built from, and only the ones you own
+// something in — the same filtering the capsule editor's row does, minus
+// All, because there is no such place on a body.
+function builderTabs(){
+  return OUTFIT_TABS.filter(t => itemsInTab(t).length > 0);
+}
+
+function renderBuilderTabs(){
+  const el = document.getElementById('builder-tabs');
+  if(!el) return;
+  el.innerHTML = builderTabs().map(t => {
+    // A tick on the tab, so what you picked two categories ago is still
+    // visible from here.
+    const filled = Boolean(outfitDraft.picks[TAB_SLOT[t]]);
+    return `<button class="tab ${outfitDraft.tab === t ? 'active' : ''}" onclick="setBuilderTab('${t}')">
+      ${t}${filled ? ' <span class="tab-tick">&check;</span>' : ''}
+    </button>`;
+  }).join('');
+  stickBuilderTabs();
+}
+
+function stickBuilderTabs(){ stickSheetTabs('builder-tabs'); }
+
+function setBuilderTab(tab){
+  outfitDraft.tab = tab;
+  renderBuilderTabs();
+  renderBuilderGallery();
+}
+
+function renderBuilderGallery(){
+  const gallery = document.getElementById('builder-gallery');
+  if(!gallery) return;
+  const tab = outfitDraft.tab;
+  const items = tab ? itemsInTab(tab) : [];
+  const chosen = tab ? outfitDraft.picks[TAB_SLOT[tab]] : null;
+
+  gallery.innerHTML = items.map(i => {
+    const selected = chosen === i.id;
+    return `<div class="tile picker-tile ${selected ? 'picker-selected' : ''}" onclick="toggleBuilderItem('${i.id}')">
+      ${i.photo ? `<img src="${esc(i.photo)}" alt="" referrerpolicy="no-referrer" loading="lazy" decoding="async">` : `<span class="no-photo">No photo</span>`}
+      ${selected ? `<span class="picker-check">&check;</span>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function toggleBuilderItem(itemId){
+  const slot = TAB_SLOT[outfitDraft.tab];
+  const picks = outfitDraft.picks;
+  // Tapping the one already ticked takes it off, the way both other
+  // pickers work. Tapping a different one moves the tick: one top.
+  picks[slot] = picks[slot] === itemId ? null : itemId;
+  if(picks[slot]){
+    (BUILDER_EXCLUDES[slot] || []).forEach(other => { picks[other] = null; });
+  }
+  renderBuilderTabs();
+  renderBuilderGallery();
+  renderBuilderState();
+}
+
+// What the draft would be saved as, or null while it is not an outfit yet.
+function draftCombo(){
+  if(!outfitDraft) return null;
+  const pick = slot => outfitDraft.picks[slot] ? itemById(outfitDraft.picks[slot]) : null;
+  const dress = pick('dress'), top = pick('top'), bottom = pick('bottom');
+  if(dress) return {base:'dress', dress, top:null, bottom:null,
+                    jumper:pick('jumper'), jacket:pick('jacket'), shoe:null};
+  if(top && bottom) return {base:'topbottom', top, bottom, dress:null,
+                            jumper:pick('jumper'), jacket:pick('jacket'), shoe:null};
+  return null;
+}
+
+// The same shape, but drawn from whatever is picked so far — a half-built
+// outfit is not something the generator would ever hand you, so it is only
+// ever shown, never saved.
+function draftPreviewCombo(){
+  const pick = slot => outfitDraft.picks[slot] ? itemById(outfitDraft.picks[slot]) : null;
+  const dress = pick('dress');
+  return {base: dress ? 'dress' : 'topbottom',
+          dress, top: pick('top'), bottom: pick('bottom'),
+          jumper: pick('jumper'), jacket: pick('jacket'), shoe:null};
+}
+
+// The preview and the button say the same thing twice on purpose: the
+// picture is what you are keeping, the button is whether you can.
+function renderBuilderState(){
+  const combo = draftCombo();
+  const already = combo && isFavorited(comboKey(combo));
+  const anything = Object.values(outfitDraft.picks).some(Boolean);
+
+  const slot = document.getElementById('builder-preview-slot');
+  if(slot){
+    slot.innerHTML = anything
+      ? `<div class="outfit-card builder-preview"><div class="outfit-thumbs">${outfitThumbsHtml(draftPreviewCombo())}</div></div>`
+      : '';
+    // The tabs come to rest under the header, and the preview above them
+    // has just changed height.
+    stickBuilderTabs();
+  }
+
+  const btn = document.getElementById('builder-save-btn');
+  if(btn){
+    btn.disabled = !combo || already;
+    btn.textContent = already ? 'Already kept' : 'Keep outfit';
+  }
+}
+
+function outfitDraftIsDirty(){
+  return Boolean(outfitDraft) && Object.values(outfitDraft.picks).some(Boolean);
+}
+
+function closeOutfitBuilder(){
+  if(outfitDraftIsDirty()){
+    askToLeave('outfit', discardOutfitBuilder);
+    return;
+  }
+  discardOutfitBuilder();
+}
+
+function discardOutfitBuilder(){
+  outfitDraft = null;
+  goBackFromSheet();
+}
+
+async function saveBuiltOutfit(){
+  const combo = draftCombo();
+  if(!combo) return;
+  const key = comboKey(combo);
+  if(isFavorited(key)) return;
+
+  const btn = document.getElementById('builder-save-btn');
+  if(btn){ btn.disabled = true; btn.textContent = 'Keeping...'; }
+  const ok = await setFavorited(key, true, combo);
+  if(!ok){
+    if(btn){ btn.disabled = false; btn.textContent = 'Keep outfit'; }
+    return;
+  }
+  outfitDraft = null;
+  // Straight to it on the page it now lives on, open, so you can put
+  // accessories on it while you are still thinking about it.
+  expandedSavedKey = key;
+  goBackFromSheet();
+  renderSavedOutfits();
 }
 
 // The other half of the piece question: not which ones, but whether at
@@ -4904,7 +5128,9 @@ function closeModalIfBackdrop(e){
   if(e.target.id !== 'modal-backdrop') return;
   // The capsule editor lives on this sheet and may have work in it, so it
   // gets asked about here too rather than only at its back button.
-  if(capsuleDraft) closeCapsuleEditor(); else closeModal();
+  if(capsuleDraft) closeCapsuleEditor();
+  else if(outfitDraft) closeOutfitBuilder();
+  else closeModal();
 }
 
 // ---- "Go back?" ---------------------------------------------

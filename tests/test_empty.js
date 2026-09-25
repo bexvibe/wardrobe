@@ -62,8 +62,19 @@ const said = (p, sel) => p.evaluate(s => {
     check('Faves says No faves',
       (await said(p, '#saved-empty-title')) === 'No faves',
       await said(p, '#saved-empty-title'));
-    check('with no button, because keeping one is not done from here',
-      await p.evaluate(()=>!document.querySelector('#saved-empty .empty-action')));
+    // It used to have no button, because a fave was something you found
+    // rather than something you made. The builder is the other way in.
+    check('and offers to build one, which is now something you can do here',
+      await p.evaluate(()=>{
+        const btn = document.querySelector('#saved-empty .empty-action');
+        return Boolean(btn) && btn.getBoundingClientRect().height >= 44;
+      }));
+    check('and the button really opens the builder', await (async()=>{
+      await p.click('#saved-empty .empty-action'); await p.waitForTimeout(700);
+      const up = await p.evaluate(()=>Boolean(document.getElementById('builder-tabs')));
+      await p.evaluate(()=>discardOutfitBuilder()); await p.waitForTimeout(400);
+      return up;
+    })());
 
     await p.click('#nav-capsules-btn'); await p.waitForTimeout(900);
     check('Capsules asks you to build one',
