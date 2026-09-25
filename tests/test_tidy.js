@@ -277,8 +277,10 @@ const foldedCount = p => p.evaluate(()=>
     // outfit by hand instead.
     // A chip that is not filtering anything should not look filled. At rest
     // it is its outline and no more; filled always means on.
+    // Pinned, not ruled out: a category ruled out belongs to the Without
+    // row now, and the Pieces chip deliberately does not claim it.
     const chipStates = await p.evaluate(()=>{
-      outfitFilters['Tops'] = {type:'none', ids:[]};
+      outfitFilters['Tops'] = {type:'items', ids: itemsInTab('Tops').slice(0,1).map(i=>i.id)};
       renderFilterControls();
       const g = el => { const c=getComputedStyle(el);
         return {bg:c.backgroundColor, border:c.borderTopColor, weight:c.fontWeight}; };
