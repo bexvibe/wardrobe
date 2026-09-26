@@ -294,9 +294,10 @@ async function holdFirstTile(p){
         const cardPath = drawn.querySelector('path');
         return Boolean(navPath) && navPath.getAttribute('d') === cardPath.getAttribute('d');
       }));
-    check('so does the page',
-      (await p.textContent('#saved-view h1')).trim() === 'Faves');
-    check('and the empty state',
+    check('while the page keeps the destination\'s name',
+      (await p.textContent('#saved-view h1')).trim() === 'Outfits',
+      (await p.textContent('#saved-view h1')).trim());
+    check('and the empty state is where the word lives',
       /fave/i.test(await p.textContent('#saved-empty-title')),
       (await p.textContent('#saved-empty-title')).trim());
 

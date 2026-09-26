@@ -148,8 +148,11 @@ const cards = p => p.evaluate(()=>
     check('the heart shows the ones you kept', (await cards(p)) === 3, String(await cards(p)));
     check('and the switch moved with you',
       (await segs(p))[1].on && !(await segs(p))[0].on);
-    check('the page says which half you are on',
-      (await p.textContent('#saved-view h1')).trim() === 'Faves');
+    // One destination, one title. Which half you are on is the switch's
+    // job to say, and it is saying it a thumb's width below.
+    check('the page is still called what the destination is called',
+      (await p.textContent('#saved-view h1')).trim() === 'Outfits',
+      (await p.textContent('#saved-view h1')).trim());
 
     await p.click('#nav-outfits-btn'); await p.waitForTimeout(1300);
     check('and back again', await p.evaluate(()=>appMode === 'outfits'));

@@ -48,12 +48,13 @@ const rect = (p, sel) => p.evaluate(s=>{
   {
     const p=await open(b);
     // Faves is the other half of the Outfits destination rather than a
-    // destination of its own, so it is reached through the switch — but it
-    // still names itself, because the two halves hold different lists.
+    // destination of its own, so it is reached through the switch and
+    // wears the destination's name — both halves say Outfits, and the
+    // switch says which one you are on.
     const steps = [
       ['Wardrobe', p => p.click('#nav-inventory-btn')],
       ['Outfits',  p => p.click('#nav-outfits-btn')],
-      ['Faves',    p => toFaves(p, 600)],
+      ['Outfits',  p => toFaves(p, 600)],
     ];
     for(const [name, go] of steps){
       await go(p); await p.waitForTimeout(600);
