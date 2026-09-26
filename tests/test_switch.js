@@ -73,16 +73,19 @@ const cards = p => p.evaluate(()=>
     check('arriving opens the destination to hold its switch', s.length === 2,
       JSON.stringify(s));
     check('which starts on everything', s[0].id === 'nav-outfits-btn' && s[0].on && !s[1].on);
+    check('and the name of the destination is that half',
+      (await p.textContent('#nav-outfits-btn')).trim() === 'Outfits',
+      (await p.textContent('#nav-outfits-btn')).trim());
     check('and says so to a screen reader',
       s[0].pressed === 'true' && s[1].pressed === 'false');
     // Neither half may be smaller than a thumb.
     check('both halves are a full target',
       s.every(x => x.w >= 44 && x.h >= 44), JSON.stringify(s.map(x=>`${x.w}x${x.h}`)));
-    check('the destination itself is lit, not one of its halves',
+    check('the destination reads as one control, lit',
       await p.evaluate(()=>{
-        const dest = document.querySelector('#bottom-bar .bottom-btn.split');
+        const dest = document.querySelector('#bottom-bar .bottom-btn.nav-switch');
         return Boolean(dest) && dest.classList.contains('active') &&
-               dest.textContent.trim().startsWith('Outfits');
+               dest.querySelectorAll('.nav-seg').length === 2;
       }));
     check('the kept half is the heart the cards use',
       (await p.textContent('#nav-saved-btn')).trim() === '♥',

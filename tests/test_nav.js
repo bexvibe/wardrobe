@@ -214,7 +214,7 @@ const vis=(p,s)=>p.isVisible(s);
     await vis(p,'#outfits-view') &&
     // The destination is lit, and the switch inside it is on All.
     await p.evaluate(()=>{
-      const dest = document.querySelector('#bottom-bar .bottom-btn.split');
+      const dest = document.querySelector('#bottom-bar .bottom-btn.nav-switch');
       const all = document.getElementById('nav-outfits-btn');
       return Boolean(dest) && dest.classList.contains('active') && all.classList.contains('on');
     }));
