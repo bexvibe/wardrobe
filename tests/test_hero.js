@@ -62,16 +62,35 @@ const heroKey = p => p.evaluate(()=>heroCombo ? comboKey(heroCombo) : null);
   // and still leaves room for the docked filter panel under it
   const dock = await p.evaluate(()=>{
     const sheet=document.getElementById('filter-sheet');
-    const card=document.querySelector('.hero-card').getBoundingClientRect();
+    const cardOf = () => document.querySelector('.hero-card').getBoundingClientRect();
+    const open = sheet.classList.contains('open');
+    const cardHeight = Math.round(cardOf().height);
+    closeFilterSheet();
+    const closedHeight = Math.round(cardOf().height);
+    if(open) openFilterSheet();
+    const stack = el => {
+      for(let n = el; n; n = n.parentElement){
+        const z = getComputedStyle(n).zIndex;
+        if(z !== 'auto') return Number(z);
+      }
+      return 0;
+    };
     return {
-      open: sheet.classList.contains('open'),
-      sheetTop: Math.round(sheet.getBoundingClientRect().top),
-      cardBottom: Math.round(card.bottom),
+      open, cardHeight, closedHeight,
+      sheetZ: stack(sheet),
+      cardZ: stack(document.querySelector('.hero-card')),
     };
   });
-  check('the filter panel is docked open under it', dock.open);
-  check('and the card is clear of it',
-    dock.cardBottom <= dock.sheetTop, `card ends ${dock.cardBottom}, panel starts ${dock.sheetTop}`);
+  check('the filter panel is open over the page', dock.open);
+  // The card keeps its size when the filters open. They are a panel over
+  // the page rather than a part of it, so the page does not shuffle up to
+  // make room — the panel covers what it covers, and closing it gives the
+  // card back.
+  check('and the card is not made smaller to make room for it',
+    dock.cardHeight === dock.closedHeight,
+    `${dock.cardHeight} open vs ${dock.closedHeight} closed`);
+  check('the panel is drawn over it, not behind it',
+    dock.sheetZ > dock.cardZ, `panel z${dock.sheetZ}, card z${dock.cardZ}`);
 
   // --- held for the session ---
   const first = await heroKey(p);

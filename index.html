@@ -963,18 +963,17 @@
      once the address bar is showing; vh is the fallback for engines that
      do not know it.
 
-     It used to be a hand-picked fraction of the screen, and it had to be
-     re-picked every time the furniture below it changed — once when this
-     page's header gained a button, again when the filters stopped being a
-     sheet on the floor and became a panel that floats higher up. So it is
-     the room that is actually left instead: the viewport, less the page
-     head and the gaps, less whatever the filters are standing over, split
-     between the card's two bands. The panel closing gives the card the
-     space back on its own. */
+     21 rather than 23: this page's header carries the button that builds
+     an outfit, which makes it the same height as every other page's and
+     costs the card the difference.
+
+     It does not shrink further when the filters open. They are a panel
+     over the page, not a part of it — the card keeps its size and the
+     panel covers what it covers. */
   .hero-card .outfit-upper > *,
   .hero-card .outfit-lower > *{
-    max-height:min(200px, calc((100vh - 273px - var(--sheet-inset, 0px)) / 2));
-    max-height:min(200px, calc((100svh - 273px - var(--sheet-inset, 0px)) / 2));
+    max-height:min(21vh, 200px);
+    max-height:min(21svh, 200px);
   }
   .hero-card .outfit-lower > *{
     width:100%;
@@ -1009,11 +1008,8 @@
     /* A fixed height rather than padding alone: the count badge is taller
        than the label, so the pill was 37px at rest and 42px with a filter
        on — under a thumb either way, and never the same twice. */
-    /* Square, because the word is gone and what is left is one arrow.
-       It is still a full thumb. */
-    min-height:44px;min-width:44px;
-    justify-content:center;
-    padding:0 12px;border-radius:999px;
+    min-height:44px;
+    padding:0 18px;border-radius:999px;
     border:1px solid var(--line);
     background:var(--surface);
     color:var(--ink);
@@ -1095,14 +1091,17 @@
      On Outfits and Faves it is already up when you arrive, because on
      those two pages narrowing is the whole activity.
 
-     The z-index sits below the nav bar's 90, so the bar floats over it. */
+     It sits over everything the page draws — a panel covering a card is
+     the panel doing its job, and the page never moves aside for it. Only
+     the two bars that must stay reachable are above it: the nav, and the
+     floating row holding the button that put it there. */
   .filter-sheet{
     position:fixed;
     left:16px;right:16px;
     /* Clear of the floating row it belongs to: the row's own band, plus a
        pill, plus the air between them. */
     bottom:calc(env(safe-area-inset-bottom, 0px) + var(--above-nav) + 44px + 10px);
-    z-index:80;
+    z-index:88;
     max-width:928px;margin:0 auto;
     /* White, so the panel is an object resting on the page. The chips
        inside sit at page grey, which is what gives them their edge. */
@@ -2290,11 +2289,10 @@ function renderFiltersFab(){
   const n = activeFilterCount();
   fab.classList.toggle('active', n > 0);
   fab.setAttribute('aria-expanded', String(up));
-  fab.setAttribute('aria-label', up ? 'Close filters' : 'Filters');
-  fab.title = up ? 'Close filters' : 'Filters';
-  // The arrow points the way the panel will go, which is the other way
-  // each time you press it.
+  // The pill is unchanged but for its arrow, which points the way the
+  // panel will go — and that is the other way each time you press it.
   fab.innerHTML = `
+    <span class="filters-fab-label">Filters</span>
     <svg class="filters-fab-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor"
          stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
       <path d="${up ? 'M6 10l6 6 6-6' : 'M6 14l6-6 6 6'}"/>

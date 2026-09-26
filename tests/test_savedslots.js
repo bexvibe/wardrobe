@@ -210,10 +210,8 @@ async function pinFirst(p, key){
     // standing in for it.
     check('the panel does not open itself a second time',
       !(await p.evaluate(()=>filterSheetOpen())));
-    // The pill carries no word any more, so the count is the whole of what
-    // it says while the panel is down.
     check('and the shut panel still counts both',
-      (await p.textContent('#filters-fab')).replace(/\s+/g,'') === '2',
+      (await p.textContent('#filters-fab')).replace(/\s+/g,'') === 'Filters2',
       (await p.textContent('#filters-fab')).replace(/\s+/g,' ').trim());
     await p.close();
   }

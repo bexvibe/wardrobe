@@ -162,8 +162,11 @@ const rect = (p, sel) => p.evaluate(s=>{
     check('Outfits keeps the filters reachable, docked under the title',
       await p.evaluate(()=>filterSheetOpen()) && sheet.top < FOLD,
       `panel starts at ${sheet.top}, fold at ${FOLD}`);
-    check('the lead outfit is whole on screen above it',
-      hero.bottom <= sheet.top, `card ends at ${hero.bottom}, panel starts at ${sheet.top}`);
+    // The panel covers the foot of the card rather than the card shrinking
+    // to sit above it: the filters are over the page, not part of it.
+    check('the lead outfit is on screen under it, not squeezed above it',
+      hero.top < sheet.top && hero.bottom > sheet.top - 80,
+      `card ${hero.top}–${hero.bottom}, panel starts at ${sheet.top}`);
     await p.screenshot({path:shot('ti-outfits.png')});
     await p.close();
   }

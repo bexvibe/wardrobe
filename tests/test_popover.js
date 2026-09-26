@@ -103,21 +103,18 @@ const onPanel = (p, down) => p.evaluate(d=>{
     check('the pill is still there with the panel up',
       await p.evaluate(()=>getComputedStyle(
         document.getElementById('filters-fab')).display !== 'none'));
-    check('carrying no word, just the arrow',
-      (await p.textContent('#filters-fab')).trim() === '',
-      JSON.stringify((await p.textContent('#filters-fab')).trim()));
+    check('unchanged but for its arrow — the word is still on it',
+      (await p.textContent('#filters-fab')).replace(/\s+/g,' ').trim().startsWith('Filters'),
+      (await p.textContent('#filters-fab')).replace(/\s+/g,' ').trim());
     check('pointing down, which is where the panel is going',
       (await arrow(p)) === DOWN, await arrow(p));
     check('and saying as much to a screen reader',
-      (await p.getAttribute('#filters-fab','aria-expanded')) === 'true' &&
-      (await p.getAttribute('#filters-fab','aria-label')) === 'Close filters');
+      (await p.getAttribute('#filters-fab','aria-expanded')) === 'true');
 
     await p.click('#filters-fab'); await p.waitForTimeout(600);
     check('pressing it puts the panel away', !(await isOpen(p)));
     check('and the arrow turns over', (await arrow(p)) === UP, await arrow(p));
-    check('with the label to match',
-      (await p.getAttribute('#filters-fab','aria-expanded')) === 'false' &&
-      (await p.getAttribute('#filters-fab','aria-label')) === 'Filters');
+    check('and says so', (await p.getAttribute('#filters-fab','aria-expanded')) === 'false');
 
     await p.click('#filters-fab'); await p.waitForTimeout(600);
     check('pressing it again brings it back', await isOpen(p));
