@@ -998,6 +998,50 @@
                transform var(--sheet-ease-ms) var(--sheet-ease),
                visibility var(--sheet-ease-ms);
   }
+  /* Deal again: the same floating band as the filters pill, at the right
+     edge rather than the middle, so the two never argue over the centre.
+     It rides above the filters whether they are collapsed or open — when
+     the panel comes up it steps up with it, because the panel's chips go
+     all the way to its foot and a button parked over them is a button
+     covering the controls you came to use. --sheet-inset is the panel's
+     height, already measured for the padding the page needs under it. */
+  .shuffle-fab{
+    position:fixed;
+    right:16px;
+    bottom:calc(env(safe-area-inset-bottom, 0px) +
+                max(var(--above-nav), calc(var(--sheet-inset, 0px) + 12px)));
+    transition:bottom var(--sheet-ease-ms) var(--sheet-ease);
+    z-index:96;
+    width:48px;height:48px;
+    display:flex;align-items:center;justify-content:center;
+    border:1px solid var(--line);border-radius:999px;
+    background:var(--surface);
+    color:var(--ink);
+    cursor:pointer;
+    box-shadow:0 4px 16px rgba(0,0,0,0.12);
+  }
+  .shuffle-fab .wand{width:22px;height:22px;display:block;}
+  /* The sparks are what makes it a wand rather than a stick, so they are
+     the part that reacts. */
+  .shuffle-fab .wand-spark{transition:opacity 180ms ease;}
+  .shuffle-fab:active{transform:scale(0.94);}
+  .shuffle-fab.casting .wand{animation:wand-flick 520ms var(--sheet-ease);}
+  .shuffle-fab.casting .wand-spark{animation:wand-twinkle 520ms ease;}
+  @keyframes wand-flick{
+    0%{transform:rotate(0deg);}
+    35%{transform:rotate(-18deg) scale(1.08);}
+    100%{transform:rotate(0deg);}
+  }
+  @keyframes wand-twinkle{
+    0%,100%{opacity:1;}
+    40%{opacity:0.15;}
+    70%{opacity:1;}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .shuffle-fab.casting .wand,
+    .shuffle-fab.casting .wand-spark{animation:none;}
+  }
+
   /* Out of the way while the panel is up. visibility rather than display so
      it can animate, and so it still counts as hidden to anything asking. */
   .filters-fab.stood-down{
@@ -1590,6 +1634,20 @@
 
 <button class="filters-fab stood-down" id="filters-fab" onclick="openFilterSheet()"></button>
 
+<!-- Deal again. Only on the half that deals: what you kept is a list you
+     made, and shuffling it would be shuffling your own decisions. -->
+<button class="shuffle-fab" id="shuffle-fab" type="button" style="display:none;"
+        onclick="shuffleOutfits()" aria-label="Shuffle the outfits" title="Shuffle">
+  <svg class="wand" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+       stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <!-- The wand, pointing up and to the right, with what it just did. -->
+    <path d="M5 19L16.5 7.5"/>
+    <path class="wand-tip" d="M19.5 4.5l-3 3 -3-3 3-3z"/>
+    <path class="wand-spark" d="M5 5.5v3M3.5 7h3"/>
+    <path class="wand-spark" d="M18.5 15v2.6M17.2 16.3h2.6"/>
+  </svg>
+</button>
+
 <nav class="bottom-bar" id="bottom-bar">
   <!-- Drawn by renderBottomBar: the destination you are on may hold a
        switch, so the bar cannot be static markup. -->
@@ -1895,6 +1953,42 @@ function sessionRank(str){
   return h >>> 0;
 }
 
+// Deal again, now, rather than waiting for tomorrow.
+//
+// It takes a new seed rather than stepping through some second order, so
+// it is the same shuffle the app does on its own — which means everything
+// that depends on the order stays consistent with itself: the count, the
+// lead card, and the next page of the stream.
+function shuffleOutfits(){
+  sessionSeed = (Math.random() * 4294967296) >>> 0;
+  try{ sessionStorage.setItem(SESSION_SEED_KEY, String(sessionSeed)); }catch(e){ }
+
+  // An outfit you had open is not the one that will be there afterwards.
+  expandedComboKey = null;
+  resetOutfitResults();     // re-picks the lead card from the new order
+
+  // Back to the top: the point of it is the outfits you have not seen, and
+  // they are up there.
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  const fab = document.getElementById('shuffle-fab');
+  if(fab){
+    fab.classList.remove('casting');
+    // Reflow, so casting it twice in a row plays twice.
+    void fab.offsetWidth;
+    fab.classList.add('casting');
+  }
+}
+
+// Only where there is something to deal: what you kept is a list you made,
+// and the wardrobe and capsules are not dealt at all.
+function renderShuffleFab(){
+  const fab = document.getElementById('shuffle-fab');
+  if(!fab) return;
+  const dealt = appMode === 'outfits' && outfitDisplayed.length > 0;
+  fab.style.display = dealt ? 'flex' : 'none';
+}
+
 function shuffledForSession(list, keyOf){
   return list
     .map(x => [sessionRank(keyOf(x)), x])
@@ -2194,6 +2288,9 @@ function renderFiltersFab(){
       <path d="M6 14l6-6 6 6"/>
     </svg>
     ${n ? `<span class="filters-fab-count">${n}</span>` : ''}`;
+
+  // The other thing floating in this band, refreshed with it.
+  renderShuffleFab();
 }
 
 // One mount, in the docked panel, following whichever page you are on. The
@@ -3118,8 +3215,13 @@ const HERO_KEY = 'wardrobe-hero-outfit';
 // What the stored pick was chosen under. Filters narrow the pool, so a pick
 // made before them may no longer belong to it; comparing signatures is
 // cheaper and more honest than trying to re-test the combination.
+// What the featured outfit was chosen under. It is kept for the visit so
+// that coming back to the page does not swap it out from under you, and
+// dropped whenever the pool it came from changes — which includes dealing
+// again, or the one card the page leads with would be the one thing the
+// wand left alone.
 function heroSignature(){
-  return JSON.stringify({ tags: outfitTags, filters: outfitFilters });
+  return JSON.stringify({ deal: sessionSeed, tags: outfitTags, filters: outfitFilters });
 }
 
 function readStoredHero(){
@@ -3946,6 +4048,9 @@ function renderOutfits(){
       ${expandedPanel}
     </div>`;
   }).join('');
+
+  // Whether there is anything to deal again has just changed.
+  renderShuffleFab();
 }
 
 // A set of filters that asks for one piece and nothing else. Returned
