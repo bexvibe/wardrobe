@@ -71,11 +71,22 @@ const on = p => p.evaluate(()=>Array.from(
     check('every outfit shown carries one of them, not necessarily both',
       await p.evaluate(()=>outfitDisplayed.length > 0 && outfitDisplayed.every(c =>
         comboPieces(c).some(x => (x.tags||[]).some(t => ['summer','winter'].includes(t))))));
-    check('and some of them carry only one',
-      await p.evaluate(()=>outfitDisplayed.some(c => {
-        const t = new Set(comboPieces(c).flatMap(x => x.tags||[]));
-        return t.has('summer') !== t.has('winter');
-      })));
+    // Asked of the whole stream rather than of the first page: every top
+    // here is summer and every bottom is winter, so an outfit carrying
+    // only one needs a skirt or a pair of shorts, and whether one of those
+    // comes up in the first two dozen is down to the shuffle. Whether such
+    // an outfit qualifies at all is not.
+    check('and one carrying only one of them still qualifies',
+      await p.evaluate(()=>{
+        let walked = 0;
+        for(const c of comboGenerator()){
+          if(++walked > 60000) break;   // the whole space here is smaller
+          if(!comboMatchesTag(c)) continue;
+          const t = new Set(comboPieces(c).flatMap(x => x.tags||[]));
+          if(t.has('summer') !== t.has('winter')) return true;
+        }
+        return false;
+      }));
 
     // The count the page works out must agree with what it can generate.
     check('the count agrees with the stream it came from',

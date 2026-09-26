@@ -64,7 +64,7 @@ const cards = p => p.evaluate(()=>
   {
     const p=await open(b);
     check('three destinations, not four',
-      JSON.stringify(await dests(p)) === JSON.stringify(['Wardrobe','Outfits ♥','Capsules']),
+      JSON.stringify(await dests(p)) === JSON.stringify(['Wardrobe','Outfits ♡','Capsules']),
       (await dests(p)).join(' | '));
     // Both ways in are on the bar from the start: what you kept is one tap
     // from the wardrobe, not a control you have to arrive somewhere to
@@ -99,9 +99,15 @@ const cards = p => p.evaluate(()=>
         return Boolean(dest) && dest.classList.contains('active') &&
                dest.querySelectorAll('.nav-seg').length === 2;
       }));
-    check('the kept half is the heart the cards use',
+    // The pair the cards use: hollow until it is the one you are on.
+    check('the kept half is hollow while you are on everything',
+      (await p.textContent('#nav-saved-btn')).trim() === '♡',
+      (await p.textContent('#nav-saved-btn')).trim());
+    await p.click('#nav-saved-btn'); await p.waitForTimeout(1100);
+    check('and fills when it is',
       (await p.textContent('#nav-saved-btn')).trim() === '♥',
       (await p.textContent('#nav-saved-btn')).trim());
+    await p.click('#nav-outfits-btn'); await p.waitForTimeout(1300);
 
     // It has to fit next to two other labels on a small phone, and it is
     // the same bar wherever you are — nothing grows or shrinks underneath

@@ -3,6 +3,19 @@
 (function () {
   const PASSWORD = 'correct-horse';
 
+  // The app deals both outfit lists in a different order each visit, from a
+  // seed it keeps in sessionStorage. Left alone that would make every suite
+  // expecting a particular outfit a coin flip, so the seed is pinned here —
+  // through the real mechanism, so the shuffle itself still runs.
+  // A suite about the shuffle sets window.__SESSION_SEED to deal a
+  // different hand, or __SESSION_SEED_FREE to let the app choose.
+  try {
+    if (!window.__SESSION_SEED_FREE) {
+      sessionStorage.setItem('wardrobe-session-seed',
+                             String(window.__SESSION_SEED || 1));
+    }
+  } catch (e) {}
+
   function makeState(seedItems) {
     return {
       items: seedItems.map((it, i) => ({

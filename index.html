@@ -692,7 +692,11 @@
     color:var(--ink-soft);cursor:pointer;
     white-space:nowrap;
   }
-  .bottom-btn.active{background:var(--accent);color:#fff;}
+  /* The wash the app uses behind a control that is on, rather than the
+     full black it used to be. Black made the bar the loudest thing on a
+     page whose subject is photographs of clothes; this says the same thing
+     at the volume the filter chips say it. */
+  .bottom-btn.active{background:var(--accent-soft);color:var(--ink);}
   .bottom-icon{font-size:14px;line-height:1;}
 
   /* One destination holding two ways in, and both are always on the bar.
@@ -728,13 +732,22 @@
     transition:background var(--sheet-ease-ms) var(--sheet-ease),
                color var(--sheet-ease-ms) var(--sheet-ease);
   }
-  .bottom-btn.active .nav-seg{color:rgba(255,255,255,0.72);}
-  .bottom-btn.active .nav-seg.on{background:#fff;color:var(--ink);}
+  .bottom-btn.active .nav-seg{color:var(--ink-soft);}
+  /* Lifted off the wash rather than coloured differently from it — at this
+     contrast a flat white lozenge and the grey behind it are nearly the
+     same value, and the shadow is what separates them. */
+  .bottom-btn.active .nav-seg.on{
+    background:var(--surface);
+    color:var(--ink);
+    box-shadow:0 1px 3px rgba(0,0,0,0.14);
+  }
   /* The heart the cards use. Dimmed rather than drawn as an outline when
      it is off, so the two segments read as one switch with a lit half
      instead of as two different marks. */
-  .nav-heart{font-size:17px;line-height:1;opacity:0.82;}
-  .nav-seg.on .nav-heart{opacity:1;}
+  /* The pair the cards use: hollow for not, filled for yes. The same mark
+     doing the same job one size up — a card's heart says this outfit is
+     kept, this one says show me the kept ones. */
+  .nav-heart{font-size:17px;line-height:1;}
 
   /* Password gate */
   .gate{
@@ -1816,13 +1829,68 @@ function carriesAny(piece, tags){
 // combinations instead of to the pool, so an outfit qualifies when any one
 // piece carries it rather than all of them.
 
+// The tags the stream is being asked for, which is none of them inside a
+// sheet: the same leak as the filters, where a tag chosen on the Outfits
+// page is the page's, and applying it to a sheet's "outfits with this
+// piece" could empty that list for a reason nothing on the sheet explains.
+function tagsInPlay(){
+  return outfitRenderContext === 'modal' ? [] : outfitTags;
+}
+
 function comboMatchesTag(combo){
-  // The same leak as the filters: a tag chosen on the Outfits page is the
-  // page's, and applying it to a sheet's "outfits with this piece" could
-  // empty that list for a reason nothing on the sheet explains.
-  if(outfitRenderContext === 'modal') return true;
-  if(!outfitTags.length) return true;
-  return comboPieces(combo).some(p => carriesAny(p, outfitTags));
+  const wanted = tagsInPlay();
+  if(!wanted.length) return true;
+  return comboPieces(combo).some(p => carriesAny(p, wanted));
+}
+
+// ---- A different order every visit ------------------------
+//
+// A wardrobe of eighty pieces makes more combinations than anyone will
+// ever scroll to, so whichever ones the generator happened to reach first
+// were the only ones you ever saw. The same went for what you had kept,
+// which came back oldest-first for ever.
+//
+// So the order is shuffled — but once per visit, not once per draw. Held
+// in sessionStorage, which is exactly the lifetime wanted: a reload, a
+// trip to another page and back, or another page of the stream all keep
+// the order you were reading, while opening the app tomorrow deals again.
+// A stream that reshuffled on every call could hand you the same outfit
+// twice and never hand you another at all.
+const SESSION_SEED_KEY = 'wardrobe-session-seed';
+let sessionSeed = (() => {
+  try{
+    const held = sessionStorage.getItem(SESSION_SEED_KEY);
+    if(held !== null) return Number(held) >>> 0;
+    const fresh = (Math.random() * 4294967296) >>> 0;
+    sessionStorage.setItem(SESSION_SEED_KEY, String(fresh));
+    return fresh;
+  }catch(e){
+    // Private browsing, or storage turned off. One fixed order is a worse
+    // app than a shuffled one, not a broken one.
+    return 1;
+  }
+})();
+
+// A number for a string, mixed with this visit's seed. Sorting by it is a
+// shuffle that can be recomputed rather than remembered — which is what
+// lets the generator be thrown away and rebuilt mid-visit, as it is every
+// time you change a filter, and still deal the same order.
+function sessionRank(str){
+  let h = sessionSeed ^ 2166136261;
+  for(let i = 0; i < str.length; i++){
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  // The low bits of a multiply move least, so fold the high ones down.
+  h ^= h >>> 15;
+  return h >>> 0;
+}
+
+function shuffledForSession(list, keyOf){
+  return list
+    .map(x => [sessionRank(keyOf(x)), x])
+    .sort((a, b) => a[0] - b[0])
+    .map(pair => pair[1]);
 }
 
 // Where you had scrolled to on each page. Coming back to a tab should put
@@ -1883,7 +1951,8 @@ function renderBottomBar(){
     <span class="bottom-btn nav-switch ${onOutfits ? 'active' : ''}"
           role="group" aria-label="Which outfits">
       ${seg('nav-outfits-btn', onOutfits && !kept, 'Outfits', `onclick="setMode('outfits')"`)}
-      ${seg('nav-saved-btn', kept, '<span class="nav-heart">&hearts;</span>',
+      ${seg('nav-saved-btn', kept,
+            `<span class="nav-heart">${kept ? '&hearts;' : '&#9825;'}</span>`,
             `onclick="setMode('saved')" aria-label="Faves"`)}
     </span>
     ${capsulesAvailable
@@ -2823,9 +2892,17 @@ function slotList(filters, slot){
   const pinned = tabs.filter(t => (filters[t] || {}).type === 'items');
   const from = pinned.length ? pinned : tabs;
   const items = from.reduce((all, t) => all.concat(tabContribution(filters, t)), []);
+  // Every slot the generator draws from comes through here, so this is the
+  // one place the order of the stream is decided. Shuffling per visit is
+  // what stops the same few outfits leading the page every time you open
+  // it — the combinations are the same, the ones you meet first are not.
+  //
+  const ordered = shuffledForSession(items, i => slot + '|' + i.id);
   // An optional layer can always be left off — unless you pinned pieces, in
-  // which case you asked to see those, not the outfits without them.
-  return (OPTIONAL_SLOTS.includes(slot) && !pinned.length) ? [null, ...items] : items;
+  // which case you asked to see those, not the outfits without them. Left
+  // off stays first whatever the shuffle says, or the plainest outfits
+  // would be buried under every jumper-and-jacket in the wardrobe.
+  return (OPTIONAL_SLOTS.includes(slot) && !pinned.length) ? [null, ...ordered] : ordered;
 }
 
 function* familyGenerator(family, jumpers, jackets, shoes){
@@ -2964,6 +3041,14 @@ function comboCountWhere(untaggedOnly){
   }, 0);
 }
 
+// Whether the wardrobe could make an outfit at all, whatever is filtered.
+// A top and a bottom, or a dress — the two shapes the generator knows.
+function wardrobeCanMakeOutfits(){
+  const bare = emptySlotFilters();
+  const own = slot => slotList(bare, slot).filter(Boolean).length;
+  return (own('top') > 0 && own('bottom') > 0) || own('dress') > 0;
+}
+
 function totalComboCount(){
   const all = comboCountWhere(false);
   if(!outfitTags.length) return all;
@@ -3097,11 +3182,24 @@ function renderHero(){
     </div>`;
 }
 
+// How far to walk looking for a page of outfits before giving up.
+//
+// It is a stop against a pathological spin, not a budget: a tag only a
+// couple of pieces carry matches a thin slice of the space, and where that
+// slice falls depends on the shuffle, so a low ceiling means the page
+// reads as empty while the count underneath it says otherwise. The work
+// per step is making one small object and testing it, so a wardrobe whose
+// whole space fits under this walks all of it in a few milliseconds rather
+// than stopping short of the one outfit you asked for.
+const OUTFIT_SCAN_LIMIT = 300000;
+
 function loadMoreOutfits(){
   if(!outfitGen) outfitGen = comboGenerator();
   let added = 0;
   let guard = 0;
-  while(added < OUTFIT_PAGE_SIZE && guard < OUTFIT_PAGE_SIZE * 500){
+  // Nothing matches, so there is nothing to walk towards.
+  if(totalComboCount() === 0){ renderOutfits(); return; }
+  while(added < OUTFIT_PAGE_SIZE && guard < OUTFIT_SCAN_LIMIT){
     const next = outfitGen.next();
     guard++;
     if(next.done) break;
@@ -3369,7 +3467,11 @@ function renderSavedOutfits(){
 
   outfitTags = outfitTags.filter(t => allTags().includes(t));
 
-  const shown = favoriteOutfits.filter(savedOutfitMatches);
+  // Dealt afresh each visit, like the generated half. They arrive from the
+  // database oldest first, which meant the outfit you kept in March led
+  // the page every time you opened it until you took it away.
+  const shown = shuffledForSession(
+    favoriteOutfits.filter(savedOutfitMatches), rec => rec.key);
   const narrowed = outfitTags.length > 0 || countNarrowedSlots(outfitFilters) > 0;
 
   // No count line: the cards are the count, and a line saying which
@@ -3780,7 +3882,10 @@ function renderOutfits(){
     if(emptyState){
       // Nothing to build from is a different problem from a filter nothing
       // gets past, and only the first one is solved by adding a piece.
-      const bare = ITEMS.length === 0 || comboCountWhere(false) === 0;
+      // Asked with the filters set aside, because they were being asked
+      // through them: ruling out tops and dresses drove the count to zero
+      // and the page told someone with eighty pieces to add some.
+      const bare = ITEMS.length === 0 || !wardrobeCanMakeOutfits();
       const title = document.getElementById('outfit-empty-title');
       const action = document.getElementById('outfit-empty-action');
       if(title) title.textContent = bare ? 'Add pieces to see outfits' : 'No outfits match';
