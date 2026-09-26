@@ -136,16 +136,29 @@ const vis=(p,s)=>p.isVisible(s);
   check('a featured outfit leads the content, under the title',
     top.heroY !== null && top.heroY >= top.headBottom && top.heroY < top.sheetTop,
     `head ends ${top.headBottom}, hero at ${top.heroY}, panel starts ${top.sheetTop}`);
-  check('the panel is docked to the foot of the screen',
-    top.sheetBottom >= top.fold - 1 && top.sheetTop > top.fold / 2,
+  // A panel that opens above the button that raises it, rather than a
+  // sheet stuck to the bottom edge: it clears the floating row, and the
+  // row stays where it was so the way out is where the way in was.
+  check('the panel floats above the buttons that raise it',
+    top.sheetBottom < top.fold - 40 && top.sheetTop > top.fold / 3,
     `${top.sheetTop}–${top.sheetBottom} of ${top.fold}`);
+  check('clear of the row, not sitting on it',
+    await p.evaluate(()=>{
+      const sheet = document.getElementById('filter-sheet').getBoundingClientRect();
+      const row = document.getElementById('float-row').getBoundingClientRect();
+      return row.top - sheet.bottom >= 6 && row.top - sheet.bottom <= 24;
+    }));
   check('it sits behind the nav bar rather than over it',
     top.sheetZ < top.navZ, `panel z${top.sheetZ}, nav z${top.navZ}`);
   check('and its own controls stay clear of the bar',
     top.gridBottom <= top.navTop, `controls end ${top.gridBottom}, bar starts ${top.navTop}`);
   check('both tags and piece filters are there',
     await vis(p,'#sheet-tag-chips') && await vis(p,'#sheet-filter-grid'));
-  check('so the pill stays out of the way', !(await vis(p,'#filters-fab')));
+  check('and the pill stays, because it is the way out as well',
+    await vis(p,'#filters-fab'));
+  check('with its arrow turned to point the way the panel will go',
+    await p.evaluate(()=>document.querySelector('.filters-fab-chevron path')
+      .getAttribute('d') === 'M6 10l6 6 6-6'));
 
   // Filtering straight from the docked panel.
   await p.click('#sheet-tag-chips .tag-chip:has-text("sporty")'); await p.waitForTimeout(800);
@@ -177,7 +190,7 @@ const vis=(p,s)=>p.isVisible(s);
   await p.click('#filters-fab'); await p.waitForTimeout(500);
 
   // Collapsing it, and getting it back.
-  await p.click('#filter-sheet-collapse'); await p.waitForTimeout(450);
+  await p.click('#filters-fab'); await p.waitForTimeout(450);
   check('the collapse button puts the panel away', !(await sheetOpen()));
   check('the pill takes its place', await vis(p,'#filters-fab'));
   check('and it carries the active count',
@@ -188,7 +201,16 @@ const vis=(p,s)=>p.isVisible(s);
   await p.click('#filters-fab'); await p.waitForTimeout(450);
   check('the pill brings it back', await sheetOpen());
   check('with the same state it had', await p.evaluate(()=>Boolean(document.querySelector('#sheet-tag-chips .tag-chip.active'))));
-  check('and the pill stands down again', !(await vis(p,'#filters-fab')));
+  check('and the pill is still there, arrow turned to close it again',
+    (await vis(p,'#filters-fab')) &&
+    await p.evaluate(()=>document.querySelector('.filters-fab-chevron path')
+      .getAttribute('d') === 'M6 10l6 6 6-6'));
+  check('and pressing it once more puts the panel away', await (async()=>{
+    await p.click('#filters-fab'); await p.waitForTimeout(500);
+    return !(await sheetOpen()) &&
+      await p.evaluate(()=>document.querySelector('.filters-fab-chevron path')
+        .getAttribute('d') === 'M6 14l6-6 6 6');
+  })());
 
   // --- saved is its own destination ---
   await toFaves(p, 500);

@@ -70,20 +70,22 @@ const stream = p => p.evaluate(()=>outfitDisplayed.slice(0, 8).map(c=>comboKey(c
         return bg === 'rgb(117, 102, 148)' && brand === '#756694';
       }));
 
-    // The panel's chips run to its foot, so the wand has to be above them.
+    // The filters open above this row rather than under it, so the row is
+    // where it is whether they are up or down — nothing moves out from
+    // under your thumb when you open them.
     const open1 = await p.evaluate(()=>{
       const sheet = document.getElementById('filter-sheet').getBoundingClientRect();
       const fab = document.getElementById('shuffle-fab').getBoundingClientRect();
-      return {sheetTop: Math.round(sheet.top), fabBottom: Math.round(fab.bottom),
-              open: filterSheetOpen()};
+      return {sheetBottom: Math.round(sheet.bottom), fabTop: Math.round(fab.top),
+              fabBottom: Math.round(fab.bottom), open: filterSheetOpen()};
     });
-    check('with the filters open it sits above them, not over them',
-      open1.open && open1.fabBottom <= open1.sheetTop, JSON.stringify(open1));
+    check('with the filters open they sit above it, not over it',
+      open1.open && open1.sheetBottom <= open1.fabTop, JSON.stringify(open1));
 
     await p.evaluate(()=>closeFilterSheet()); await p.waitForTimeout(700);
     const shut = await box(p);
-    check('and it comes back down when they collapse',
-      shut.bottom > open1.fabBottom, `${shut.bottom} vs ${open1.fabBottom}`);
+    check('and it has not moved a pixel either way',
+      shut.bottom === open1.fabBottom, `${shut.bottom} vs ${open1.fabBottom}`);
     check('level with the filters pill', await p.evaluate(()=>{
       const fab = document.getElementById('shuffle-fab').getBoundingClientRect();
       const pill = document.getElementById('filters-fab').getBoundingClientRect();

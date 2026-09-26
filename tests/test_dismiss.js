@@ -93,7 +93,8 @@ async function reopen(p){
       await p.evaluate(()=>getComputedStyle(document.documentElement)
         .getPropertyValue('--sheet-inset').trim() === '0px'));
     check('and the pill is standing by to bring it back',
-      await p.evaluate(()=>!document.getElementById('filters-fab').classList.contains('stood-down')));
+      await p.evaluate(()=>getComputedStyle(
+        document.getElementById('filters-fab')).display !== 'none'));
 
     await reopen(p);
     check('the pill brings it back', await isOpen(p));

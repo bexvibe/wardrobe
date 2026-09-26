@@ -186,8 +186,9 @@ async function setSlot(p, key, choice){
         piece: Array.from(document.querySelectorAll('#sheet-filter-grid .filter-chip')).map(h),
         tag: Array.from(document.querySelectorAll('#sheet-tag-chips .tag-chip')).map(h),
         clear: h(document.getElementById('filter-sheet-clear')),
-        collapse: h(document.querySelector('.filter-sheet-collapse')),
         fab: h(document.getElementById('filters-fab')),
+        fabW: (()=>{ const e=document.getElementById('filters-fab');
+                     return e ? Math.round(e.getBoundingClientRect().width) : null; })(),
       };
     });
     check('every piece chip is at least 44px tall',
@@ -195,8 +196,11 @@ async function setSlot(p, key, choice){
     check('every tag chip too',
       sizes.tag.length > 0 && sizes.tag.every(n=>n>=44), JSON.stringify(sizes.tag));
     check('Clear all is not a 21px sliver any more', sizes.clear>=44, String(sizes.clear));
-    check('and the way down is a full target', sizes.collapse>=44, String(sizes.collapse));
-    // The pill is scaled down while the panel is up, so measure it standing.
+    // The way down is the pill that was the way up — it stays on screen
+    // while the panel is open rather than handing the job to a second
+    // control inside it.
+    check('and the way down is the same full target as the way up',
+      sizes.fab>=44 && sizes.fabW>=44, `${sizes.fabW}x${sizes.fab}`);
     await p.evaluate(()=>closeFilterSheet()); await p.waitForTimeout(600);
     const fab = await p.evaluate(()=>
       Math.round(document.getElementById('filters-fab').getBoundingClientRect().height));
@@ -298,13 +302,13 @@ async function setSlot(p, key, choice){
       !(await p.evaluate(()=>document.getElementById('filter-sheet').hasAttribute('inert'))));
     check('and its controls take focus again',
       await p.evaluate(()=>{
-        const c = document.getElementById('filter-sheet-collapse');
+        const c = document.querySelector('#filter-sheet .filter-chip');
         c.focus();
         return document.activeElement === c;
       }));
 
     // Closing while focus is in there does not strand it off-screen.
-    await p.evaluate(()=>{ document.getElementById('filter-sheet-collapse').focus();
+    await p.evaluate(()=>{ document.querySelector('#filter-sheet .filter-chip').focus();
                            closeFilterSheet(); });
     await p.waitForTimeout(500);
     check('closing with focus inside hands it to the pill, not into the dark',

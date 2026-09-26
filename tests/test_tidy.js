@@ -103,7 +103,7 @@ const foldedCount = p => p.evaluate(()=>
   {
     const p=await open(b);
     await p.click('#nav-outfits-btn'); await p.waitForTimeout(900);
-    await p.click('#filter-sheet-collapse'); await p.waitForTimeout(600);
+    await p.click('#filters-fab'); await p.waitForTimeout(600);
 
     const placed = await p.evaluate(()=>{
       const f = document.getElementById('filters-fab').getBoundingClientRect();
@@ -129,8 +129,9 @@ const foldedCount = p => p.evaluate(()=>
     check('it is a pill, not a bar', placed.w < 200, `${placed.w}x${placed.h}`);
     check('and a thumb-sized one', placed.h >= 40, `${placed.h}px`);
 
-    // Opening and closing is one motion: the panel travels while the pill
-    // is still on its way out, and the other way round.
+    // The pill no longer leaves when the panel arrives — it is the way out
+    // as well as the way in, so what is watched here is the panel growing
+    // out of it while it stays put.
     const flight = async (go) => {
       await p.evaluate(go);
       const frames = [];
@@ -147,14 +148,16 @@ const foldedCount = p => p.evaluate(()=>
     };
 
     const opening = await flight(()=>openFilterSheet());
-    check('opening, the panel is still travelling while the pill is still there',
-      opening.some(f => f.y > 0 && f.o > 0.2), JSON.stringify(opening));
-    check('and the pill is on its way out the whole time, not gone at once',
-      opening[0].o < 1 && opening[0].o > 0.5, JSON.stringify(opening.map(f=>f.o)));
+    check('opening, the panel travels rather than appearing',
+      opening.some(f => f.y > 0), JSON.stringify(opening));
+    check('and the pill stays lit the whole way, because it is the way back',
+      opening.every(f => f.o === 1), JSON.stringify(opening.map(f=>f.o)));
 
     const closing = await flight(()=>closeFilterSheet());
-    check('closing, the pill is coming back while the panel is still going',
-      closing.some(f => f.y > 0 && f.o > 0.5), JSON.stringify(closing));
+    check('closing, it travels back the same way',
+      closing.some(f => f.y > 0), JSON.stringify(closing));
+    check('and the pill never flickers', closing.every(f => f.o === 1),
+      JSON.stringify(closing.map(f=>f.o)));
 
     check('both halves share one curve and one duration', await p.evaluate(()=>{
       const root = getComputedStyle(document.documentElement);
@@ -163,7 +166,10 @@ const foldedCount = p => p.evaluate(()=>
       const fab = getComputedStyle(document.getElementById('filters-fab'));
       return ms !== '' &&
              sheet.transitionDuration.includes('0.26s') &&
-             fab.transitionDuration.includes('0.26s');
+             // The pill's own transitions are the quick state ones now;
+             // what has to share the panel's curve is the panel.
+             sheet.transitionTimingFunction.includes('cubic-bezier') &&
+             Boolean(fab);
     }));
     check('and stand still for anyone who asked for less movement', await (async()=>{
       const q = await b.newPage({viewport:{width:390,height:844}, reducedMotion:'reduce'});
@@ -185,7 +191,7 @@ const foldedCount = p => p.evaluate(()=>
     // A filter being on says so without the pill going black.
     await p.click('#filters-fab'); await p.waitForTimeout(500);
     await p.click('#sheet-tag-chips .tag-chip'); await p.waitForTimeout(700);
-    await p.click('#filter-sheet-collapse'); await p.waitForTimeout(600);
+    await p.click('#filters-fab'); await p.waitForTimeout(600);
     const on = await p.evaluate(()=>{
       const f = document.getElementById('filters-fab');
       const c = getComputedStyle(f);

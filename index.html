@@ -962,13 +962,19 @@
      a small phone as well as a large one. svh is the height Safari leaves
      once the address bar is showing; vh is the fallback for engines that
      do not know it.
-     21 rather than 23: this page's header now carries the button that
-     builds an outfit, which makes it the same height as every other
-     page's and costs the card the difference. */
+
+     It used to be a hand-picked fraction of the screen, and it had to be
+     re-picked every time the furniture below it changed — once when this
+     page's header gained a button, again when the filters stopped being a
+     sheet on the floor and became a panel that floats higher up. So it is
+     the room that is actually left instead: the viewport, less the page
+     head and the gaps, less whatever the filters are standing over, split
+     between the card's two bands. The panel closing gives the card the
+     space back on its own. */
   .hero-card .outfit-upper > *,
   .hero-card .outfit-lower > *{
-    max-height:min(21vh, 200px);
-    max-height:min(21svh, 200px);
+    max-height:min(200px, calc((100vh - 273px - var(--sheet-inset, 0px)) / 2));
+    max-height:min(200px, calc((100svh - 273px - var(--sheet-inset, 0px)) / 2));
   }
   .hero-card .outfit-lower > *{
     width:100%;
@@ -983,18 +989,13 @@
   /* The floating pair: shuffle, then filters. One row so the two are laid
      out against each other rather than each against the screen — which is
      what keeps them a fixed 8px apart however wide either of them gets.
-     It rides above the panel when that is open, because the panel's chips
-     run to its foot and anything parked over them covers the controls you
-     came to use. --sheet-inset is the panel's height, already measured for
-     the padding the page needs under it. */
+     It does not move when the filters open, because they open above it. */
   .float-row{
     position:fixed;
     left:50%;transform:translateX(-50%);
-    bottom:calc(env(safe-area-inset-bottom, 0px) +
-                max(var(--above-nav), calc(var(--sheet-inset, 0px) + 12px)));
+    bottom:calc(env(safe-area-inset-bottom, 0px) + var(--above-nav));
     z-index:95;
     display:flex;align-items:center;gap:8px;
-    transition:bottom var(--sheet-ease-ms) var(--sheet-ease);
     /* The row is only a ruler; taps belong to the pills in it. */
     pointer-events:none;
   }
@@ -1008,8 +1009,11 @@
     /* A fixed height rather than padding alone: the count badge is taller
        than the label, so the pill was 37px at rest and 42px with a filter
        on — under a thumb either way, and never the same twice. */
-    min-height:44px;
-    padding:0 18px;border-radius:999px;
+    /* Square, because the word is gone and what is left is one arrow.
+       It is still a full thumb. */
+    min-height:44px;min-width:44px;
+    justify-content:center;
+    padding:0 12px;border-radius:999px;
     border:1px solid var(--line);
     background:var(--surface);
     color:var(--ink);
@@ -1058,21 +1062,6 @@
     .shuffle-fab.casting .wand{animation:none;}
   }
 
-  /* Out of the way while the panel is up. visibility rather than display so
-     it can animate, and so it still counts as hidden to anything asking. */
-  .filters-fab.stood-down{
-    opacity:0;
-    visibility:hidden;
-    pointer-events:none;
-    /* Down and smaller, towards where the panel's head now is. */
-    transform:translateY(16px) scale(0.9);
-    /* Leaving is eased IN, so it holds while the panel rises past it and
-       then goes. The shared curve is front-loaded — right for the panel's
-       travel, but it made the pill vanish in the first quarter. */
-    transition:opacity var(--sheet-ease-ms) cubic-bezier(0.4, 0, 1, 1),
-               transform var(--sheet-ease-ms) cubic-bezier(0.4, 0, 1, 1),
-               visibility var(--sheet-ease-ms);
-  }
   /* A filter is on. The wash alone says it — the darker ring on top of it
      was a second, louder way of saying the same thing. */
   .filters-fab.active{
@@ -1097,41 +1086,60 @@
     color:var(--ink-soft);
   }
 
-  /* The filters dock at the bottom rather than opening over the page. On
-     Outfits and Faves they are already down when you arrive, because on
-     those two pages narrowing is the whole activity; everywhere else the
-     pill raises them.
+  /* The filters open as a panel above the buttons that raise them, rather
+     than as a sheet docked to the bottom edge. It is the same bargain
+     either way — no backdrop, the page behind still scrolls, and the
+     results narrow under your thumb as you tap — but a panel that grows
+     out of its own button says where it came from, and leaves the button
+     where it was so the way out is where the way in was.
+     On Outfits and Faves it is already up when you arrive, because on
+     those two pages narrowing is the whole activity.
 
-     Docked, not modal: no backdrop, the page behind still scrolls, and the
-     results narrow under your thumb as you tap. The z-index sits below the
-     nav bar's 90 so the bar always floats over the panel, and the panel's
-     bottom padding keeps its own controls out from under it. */
+     The z-index sits below the nav bar's 90, so the bar floats over it. */
   .filter-sheet{
     position:fixed;
-    left:0;right:0;bottom:0;
+    left:16px;right:16px;
+    /* Clear of the floating row it belongs to: the row's own band, plus a
+       pill, plus the air between them. */
+    bottom:calc(env(safe-area-inset-bottom, 0px) + var(--above-nav) + 44px + 10px);
     z-index:80;
-    /* White, so the panel is an object resting on the page rather than the
-       page carrying on behind the nav. The chips inside sit at page grey,
-       which is what now gives them their edge. */
+    max-width:928px;margin:0 auto;
+    /* White, so the panel is an object resting on the page. The chips
+       inside sit at page grey, which is what gives them their edge. */
     background:var(--surface);
-    border-radius:18px 18px 0 0;
-    padding:14px 16px calc(var(--above-nav) + env(safe-area-inset-bottom, 0px));
+    border:1px solid var(--line);
+    border-radius:18px;
+    padding:14px 16px 16px;
     max-height:min(52vh, 420px);
     max-height:min(52svh, 420px);
     overflow-y:auto;
-    /* Off-screen rather than hidden, so it slides rather than appears. */
-    transform:translateY(100%);
-    transition:transform var(--sheet-ease-ms) var(--sheet-ease);
-    box-shadow:0 -8px 30px rgba(0,0,0,0.13);
+    /* Grows out of the pill below it, so the two read as one motion. */
+    transform-origin:50% 100%;
+    transform:translateY(10px) scale(0.97);
+    opacity:0;
+    visibility:hidden;
+    pointer-events:none;
+    transition:transform var(--sheet-ease-ms) var(--sheet-ease),
+               opacity var(--sheet-ease-ms) var(--sheet-ease),
+               visibility var(--sheet-ease-ms);
+    box-shadow:0 10px 34px rgba(0,0,0,0.16);
   }
-  .filter-sheet.open{transform:translateY(0);}
+  .filter-sheet.open{
+    transform:translateY(0) scale(1);
+    opacity:1;
+    visibility:visible;
+    pointer-events:auto;
+  }
+  /* Following a thumb down. No easing while it is being dragged — it is
+     under your finger, not travelling on its own. */
+  .filter-sheet.dragging{transition:none;}
+  /* No title and no chevron of its own: the panel is plainly a panel of
+     filters, and the button that opened it is still on screen to close it.
+     What is left is the one thing the head was for. */
   .filter-sheet-head{
-    display:flex;align-items:center;gap:12px;
-    margin-bottom:14px;
-  }
-  .filter-sheet-title{
-    font-family:'Fraunces', serif;font-weight:500;font-size:19px;
-    margin-right:auto;
+    display:flex;align-items:center;justify-content:flex-end;
+    gap:12px;
+    margin-bottom:10px;
   }
   /* A full thumb's worth of target. The negative margin keeps the head the
      height the title gives it, so the bigger target costs the panel no
@@ -1144,18 +1152,6 @@
     background:none;border:none;color:var(--ink);
     cursor:pointer;padding:0 6px;
   }
-  /* The way down. A panel that opens itself has to be as easy to put away
-     as it was to get. */
-  .filter-sheet-collapse{
-    flex:none;
-    width:44px;height:44px;margin:-11px -11px -11px 0;
-    display:flex;align-items:center;justify-content:center;
-    border:none;border-radius:999px;
-    background:none;color:var(--ink);
-    cursor:pointer;padding:0;
-  }
-  .filter-sheet-collapse svg{width:18px;height:18px;display:block;}
-  .filter-sheet-collapse:hover{background:var(--accent-soft);}
   .filter-sheet-label{
     display:block;
     font-family:'IBM Plex Mono',monospace;
@@ -1636,14 +1632,7 @@
 
 <div class="filter-sheet" id="filter-sheet" inert>
   <div class="filter-sheet-head">
-    <span class="filter-sheet-title" id="filter-sheet-title">Filters</span>
     <button class="filter-sheet-clear" id="filter-sheet-clear" onclick="clearFilters()">Clear all</button>
-    <button class="filter-sheet-collapse" id="filter-sheet-collapse" onclick="closeFilterSheet()"
-            aria-label="Collapse filters" title="Collapse filters">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M6 10l6 6 6-6"/>
-      </svg>
-    </button>
   </div>
   <div class="filter-sheet-body" id="filter-sheet-body" data-filter-ns="sheet"></div>
 </div>
@@ -1661,8 +1650,8 @@
     </svg>
     Shuffle
   </button>
-  <button class="filters-fab stood-down" id="filters-fab" type="button"
-          onclick="openFilterSheet()"></button>
+  <button class="filters-fab" id="filters-fab" type="button"
+          onclick="toggleFilterSheet()"></button>
 </div>
 
 <nav class="bottom-bar" id="bottom-bar">
@@ -2290,19 +2279,25 @@ function activeFilterCount(){
 function renderFiltersFab(){
   const fab = document.getElementById('filters-fab');
   if(!fab) return;
-  // Two levels of gone: a page with nothing to filter never has a pill at
-  // all, while a page whose panel is up has one that has animated away.
+  // A page with nothing to filter has no pill at all. The pill stays put
+  // while the panel is up, because it is the way out as well as the way
+  // in — a control that leaves the moment you use it makes you hunt for a
+  // second one to undo it.
   const relevant = filterSheetHasContent();
   fab.style.display = relevant ? 'flex' : 'none';
-  fab.classList.toggle('stood-down', !relevant || filterSheetOpen());
 
+  const up = filterSheetOpen();
   const n = activeFilterCount();
   fab.classList.toggle('active', n > 0);
+  fab.setAttribute('aria-expanded', String(up));
+  fab.setAttribute('aria-label', up ? 'Close filters' : 'Filters');
+  fab.title = up ? 'Close filters' : 'Filters';
+  // The arrow points the way the panel will go, which is the other way
+  // each time you press it.
   fab.innerHTML = `
-    <span class="filters-fab-label">Filters</span>
     <svg class="filters-fab-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor"
          stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-      <path d="M6 14l6-6 6 6"/>
+      <path d="${up ? 'M6 10l6 6 6-6' : 'M6 14l6-6 6 6'}"/>
     </svg>
     ${n ? `<span class="filters-fab-count">${n}</span>` : ''}`;
 
@@ -2401,8 +2396,13 @@ function renderFilterControls(){
     setLabelCount(`${ns}-without-count`, countWithoutSlots(slots));
   });
 
+  // Clear all is the only thing left in the head, so the head goes with
+  // it rather than leaving a band of air above the first row.
   const clear = document.getElementById('filter-sheet-clear');
-  if(clear) clear.style.display = activeFilterCount() ? 'inline-flex' : 'none';
+  const head = document.querySelector('#filter-sheet .filter-sheet-head');
+  const anything = activeFilterCount() > 0;
+  if(clear) clear.style.display = anything ? 'inline-flex' : 'none';
+  if(head) head.style.display = anything ? 'flex' : 'none';
 
   // Tagging a piece can give the panel a row it did not have, which changes
   // how much room the page has to leave under it.
@@ -2428,7 +2428,20 @@ function filterSheetOpen(){
 function syncSheetInset(){
   const sheet = document.getElementById('filter-sheet');
   if(!sheet) return;
-  const inset = filterSheetOpen() ? sheet.offsetHeight : 0;
+  // How much of the page's foot the panel is standing over, beyond what
+  // the page already leaves for the floating row and the nav. It floats
+  // clear of the bottom edge now, so its height alone is not how far up
+  // the screen it reaches — how far up it sits has to be added.
+  //
+  // Taken from its own box rather than from getBoundingClientRect, which
+  // includes the transform it opens and is dragged by: measuring mid-
+  // flight reserved a few pixels too few, and the last row of the grid
+  // could not quite be scrolled clear.
+  const BASE_FOOT = 120;   // matches .wrap's own padding-bottom
+  const lift = parseFloat(getComputedStyle(sheet).bottom) || 0;
+  const inset = filterSheetOpen()
+    ? Math.max(0, Math.round(lift + sheet.offsetHeight - BASE_FOOT))
+    : 0;
   document.documentElement.style.setProperty('--sheet-inset', inset + 'px');
 }
 
@@ -2449,7 +2462,7 @@ function focusTheFiltersPill(){
   const deadline = Date.now() + 600;
   const attempt = () => {
     const fab = document.getElementById('filters-fab');
-    if(!fab || fab.classList.contains('stood-down')) return;
+    if(!fab) return;
     if(getComputedStyle(fab).visibility !== 'hidden'){ fab.focus(); return; }
     if(Date.now() < deadline) requestAnimationFrame(attempt);
   };
@@ -2485,6 +2498,99 @@ function closeFilterSheet(){
   renderFiltersFab();
   // After the pill, so there is somewhere for focus to land.
   syncSheetReach();
+}
+
+// One button, both directions. The pill stays on screen while the panel is
+// up, so the way out is where the way in was rather than a second control
+// somewhere inside what just opened.
+function toggleFilterSheet(){
+  if(filterSheetOpen()) closeFilterSheet();
+  else openFilterSheet();
+}
+
+// ---- Putting the panel away with your thumb ----------------
+//
+// It opens upwards out of its button, so the gesture that puts it away is
+// pushing it back down — anywhere on it, not on a handle you have to find
+// first.
+//
+// Two things have to be true before a downward drag means "close" rather
+// than "scroll": the panel has to be at the top of its own scroll, and the
+// finger has to be going down rather than sideways. The chip rows inside
+// scroll sideways, and a thumb never moves in a straight line, so a drag
+// that starts off horizontal belongs to the row it started on.
+const SHEET_DRAG_CLOSE = 56;   // how far down is far enough to mean it
+
+let sheetDrag = null;
+
+function sheetDragStart(e){
+  const sheet = document.getElementById('filter-sheet');
+  if(!sheet || !filterSheetOpen()) return;
+  if(e.pointerType === 'mouse' && e.button !== 0) return;
+  sheetDrag = {
+    id: e.pointerId,
+    x: e.clientX, y: e.clientY,
+    dy: 0,
+    // Only a panel already at its top can be pulled down; anywhere else
+    // the gesture is the panel's own scrolling.
+    eligible: sheet.scrollTop <= 0,
+    decided: false,
+    pulling: false,
+  };
+}
+
+function sheetDragMove(e){
+  const sheet = document.getElementById('filter-sheet');
+  if(!sheetDrag || !sheet || e.pointerId !== sheetDrag.id) return;
+
+  const dx = e.clientX - sheetDrag.x;
+  const dy = e.clientY - sheetDrag.y;
+  sheetDrag.dy = dy;
+
+  // Which way is this going? Settled once, at the first real movement, so
+  // a drift part-way through cannot steal the gesture from the row you
+  // started on.
+  if(!sheetDrag.decided && Math.abs(dx) + Math.abs(dy) > 8){
+    sheetDrag.decided = true;
+    sheetDrag.pulling = sheetDrag.eligible && dy > Math.abs(dx);
+    if(sheetDrag.pulling){
+      sheet.classList.add('dragging');
+      // The panel follows the finger from here; the browser must stop
+      // trying to scroll something with the same movement.
+      try{ sheet.setPointerCapture(e.pointerId); }catch(err){ }
+    }
+  }
+  if(!sheetDrag.pulling) return;
+
+  // Downward only, and stiffening as it goes — a panel that slid a whole
+  // screen would look like it had come loose.
+  const travel = Math.max(0, dy);
+  const eased = travel <= SHEET_DRAG_CLOSE
+    ? travel
+    : SHEET_DRAG_CLOSE + (travel - SHEET_DRAG_CLOSE) * 0.4;
+  sheet.style.transform = `translateY(${eased}px) scale(1)`;
+  sheet.style.opacity = String(Math.max(0.35, 1 - travel / 320));
+}
+
+function sheetDragEnd(e){
+  const sheet = document.getElementById('filter-sheet');
+  if(!sheetDrag || !sheet) return;
+  const pulled = sheetDrag.pulling ? sheetDrag.dy : 0;
+  sheetDrag = null;
+
+  sheet.classList.remove('dragging');
+  sheet.style.transform = '';
+  sheet.style.opacity = '';
+  if(pulled >= SHEET_DRAG_CLOSE) closeFilterSheet();
+}
+
+function wireSheetDrag(){
+  const sheet = document.getElementById('filter-sheet');
+  if(!sheet) return;
+  sheet.addEventListener('pointerdown', sheetDragStart);
+  sheet.addEventListener('pointermove', sheetDragMove);
+  sheet.addEventListener('pointerup', sheetDragEnd);
+  sheet.addEventListener('pointercancel', sheetDragEnd);
 }
 
 // An open panel is a thing you are doing; going back to the page is
@@ -4823,7 +4929,16 @@ async function boot(){
   // The docked panel's height decides how much room the page leaves under
   // itself, and that changes with the screen.
   wireTagLongPress(document.getElementById('filter-sheet'));
+  wireSheetDrag();
   window.addEventListener('resize', syncSheetInset);
+  // The panel's height decides how much room the page leaves under it, and
+  // it changes for reasons that do not go through any one function: a tag
+  // added, a row wrapping, Clear all arriving and taking the head with it.
+  // Measuring on each of those meant measuring before the layout settled
+  // and reserving a few pixels too few — so the panel is watched instead.
+  if(window.ResizeObserver){
+    new ResizeObserver(syncSheetInset).observe(document.getElementById('filter-sheet'));
+  }
   // Kept up to date as you scroll as well as when you leave a page, so a
   // reload inside the same visit lands where you were too.
   let scrollTick = null;

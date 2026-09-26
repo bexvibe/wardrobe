@@ -53,8 +53,10 @@ const TAGS={seed_22:['summer'], seed_11:['summer'], seed_23:['winter']};
 
   check('saved tab shows all outfits unfiltered',
     (await p.evaluate(()=>document.querySelectorAll('#saved-gallery .outfit-card').length))===3);
-  check('the filters are already down, not behind a pill',
-    (await p.evaluate(()=>filterSheetOpen())) && !(await p.isVisible('#filters-fab')));
+  // The pill stays whether the panel is up or down — it is the way out as
+  // well as the way in — so what says the panel is up is the panel.
+  check('the filters are already up, not waiting behind a button',
+    (await p.evaluate(()=>filterSheetOpen())) && (await p.isVisible('#filters-fab')));
   check('and they offer the saved tags', await p.isVisible('#sheet-tag-chips .tag-chip'));
   const cards=()=>p.evaluate(()=>document.querySelectorAll('#saved-gallery .outfit-card').length);
   check('3 cards rendered', await cards()===3);
