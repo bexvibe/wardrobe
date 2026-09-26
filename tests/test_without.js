@@ -82,6 +82,18 @@ const label = (p, id) => p.evaluate(i =>
       `pressed=${look.pressed} haspopup=${look.opens}`);
     check('a full thumb like every other chip', look.tall >= 44, `${look.tall}px`);
 
+    // First of the three. It is the quickest question — one tap, nothing
+    // behind it — and the panel opens against the foot of the screen, so
+    // the top row is the one nearest a thumb.
+    check('and its row leads the panel',
+      JSON.stringify(await p.evaluate(()=>Array.from(
+        document.querySelectorAll('#filter-sheet .filter-sheet-label'))
+          .map(e=>e.textContent.trim().replace(/\s*\(\d+\)$/,'')))) ===
+        JSON.stringify(['Without','Tags','Pieces']),
+      (await p.evaluate(()=>Array.from(
+        document.querySelectorAll('#filter-sheet .filter-sheet-label'))
+          .map(e=>e.textContent.trim()))).join(' / '));
+
     check('only the categories worth ruling out get a chip',
       JSON.stringify(await p.evaluate(()=>Array.from(
         document.querySelectorAll('#sheet-without-chips .tag-chip'))

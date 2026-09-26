@@ -2309,8 +2309,15 @@ const FILTER_MOUNTS = [
   { ns: 'sheet', mode: null },
 ];
 
+// Without first. It is the quickest question of the three — one tap, no
+// picker behind it — and the panel opens against the foot of the screen,
+// so the top row is the one nearest your thumb.
 function filterControlsHtml(ns){
   return `
+    <div class="filter-section">
+      <span class="filter-sheet-label">Without<span class="label-count" id="${ns}-without-count"></span></span>
+      <div class="tag-chips chip-row" id="${ns}-without-chips"></div>
+    </div>
     <div class="filter-section">
       <span class="filter-sheet-label">Tags<span class="label-count" id="${ns}-tag-count"></span></span>
       <div class="tag-chips chip-row" id="${ns}-tag-chips"></div>
@@ -2318,10 +2325,6 @@ function filterControlsHtml(ns){
     <div class="filter-section">
       <span class="filter-sheet-label">Pieces<span class="label-count" id="${ns}-piece-count"></span></span>
       <div class="filter-grid chip-row" id="${ns}-filter-grid"></div>
-    </div>
-    <div class="filter-section">
-      <span class="filter-sheet-label">Without<span class="label-count" id="${ns}-without-count"></span></span>
-      <div class="tag-chips chip-row" id="${ns}-without-chips"></div>
     </div>`;
 }
 
