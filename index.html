@@ -695,14 +695,15 @@
   .bottom-btn.active{background:var(--accent);color:#fff;}
   .bottom-icon{font-size:14px;line-height:1;}
 
-  /* The destination you are on opens to hold its switch. Every destination
-     grows to match, so the bar keeps one height rather than stepping up
-     around the one that is open.
-
-     The name of the destination is one half of that switch rather than a
+  /* One destination holding two ways in, and both are always on the bar.
+     The name of the destination is one half of the switch rather than a
      label sitting beside it: you arrive on everything, so the word is
      already what "everything" is called, and a separate All said the same
-     thing twice and cost the bar fifty pixels to say it. */
+     thing twice.
+     The heart stays out here rather than appearing once you are on the
+     destination — what you kept is one tap from anywhere, and a control
+     that only exists after you arrive is one you have to know about
+     already. */
   .bottom-btn{min-height:52px;}
   .bottom-btn.nav-switch{
     display:flex;gap:2px;
@@ -720,12 +721,15 @@
     border:none;background:none;border-radius:999px;
     font-family:'Work Sans',sans-serif;
     font-size:13px;font-weight:600;
-    color:rgba(255,255,255,0.72);
+    /* Off the destination it is a plain label like the two beside it; on
+       it, the pill is dark and both halves lighten to sit on it. */
+    color:var(--ink-soft);
     cursor:pointer;
     transition:background var(--sheet-ease-ms) var(--sheet-ease),
                color var(--sheet-ease-ms) var(--sheet-ease);
   }
-  .nav-seg.on{background:#fff;color:var(--ink);}
+  .bottom-btn.active .nav-seg{color:rgba(255,255,255,0.72);}
+  .bottom-btn.active .nav-seg.on{background:#fff;color:var(--ink);}
   /* The heart the cards use. Dimmed rather than drawn as an outline when
      it is off, so the two segments read as one switch with a lit half
      instead of as two different marks. */
@@ -1876,14 +1880,12 @@ function renderBottomBar(){
   bar.innerHTML = `
     <button class="bottom-btn ${appMode === 'inventory' || appMode === 'archive' ? 'active' : ''}"
             id="nav-inventory-btn" type="button" onclick="setMode('inventory')">Wardrobe</button>
-    ${onOutfits
-      ? `<span class="bottom-btn active nav-switch" role="group" aria-label="Which outfits">
-           ${seg('nav-outfits-btn', !kept, 'Outfits', `onclick="setMode('outfits')"`)}
-           ${seg('nav-saved-btn', kept, '<span class="nav-heart">&hearts;</span>',
-                 `onclick="setMode('saved')" aria-label="Faves"`)}
-         </span>`
-      : `<button class="bottom-btn" id="nav-outfits-btn" type="button"
-                 onclick="setMode('outfits')">Outfits</button>`}
+    <span class="bottom-btn nav-switch ${onOutfits ? 'active' : ''}"
+          role="group" aria-label="Which outfits">
+      ${seg('nav-outfits-btn', onOutfits && !kept, 'Outfits', `onclick="setMode('outfits')"`)}
+      ${seg('nav-saved-btn', kept, '<span class="nav-heart">&hearts;</span>',
+            `onclick="setMode('saved')" aria-label="Faves"`)}
+    </span>
     ${capsulesAvailable
       ? `<button class="bottom-btn ${appMode === 'capsules' ? 'active' : ''}"
                  id="nav-capsules-btn" type="button" onclick="setMode('capsules')">Capsules</button>`

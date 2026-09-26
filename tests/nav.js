@@ -2,17 +2,13 @@
 // does.
 //
 // Faves is a switch inside Outfits rather than a destination of its own,
-// and the switch is only in the bar once you are on that destination. So
-// reaching what you kept from the wardrobe is two taps, not one, and a
-// test that wants to be there has to take both — which is also the point:
-// if the bar stops offering the switch, every suite that goes to Faves
-// says so.
+// but both halves of that switch are on the bar at all times, so either is
+// one tap from anywhere. Going through here rather than through a raw
+// click means a suite that only wants to be on a page says so, and the
+// one suite that is about the bar itself is where the bar is checked.
 module.exports = {
-  // The kept half. Safe to call from anywhere, including from the other
-  // half, where the first tap is a no-op.
+  // The kept half.
   async toFaves(page, settle){
-    await page.click('#nav-outfits-btn');
-    await page.waitForSelector('#nav-saved-btn');
     await page.click('#nav-saved-btn');
     await page.waitForFunction(() => appMode === 'saved');
     await page.waitForTimeout(settle === undefined ? 900 : settle);

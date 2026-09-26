@@ -64,14 +64,26 @@ const cards = p => p.evaluate(()=>
   {
     const p=await open(b);
     check('three destinations, not four',
-      JSON.stringify(await dests(p)) === JSON.stringify(['Wardrobe','Outfits','Capsules']),
+      JSON.stringify(await dests(p)) === JSON.stringify(['Wardrobe','Outfits ♥','Capsules']),
       (await dests(p)).join(' | '));
-    check('and no switch while you are somewhere else', (await segs(p)).length === 0);
+    // Both ways in are on the bar from the start: what you kept is one tap
+    // from the wardrobe, not a control you have to arrive somewhere to
+    // find.
+    const cold = await segs(p);
+    check('the switch is there before you go anywhere', cold.length === 2,
+      JSON.stringify(cold));
+    check('with neither half lit, because you are not there yet',
+      !cold[0].on && !cold[1].on);
+    check('and the heart goes straight to what you kept', await (async()=>{
+      await p.click('#nav-saved-btn');
+      await p.waitForFunction(()=>appMode === 'saved');
+      await p.waitForTimeout(1000);
+      return (await segs(p))[1].on;
+    })());
 
     await p.click('#nav-outfits-btn'); await p.waitForTimeout(1400);
     const s = await segs(p);
-    check('arriving opens the destination to hold its switch', s.length === 2,
-      JSON.stringify(s));
+    check('and the word goes to everything', s.length === 2, JSON.stringify(s));
     check('which starts on everything', s[0].id === 'nav-outfits-btn' && s[0].on && !s[1].on);
     check('and the name of the destination is that half',
       (await p.textContent('#nav-outfits-btn')).trim() === 'Outfits',
@@ -91,13 +103,18 @@ const cards = p => p.evaluate(()=>
       (await p.textContent('#nav-saved-btn')).trim() === '♥',
       (await p.textContent('#nav-saved-btn')).trim());
 
-    // It has to fit next to two other labels on a small phone.
-    const fits = await p.evaluate(()=>{
-      const bar = document.getElementById('bottom-bar').getBoundingClientRect();
-      return {w: Math.round(bar.width), room: Math.round(window.innerWidth - 32)};
-    });
-    check('and the bar still fits the screen', fits.w <= fits.room,
-      `${fits.w} of ${fits.room}`);
+    // It has to fit next to two other labels on a small phone, and it is
+    // the same bar wherever you are — nothing grows or shrinks underneath
+    // your thumb as you move between destinations.
+    const width = () => p.evaluate(()=>
+      Math.round(document.getElementById('bottom-bar').getBoundingClientRect().width));
+    const room = await p.evaluate(()=>Math.round(window.innerWidth - 32));
+    const onAll = await width();
+    check('and the bar still fits the screen', onAll <= room, `${onAll} of ${room}`);
+    await p.click('#nav-inventory-btn'); await p.waitForTimeout(700);
+    check('and is the same bar on every page', (await width()) === onAll,
+      `${await width()} vs ${onAll}`);
+    await p.click('#nav-outfits-btn'); await p.waitForTimeout(1300);
     check('with nothing pushed off the side',
       !(await p.evaluate(()=>document.documentElement.scrollWidth > window.innerWidth)));
     await p.close();
