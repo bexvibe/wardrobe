@@ -107,9 +107,10 @@ const foldedCount = p => p.evaluate(()=>
 
     const placed = await p.evaluate(()=>{
       const f = document.getElementById('filters-fab').getBoundingClientRect();
+      const row = document.getElementById('float-row').getBoundingClientRect();
       const n = document.getElementById('bottom-bar').getBoundingClientRect();
       return {
-        fabMid: Math.round((f.left + f.right) / 2),
+        rowMid: Math.round((row.left + row.right) / 2),
         navMid: Math.round((n.left + n.right) / 2),
         gap: Math.round(n.top - f.bottom),
         h: Math.round(f.height),
@@ -117,9 +118,12 @@ const foldedCount = p => p.evaluate(()=>
       };
     });
     // It used to sit right-aligned, overshooting the nav's right edge by
-    // 16px and lining up with nothing.
-    check('the pill is centred on the nav bar', placed.fabMid === placed.navMid,
-      `${placed.fabMid} vs ${placed.navMid}`);
+    // 16px and lining up with nothing. It is centred as a pair now, with
+    // the shuffle beside it, so the row is what lines up rather than
+    // either pill on its own.
+    check('the floating pair is centred on the nav bar',
+      Math.abs(placed.rowMid - placed.navMid) <= 1,
+      `${placed.rowMid} vs ${placed.navMid}`);
     check('and sits just above it, not on it', placed.gap > 4 && placed.gap < 40,
       `${placed.gap}px`);
     check('it is a pill, not a bar', placed.w < 200, `${placed.w}x${placed.h}`);

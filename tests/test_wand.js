@@ -55,11 +55,20 @@ const stream = p => p.evaluate(()=>outfitDisplayed.slice(0, 8).map(c=>comboKey(c
     await p.click('#nav-outfits-btn'); await p.waitForTimeout(1500);
     check('it is there on the half that deals', await shown(p));
     const r = await box(p);
-    check('a full thumb', r.w >= 44 && r.h >= 44, `${r.w}x${r.h}`);
-    check('at the right edge, out of the middle where the pill is',
-      r.right === 16, `${r.right}px from the right`);
-    check('and it says what it does to a screen reader',
-      (await p.getAttribute('#shuffle-fab', 'aria-label')) === 'Shuffle the outfits');
+    check('a full thumb', r.h >= 44, `${r.w}x${r.h}`);
+    // It carries its word as well as its icon, so it needs no label of its
+    // own — the word is the label.
+    check('it says what it is', (await p.textContent('#shuffle-fab')).trim() === 'Shuffle',
+      (await p.textContent('#shuffle-fab')).trim());
+    check('and draws the wand rather than typing one',
+      await p.evaluate(()=>Boolean(document.querySelector('#shuffle-fab .wand path'))));
+    check('in the one colour the app allows itself',
+      await p.evaluate(()=>{
+        const bg = getComputedStyle(document.getElementById('shuffle-fab')).backgroundColor;
+        const brand = getComputedStyle(document.documentElement)
+          .getPropertyValue('--brand').trim();
+        return bg === 'rgb(117, 102, 148)' && brand === '#756694';
+      }));
 
     // The panel's chips run to its foot, so the wand has to be above them.
     const open1 = await p.evaluate(()=>{
@@ -80,6 +89,19 @@ const stream = p => p.evaluate(()=>outfitDisplayed.slice(0, 8).map(c=>comboKey(c
       const pill = document.getElementById('filters-fab').getBoundingClientRect();
       return Math.abs(fab.bottom - pill.bottom) <= 2;
     }));
+    // Measured with the panel shut, because a pill mid-stand-down is
+    // scaled and shifted and its box is not where it lives.
+    check('immediately to the left of the filters pill',
+      await p.evaluate(()=>{
+        const row = document.getElementById('float-row');
+        const kids = Array.from(row.children);
+        const shuffle = document.getElementById('shuffle-fab');
+        const filters = document.getElementById('filters-fab');
+        const gap = Math.round(filters.getBoundingClientRect().left -
+                               shuffle.getBoundingClientRect().right);
+        return kids[0] === shuffle && kids[1] === filters && gap === 8;
+      }));
+
     check('and clear of the nav', await p.evaluate(()=>{
       const fab = document.getElementById('shuffle-fab').getBoundingClientRect();
       const bar = document.getElementById('bottom-bar').getBoundingClientRect();
