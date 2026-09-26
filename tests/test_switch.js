@@ -64,7 +64,7 @@ const cards = p => p.evaluate(()=>
   {
     const p=await open(b);
     check('three destinations, not four',
-      JSON.stringify(await dests(p)) === JSON.stringify(['Wardrobe','Outfits ♡','Capsules']),
+      JSON.stringify(await dests(p)) === JSON.stringify(['Wardrobe','Outfits','Capsules']),
       (await dests(p)).join(' | '));
     // Both ways in are on the bar from the start: what you kept is one tap
     // from the wardrobe, not a control you have to arrive somewhere to
@@ -99,14 +99,22 @@ const cards = p => p.evaluate(()=>
         return Boolean(dest) && dest.classList.contains('active') &&
                dest.querySelectorAll('.nav-seg').length === 2;
       }));
-    // The pair the cards use: hollow until it is the one you are on.
+    // The pair the cards use, drawn rather than typed: one shape, hollow
+    // until it is the half you are on. Read from the path's fill, since a
+    // drawn heart has no text to compare.
+    const heartFill = () => p.evaluate(()=>
+      document.querySelector('#nav-saved-btn .heart-glyph').getAttribute('fill'));
     check('the kept half is hollow while you are on everything',
-      (await p.textContent('#nav-saved-btn')).trim() === '♡',
-      (await p.textContent('#nav-saved-btn')).trim());
+      (await heartFill()) === 'none', await heartFill());
     await p.click('#nav-saved-btn'); await p.waitForTimeout(1100);
     check('and fills when it is',
-      (await p.textContent('#nav-saved-btn')).trim() === '♥',
-      (await p.textContent('#nav-saved-btn')).trim());
+      (await heartFill()) === 'currentColor', await heartFill());
+    check('the same drawing either way, so it cannot change width',
+      await p.evaluate(()=>{
+        const svg = document.querySelector('#nav-saved-btn .heart-glyph');
+        const box = svg.getBoundingClientRect();
+        return Math.round(box.width) === 17 && Math.round(box.height) === 17;
+      }));
     await p.click('#nav-outfits-btn'); await p.waitForTimeout(1300);
 
     // It has to fit next to two other labels on a small phone, and it is

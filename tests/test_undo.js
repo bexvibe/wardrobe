@@ -286,8 +286,14 @@ async function holdFirstTile(p){
     // the same mark the cards use — so the page is where the word lives.
     await toFaves(p, 600);
     check('the switch is the heart the cards use',
-      (await p.textContent('#nav-saved-btn')).trim() === '\u2665',
-      (await p.textContent('#nav-saved-btn')).trim());
+      await p.evaluate(()=>{
+        const navPath = document.querySelector('#nav-saved-btn .heart-glyph path');
+        // What a card would draw, from the one function that draws it.
+        const drawn = document.createElement('div');
+        drawn.innerHTML = heartSvg(true);
+        const cardPath = drawn.querySelector('path');
+        return Boolean(navPath) && navPath.getAttribute('d') === cardPath.getAttribute('d');
+      }));
     check('so does the page',
       (await p.textContent('#saved-view h1')).trim() === 'Faves');
     check('and the empty state',

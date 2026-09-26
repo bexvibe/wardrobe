@@ -610,10 +610,14 @@
     display:flex;align-items:center;justify-content:center;
     border:none;border-radius:999px;
     background:rgba(255,255,255,0.88);
-    font-size:24px;line-height:1;color:var(--ink-soft);
+    line-height:1;color:var(--ink-soft);
     cursor:pointer;z-index:2;
   }
   .outfit-fav-btn.favorited{color:var(--ink);}
+  /* Drawn, not typed — see heartSvg. Sized here rather than by a font
+     size, so it is the same shape at both sizes it is used at. */
+  .heart-glyph{display:block;width:22px;height:22px;}
+  .nav-heart .heart-glyph{width:17px;height:17px;}
 
   .toast{
     position:fixed;
@@ -747,7 +751,7 @@
   /* The pair the cards use: hollow for not, filled for yes. The same mark
      doing the same job one size up — a card's heart says this outfit is
      kept, this one says show me the kept ones. */
-  .nav-heart{font-size:17px;line-height:1;}
+  .nav-heart{display:flex;align-items:center;justify-content:center;}
 
   /* Password gate */
   .gate{
@@ -1952,7 +1956,7 @@ function renderBottomBar(){
           role="group" aria-label="Which outfits">
       ${seg('nav-outfits-btn', onOutfits && !kept, 'Outfits', `onclick="setMode('outfits')"`)}
       ${seg('nav-saved-btn', kept,
-            `<span class="nav-heart">${kept ? '&hearts;' : '&#9825;'}</span>`,
+            `<span class="nav-heart">${heartSvg(kept)}</span>`,
             `onclick="setMode('saved')" aria-label="Faves"`)}
     </span>
     ${capsulesAvailable
@@ -3041,6 +3045,27 @@ function comboCountWhere(untaggedOnly){
   }, 0);
 }
 
+// The heart, drawn rather than typed.
+//
+// It used to be ♥ and ♡, and neither is in Work Sans or Fraunces — so the
+// browser quietly substituted whichever system font had them, which is a
+// different font on every platform, and on Apple's often the colour emoji
+// one for the filled heart only. Even on one machine the two did not
+// match each other: measured at the same size the hollow one came out
+// half again as wide as the filled one, so the control changed width as
+// you tapped it.
+//
+// One path, stroked for empty and filled for kept. It is the size it is
+// told to be, it is whatever colour it inherits, and it is the same shape
+// everywhere — which is the least you can ask of the mark this whole app
+// is organised around.
+function heartSvg(filled){
+  return `<svg class="heart-glyph" viewBox="0 0 24 24" aria-hidden="true"
+    fill="${filled ? 'currentColor' : 'none'}" stroke="currentColor"
+    stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path
+    d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>`;
+}
+
 // Whether the wardrobe could make an outfit at all, whatever is filtered.
 // A top and a bottom, or a dress — the two shapes the generator knows.
 function wardrobeCanMakeOutfits(){
@@ -3175,8 +3200,9 @@ function renderHero(){
   const isExpanded = expandedComboKey === key;
   host.innerHTML = `
     <div class="outfit-card hero-card ${isExpanded ? 'expanded' : ''}" onclick='toggleExpandCombo(${JSON.stringify(key)})'>
-      <button class="outfit-fav-btn ${fav ? 'favorited' : ''}"
-              onclick='event.stopPropagation();toggleFavoriteByKey(${JSON.stringify(key)})'>${fav ? '♥' : '♡'}</button>
+      <button class="outfit-fav-btn ${fav ? 'favorited' : ''}" type="button"
+              aria-pressed="${fav}" aria-label="${fav ? 'Kept' : 'Keep this outfit'}"
+              onclick='event.stopPropagation();toggleFavoriteByKey(${JSON.stringify(key)})'>${heartSvg(fav)}</button>
       <div class="outfit-thumbs">${outfitThumbsHtml(heroCombo)}</div>
       ${isExpanded ? outfitExpandedPanelHtml(heroCombo, key, {canHide:true}) : ''}
     </div>`;
@@ -3505,7 +3531,9 @@ function renderSavedOutfits(){
       : '';
 
     return `<div class="outfit-card ${isExpanded ? 'expanded' : ''}" onclick='toggleExpandSaved(${JSON.stringify(rec.key)})'>
-      <button class="outfit-fav-btn favorited" onclick='event.stopPropagation();unfavoriteByKey(${JSON.stringify(rec.key)})'>♥</button>
+      <button class="outfit-fav-btn favorited" type="button"
+              aria-pressed="true" aria-label="Kept"
+              onclick='event.stopPropagation();unfavoriteByKey(${JSON.stringify(rec.key)})'>${heartSvg(true)}</button>
       <div class="outfit-thumbs">${thumbs}</div>
       ${expandedPanel}
     </div>`;
@@ -3905,7 +3933,10 @@ function renderOutfits(){
     const expandedPanel = isExpanded ? outfitExpandedPanelHtml(combo, key, {canHide:true}) : '';
 
     return `<div class="outfit-card ${isExpanded ? 'expanded' : ''}" onclick='toggleExpandCombo(${JSON.stringify(key)})'>
-      <button class="outfit-fav-btn ${isFavorited(key) ? 'favorited' : ''}" onclick='event.stopPropagation();toggleFavoriteByKey(${JSON.stringify(key)})'>${isFavorited(key) ? '♥' : '♡'}</button>
+      <button class="outfit-fav-btn ${isFavorited(key) ? 'favorited' : ''}" type="button"
+              aria-pressed="${isFavorited(key)}"
+              aria-label="${isFavorited(key) ? 'Kept' : 'Keep this outfit'}"
+              onclick='event.stopPropagation();toggleFavoriteByKey(${JSON.stringify(key)})'>${heartSvg(isFavorited(key))}</button>
       <div class="outfit-thumbs">${thumbs}</div>
       ${expandedPanel}
     </div>`;

@@ -42,8 +42,14 @@ const check=(n,p,d)=>{results.push(p);console.log(`${p?'PASS':'FAIL'}  ${n}${d?'
       const l=combo?outfitLayout(combo):null;
       const card=document.querySelector('#outfit-gallery .outfit-card');
       return {
-        hasUpper:!!card.querySelector('.outfit-upper'),
-        hasLower:!!card.querySelector('.outfit-lower'),
+        // Asked of the gallery rather than of the first card: a dress
+        // with nothing over it has a lower row and no upper one, and
+        // which outfit leads the grid depends on the visit's shuffle and
+        // on which one the lead card took out of it.
+        hasUpper:[...document.querySelectorAll('#outfit-gallery .outfit-card')]
+          .some(c=>c.querySelector('.outfit-upper')),
+        hasLower:[...document.querySelectorAll('#outfit-gallery .outfit-card')]
+          .every(c=>c.querySelector('.outfit-lower')),
         // upper must be layers+top, lower must be the bottom
         upperIsWornTop: l? l.upper[0]===combo.jacket && l.upper[l.upper.length-1]===combo.top : false,
         lowerIsBottom: l? l.lower===combo.bottom : false,
