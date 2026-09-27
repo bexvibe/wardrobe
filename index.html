@@ -510,7 +510,10 @@
     box-shadow:0 -10px 34px rgba(0,0,0,0.18);
     /* Off the bottom rather than hidden, so it arrives by travelling. */
     transform:translateY(100%);
-    transition:transform var(--sheet-ease-ms) var(--sheet-ease);
+    /* Opacity too: a drag fades the sheet as it goes, and letting go has to
+       bring it back on the same curve rather than popping it to full. */
+    transition:transform var(--sheet-ease-ms) var(--sheet-ease),
+               opacity var(--sheet-ease-ms) var(--sheet-ease);
   }
   .modal-backdrop.open .modal{transform:translateY(0);}
   /* Following a thumb: no easing while it is under your finger. */
@@ -2702,8 +2705,30 @@ function dragMove(e){
   el.style.opacity = String(Math.max(0.35, 1 - travel / 320));
 }
 
+// A finger has a second claimant: the browser, which reads a drag on
+// something scrollable as a scroll. The moment it takes the gesture it
+// sends pointercancel and stops sending moves, so on a phone a pull-down
+// used to get about ten pixels — the panel twitched down and sprang back,
+// grip and all, and never closed. A mouse has no such rival, which is why
+// the suites never saw it. So while a pull-down is what this gesture is,
+// the touch is held back from the browser. Only then: a drag up is still
+// the thing scrolling, and a drag across still belongs to its row.
+function holdTouchForDrag(el, e){
+  if(!sheetDrag || sheetDrag.el !== el || !sheetDrag.eligible) return;
+  if(e.touches.length !== 1 || !e.cancelable) return;
+  const t = e.touches[0];
+  const dx = t.clientX - sheetDrag.x;
+  const dy = t.clientY - sheetDrag.y;
+  // Before the direction is settled, the same rule that will settle it.
+  const pulling = sheetDrag.decided ? sheetDrag.pulling : dy > Math.abs(dx);
+  if(pulling) e.preventDefault();
+}
+
+// onClose is null for a cancelled pointer: whatever took the gesture away
+// (the system, a second finger) did not mean "close", so it springs back.
 function dragEnd(onClose, e){
   if(!sheetDrag) return;
+  if(e && e.pointerId !== sheetDrag.id) return;
   const el = sheetDrag.el;
   const pulled = sheetDrag.pulling ? sheetDrag.dy : 0;
   sheetDrag = null;
@@ -2711,7 +2736,7 @@ function dragEnd(onClose, e){
   el.classList.remove('dragging');
   el.style.transform = '';
   el.style.opacity = '';
-  if(pulled >= SHEET_DRAG_CLOSE) onClose();
+  if(onClose && pulled >= SHEET_DRAG_CLOSE) onClose();
 }
 
 // Hands a thing the gesture. `isOpen` so a drag on something already down
@@ -2721,7 +2746,9 @@ function wireDragToClose(el, isOpen, onClose){
   el.addEventListener('pointerdown', e => dragStart(el, isOpen, e));
   el.addEventListener('pointermove', dragMove);
   el.addEventListener('pointerup', e => dragEnd(onClose, e));
-  el.addEventListener('pointercancel', e => dragEnd(onClose, e));
+  el.addEventListener('pointercancel', e => dragEnd(null, e));
+  // Not passive: it has to be able to say no to the browser's scroll.
+  el.addEventListener('touchmove', e => holdTouchForDrag(el, e), {passive: false});
 }
 
 // A sheet only answers the gesture when what is on it can be walked away

@@ -160,6 +160,28 @@ The four editors now leave the way the pickers do.
 
 ---
 
+## Drag-to-close on a real phone — fixed
+
+On a touchscreen the pull-down barely worked: the sheet (grip included)
+twitched down about ten pixels, sprang back, and never closed. The browser
+reads a finger dragging on something scrollable as a scroll, takes the
+gesture after a couple of moves, and sends `pointercancel`; the suites only
+ever dragged with a mouse, which has no such rival, so they never saw it.
+
+- `holdTouchForDrag` — a non-passive `touchmove` on anything wired with
+  `wireDragToClose` calls `preventDefault` only while the gesture is a
+  pull-down from the top (same rule that decides `pulling`). Drag up still
+  scrolls; a drag across still belongs to its row; draft sheets are
+  untouched. Fixes the piece sheet, the slot picker and the filter panel.
+- `pointercancel` now springs the sheet back instead of counting as a
+  release: whatever took the gesture did not mean "close".
+- `.modal` transitions `opacity` as well as `transform`, so letting go no
+  longer pops the faded sheet back to full opacity.
+- `test_touchdrag` drives real touch input through CDP. Checked against the
+  old code first: 10 of its 25 checks fail there.
+
+---
+
 ## Still open
 
 - **The keyboard, untested.** A bottom bar can sit behind the iOS
