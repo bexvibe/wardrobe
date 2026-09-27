@@ -254,10 +254,12 @@ async function longPress(p, sel){
     const id = await p.evaluate(()=>ITEMS.find(i=>tabForItem(i)==='Jackets').id);
     await p.evaluate(i=>openModal(i), id); await p.waitForTimeout(1300);
     await p.click('#m-outfit-gallery .outfit-card'); await p.waitForTimeout(600);
-    await p.evaluate(()=>document.getElementById('modal-backdrop').scrollTo({top:1400}));
+    // The sheet scrolls inside itself now, so this is the sheet, not the
+    // backdrop it sits on.
+    await p.evaluate(()=>document.getElementById('modal').scrollTo({top:1400}));
     await p.waitForTimeout(500);
     check('scrolled down the piece\'s own sheet',
-      (await p.evaluate(()=>document.getElementById('modal-backdrop').scrollTop)) > 1000);
+      (await p.evaluate(()=>document.getElementById('modal').scrollTop)) > 1000);
 
     const rows = await p.evaluate(i=>Array.from(document.querySelectorAll('#m-outfit-gallery .outfit-piece-row'))
       .map(r=>(r.getAttribute('onclick')||'').includes(i)), id);
@@ -266,7 +268,7 @@ async function longPress(p, sel){
     await p.locator('#m-outfit-gallery .outfit-piece-row').nth(self).click();
     await p.waitForTimeout(900);
     const after = await p.evaluate(i=>({
-      top: document.getElementById('modal-backdrop').scrollTop,
+      top: document.getElementById('modal').scrollTop,
       open: document.getElementById('modal-backdrop').classList.contains('open'),
       same: sheetTrail[sheetTrail.length-1].id===i,
     }), id);

@@ -1,4 +1,5 @@
 const { chromium } = require('playwright');
+const { leaveSheet } = require('./nav');
 // The filters dock at the bottom of the screen and open themselves on
 // Outfits and Faves. Everywhere else the pill raises them.
 async function openFilters(page){
@@ -73,13 +74,13 @@ const state=p=>p.evaluate(()=>[...document.querySelectorAll('#picker-quick-picks
 
   // A pinned selection survives shutting the picker and opening it again.
   await p.click('#picker-gallery .picker-tile'); await p.waitForTimeout(250);
-  await p.click('.modal .sheet-back'); await p.waitForTimeout(500);
+  await leaveSheet(p, {settle:500});
   await openFilters(p); await p.click('.filter-chip:has-text("Jumper")'); await p.waitForTimeout(400);
   check('reopening the picker still shows what you pinned',
     await p.evaluate(()=>document.querySelectorAll('#picker-gallery .picker-selected').length===1));
 
   // Every category is the same: one quick pick, whatever it is for.
-  await p.click('.modal .sheet-back'); await p.waitForTimeout(400);
+  await leaveSheet(p, {settle:400});
   await openFilters(p); await p.click('.filter-chip:has-text("Top")'); await p.waitForTimeout(400);
   s=await state(p);
   check('a base category offers the same one', s.length===1 && s[0].label==='Any' && s[0].active,

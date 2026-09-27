@@ -3,7 +3,7 @@
 // ordered by use, a capsule's layers cascading, the pieces no capsule has
 // claimed, and a piece's capsules editable from the piece itself.
 const { chromium } = require('playwright');
-const { toFaves } = require('./nav');
+const { toFaves, leaveSheet } = require('./nav');
 const fs=require('fs'), path=require('path');
 const REPO = require('path').join(__dirname, '..');
 const SHOTS = require('path').join(__dirname, 'shots');
@@ -402,36 +402,45 @@ const foldedCount = p => p.evaluate(()=>
     check('the rows are a proper thumb target',
       await p.evaluate(()=>document.querySelector('.capsule-pick').getBoundingClientRect().height >= 44));
 
-    await p.click('.capsule-pick'); await p.waitForTimeout(600);
-    check('tapping takes it out', await p.evaluate(()=>!capsules[0].itemIds.includes('seed_0')));
-    check('the membership row goes with it',
-      await p.evaluate(()=>!window.__WARDROBE_STATE.capsule_items
-        .some(r=>r.capsule_id==='cap_a' && r.item_id==='seed_0')));
+    // The ticks are a draft: the tap marks the row, Save is what moves the
+    // piece. You are deciding where something lives, so you get to change
+    // your mind first.
+    await p.click('.capsule-pick'); await p.waitForTimeout(500);
+    check('tapping unticks the row',
+      await p.evaluate(()=>!document.querySelector('.capsule-pick').classList.contains('picked')));
     // No toast: the row unticks where you tapped it, and the same tap is
     // the way back.
     check('and says nothing about it, because the row already did',
       await p.evaluate(()=>!document.querySelector('.toast.show')));
-    await p.click('.capsule-pick'); await p.waitForTimeout(700);
+    await leaveSheet(p, {settle:700});
+    check('tapping takes it out', await p.evaluate(()=>!capsules[0].itemIds.includes('seed_0')));
+    check('the membership row goes with it',
+      await p.evaluate(()=>!window.__WARDROBE_STATE.capsule_items
+        .some(r=>r.capsule_id==='cap_a' && r.item_id==='seed_0')));
+
+    await p.click('.modal button:has-text("Add to capsule")'); await p.waitForTimeout(500);
+    await p.click('.capsule-pick'); await p.waitForTimeout(500);
+    await leaveSheet(p, {settle:700});
     check('tapping again puts it back in',
       await p.evaluate(()=>capsules[0].itemIds.includes('seed_0')));
 
     // More than one capsule at a time — that is the point of it.
     await p.evaluate(async()=>{ await saveCapsule({ id:null, name:'Evening', itemIds:[] }); });
     // Through the piece, which is the only way there in the app — and the
-    // only way the back arrow has a piece to return to.
+    // only way Save has a piece to return to.
     await p.evaluate(()=>{ closeModal(); openModal('seed_0'); }); await p.waitForTimeout(400);
     await p.evaluate(()=>openItemCapsulePicker('seed_0')); await p.waitForTimeout(500);
     check('a second capsule shows up as another row',
       (await p.locator('.capsule-pick').count()) === 2);
-    await p.locator('.capsule-pick').nth(1).click(); await p.waitForTimeout(600);
-    check('a piece can be in both at once',
-      await p.evaluate(()=>capsulesForItem('seed_0').length) === 2,
-      String(await p.evaluate(()=>capsulesForItem('seed_0').map(c=>c.name).join(','))));
+    await p.locator('.capsule-pick').nth(1).click(); await p.waitForTimeout(500);
     check('both are ticked',
       await p.evaluate(()=>document.querySelectorAll('.capsule-pick.picked').length) === 2);
 
-    await p.click('.modal .sheet-back'); await p.waitForTimeout(500);
-    check('back returns to the piece', /Add to capsule/.test(await p.textContent('.modal-actions')));
+    await leaveSheet(p, {settle:700});
+    check('a piece can be in both at once',
+      await p.evaluate(()=>capsulesForItem('seed_0').length) === 2,
+      String(await p.evaluate(()=>capsulesForItem('seed_0').map(c=>c.name).join(','))));
+    check('saving returns to the piece', /Add to capsule/.test(await p.textContent('.modal-actions')));
     await p.close();
   }
 

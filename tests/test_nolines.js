@@ -1,7 +1,7 @@
 // Nothing in the app draws a rule across the page. An object's own edge — a
 // card, a chip, a field — is not a divider; a line that spans a surface is.
 const { chromium } = require('playwright');
-const { toFaves } = require('./nav');
+const { toFaves, leaveSheet } = require('./nav');
 const fs=require('fs'), path=require('path');
 const REPO = require('path').join(__dirname, '..');
 const SHOTS = require('path').join(__dirname, 'shots');
@@ -74,7 +74,7 @@ async function open(b){
     ['capsules',           async()=>{ await p.click('#nav-capsules-btn'); }],
     ['a capsule open',     async()=>{ await p.click('#capsule-gallery .outfit-card'); }],
     ['the capsule editor', async()=>{ await p.click('#capsule-gallery button:has-text("Edit capsule")'); }],
-    ['the archive',        async()=>{ await p.click('#modal .sheet-back');
+    ['the archive',        async()=>{ await leaveSheet(p);
                                       await p.evaluate(async()=>{ await archiveItems([ITEMS[0].id]);
                                                                   setMode('archive'); }); }],
   ];

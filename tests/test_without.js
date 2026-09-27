@@ -8,7 +8,7 @@
 // category out drops whatever was pinned in it, and pinning something drops
 // the rule.
 const { chromium } = require('playwright');
-const { toFaves } = require('./nav');
+const { toFaves, leaveSheet } = require('./nav');
 const fs=require('fs'), path=require('path');
 const REPO = require('path').join(__dirname, '..');
 const fake=fs.readFileSync(path.join(__dirname,'fake-supabase.js'),'utf8');
@@ -181,7 +181,7 @@ const label = (p, id) => p.evaluate(i =>
     // And back the other way: pinning one drops the rule.
     await p.evaluate(()=>openSlotPicker('Jackets')); await p.waitForTimeout(500);
     await p.click('#picker-gallery .picker-tile'); await p.waitForTimeout(300);
-    await p.click('.modal .sheet-back'); await p.waitForTimeout(900);
+    await leaveSheet(p, {settle:900});
     check('pinning a jacket drops the rule',
       await p.evaluate(()=>outfitFilters['Jackets'].type === 'items'));
     check('and the Without chip is off again',

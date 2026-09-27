@@ -43,6 +43,31 @@ const footer = (p, scope) => p.evaluate(sel=>{
   };
 }, scope);
 
+// The sheet is its own scroller now, so scrolling it is scrolling `.modal`
+// rather than the window or the backdrop behind it.
+const scrollSheetToEnd = async (p, scope) => {
+  await p.evaluate(sel=>{
+    const el = document.querySelector(sel + ' .modal') || document.querySelector(sel);
+    el.scrollTo({top: el.scrollHeight});
+  }, scope);
+  await p.waitForTimeout(400);
+};
+
+// The bar sits in the flow at the end of the sheet rather than floating
+// over it, so a field cannot come to rest underneath it. Checked where it
+// would show: with the sheet scrolled all the way down.
+const hidingUnderTheBar = (p, scope) => p.evaluate(sel=>{
+  const f = document.querySelector(sel + ' .sheet-footer').getBoundingClientRect();
+  return Array.from(document.querySelectorAll(
+      sel + ' .modal-body input, ' + sel + ' .modal-body textarea, ' +
+      sel + ' .modal-body select, ' + sel + ' .modal-body button'))
+    .filter(e => {
+      const r = e.getBoundingClientRect();
+      return r.height > 0 && r.bottom > f.top + 1 && r.top < f.bottom;
+    })
+    .map(e => e.id || e.className || e.tagName);
+}, scope);
+
 // A second way out down beside the save. The header's back button is not
 // one of these — it is up at the top, which is the whole point.
 const bottomWaysOut = (p, scope) => p.evaluate(sel =>
@@ -54,8 +79,8 @@ const bottomWaysOut = (p, scope) => p.evaluate(sel =>
 
 async function assertPattern(p, scope, label, name){
   const f = await footer(p, scope);
-  check(`${name}: the save is pinned to the screen`, f && f.fixed === 'fixed', f && f.fixed);
-  check(`${name}: and sits at the very bottom of it`,
+  check(`${name}: the save rides at the foot of the sheet`, f && f.fixed === 'sticky', f && f.fixed);
+  check(`${name}: and sits at the very bottom of the screen`,
     f.bottom >= f.fold - 1, `${f.top}–${f.bottom} of ${f.fold}`);
   check(`${name}: full width, edge to edge`,
     f.left === 0 && f.right === f.vw, `${f.left}–${f.right} of ${f.vw}`);
@@ -63,8 +88,13 @@ async function assertPattern(p, scope, label, name){
   check(`${name}: with a thumb-sized target`, f.btnH >= 44 && f.btnW > 200,
     `${f.btnW}x${f.btnH}`);
   check(`${name}: no second button beside it`, f.secondaries === 0);
-  check(`${name}: the form leaves room, so no field hides under it`,
-    f.bodyPadBottom >= f.bottom - f.top, `${f.bodyPadBottom}px of padding vs a ${f.bottom-f.top}px bar`);
+  await scrollSheetToEnd(p, scope);
+  const hidden = await hidingUnderTheBar(p, scope);
+  check(`${name}: and at the end of the form nothing is stuck under it`,
+    hidden.length === 0, hidden.join(', '));
+  const still = await footer(p, scope);
+  check(`${name}: while the bar itself has not moved`,
+    still.bottom >= still.fold - 1, `${still.top}–${still.bottom} of ${still.fold}`);
   check(`${name}: no second way out at the bottom`, (await bottomWaysOut(p, scope)) === 0);
   check(`${name}: the way out is the back button at the top`,
     (await p.textContent(scope + ' .sheet-back')).trim() === 'Back',
@@ -81,8 +111,7 @@ async function assertPattern(p, scope, label, name){
     await assertPattern(p, '#form-backdrop', 'Save', 'new piece');
 
     // It has to still be reachable after scrolling to the end of a long form.
-    await p.evaluate(()=>document.getElementById('form-backdrop').scrollTo({top:9999}));
-    await p.waitForTimeout(400);
+    await scrollSheetToEnd(p, '#form-backdrop');
     const after = await footer(p, '#form-backdrop');
     check('it stays put when the form is scrolled',
       after.bottom >= after.fold - 1, `${after.top}–${after.bottom}`);

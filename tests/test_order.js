@@ -4,7 +4,7 @@
 // a piece is in rather than a kind of thing. And a category with nothing in
 // it says so, and has nothing to choose from.
 const { chromium } = require('playwright');
-const { toFaves } = require('./nav');
+const { toFaves, leaveSheet } = require('./nav');
 const fs=require('fs'), path=require('path');
 const REPO = require('path').join(__dirname, '..');
 const SHOTS = require('path').join(__dirname, 'shots');
@@ -204,7 +204,7 @@ function wellOrdered(list, owned){
         return btns.length===1 && btns[0].textContent.trim()==='Any' &&
                btns[0].classList.contains('active');
       }));
-    await p.click('.modal .sheet-back'); await p.waitForTimeout(800);
+    await leaveSheet(p, {settle:800});
     check('so the page is exactly as you left it',
       (await p.evaluate(()=>totalComboCount()))===before,
       `${await p.evaluate(()=>totalComboCount())} vs ${before}`);

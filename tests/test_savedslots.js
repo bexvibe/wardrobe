@@ -4,7 +4,7 @@
 // keep their own settings — narrowing what you are browsing must not narrow
 // what you have kept.
 const { chromium } = require('playwright');
-const { toFaves } = require('./nav');
+const { toFaves, leaveSheet } = require('./nav');
 const fs=require('fs'), path=require('path');
 const REPO = require('path').join(__dirname, '..');
 const SHOTS = require('path').join(__dirname, 'shots');
@@ -57,8 +57,7 @@ async function setAny(p, key){
   await p.waitForTimeout(350);
   await p.click('#picker-quick-picks .base-btn:has-text("Any")');
   await p.waitForTimeout(250);
-  await p.click('.modal .sheet-back');
-  await p.waitForTimeout(600);
+  await leaveSheet(p, {settle:600});
 }
 
 // Narrowing is pinning, so say which piece.
@@ -75,7 +74,7 @@ async function pinFirst(p, key){
   await p.waitForTimeout(350);
   const id = await p.evaluate(()=>document.querySelector('#picker-gallery .picker-tile').getAttribute('onclick'));
   await p.click('#picker-gallery .picker-tile'); await p.waitForTimeout(250);
-  await p.click('.modal .sheet-back'); await p.waitForTimeout(600);
+  await leaveSheet(p, {settle:600});
   return id;
 }
 

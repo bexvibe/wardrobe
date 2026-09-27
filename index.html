@@ -436,14 +436,18 @@
   body.selecting .bottom-bar{display:none;}
 
   /* Full-screen detail sheet */
+  /* A sheet rises from the foot of the screen and stops short of the top,
+     so the page it came from is still there behind it. That strip of page
+     is not decoration: it is what tells you the sheet is a thing over the
+     page rather than a new page, and on a picker it is where you watch the
+     results change as you tap.
+     Above the filter panel: a picker is opened from inside it and must
+     cover it rather than open underneath. */
   .modal-backdrop{
     display:none;
     position:fixed;inset:0;
-    background:var(--page);
-    /* Above the filter sheet: a slot picker is opened from inside it, and
-       must cover it rather than open underneath. */
+    background:rgba(0,0,0,0.28);
     z-index:130;
-    overflow-y:auto;
   }
   .modal-backdrop.open{display:block;}
 
@@ -460,6 +464,18 @@
     padding:24px;
   }
   .confirm-backdrop.open{display:flex;}
+  .prompt-backdrop{
+    display:none;
+    position:fixed;inset:0;
+    background:rgba(0,0,0,0.38);
+    /* Above the confirm dialog's 160: nothing asks about this one, but it
+       is opened from a sheet and must sit over it. */
+    z-index:165;
+    align-items:center;justify-content:center;
+    padding:24px;
+  }
+  .prompt-backdrop.open{display:flex;}
+  .prompt-backdrop .form-grid{margin-bottom:4px;}
   .confirm-card{
     width:100%;max-width:320px;
     background:var(--surface);
@@ -478,10 +494,38 @@
   .confirm-actions{display:flex;flex-direction:column;gap:8px;}
   .confirm-actions .btn{width:100%;min-height:46px;}
   .modal{
+    position:absolute;
+    left:0;right:0;bottom:0;
     max-width:640px;
     margin:0 auto;
-    min-height:100%;
+    height:85%;
     background:var(--page);
+    border-radius:18px 18px 0 0;
+    /* A column so a short sheet still puts its bar at the foot: the body
+       grows into whatever is left over, rather than the bar coming to rest
+       halfway up a mostly empty sheet. */
+    display:flex;flex-direction:column;
+    overflow-y:auto;
+    overscroll-behavior:contain;
+    box-shadow:0 -10px 34px rgba(0,0,0,0.18);
+    /* Off the bottom rather than hidden, so it arrives by travelling. */
+    transform:translateY(100%);
+    transition:transform var(--sheet-ease-ms) var(--sheet-ease);
+  }
+  .modal-backdrop.open .modal{transform:translateY(0);}
+  /* Following a thumb: no easing while it is under your finger. */
+  .modal.dragging{transition:none;}
+
+  /* The mark that says a sheet can be pushed away. Only on the sheets that
+     can be — a handle on a sheet that ignores the gesture is a lie. */
+  .sheet-grip{
+    display:flex;justify-content:center;
+    padding:8px 0 2px;
+  }
+  .sheet-grip::before{
+    content:'';
+    width:38px;height:4px;border-radius:999px;
+    background:var(--line);
   }
   .sheet-header{
     position:sticky;top:0;z-index:5;
@@ -510,7 +554,9 @@
   .modal-photo .no-photo{
     font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink-soft);
   }
-  .modal-body{padding:18px;}
+  /* Grows to fill a short sheet, never shrinks a long one — the sheet
+     itself is what scrolls. */
+  .modal-body{padding:18px;flex:1 0 auto;}
 
   /* The current photo and the way to change it, as one wide target. */
   .form-photo{
@@ -563,13 +609,15 @@
      row gap is already the spacing. */
   .detail-facts .detail-tags{margin:0;}
   .modal-actions{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;}
-  /* An editor's save stays where your thumb is rather than at the end of a
-     form you have to scroll to reach. The way out is the back arrow at the
-     top of the sheet: two ways out at the bottom of a long form was one too
-     many. */
+  /* A sheet's controls stay where your thumb is rather than at the end of
+     something you have to scroll to reach. The bar lives at the foot of
+     the sheet and stays there while the sheet scrolls under it — sticky
+     rather than fixed, now that the sheet is an object on the screen
+     rather than the screen itself, and in flow, so nothing can end up
+     stuck underneath it. */
   .sheet-footer{
-    position:fixed;
-    left:0;right:0;bottom:0;
+    position:sticky;
+    bottom:0;
     z-index:6;
     background:var(--page);
     /* A shadow rather than a rule: it lifts the bar off whatever is passing
@@ -585,8 +633,24 @@
     display:flex;align-items:center;justify-content:center;
     min-height:48px;font-size:14px;
   }
+
+  /* Two acts, not one: the thing you meant to do, and the way out without
+     doing it. A right thumb falls on the right, so that side is the one
+     that keeps your work — and they are pushed to opposite ends rather
+     than sat side by side, because a pair of buttons under one thumb is a
+     pair you will eventually hit the wrong one of. */
+  .sheet-footer.split .sheet-footer-inner{
+    display:flex;align-items:center;justify-content:space-between;gap:16px;
+  }
+  .sheet-footer.split .btn{width:auto;padding:0 22px;}
+  .sheet-footer.split .btn.secondary{
+    padding:0 14px;
+    border-color:transparent;
+    color:var(--ink-soft);
+  }
+
   /* Room for it, so the last field is not stuck underneath. */
-  .modal-body.has-footer{padding-bottom:96px;}
+  .modal-body.has-footer{padding-bottom:24px;}
   .outfits-heading{
     font-family:'Fraunces', serif;
     font-weight:500;
@@ -1713,6 +1777,23 @@
   </div>
 </div>
 
+<!-- One question, one line of text. The confirm dialog next door asks
+     yes or no; this asks what to call something. -->
+<div class="prompt-backdrop" id="prompt-backdrop"
+     onclick="if(event.target.id==='prompt-backdrop') dismissPrompt()">
+  <div class="confirm-card" role="dialog" aria-modal="true" aria-labelledby="prompt-title">
+    <h2 class="confirm-title" id="prompt-title"></h2>
+    <div class="form-grid">
+      <label id="prompt-label">Name<input type="text" id="prompt-input"></label>
+    </div>
+    <div class="form-error" id="prompt-error"></div>
+    <div class="confirm-actions">
+      <button class="btn" id="prompt-confirm" onclick="acceptPrompt()">Create</button>
+      <button class="btn secondary" onclick="dismissPrompt()">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 <input type="file" id="hidden-photo-input" accept="image/*" style="display:none" onchange="handlePhotoUpload(event)">
 
@@ -2167,7 +2248,17 @@ function pushSheet(entry){
     sheetTrail = [];
     sheetOrigin = { mode: appMode, y: Math.round(window.scrollY) };
   }
+  // The sheet you are leaving is rebuilt from scratch when you come back
+  // to it, so how far down it you were is noted here or lost. It reads the
+  // same as the page behind: a step deeper is not a reason to lose your
+  // place in what you were reading.
+  const here = sheetTrail[sheetTrail.length - 1];
+  if(here) here.y = sheetScrollTop();
   sheetTrail.push(entry);
+  // Off by default. A sheet that can be pushed away says so as it draws,
+  // so a sheet that forgets to is merely undraggable rather than dragging
+  // away into whatever the last one meant by closing.
+  allowSheetDrag(null);
 }
 
 // The back arrow, everywhere inside the sheets. One step at a time: the
@@ -2179,9 +2270,44 @@ function goBackFromSheet(){
   if(spec && spec.draw){
     showSheetBackdrop(spec.backdrop);
     spec.draw(back.id);
+    restoreSheetScroll(back.y || 0);
     return;
   }
   closeModal();
+}
+
+// Whichever sheet is up is the thing that scrolls — the backdrop behind it
+// is fixed to the screen.
+function openSheetEl(){
+  const open = document.querySelector('.modal-backdrop.open');
+  return open ? open.querySelector('.modal') : null;
+}
+
+function sheetScrollTop(){
+  const el = openSheetEl();
+  return el ? Math.round(el.scrollTop) : 0;
+}
+
+// What decides a sheet's height can arrive after it is drawn — the outfits
+// under a piece are generated in chunks — so a single put lands on a sheet
+// that is still short and clamps to nothing. This keeps asking until there
+// is room, and stops the moment you touch it: being dragged back up to
+// where you were half a second ago is worse than starting at the top.
+function restoreSheetScroll(y){
+  const el = openSheetEl();
+  if(!y || !el) return;
+  const depth = sheetTrail.length;
+  let tries = 0, giveUp = false;
+  const stop = () => { giveUp = true; };
+  el.addEventListener('pointerdown', stop, { once: true });
+  el.addEventListener('wheel', stop, { once: true, passive: true });
+  const put = () => {
+    if(giveUp || sheetTrail.length !== depth) return;
+    const room = el.scrollHeight - el.clientHeight;
+    el.scrollTop = Math.min(y, room);
+    if(room < y && ++tries < 40) requestAnimationFrame(put);
+  };
+  requestAnimationFrame(put);
 }
 
 // Back on the page the trail started from. Nothing moved while the sheets
@@ -2214,7 +2340,8 @@ function openPieceSheet(itemId){
   // piece" list means take me back up to it, not nowhere.
   const here = sheetTrail[sheetTrail.length - 1];
   if(here && here.sheet === 'item' && here.id === itemId && anySheetShowing()){
-    document.getElementById('modal-backdrop').scrollTo({top:0, behavior:'smooth'});
+    // The sheet is the scroller, not the backdrop it sits on.
+    document.getElementById('modal').scrollTo({top:0, behavior:'smooth'});
     return;
   }
 
@@ -2509,40 +2636,44 @@ function toggleFilterSheet(){
   else openFilterSheet();
 }
 
-// ---- Putting the panel away with your thumb ----------------
+// ---- Putting a panel away with your thumb ------------------
 //
-// It opens upwards out of its button, so the gesture that puts it away is
-// pushing it back down — anywhere on it, not on a handle you have to find
-// first.
+// Both the filter panel and the sheets rise from the foot of the screen,
+// so the gesture that puts one away is pushing it back down — anywhere on
+// it, not on a handle you have to find first. The grip at the top of a
+// sheet says the gesture is there; it is drawn only on the sheets that
+// answer it.
 //
 // Two things have to be true before a downward drag means "close" rather
-// than "scroll": the panel has to be at the top of its own scroll, and the
-// finger has to be going down rather than sideways. The chip rows inside
-// scroll sideways, and a thumb never moves in a straight line, so a drag
-// that starts off horizontal belongs to the row it started on.
+// than "scroll": the thing has to be at the top of its own scroll, and the
+// finger has to be going down rather than sideways. Rows of chips and
+// tiles scroll sideways, and a thumb never moves in a straight line, so a
+// drag that starts off horizontal belongs to the row it started on.
+//
+// Only what has nothing to lose can be flicked away. A sheet holding a
+// draft is dismissed on purpose, through its own bar.
 const SHEET_DRAG_CLOSE = 56;   // how far down is far enough to mean it
 
 let sheetDrag = null;
 
-function sheetDragStart(e){
-  const sheet = document.getElementById('filter-sheet');
-  if(!sheet || !filterSheetOpen()) return;
+function dragStart(el, isOpen, e){
+  if(!el || !isOpen()) return;
   if(e.pointerType === 'mouse' && e.button !== 0) return;
   sheetDrag = {
-    id: e.pointerId,
+    el, id: e.pointerId,
     x: e.clientX, y: e.clientY,
     dy: 0,
-    // Only a panel already at its top can be pulled down; anywhere else
-    // the gesture is the panel's own scrolling.
-    eligible: sheet.scrollTop <= 0,
+    // Only something already at its top can be pulled down; anywhere else
+    // the gesture is its own scrolling.
+    eligible: el.scrollTop <= 0,
     decided: false,
     pulling: false,
   };
 }
 
-function sheetDragMove(e){
-  const sheet = document.getElementById('filter-sheet');
-  if(!sheetDrag || !sheet || e.pointerId !== sheetDrag.id) return;
+function dragMove(e){
+  if(!sheetDrag || e.pointerId !== sheetDrag.id) return;
+  const el = sheetDrag.el;
 
   const dx = e.clientX - sheetDrag.x;
   const dy = e.clientY - sheetDrag.y;
@@ -2555,43 +2686,64 @@ function sheetDragMove(e){
     sheetDrag.decided = true;
     sheetDrag.pulling = sheetDrag.eligible && dy > Math.abs(dx);
     if(sheetDrag.pulling){
-      sheet.classList.add('dragging');
-      // The panel follows the finger from here; the browser must stop
-      // trying to scroll something with the same movement.
-      try{ sheet.setPointerCapture(e.pointerId); }catch(err){ }
+      el.classList.add('dragging');
+      try{ el.setPointerCapture(e.pointerId); }catch(err){ }
     }
   }
   if(!sheetDrag.pulling) return;
 
-  // Downward only, and stiffening as it goes — a panel that slid a whole
+  // Downward only, and stiffening as it goes — something that slid a whole
   // screen would look like it had come loose.
   const travel = Math.max(0, dy);
   const eased = travel <= SHEET_DRAG_CLOSE
     ? travel
     : SHEET_DRAG_CLOSE + (travel - SHEET_DRAG_CLOSE) * 0.4;
-  sheet.style.transform = `translateY(${eased}px) scale(1)`;
-  sheet.style.opacity = String(Math.max(0.35, 1 - travel / 320));
+  el.style.transform = `translateY(${eased}px)`;
+  el.style.opacity = String(Math.max(0.35, 1 - travel / 320));
 }
 
-function sheetDragEnd(e){
-  const sheet = document.getElementById('filter-sheet');
-  if(!sheetDrag || !sheet) return;
+function dragEnd(onClose, e){
+  if(!sheetDrag) return;
+  const el = sheetDrag.el;
   const pulled = sheetDrag.pulling ? sheetDrag.dy : 0;
   sheetDrag = null;
 
-  sheet.classList.remove('dragging');
-  sheet.style.transform = '';
-  sheet.style.opacity = '';
-  if(pulled >= SHEET_DRAG_CLOSE) closeFilterSheet();
+  el.classList.remove('dragging');
+  el.style.transform = '';
+  el.style.opacity = '';
+  if(pulled >= SHEET_DRAG_CLOSE) onClose();
+}
+
+// Hands a thing the gesture. `isOpen` so a drag on something already down
+// does nothing, `onClose` because what closing means differs.
+function wireDragToClose(el, isOpen, onClose){
+  if(!el) return;
+  el.addEventListener('pointerdown', e => dragStart(el, isOpen, e));
+  el.addEventListener('pointermove', dragMove);
+  el.addEventListener('pointerup', e => dragEnd(onClose, e));
+  el.addEventListener('pointercancel', e => dragEnd(onClose, e));
+}
+
+// A sheet only answers the gesture when what is on it can be walked away
+// from — nothing staged, nothing half-written. Each sheet says so as it is
+// drawn, and hands over what closing means for it: the picker has filters
+// to re-apply on the way out, a piece sheet only has a trail to retrace.
+let sheetDragClose = null;
+
+function allowSheetDrag(onClose){
+  sheetDragClose = onClose || null;
+}
+
+function sheetIsUp(){
+  return Boolean(sheetDragClose) &&
+         document.getElementById('modal-backdrop').classList.contains('open');
 }
 
 function wireSheetDrag(){
-  const sheet = document.getElementById('filter-sheet');
-  if(!sheet) return;
-  sheet.addEventListener('pointerdown', sheetDragStart);
-  sheet.addEventListener('pointermove', sheetDragMove);
-  sheet.addEventListener('pointerup', sheetDragEnd);
-  sheet.addEventListener('pointercancel', sheetDragEnd);
+  wireDragToClose(document.getElementById('filter-sheet'),
+                  filterSheetOpen, closeFilterSheet);
+  wireDragToClose(document.getElementById('modal'),
+                  sheetIsUp, () => { if(sheetDragClose) sheetDragClose(); });
 }
 
 // An open panel is a thing you are doing; going back to the page is
@@ -3016,19 +3168,29 @@ function toggleWithout(tab){
   }
 }
 
+// Live, because a filter is a temporary state you can clear in a tap —
+// there is nothing here to commit, so the bar holds one word: Done. No
+// arrow at the top: it would have done the same thing from the hardest
+// corner of the screen to reach.
 function openSlotPicker(slotKey){
   const modal = document.getElementById('modal');
   modal.innerHTML = `
-    <div class="sheet-header"><button class="sheet-back" onclick="closePickerAndApply()"><svg class="back-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>Back</button></div>
-    <div class="modal-body">
+    <div class="sheet-grip"></div>
+    <div class="modal-body has-footer">
       <div class="modal-name" style="margin-bottom:14px;">Choose ${slotKey}</div>
       <div class="quick-picks" id="picker-quick-picks"></div>
       <p class="picker-empty" id="picker-empty" style="display:none;"></p>
       <div class="gallery" id="picker-gallery"></div>
     </div>
+    <div class="sheet-footer">
+      <div class="sheet-footer-inner">
+        <button class="btn" type="button" onclick="closePickerAndApply()">Done</button>
+      </div>
+    </div>
   `;
   renderQuickPicks(slotKey);
   renderPickerGallery(slotKey);
+  allowSheetDrag(closePickerAndApply);
   document.getElementById('modal-backdrop').classList.add('open');
 }
 
@@ -3611,33 +3773,78 @@ async function setOutfitExtras(key, ids){
   return true;
 }
 
-// Each tap is the change, and the tile ticks under your thumb as you make
-// it. A toast saying so as well was the app telling you what you had just
-// watched happen — and offering an undo that is the tap you would make
-// anyway. Nothing to confirm, so nothing is said.
-async function toggleOutfitExtra(key, itemId){
-  const have = extrasFor(key).slice();
-  const at = have.indexOf(itemId);
-  if(at < 0) have.push(itemId); else have.splice(at, 1);
-  await setOutfitExtras(key, have);
+// Each tap ticks the tile under your thumb and does nothing else — no
+// toast, because saying so as well is the app telling you what you just
+// watched happen. Whether the lot is worth keeping is decided at the bar.
+function toggleOutfitExtra(key, itemId){
+  if(!extrasDraft) return;
+  if(extrasDraft.ids.has(itemId)) extrasDraft.ids.delete(itemId);
+  else extrasDraft.ids.add(itemId);
+  renderExtrasPicker(key);
 }
+
+// Staged. You are dressing an outfit, which means trying a hat against it,
+// then a different hat — so nothing is written until you say so, and the
+// way out without writing is on the bar beside it.
+let extrasDraft = null;   // { key, ids:Set, baseline }
 
 function openOutfitExtrasPicker(key){
   const tabs = extraTabs();
   extrasPickerTab = tabs.includes(extrasPickerTab) ? extrasPickerTab : (tabs[0] || null);
+  extrasDraft = { key, ids: new Set(extrasFor(key)) };
+  extrasDraft.baseline = extrasDraftSnapshot();
 
   document.getElementById('modal').innerHTML = `
-    <div class="sheet-header"><button class="sheet-back" onclick="closeModal()"><svg class="back-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>Back</button></div>
-    <div class="modal-body">
-      <div class="modal-name" style="margin-bottom:14px;">Accessories</div>
+    <div class="modal-body has-footer">
+      <div class="modal-name" style="margin-bottom:14px;">Add accessories</div>
       <div class="tabs" id="extras-tabs"></div>
       <div class="gallery" id="extras-gallery"></div>
     </div>
+    <div class="sheet-footer split">
+      <div class="sheet-footer-inner">
+        <button class="btn secondary" type="button" onclick="closeExtrasPicker()">Cancel</button>
+        <button class="btn" type="button" id="extras-save" onclick="saveOutfitExtras()">Save</button>
+      </div>
+    </div>
   `;
   renderExtrasPicker(key);
+  allowSheetDrag(null);   // there is a draft on it; the bar is the way out
   document.getElementById('modal-backdrop').classList.add('open');
-  // Once it is up and the header has a height to measure.
+  // Once it is up and there is a height to measure.
   stickSheetTabs('extras-tabs');
+}
+
+function extrasDraftSnapshot(){
+  return extrasDraft ? JSON.stringify(Array.from(extrasDraft.ids).sort()) : null;
+}
+
+function extrasDraftIsDirty(){
+  return Boolean(extrasDraft) && extrasDraftSnapshot() !== extrasDraft.baseline;
+}
+
+function closeExtrasPicker(){
+  if(extrasDraftIsDirty()){
+    askToLeave('accessories', discardExtrasPicker);
+    return;
+  }
+  discardExtrasPicker();
+}
+
+function discardExtrasPicker(){
+  extrasDraft = null;
+  goBackFromSheet();
+}
+
+async function saveOutfitExtras(){
+  if(!extrasDraft) return;
+  const { key, ids } = extrasDraft;
+  const btn = document.getElementById('extras-save');
+  if(btn) btn.disabled = true;
+  const ok = await setOutfitExtras(key, Array.from(ids));
+  if(btn) btn.disabled = false;
+  if(!ok) return;            // setOutfitExtras has already explained why
+  extrasDraft = null;
+  goBackFromSheet();
 }
 
 function setExtrasPickerTab(key, tab){
@@ -3651,7 +3858,7 @@ function renderExtrasPicker(key){
   if(!tabsEl || !galleryEl) return;
 
   const tabs = extraTabs();
-  const on = new Set(extrasFor(key));
+  const on = extrasDraft ? extrasDraft.ids : new Set(extrasFor(key));
 
   tabsEl.innerHTML = tabs.map(t => `
     <button class="tab ${extrasPickerTab === t ? 'active' : ''}"
@@ -4405,25 +4612,109 @@ function openItemCapsulePicker(itemId){
   drawItemCapsulePicker(itemId);
 }
 
+// Staged, like the accessories picker: tick a few, then say so. New
+// capsule asks for a name and nothing else — you are already holding the
+// piece that is going in it, so a whole editor to choose pieces with would
+// be answering a question you did not ask.
+let capsulePicksDraft = null;   // { itemId, ids:Set, baseline }
+
 function drawItemCapsulePicker(itemId){
   const item = ITEMS.find(i => i.id === itemId);
   if(!item) return;
+  capsulePicksDraft = {
+    itemId,
+    ids: new Set(capsules.filter(c => c.itemIds.includes(itemId)).map(c => c.id)),
+  };
+  capsulePicksDraft.baseline = capsulePicksSnapshot();
+
   const modal = document.getElementById('modal');
   modal.innerHTML = `
-    <div class="sheet-header">
-      <button class="sheet-back" onclick="goBackFromSheet()"><svg class="back-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>Back</button>
-    </div>
-    <div class="modal-body">
+    <div class="modal-body has-footer">
       <div class="modal-name" style="margin-bottom:14px;">Capsules</div>
       <div class="capsule-picks" id="capsule-picks"></div>
+      <div class="form-error" id="capsule-pick-error"></div>
       <div class="modal-actions">
-        <button class="btn small secondary"
-                onclick='openCapsuleEditor(null, [${JSON.stringify(itemId)}])'>New capsule</button>
+        <button class="btn small secondary" type="button"
+                onclick='startNewCapsuleForPiece()'>New capsule</button>
+      </div>
+    </div>
+    <div class="sheet-footer split">
+      <div class="sheet-footer-inner">
+        <button class="btn secondary" type="button" onclick="closeCapsulePicker()">Cancel</button>
+        <button class="btn" type="button" id="capsule-picks-save"
+                onclick="saveItemCapsules()">Save</button>
       </div>
     </div>
   `;
   renderItemCapsulePicks(itemId);
+  allowSheetDrag(null);   // a draft is on it; the bar is the way out
   document.getElementById('modal-backdrop').classList.add('open');
+}
+
+function capsulePicksSnapshot(){
+  return capsulePicksDraft
+    ? JSON.stringify(Array.from(capsulePicksDraft.ids).sort()) : null;
+}
+
+function capsulePicksDirty(){
+  return Boolean(capsulePicksDraft) && capsulePicksSnapshot() !== capsulePicksDraft.baseline;
+}
+
+function closeCapsulePicker(){
+  if(capsulePicksDirty()){
+    askToLeave('capsule changes', discardCapsulePicker);
+    return;
+  }
+  discardCapsulePicker();
+}
+
+function discardCapsulePicker(){
+  capsulePicksDraft = null;
+  goBackFromSheet();
+}
+
+async function saveItemCapsules(){
+  if(!capsulePicksDraft) return;
+  const { itemId, ids } = capsulePicksDraft;
+  const btn = document.getElementById('capsule-picks-save');
+  if(btn) btn.disabled = true;
+
+  // Only what changed: a capsule you did not touch is not rewritten.
+  let ok = true;
+  for(const c of capsules){
+    const was = c.itemIds.includes(itemId);
+    const now = ids.has(c.id);
+    if(was === now) continue;
+    if(!await setItemInCapsule(c.id, itemId, now)){ ok = false; break; }
+  }
+  if(btn) btn.disabled = false;
+  if(!ok) return;                 // setItemInCapsule has said why
+
+  capsulePicksDraft = null;
+  renderCapsules();
+  goBackFromSheet();
+}
+
+// A name, and that is the whole question. The piece you came from goes in
+// it, and the capsule is saved straight away — there is no draft here to
+// lose, so the ticks behind it are safe.
+function startNewCapsuleForPiece(){
+  if(!capsulePicksDraft) return;
+  promptForText({
+    title: 'New capsule',
+    label: 'Name',
+    confirm: 'Create',
+    onConfirm: async (name) => {
+      const saved = await saveCapsule({ id: null, name, itemIds: [capsulePicksDraft.itemId] });
+      if(!saved) return false;
+      // It exists and the piece is in it, so it arrives already ticked.
+      capsulePicksDraft.ids.add(saved.id);
+      capsulePicksDraft.baseline = capsulePicksSnapshot();
+      renderItemCapsulePicks(capsulePicksDraft.itemId);
+      renderCapsules();
+      return true;
+    },
+  });
 }
 
 function renderItemCapsulePicks(itemId){
@@ -4434,7 +4725,8 @@ function renderItemCapsulePicks(itemId){
     return;
   }
   el.innerHTML = capsules.map(c => {
-    const inIt = c.itemIds.includes(itemId);
+    const inIt = capsulePicksDraft
+      ? capsulePicksDraft.ids.has(c.id) : c.itemIds.includes(itemId);
     return `<button class="capsule-pick ${inIt ? 'picked' : ''}"
                     onclick='toggleItemCapsule(${JSON.stringify(c.id)}, ${JSON.stringify(itemId)})'>
       <span>${esc(c.name)}</span>
@@ -4443,17 +4735,13 @@ function renderItemCapsulePicks(itemId){
   }).join('');
 }
 
-async function toggleItemCapsule(capsuleId, itemId){
-  const capsule = capsules.find(c => c.id === capsuleId);
-  if(!capsule) return;
-  const wasIn = capsule.itemIds.includes(itemId);
-  if(!await setItemInCapsule(capsuleId, itemId, !wasIn)) return;
-
-  // The row ticks and unticks where you tapped it, and the same tap undoes
-  // it — so there is nothing a toast could add that is not already on the
-  // screen and under your thumb.
+// The row ticks and unticks where you tapped it, and nothing is written
+// until the bar says so.
+function toggleItemCapsule(capsuleId, itemId){
+  if(!capsulePicksDraft) return;
+  if(capsulePicksDraft.ids.has(capsuleId)) capsulePicksDraft.ids.delete(capsuleId);
+  else capsulePicksDraft.ids.add(capsuleId);
   renderItemCapsulePicks(itemId);
-  renderCapsules();
 }
 
 function capsuleItems(capsule){
@@ -5125,9 +5413,14 @@ function stickSheetTabs(rowId){
   const el = document.getElementById(rowId);
   const backdrop = document.getElementById('modal-backdrop');
   if(!el || !backdrop || !backdrop.classList.contains('open')) return;
+  // The sheet scrolls inside itself, so it is the scroller the row is
+  // watched against — the backdrop behind it never moves.
+  const sheet = document.getElementById('modal');
+  // A sheet with a header parks the row under it; one without (the pickers,
+  // which are a grip and then straight into the thing) parks it at the top.
   const header = document.querySelector('#modal .sheet-header');
-  if(header) el.style.setProperty('--stuck-top', header.offsetHeight + 'px');
-  stickCategoryRow(el, backdrop);
+  el.style.setProperty('--stuck-top', (header ? header.offsetHeight : 0) + 'px');
+  stickCategoryRow(el, sheet);
 }
 
 function stickCategoryRow(row, scroller){
@@ -5397,9 +5690,7 @@ function drawItemSheet(id){
   if(!item) return;
   const modal = document.getElementById('modal');
   modal.innerHTML = `
-    <div class="sheet-header">
-      <button class="sheet-back" onclick="goBackFromSheet()"><svg class="back-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>Back</button>
-    </div>
+    <div class="sheet-grip"></div>
     <div class="modal-photo">
       ${item.photo ? `<img src="${esc(item.photo)}" alt="${esc(item.name)}" referrerpolicy="no-referrer" decoding="async">` : `<span class="no-photo">No photo yet</span>`}
     </div>
@@ -5414,6 +5705,9 @@ function drawItemSheet(id){
       <div id="modal-outfits-container"></div>
     </div>
   `;
+  // Nothing on it to keep or throw away, so the gesture is the whole way
+  // out — and the grip at its head is what says so.
+  allowSheetDrag(goBackFromSheet);
   document.getElementById('modal-backdrop').classList.add('open');
   showOutfitsInModal(item.id);
 }
@@ -5641,14 +5935,66 @@ async function submitItemForm(){
   if(!wasEditing && !saved.photo) triggerPhotoUpload(saved.id);
 }
 
+// A sheet stops short of the top of the screen, so the strip of page above
+// it is a tap target: tapping it means the same as pushing the sheet down.
+// Anything with a draft on it gets asked first, the same way its own
+// Cancel would ask.
 function closeModalIfBackdrop(e){
   if(e.target.id !== 'modal-backdrop') return;
-  // The capsule editor lives on this sheet and may have work in it, so it
-  // gets asked about here too rather than only at its back button.
   if(capsuleDraft) closeCapsuleEditor();
   else if(outfitDraft) closeOutfitBuilder();
+  else if(extrasDraft) closeExtrasPicker();
+  else if(capsulePicksDraft) closeCapsulePicker();
+  else if(sheetDragClose) sheetDragClose();
   else closeModal();
 }
+
+// ---- "What shall we call it?" -------------------------------
+// The other half of the confirm dialog: that one asks yes or no, this one
+// asks for a line of text. onConfirm returns false to keep the dialog up
+// with an error showing, so a name that will not do does not lose the rest
+// of what you were doing.
+let promptAction = null;
+
+function promptForText({ title, label, confirm, value, onConfirm }){
+  promptAction = onConfirm;
+  document.getElementById('prompt-title').textContent = title || '';
+  document.getElementById('prompt-label').childNodes[0].nodeValue = label || 'Name';
+  document.getElementById('prompt-confirm').textContent = confirm || 'Save';
+  document.getElementById('prompt-error').textContent = '';
+  const input = document.getElementById('prompt-input');
+  input.value = value || '';
+  document.getElementById('prompt-backdrop').classList.add('open');
+  setTimeout(() => input.focus(), 50);
+}
+
+function dismissPrompt(){
+  promptAction = null;
+  document.getElementById('prompt-backdrop').classList.remove('open');
+}
+
+async function acceptPrompt(){
+  const input = document.getElementById('prompt-input');
+  const errorEl = document.getElementById('prompt-error');
+  const text = input.value.trim();
+  if(!text){ errorEl.textContent = 'Give it a name.'; input.focus(); return; }
+
+  const go = promptAction;
+  const btn = document.getElementById('prompt-confirm');
+  btn.disabled = true;
+  const ok = go ? await go(text) : true;
+  btn.disabled = false;
+  if(ok === false) return;   // the caller is showing why
+  dismissPrompt();
+}
+
+// Enter is how you finish a one-line question.
+document.addEventListener('keydown', e => {
+  if(e.key !== 'Enter') return;
+  if(!document.getElementById('prompt-backdrop').classList.contains('open')) return;
+  e.preventDefault();
+  acceptPrompt();
+});
 
 // ---- "Go back?" ---------------------------------------------
 // One dialog, borrowed by whichever editor is asking. It holds the thing to

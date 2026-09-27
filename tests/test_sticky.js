@@ -135,13 +135,14 @@ const rowTop = (p, sel) => p.evaluate(s =>
       await p.evaluate(()=>document.querySelectorAll('#capsule-tabs .tab').length > 1));
 
     const before = await rowTop(p, '#capsule-tabs');
-    await p.evaluate(()=>{ document.getElementById('modal-backdrop').scrollTop = 1200; });
+    // The sheet is its own scroller — the backdrop behind it never moves.
+    await p.evaluate(()=>{ document.getElementById('modal').scrollTop = 1200; });
     await p.waitForTimeout(600);
     const after = await p.evaluate(()=>{
       const head = document.querySelector('#modal .sheet-header').getBoundingClientRect();
       const tabs = document.getElementById('capsule-tabs').getBoundingClientRect();
       return {headBottom: Math.round(head.bottom), tabsTop: Math.round(tabs.top),
-              scrolled: document.getElementById('modal-backdrop').scrollTop};
+              scrolled: document.getElementById('modal').scrollTop};
     });
     check('the sheet really scrolled', after.scrolled > 600, String(after.scrolled));
     check('the categories came with it', after.tabsTop < before,
@@ -213,19 +214,21 @@ const rowTop = (p, sel) => p.evaluate(s =>
       await p.evaluate(()=>document.querySelectorAll('#extras-tabs .tab').length > 1));
 
     const before = await rowTop(p, '#extras-tabs');
-    await p.evaluate(()=>{ document.getElementById('modal-backdrop').scrollTop = 1200; });
+    await p.evaluate(()=>{ document.getElementById('modal').scrollTop = 1200; });
     await p.waitForTimeout(600);
     const after = await p.evaluate(()=>{
-      const head = document.querySelector('#modal .sheet-header').getBoundingClientRect();
+      // There is no header on a picker any more — a grip, then straight
+      // into the thing — so the row comes to rest at the sheet's own top.
+      const sheet = document.getElementById('modal').getBoundingClientRect();
       const tabs = document.getElementById('extras-tabs').getBoundingClientRect();
-      return {headBottom: Math.round(head.bottom), tabsTop: Math.round(tabs.top),
-              scrolled: document.getElementById('modal-backdrop').scrollTop};
+      return {sheetTop: Math.round(sheet.top), tabsTop: Math.round(tabs.top),
+              scrolled: document.getElementById('modal').scrollTop};
     });
     check('the sheet really scrolled', after.scrolled > 400, String(after.scrolled));
     check('the categories came with it', after.tabsTop < before,
       `${before} -> ${after.tabsTop}`);
-    check('and stopped under the back button rather than behind it',
-      after.tabsTop >= after.headBottom - 1 && after.tabsTop <= after.headBottom + 2,
+    check('and stopped at the top of the sheet rather than sliding out of it',
+      after.tabsTop >= after.sheetTop - 1 && after.tabsTop <= after.sheetTop + 2,
       JSON.stringify(after));
     check('so you can switch shelf without scrolling back up',
       await (async()=>{

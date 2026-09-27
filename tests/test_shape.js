@@ -4,6 +4,7 @@
 // the only way shape is chosen now that ruling a category out is gone.
 // The count line and the stream have to agree exactly.
 const { chromium } = require('playwright');
+const { leaveSheet } = require('./nav');
 const fs=require('fs'), path=require('path');
 const REPO = require('path').join(__dirname, '..');
 const SHOTS = require('path').join(__dirname, 'shots');
@@ -40,8 +41,7 @@ async function pin(p, cat){
   await p.waitForTimeout(400);
   await p.click('#picker-gallery .picker-tile');
   await p.waitForTimeout(250);
-  await p.click('.modal .sheet-back');
-  await p.waitForTimeout(700);
+  await leaveSheet(p, {settle:700});
 }
 
 // And Any is the way back from it.
@@ -50,8 +50,7 @@ async function unpin(p, cat){
   await p.waitForTimeout(400);
   await p.click('#picker-quick-picks .base-btn:has-text("Any")');
   await p.waitForTimeout(250);
-  await p.click('.modal .sheet-back');
-  await p.waitForTimeout(700);
+  await leaveSheet(p, {settle:700});
 }
 
 (async()=>{

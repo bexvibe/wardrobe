@@ -2,6 +2,7 @@
 // that opens, a piece that opens where it lives, and nothing anywhere that
 // asks "are you sure" — the undo on the toast does that job instead.
 const { chromium } = require('playwright');
+const { leaveSheet } = require('./nav');
 const fs=require('fs'), path=require('path');
 const REPO = require('path').join(__dirname, '..');
 const SHOTS = require('path').join(__dirname, 'shots');
@@ -208,7 +209,7 @@ const dbTags = (p, id) => p.evaluate(i =>
     check('without taking you off Outfits', landed.mode==='outfits', landed.mode);
     check('and back is the one step you took',
       JSON.stringify(landed.trail)===JSON.stringify(['item']), landed.trail.join(' > '));
-    await p.click('.modal .sheet-back'); await p.waitForTimeout(600);
+    await leaveSheet(p, {settle:600});
     check('which puts you back on the lead card', await p.evaluate(()=>
       appMode==='outfits' &&
       !document.getElementById('modal-backdrop').classList.contains('open')));
@@ -291,9 +292,16 @@ const dbTags = (p, id) => p.evaluate(i =>
     check('the button is just "New capsule"',
       label.includes('New capsule') && !label.some(l=>/with this piece/.test(l)),
       label.join(', '));
+    // It asks for a name and nothing else: you are already holding the
+    // piece, so being asked to choose pieces would be asking twice.
     check('and it still starts the capsule off with the piece in it', await (async()=>{
-      await p.click('#modal button:has-text("New capsule")'); await p.waitForTimeout(600);
-      return p.evaluate(()=>capsuleDraft.itemIds.has('seed_0'));
+      await p.click('#modal button:has-text("New capsule")'); await p.waitForTimeout(500);
+      await p.fill('#prompt-input', 'Fixes Capsule');
+      await p.click('#prompt-confirm'); await p.waitForTimeout(800);
+      return p.evaluate(()=>{
+        const made = capsules.find(c=>c.name==='Fixes Capsule');
+        return Boolean(made) && made.itemIds.includes('seed_0');
+      });
     })());
     await p.close();
   }

@@ -234,15 +234,69 @@ const confirmText = p => p.evaluate(()=>({
     await p.close();
   }
 
-  // ---- 8. The back button reads the same everywhere ----
+  // ---- 8. The way out of a sheet sits beside the way on ----
   {
+    // This reverses an older rule. The word Cancel used to be banned from
+    // the sheets: the one way out was a Back arrow in the top-left corner,
+    // and a second control at the bottom was a duplicate. Measuring the app
+    // with a thumb turned that on its head — every commit was already at
+    // the bottom and every exit at the top-left, which put the control you
+    // always need in the hardest corner of the phone to reach. So the exit
+    // came down to join the commit, and once it is a button on a bar rather
+    // than an arrow in a corner, it needs a word: Cancel.
+    const p=await open(b);
+    await p.evaluate(()=>openModal('seed_0')); await p.waitForTimeout(500);
+    await p.click('.modal button:has-text("Add to capsule")'); await p.waitForTimeout(600);
+    const bar = await p.evaluate(()=>{
+      const f = document.querySelector('#modal .sheet-footer');
+      const btns = Array.from(f.querySelectorAll('.btn'));
+      const l = btns[0].getBoundingClientRect(), r = btns[1].getBoundingClientRect();
+      return {
+        split: f.classList.contains('split'),
+        labels: btns.map(x=>x.textContent.trim()),
+        quiet: btns[0].classList.contains('secondary'),
+        order: Math.round(l.left) < Math.round(r.left),
+        gap: Math.round(r.left - l.right),
+        lowest: Math.round(Math.min(l.top, r.top)),
+        fold: window.innerHeight,
+        backArrow: Boolean(document.querySelector('#modal .sheet-back')),
+      };
+    });
+    check('a sheet holding a draft leaves by its own bar', bar.split, bar.labels.join(' / '));
+    check('and the way out is called Cancel', bar.labels[0] === 'Cancel', bar.labels.join(' / '));
+    check('drawn quieter than the thing you came to do', bar.quiet);
+    check('on the left, so a right thumb falls on the side that keeps your work',
+      bar.order);
+    check('pushed apart rather than sat as a pair under one thumb',
+      bar.gap > 100, `${bar.gap}px between them`);
+    check('both of them down where a thumb is',
+      bar.lowest > bar.fold * 0.6, `${bar.lowest} of ${bar.fold}`);
+    check('and nothing left in the top corner to reach for instead',
+      !bar.backArrow);
+    await p.evaluate(()=>discardCapsulePicker()); await p.waitForTimeout(400);
+
+    // A sheet with nothing to commit has nothing to cancel, so its bar is
+    // one word wide — the filter picker changes the page behind it as you
+    // tap, and clearing a filter is a tap of its own.
+    await p.evaluate(()=>openSlotPicker('Tops')); await p.waitForTimeout(500);
+    const live = await p.evaluate(()=>
+      Array.from(document.querySelectorAll('#modal .sheet-footer .btn')).map(x=>x.textContent.trim()));
+    check('a sheet that applies live says Done, and only Done',
+      live.length === 1 && live[0] === 'Done', live.join(' / '));
+    await p.close();
+  }
+
+  // ---- 9. The editors have not come down yet ----
+  {
+    // Recorded rather than approved: the piece form, the capsule editor,
+    // the outfit builder and the tag editor still leave by a Back arrow at
+    // the top. When they move to a Cancel on the bar this fails, and that
+    // is the signal to fold them into the section above.
     const p=await open(b);
     await p.click('#add-item-btn'); await p.waitForTimeout(500);
-    check('the piece form says Back, like every other sheet',
+    check('the piece form still says Back at the top',
       (await p.textContent('#form-backdrop .sheet-back')).trim() === 'Back',
       (await p.textContent('#form-backdrop .sheet-back')).trim());
-    check('no sheet anywhere still says Cancel',
-      !(await p.evaluate(()=>/>Cancel</.test(document.documentElement.innerHTML))));
     await p.close();
   }
 

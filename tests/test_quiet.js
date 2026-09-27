@@ -8,7 +8,7 @@
 // asymmetric case, because on Faves the card goes with it and there is
 // nothing left to tap.
 const { chromium } = require('playwright');
-const { toFaves } = require('./nav');
+const { toFaves, leaveSheet } = require('./nav');
 const fs=require('fs'), path=require('path');
 const REPO = require('path').join(__dirname, '..');
 const SHOTS = require('path').join(__dirname, 'shots');
@@ -54,19 +54,24 @@ const hush = p => p.evaluate(()=>{
     await p.click('#saved-gallery .outfit-card'); await p.waitForTimeout(500);
     await p.click('#saved-gallery .modal-actions button'); await p.waitForTimeout(600);
 
-    await p.click('#extras-gallery .picker-tile'); await p.waitForTimeout(700);
+    await p.click('#extras-gallery .picker-tile'); await p.waitForTimeout(600);
     const after = await toastUp(p);
     check('adding an accessory raises no toast', !after.shown, after.said);
     check('because the tile says it instead',
       await p.evaluate(()=>document.querySelectorAll('#extras-gallery .picker-selected').length===1));
-    check('and it really was added',
-      await p.evaluate(()=>extrasFor(favoriteOutfits[0].key).length===1));
 
-    await p.click('#extras-gallery .picker-tile'); await p.waitForTimeout(700);
+    await p.click('#extras-gallery .picker-tile'); await p.waitForTimeout(600);
     check('taking it off is just as quiet', !(await toastUp(p)).shown);
     check('and the tick goes with it',
-      await p.evaluate(()=>document.querySelectorAll('#extras-gallery .picker-selected').length===0 &&
-                           extrasFor(favoriteOutfits[0].key).length===0));
+      await p.evaluate(()=>document.querySelectorAll('#extras-gallery .picker-selected').length===0));
+
+    // Saving the lot is silent too: the card behind you is already wearing
+    // it by the time the sheet is down.
+    await p.click('#extras-gallery .picker-tile'); await p.waitForTimeout(500);
+    await leaveSheet(p, {settle:800});
+    check('and it really was added', await p.evaluate(()=>
+      extrasFor(favoriteOutfits[0].key).length===1));
+    check('without a word about it', !(await toastUp(p)).shown, (await toastUp(p)).said);
     await p.close();
   }
 
@@ -78,17 +83,20 @@ const hush = p => p.evaluate(()=>{
     await p.evaluate(()=>{ openModal('seed_0'); }); await p.waitForTimeout(600);
     await p.click('.modal-actions .btn:has-text("Add to capsule")'); await p.waitForTimeout(700);
 
-    await p.click('.capsule-pick'); await p.waitForTimeout(700);
+    await p.click('.capsule-pick'); await p.waitForTimeout(600);
     check('ticking a capsule raises no toast', !(await toastUp(p)).shown);
     check('because the row ticks where you tapped it',
       await p.evaluate(()=>document.querySelector('.capsule-pick').classList.contains('picked')));
-    check('and the piece really is in it',
-      await p.evaluate(()=>capsules[0].itemIds.includes('seed_0')));
 
-    await p.click('.capsule-pick'); await p.waitForTimeout(700);
+    await p.click('.capsule-pick'); await p.waitForTimeout(600);
     check('and unticking it is the way back, silently',
       !(await toastUp(p)).shown &&
-      await p.evaluate(()=>!capsules[0].itemIds.includes('seed_0')));
+      await p.evaluate(()=>!document.querySelector('.capsule-pick').classList.contains('picked')));
+
+    await p.click('.capsule-pick'); await p.waitForTimeout(500);
+    await leaveSheet(p, {settle:800});
+    check('and the piece really is in it',
+      await p.evaluate(()=>capsules[0].itemIds.includes('seed_0')));
     await p.close();
   }
 

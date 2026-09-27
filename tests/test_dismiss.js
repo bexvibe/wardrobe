@@ -3,7 +3,7 @@
 // the same curve it arrived by — but a tap inside it, or a scroll of a row
 // inside it, is still you using it.
 const { chromium } = require('playwright');
-const { toFaves } = require('./nav');
+const { toFaves, leaveSheet } = require('./nav');
 const fs=require('fs'), path=require('path');
 const REPO = require('path').join(__dirname, '..');
 const SHOTS = require('path').join(__dirname, 'shots');
@@ -55,7 +55,7 @@ async function reopen(p){
 
     await p.click('#sheet-filter-grid .filter-chip'); await p.waitForTimeout(500);
     check('opening a picker from inside it keeps it up', await isOpen(p));
-    await p.click('.modal .sheet-back'); await p.waitForTimeout(700);
+    await leaveSheet(p, {settle:700});
     check('and so does coming back out of the picker', await isOpen(p));
 
     // The row inside scrolls sideways; that is not scrolling the page.

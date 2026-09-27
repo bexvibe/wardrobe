@@ -11,7 +11,7 @@
 // about keeping, and an outfit wears the same accessories wherever it
 // appears.
 const { chromium } = require('playwright');
-const { toFaves } = require('./nav');
+const { toFaves, leaveSheet } = require('./nav');
 const fs=require('fs'), path=require('path');
 const REPO = require('path').join(__dirname, '..');
 const fake=fs.readFileSync(path.join(__dirname,'fake-supabase.js'),'utf8');
@@ -34,14 +34,15 @@ async function open(b, extra){
   return p;
 }
 
-// Open the first generated outfit and put the first accessory on it.
+// Open the first generated outfit and put the first accessory on it. The
+// picker stages, so the tap ticks it and Save is what puts it on.
 async function dressFirst(p){
   await p.click('#outfit-gallery .outfit-card'); await p.waitForTimeout(700);
   const key = await p.evaluate(()=>expandedComboKey);
   await p.click('.outfit-card.expanded .modal-actions button:has-text("accessories")');
   await p.waitForTimeout(700);
-  await p.click('#extras-gallery .picker-tile'); await p.waitForTimeout(700);
-  await p.evaluate(()=>closeModal()); await p.waitForTimeout(600);
+  await p.click('#extras-gallery .picker-tile'); await p.waitForTimeout(500);
+  await leaveSheet(p, {settle:700});
   return key;
 }
 
@@ -61,7 +62,8 @@ const rows = p => p.evaluate(()=>window.__WARDROBE_STATE.outfit_extras.slice());
 
     await p.click('.outfit-card.expanded .modal-actions button:has-text("accessories")');
     await p.waitForTimeout(700);
-    await p.click('#extras-gallery .picker-tile'); await p.waitForTimeout(700);
+    await p.click('#extras-gallery .picker-tile'); await p.waitForTimeout(500);
+    await leaveSheet(p, {settle:700});
 
     check('the accessory goes on', (await p.evaluate(k=>extrasFor(k).length, key)) === 1);
     check('written against the combination',
@@ -71,7 +73,6 @@ const rows = p => p.evaluate(()=>window.__WARDROBE_STATE.outfit_extras.slice());
     check('and it did not quietly keep the outfit',
       await p.evaluate(k=>!isFavorited(k) && window.__WARDROBE_STATE.saved_outfits.length === 0, key));
 
-    await p.evaluate(()=>closeModal()); await p.waitForTimeout(600);
     check('the card wears it', await p.evaluate(()=>
       document.querySelectorAll('.outfit-card.expanded .outfit-extras img').length === 1));
     check('the heart is still empty, because nothing was decided',
@@ -116,7 +117,8 @@ const rows = p => p.evaluate(()=>window.__WARDROBE_STATE.outfit_extras.slice());
 
     await p.click('.outfit-card.expanded .modal-actions button:has-text("accessories")');
     await p.waitForTimeout(700);
-    await p.click('#extras-gallery .picker-selected'); await p.waitForTimeout(700);
+    await p.click('#extras-gallery .picker-selected'); await p.waitForTimeout(500);
+    await leaveSheet(p, {settle:700});
     check('taking the last one off leaves no row behind',
       (await rows(p)).length === 0, JSON.stringify(await rows(p)));
     check('and the app agrees it is bare', await p.evaluate(k=>extrasFor(k).length === 0, key));

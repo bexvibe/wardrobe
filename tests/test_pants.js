@@ -2,6 +2,7 @@
 // The tabs split; the outfit's bottom slot still draws from both, so a pair
 // of shorts has not quietly dropped out of the generator.
 const { chromium } = require('playwright');
+const { leaveSheet } = require('./nav');
 const fs=require('fs'), path=require('path');
 const REPO = require('path').join(__dirname, '..');
 const SHOTS = require('path').join(__dirname, 'shots');
@@ -120,14 +121,14 @@ const tiles = p => p.evaluate(()=>document.querySelectorAll('#gallery .tile').le
                tiles.some(t=>(t.getAttribute('onclick')||'').includes(id));
       }, shortsId));
     check('and the Pants picker does not', await (async()=>{
-      await p.click('.modal .sheet-back'); await p.waitForTimeout(400);
+      await leaveSheet(p, {settle:400});
       await p.evaluate(()=>openSlotPicker('Pants')); await p.waitForTimeout(400);
       return p.evaluate(id=>!Array.from(document.querySelectorAll('#picker-gallery .picker-tile'))
         .some(t=>(t.getAttribute('onclick')||'').includes(id)), shortsId);
     })());
 
     await p.evaluate(id=>{ outfitFilters['Shorts'] = {type:'items', ids:[id]}; }, shortsId);
-    await p.click('.modal .sheet-back'); await p.waitForTimeout(900);
+    await leaveSheet(p, {settle:900});
     // Pants is still on Any, but asking for a particular pair of shorts is
     // asking for those shorts — the other bottoms step aside rather than
     // coming along as alternatives.

@@ -3,7 +3,7 @@
 // already decided to keep — and an outfit can carry as many as it needs,
 // where it used to hold exactly one pair of shoes.
 const { chromium } = require('playwright');
-const { toFaves } = require('./nav');
+const { toFaves, leaveSheet } = require('./nav');
 const fs=require('fs'), path=require('path');
 const REPO = require('path').join(__dirname, '..');
 const SHOTS = require('path').join(__dirname, 'shots');
@@ -18,7 +18,9 @@ const SAVED=[{combo_key:'tb|seed_22|seed_11|none|none|none', base:'topbottom',
 const KEY='tb|seed_22|seed_11|none|none|none';
 const results=[]; const check=(n,p,d)=>{results.push(p);console.log(`${p?'PASS':'FAIL'}  ${n}${d?'  — '+d:''}`);};
 // Accessories hang off the combination now, in their own table — a
-// combination with nothing on it has no row at all.
+// combination with nothing on it has no row at all. And the picker stages:
+// a tap ticks the tile and nothing more, so the row is only there to read
+// after Save.
 const row=p=>p.evaluate(k=>
   window.__WARDROBE_STATE.outfit_extras.find(r=>r.combo_key===k)
     || {combo_key:k, extra_ids:[]}, KEY);
@@ -77,38 +79,38 @@ async function openPicker(p){
       itemsOnShelf('Accessories').some(i=>!i.photo)));
   await p.screenshot({path:shot('e-2-picker.png')});
 
-  // ---- 2. One tap is the change ----
+  // ---- 2. A tap ticks it, and that is all a tap does ----
   const firstShoe = await p.evaluate(()=>itemsOnShelf('Shoes')[0].id);
-  await p.click('#extras-gallery .picker-tile'); await p.waitForTimeout(600);
+  await p.click('#extras-gallery .picker-tile'); await p.waitForTimeout(500);
   let r = await row(p);
-  check('a tap writes it straight to the list', JSON.stringify(r.extra_ids)===JSON.stringify([firstShoe]),
-    JSON.stringify(r.extra_ids));
+  check('it is ticked in the picker',
+    await p.evaluate(()=>document.querySelectorAll('#extras-gallery .picker-selected').length)===1);
+  check('but nothing is on the outfit yet — you are trying it, not keeping it',
+    r.extra_ids.length===0, JSON.stringify(r.extra_ids));
   check('nothing was asked first', await p.evaluate(()=>
     !document.getElementById('confirm-backdrop').classList.contains('open')));
   // No toast: the tile ticks under your thumb, and the same tap takes it
   // off. Saying so as well was the app describing what you just watched.
   check('and nothing is announced, because you can see it',
     await p.evaluate(()=>!document.querySelector('.toast.show')));
-  check('it is ticked in the picker',
-    await p.evaluate(()=>document.querySelectorAll('#extras-gallery .picker-selected').length)===1);
-  check('combo_key is left alone, so the heart stays filled in Outfits',
-    r.combo_key===KEY);
 
   // ---- 3. Several at once, which is the point ----
   await p.click('#extras-tabs .tab:has-text("Hats")'); await p.waitForTimeout(400);
   const firstHat = await p.evaluate(()=>itemsOnShelf('Hats')[0].id);
-  await p.click('#extras-gallery .picker-tile'); await p.waitForTimeout(600);
-  r = await row(p);
-  check('a hat goes on alongside the shoes, it does not replace them',
-    r.extra_ids.length===2 && r.extra_ids.includes(firstShoe) && r.extra_ids.includes(firstHat),
-    JSON.stringify(r.extra_ids));
+  await p.click('#extras-gallery .picker-tile'); await p.waitForTimeout(500);
   check('switching category kept the shoes ticked on their own tab',
     await (async()=>{
       await p.click('#extras-tabs .tab:has-text("Shoes")'); await p.waitForTimeout(400);
       return (await p.evaluate(()=>document.querySelectorAll('#extras-gallery .picker-selected').length))===1;
     })());
 
-  await p.click('.modal .sheet-back'); await p.waitForTimeout(600);
+  await leaveSheet(p, {settle:700});          // Save
+  r = await row(p);
+  check('Save puts the lot on at once — the hat joins the shoes, it does not replace them',
+    r.extra_ids.length===2 && r.extra_ids.includes(firstShoe) && r.extra_ids.includes(firstHat),
+    JSON.stringify(r.extra_ids));
+  check('combo_key is left alone, so the heart stays filled in Outfits',
+    r.combo_key===KEY);
   check('both show on the card', (await onCard(p))===2, String(await onCard(p)));
   check('and both are listed among its pieces',
     await p.evaluate(()=>{
@@ -132,26 +134,37 @@ async function openPicker(p){
     }));
   await p.screenshot({path:shot('e-3-attached.png')});
 
-  // ---- 4. Tapping again takes it off ----
+  // ---- 4. Tapping again takes it off, and Cancel puts it back ----
   await openPicker(p);
-  await p.click('#extras-gallery .picker-tile'); await p.waitForTimeout(600);
-  r = await row(p);
-  check('tapping a ticked piece takes it off', r.extra_ids.length===1 && r.extra_ids[0]===firstHat,
-    JSON.stringify(r.extra_ids));
+  await p.click('#extras-tabs .tab:has-text("Shoes")'); await p.waitForTimeout(400);
+  await p.click('#extras-gallery .picker-tile'); await p.waitForTimeout(500);
+  check('tapping a ticked piece unticks it',
+    await p.evaluate(()=>document.querySelectorAll('#extras-gallery .picker-selected').length)===0);
   check('quietly, again', await p.evaluate(()=>!document.querySelector('.toast.show')));
   // The undo is the tap itself.
-  await p.click('#extras-gallery .picker-tile'); await p.waitForTimeout(700);
-  r = await row(p);
-  check('and tapping once more puts it back', r.extra_ids.length===2,
-    JSON.stringify(r.extra_ids));
-  check('and the picker shows it back on straight away',
+  await p.click('#extras-gallery .picker-tile'); await p.waitForTimeout(500);
+  check('and tapping once more puts it back',
     await p.evaluate(()=>document.querySelectorAll('#extras-gallery .picker-selected').length)===1);
 
-  // Take everything off again.
-  await p.click('#extras-gallery .picker-tile'); await p.waitForTimeout(600);
+  // Cancel is the other undo: take the shoes off, then change your mind
+  // about the whole visit.
+  await p.click('#extras-gallery .picker-tile'); await p.waitForTimeout(500);
+  await leaveSheet(p, {save:false, settle:400});
+  check('backing out of a change asks before it throws the change away',
+    await p.evaluate(()=>document.getElementById('confirm-backdrop').classList.contains('open')));
+  await p.click('#confirm-go'); await p.waitForTimeout(700);
+  r = await row(p);
+  check('and Cancel leaves the outfit dressed as it was', r.extra_ids.length===2,
+    JSON.stringify(r.extra_ids));
+  check('the card agrees', (await onCard(p))===2, String(await onCard(p)));
+
+  // Take everything off again, this time meaning it.
+  await openPicker(p);
+  await p.click('#extras-tabs .tab:has-text("Shoes")'); await p.waitForTimeout(400);
+  await p.click('#extras-gallery .picker-tile'); await p.waitForTimeout(500);
   await p.click('#extras-tabs .tab:has-text("Hats")'); await p.waitForTimeout(400);
-  await p.click('#extras-gallery .picker-tile'); await p.waitForTimeout(600);
-  await p.click('.modal .sheet-back'); await p.waitForTimeout(600);
+  await p.click('#extras-gallery .picker-tile'); await p.waitForTimeout(500);
+  await leaveSheet(p, {settle:700});
   r = await row(p);
   check('an outfit can be stripped back to bare', r.extra_ids.length===0, JSON.stringify(r.extra_ids));
   check('the row disappears with them', (await onCard(p))===0);
@@ -161,7 +174,9 @@ async function openPicker(p){
 
   // ---- 5. It is really saved ----
   await openPicker(p);
-  await p.click('#extras-gallery .picker-tile'); await p.waitForTimeout(600);
+  await p.click('#extras-tabs .tab:has-text("Shoes")'); await p.waitForTimeout(400);
+  await p.click('#extras-gallery .picker-tile'); await p.waitForTimeout(500);
+  await leaveSheet(p, {settle:700});
   await p.reload(); await p.waitForTimeout(1000);
   await toFaves(p, 600);
   check('what you put on survives a reload', (await onCard(p))===1, String(await onCard(p)));

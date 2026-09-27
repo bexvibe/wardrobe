@@ -4,7 +4,7 @@
 // time. And the "outfits with this piece" list inside a sheet stops
 // borrowing the Outfits page's filters, which it used to wipe.
 const { chromium } = require('playwright');
-const { toFaves } = require('./nav');
+const { toFaves, leaveSheet } = require('./nav');
 const fs=require('fs'), path=require('path');
 const REPO = require('path').join(__dirname, '..');
 const SHOTS = require('path').join(__dirname, 'shots');
@@ -34,12 +34,16 @@ const sheetUp = p => p.evaluate(()=>
 const formUp = p => p.evaluate(()=>
   document.getElementById('form-backdrop').classList.contains('open'));
 const trail = p => p.evaluate(()=>sheetTrail.map(e=>e.sheet));
-// Whichever sheet is actually up: the other backdrop still holds a back
-// button, hidden behind it.
+// One step back out of whichever sheet is actually up. The editors still
+// carry a back arrow at the top; everything else leaves by its own bottom
+// bar, or by the strip of page showing above it.
 const back = async p => {
-  const sel = (await formUp(p)) ? '#form-backdrop .sheet-back' : '.modal .sheet-back';
-  await p.click(sel);
-  await p.waitForTimeout(600);
+  if(await formUp(p)){
+    await p.click('#form-backdrop .sheet-back');
+    await p.waitForTimeout(600);
+    return;
+  }
+  await leaveSheet(p, {settle:600});
 };
 
 // Keep one outfit so Faves has something on it.
@@ -116,15 +120,23 @@ async function keepOne(p){
     check('Add to capsule is another step',
       JSON.stringify(await trail(p))===JSON.stringify(['item','capsules']),
       (await trail(p)).join(' > '));
+    // New capsule from here does not go deeper: you are holding a piece
+    // and the only thing missing is a name, so it asks for one over the
+    // picker rather than opening the whole editor.
     await p.click('.modal .modal-actions .btn:has-text("New capsule")');
-    await p.waitForTimeout(700);
-    check('and a new capsule from there is a third',
-      JSON.stringify(await trail(p))===JSON.stringify(['item','capsules','capsule']),
+    await p.waitForTimeout(500);
+    check('and a new capsule from there only asks for a name',
+      await p.evaluate(()=>document.getElementById('prompt-backdrop').classList.contains('open')));
+    check('without going a step deeper',
+      JSON.stringify(await trail(p))===JSON.stringify(['item','capsules']),
       (await trail(p)).join(' > '));
-
-    await back(p);
-    check('back from the capsule lands on the capsule picker',
+    await p.fill('#prompt-input', 'Trail Capsule');
+    await p.click('#prompt-confirm'); await p.waitForTimeout(800);
+    check('naming it makes it, with the piece already in it',
+      await p.evaluate(()=>capsules.some(c=>c.name==='Trail Capsule')));
+    check('and leaves you on the picker',
       Boolean(await p.evaluate(()=>document.getElementById('capsule-picks'))));
+
     await back(p);
     check('back again lands on the piece',
       Boolean(await p.evaluate(()=>document.querySelector('.modal .modal-photo'))));

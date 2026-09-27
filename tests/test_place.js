@@ -2,7 +2,7 @@
 // way to that piece in the wardrobe, and coming back to a tab should put you
 // where you were on it — for this visit only.
 const { chromium } = require('playwright');
-const { toFaves } = require('./nav');
+const { toFaves, leaveSheet } = require('./nav');
 const fs=require('fs'), path=require('path');
 const REPO = require('path').join(__dirname, '..');
 const SHOTS = require('path').join(__dirname, 'shots');
@@ -113,7 +113,7 @@ const scrollTo = async (p, top) => { await p.evaluate(t=>window.scrollTo({top:t}
     check('one step on the trail, so back is the outfit you came from',
       JSON.stringify(landed.trail)===JSON.stringify(['item']), landed.trail.join(' > '));
 
-    await p.click('.modal .sheet-back'); await p.waitForTimeout(700);
+    await leaveSheet(p, {settle:700});
     check('and back puts you there', await p.evaluate(()=>appMode==='outfits' &&
       !document.getElementById('modal-backdrop').classList.contains('open')));
 
@@ -226,6 +226,44 @@ const scrollTo = async (p, top) => { await p.evaluate(t=>window.scrollTo({top:t}
         Object.values(scrollPositions).every(v=>v===0)));
     await q.close();
     await ctx.close();
+  }
+
+  // ---- 6. A sheet keeps your place the same way a page does ----
+  {
+    // The sheets scroll inside themselves now, and a step deeper rebuilds
+    // the one you left from scratch — so how far down it you were is noted
+    // on the trail or lost. Reading a piece, editing it, and coming back
+    // used to land you at the top of it.
+    const p=await open(b);
+    await p.evaluate(()=>{ const t = ITEMS.find(i=>tabForItem(i)==='Jackets'); openModal(t.id); });
+    await p.waitForTimeout(1400);
+    const room = await p.evaluate(()=>{
+      const el = document.getElementById('modal');
+      return Math.round(el.scrollHeight - el.clientHeight);
+    });
+    check('the piece sheet is long enough to have a place on it', room > 600, String(room));
+
+    await p.evaluate(()=>document.getElementById('modal').scrollTo({top:700}));
+    await p.waitForTimeout(400);
+    const was = await p.evaluate(()=>Math.round(document.getElementById('modal').scrollTop));
+    check('scrolled down it', was > 600, String(was));
+
+    // Through the app rather than by clicking Edit: clicking scrolls the
+    // button into view first, which would move the sheet before the step.
+    await p.evaluate(()=>openItemForm(sheetTrail[0].id)); await p.waitForTimeout(800);
+    check('a step deeper notes where you were on it',
+      (await p.evaluate(()=>sheetTrail[0].y)) === was,
+      `${await p.evaluate(()=>sheetTrail[0].y)} vs ${was}`);
+
+    await p.evaluate(()=>discardItemForm()); await p.waitForTimeout(1400);
+    const now = await p.evaluate(()=>Math.round(document.getElementById('modal').scrollTop));
+    // Loosely, and for the same reason the page is: the outfits under a
+    // piece are generated after the redraw and their photos settle after
+    // that, so a row's worth of drift is the content arriving, not the
+    // restore missing.
+    check('and back puts you back there rather than at the top of it',
+      now > 400 && Math.abs(now - was) <= 200, `${was} -> ${now}`);
+    await p.close();
   }
 
   await b.close();

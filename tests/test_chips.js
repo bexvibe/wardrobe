@@ -5,7 +5,7 @@
 // And every one of them — chips, tags, Clear all, the arrow, the picker's
 // own buttons — is a full thumb's worth of target.
 const { chromium } = require('playwright');
-const { toFaves } = require('./nav');
+const { toFaves, leaveSheet } = require('./nav');
 const fs=require('fs'), path=require('path');
 const REPO = require('path').join(__dirname, '..');
 const SHOTS = require('path').join(__dirname, 'shots');
@@ -65,8 +65,7 @@ async function setSlot(p, key, choice){
   await p.waitForTimeout(350);
   await p.click(`#picker-quick-picks .base-btn:has-text("${choice}")`);
   await p.waitForTimeout(250);
-  await p.click('.modal .sheet-back');
-  await p.waitForTimeout(600);
+  await leaveSheet(p, {settle:600});
 }
 
 (async()=>{

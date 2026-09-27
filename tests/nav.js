@@ -20,4 +20,32 @@ module.exports = {
     await page.waitForFunction(() => appMode === 'outfits');
     await page.waitForTimeout(settle === undefined ? 1200 : settle);
   },
+
+  // Leaving whichever sheet is up.
+  //
+  // The control differs by what the sheet is for: one that applies live
+  // has a single Done, one holding a draft has Cancel and Save at
+  // opposite ends, one with nothing on it has only the strip of page
+  // above it. A suite that merely wants to be somewhere else should not
+  // have to know which — but a suite that is about the leaving still
+  // reaches for the control it means.
+  //
+  // `save` picks the side on a staged sheet, and defaults to keeping your
+  // work.
+  async leaveSheet(page, opts){
+    const save = !opts || opts.save !== false;
+
+    if(await page.$('#modal .sheet-footer.split .btn')){
+      await page.click('#modal .sheet-footer .btn' + (save ? ':not(.secondary)' : '.secondary'));
+    } else if(await page.$('#modal .sheet-footer .btn')){
+      await page.click('#modal .sheet-footer .btn');          // live: Done
+    } else if(await page.$('#modal .sheet-back')){
+      await page.click('#modal .sheet-back');                 // an editor, for now
+    } else {
+      // Read-only: tap the page showing above the sheet, which means the
+      // same as pushing the sheet down.
+      await page.click('#modal-backdrop', { position: { x: 180, y: 18 } });
+    }
+    await page.waitForTimeout((opts && opts.settle) || 600);
+  },
 };
