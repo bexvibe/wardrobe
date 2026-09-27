@@ -527,14 +527,10 @@
     width:38px;height:4px;border-radius:999px;
     background:var(--line);
   }
-  .sheet-header{
-    position:sticky;top:0;z-index:5;
-    background:var(--page);
-    padding:12px 16px;
-    display:flex;align-items:center;
-  }
-  /* Every way back is the same arrow, drawn like the search glyph beside
-     it rather than typed as a character. */
+  /* The one arrow left in the app: leaving select mode on the wardrobe,
+     which is a page rather than a sheet. Every sheet leaves by its own bar
+     now. Drawn like the search glyph beside it rather than typed as a
+     character. */
   .sheet-back{
     display:inline-flex;align-items:center;gap:7px;
     font-family:'Work Sans',sans-serif;
@@ -1728,9 +1724,6 @@
 
 <div class="modal-backdrop" id="form-backdrop">
   <div class="modal">
-    <div class="sheet-header">
-      <button class="sheet-back" onclick="closeItemForm()"><svg class="back-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>Back</button>
-    </div>
     <div class="modal-body has-footer">
       <div class="modal-name" id="form-title">New piece</div>
       <!-- The photo is the piece, so it leads: what it looks like now, and
@@ -1758,9 +1751,10 @@
            it. They were on the detail sheet, which is for reading. -->
       <div class="modal-actions" id="form-item-actions"></div>
     </div>
-    <div class="sheet-footer">
+    <div class="sheet-footer split">
       <div class="sheet-footer-inner">
-        <button class="btn" id="form-save-btn" onclick="submitItemForm()">Save</button>
+        <button class="btn secondary" type="button" onclick="closeItemForm()">Cancel</button>
+        <button class="btn" id="form-save-btn" onclick="submitItemForm()">Save piece</button>
       </div>
     </div>
   </div>
@@ -2239,6 +2233,9 @@ function showSheetBackdrop(which){
 function hideAllSheets(){
   SHEET_BACKDROPS.forEach(id =>
     document.getElementById(id)?.classList.remove('open'));
+  // Whatever the last sheet meant by closing goes with it, so the next one
+  // cannot inherit a gesture it never asked for.
+  allowSheetDrag(null);
 }
 
 // One step deeper. The first step also notes where you were standing when
@@ -2970,16 +2967,16 @@ function openOutfitBuilder(){
   pushSheet({ sheet: 'builder', id: null });
 
   document.getElementById('modal').innerHTML = `
-    <div class="sheet-header"><button class="sheet-back" onclick="closeOutfitBuilder()"><svg class="back-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>Back</button></div>
     <div class="modal-body has-footer">
       <div class="modal-name">Build an outfit</div>
       <div id="builder-preview-slot"></div>
       <div class="tabs" id="builder-tabs"></div>
       <div class="gallery" id="builder-gallery"></div>
     </div>
-    <div class="sheet-footer">
+    <div class="sheet-footer split">
       <div class="sheet-footer-inner">
-        <button class="btn" id="builder-save-btn" onclick="saveBuiltOutfit()" disabled>Keep outfit</button>
+        <button class="btn secondary" type="button" onclick="closeOutfitBuilder()">Cancel</button>
+        <button class="btn" id="builder-save-btn" onclick="saveBuiltOutfit()" disabled>Save outfit</button>
       </div>
     </div>
   `;
@@ -2987,7 +2984,7 @@ function openOutfitBuilder(){
   renderBuilderGallery();
   renderBuilderState();
   showSheetBackdrop('modal-backdrop');
-  // Once it is up and the header has a height to measure.
+  // Once it is up and there is a height to measure.
   stickBuilderTabs();
 }
 
@@ -3085,15 +3082,15 @@ function renderBuilderState(){
     slot.innerHTML = anything
       ? `<div class="outfit-card builder-preview"><div class="outfit-thumbs">${outfitThumbsHtml(draftPreviewCombo())}</div></div>`
       : '';
-    // The tabs come to rest under the header, and the preview above them
-    // has just changed height.
+    // The tabs come to rest at the top of the sheet, and the preview
+    // above them has just changed height.
     stickBuilderTabs();
   }
 
   const btn = document.getElementById('builder-save-btn');
   if(btn){
     btn.disabled = !combo || already;
-    btn.textContent = already ? 'Already kept' : 'Keep outfit';
+    btn.textContent = already ? 'Already kept' : 'Save outfit';
   }
 }
 
@@ -3121,10 +3118,10 @@ async function saveBuiltOutfit(){
   if(isFavorited(key)) return;
 
   const btn = document.getElementById('builder-save-btn');
-  if(btn){ btn.disabled = true; btn.textContent = 'Keeping...'; }
+  if(btn){ btn.disabled = true; btn.textContent = 'Saving...'; }
   const ok = await setFavorited(key, true, combo);
   if(!ok){
-    if(btn){ btn.disabled = false; btn.textContent = 'Keep outfit'; }
+    if(btn){ btn.disabled = false; btn.textContent = 'Save outfit'; }
     return;
   }
   outfitDraft = null;
@@ -4126,9 +4123,6 @@ function openCapsuleEditor(id, seedItemIds){
 
   const modal = document.getElementById('modal');
   modal.innerHTML = `
-    <div class="sheet-header">
-      <button class="sheet-back" onclick="closeCapsuleEditor()"><svg class="back-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>Back</button>
-    </div>
     <div class="modal-body has-footer">
       <div class="modal-name">${capsule ? 'Edit capsule' : 'New capsule'}</div>
       <div class="form-grid">
@@ -4141,8 +4135,9 @@ function openCapsuleEditor(id, seedItemIds){
       <div class="tabs" id="capsule-tabs"></div>
       <div class="gallery" id="capsule-editor-gallery"></div>
     </div>
-    <div class="sheet-footer">
+    <div class="sheet-footer split">
       <div class="sheet-footer-inner">
+        <button class="btn secondary" type="button" onclick="closeCapsuleEditor()">Cancel</button>
         <button class="btn" id="capsule-save-btn" onclick="submitCapsuleEditor()">Save capsule</button>
       </div>
     </div>
@@ -4150,7 +4145,7 @@ function openCapsuleEditor(id, seedItemIds){
   renderCapsuleEditorTabs();
   renderCapsuleEditorGallery();
   document.getElementById('modal-backdrop').classList.add('open');
-  // Once it is up and the header has a height to measure.
+  // Once it is up and there is a height to measure.
   stickCapsuleEditorTabs();
   if(!capsule) document.getElementById('capsule-name-input').focus();
 }
@@ -4178,10 +4173,9 @@ function renderCapsuleEditorTabs(){
 }
 
 // Same idea as the wardrobe's row, but this one scrolls inside the sheet
-// and stops under the back button rather than at the top of the window.
-// The header's height is measured because it is a button plus padding, any
-// of which can move — and measured only once the sheet is actually up,
-// since a hidden one is nought tall and the row would stick behind it.
+// and comes to rest at its top rather than the window's. Wired only once
+// the sheet is actually up: a hidden one is nought tall, and the row would
+// stick behind it.
 function stickCapsuleEditorTabs(){ stickSheetTabs('capsule-tabs'); }
 
 function setCapsuleEditorTab(tab){
@@ -5414,13 +5408,10 @@ function stickSheetTabs(rowId){
   const backdrop = document.getElementById('modal-backdrop');
   if(!el || !backdrop || !backdrop.classList.contains('open')) return;
   // The sheet scrolls inside itself, so it is the scroller the row is
-  // watched against — the backdrop behind it never moves.
-  const sheet = document.getElementById('modal');
-  // A sheet with a header parks the row under it; one without (the pickers,
-  // which are a grip and then straight into the thing) parks it at the top.
-  const header = document.querySelector('#modal .sheet-header');
-  el.style.setProperty('--stuck-top', (header ? header.offsetHeight : 0) + 'px');
-  stickCategoryRow(el, sheet);
+  // watched against — the backdrop behind it never moves. Nothing sits
+  // above the row any more, so it comes to rest at the sheet's own top.
+  el.style.setProperty('--stuck-top', '0px');
+  stickCategoryRow(el, document.getElementById('modal'));
 }
 
 function stickCategoryRow(row, scroller){
@@ -5537,23 +5528,29 @@ async function undoRetag(changes, filters){
 function openTagEditor(tag){
   const modal = document.getElementById('modal');
   modal.innerHTML = `
-    <div class="sheet-header"><button class="sheet-back" onclick="closeModal()"><svg class="back-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>Back</button></div>
     <div class="modal-body has-footer">
       <div class="modal-name" style="margin-bottom:14px;">Edit tag</div>
       <div class="form-grid">
         <label>Tag<input type="text" id="tag-edit-input" value="${esc(tag)}"></label>
       </div>
       <div class="form-error" id="tag-edit-error"></div>
+      <!-- Throwing the tag away is not the same act as leaving without
+           renaming it, so it stays in the body rather than joining the
+           pair on the bar. -->
       <div class="modal-actions">
         <button class="btn small secondary" onclick='deleteTag(${JSON.stringify(tag)})'>Delete tag</button>
       </div>
     </div>
-    <div class="sheet-footer">
+    <div class="sheet-footer split">
       <div class="sheet-footer-inner">
+        <button class="btn secondary" type="button" onclick="closeModal()">Cancel</button>
         <button class="btn" id="tag-edit-save" onclick='renameTag(${JSON.stringify(tag)})'>Save</button>
       </div>
     </div>
   `;
+  // Drawn without a trail behind it, so it says for itself that there is
+  // a draft on it and the bar is the way out.
+  allowSheetDrag(null);
   document.getElementById('modal-backdrop').classList.add('open');
 }
 

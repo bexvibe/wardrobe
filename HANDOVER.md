@@ -1,7 +1,7 @@
 # The Archive — handover
 
-Written 27 Sep 2026. Pass one of the thumb-reach work is done, green and
-committed. Pass two — the four editors — has not been started.
+Written 27 Sep 2026. The thumb-reach work is done, green and pushed —
+both passes. What is left is listed under "Still open".
 
 ---
 
@@ -46,10 +46,10 @@ So the exit joins the commit at the foot of the sheet.
 | Add accessories | **staged** (changed) | `Cancel` · `Save` | no | ✅ pass one |
 | Piece → capsules | **staged** (changed) | `Cancel` · `Save` | no | ✅ pass one |
 | Piece detail | read-only | none | yes | ✅ pass one |
-| Item form | staged | `Cancel` · `Save piece` | no | ⬜ pass two |
-| Outfit builder | staged | `Cancel` · `Save outfit` | no | ⬜ pass two |
-| Capsule editor | staged | `Cancel` · `Save capsule` | no | ⬜ pass two |
-| Tag editor | staged | `Cancel` · `Save` | no | ⬜ pass two |
+| Item form | staged | `Cancel` · `Save piece` | no | ✅ pass two |
+| Outfit builder | staged | `Cancel` · `Save outfit` | no | ✅ pass two |
+| Capsule editor | staged | `Cancel` · `Save capsule` | no | ✅ pass two |
+| Tag editor | staged | `Cancel` · `Save` | no | ✅ pass two |
 
 Her reasoning where it matters:
 
@@ -64,8 +64,9 @@ Her reasoning where it matters:
 - **Sheets are 85% of the screen**, bottom-anchored, page peeking above.
   The strip of page is not decoration: on a picker it is where you watch
   the results change as you tap.
-- **Top-left Back is removed** from every sheet in pass one. Pass two
-  removes it from the editors.
+- **Top-left Back is gone from every sheet.** One arrow is left in the
+  app: `#edit-back-btn`, for leaving select mode on the wardrobe, which is
+  a page and not a sheet. `test_guard` section 9 holds that count at one.
 - **Cancel left, Save right, pushed apart.** A right thumb falls on the
   right, so the safe side is the one that keeps your work. Cancel is drawn
   quiet; they are at opposite ends, not a tidy pair.
@@ -118,8 +119,7 @@ Three real bugs the change introduced and the suites caught, all of the
 same shape — **the sheet is the scroller now, not the backdrop**:
 
 - `stickSheetTabs` was watching the backdrop, so a picker's category row
-  never knew it had stuck. It also now parks the row at the sheet's top
-  when there is no header to park it under.
+  never knew it had stuck. Every row now parks at the sheet's own top.
 - `openPieceSheet`'s "tap the piece you are already on to go back up to it"
   scrolled the backdrop, which no longer moves.
 - A short sheet floated its bar mid-screen until `.modal` became a column.
@@ -133,25 +133,45 @@ it gives up the moment you touch the sheet.
 
 ---
 
-## Pass two — not started
+## Pass two — shipped
 
-The four editors: item form, capsule editor, outfit builder, tag editor.
-They already inherit the 85% sheet shape (that change was global) and they
-already have bottom Saves. What is left:
+The four editors now leave the way the pickers do.
 
-- Add `Cancel` to each bar, `.split` layout, verbs as in the table above.
-- Remove their top-left Back.
-- Leave the tag editor's **Delete tag** in the body — destructive, and not
-  the same act as Cancel.
-- **The item form lives on `#form-backdrop`, not `#modal-backdrop`** — its
-  wiring is separate. Check it.
-- `test_guard` section 9 asserts the editors *still* say Back at the top.
-  It is there to fail when pass two lands: that is the signal to fold those
-  checks into section 8 beside the pickers.
-- **Untested risk: the keyboard.** A bottom bar can sit behind the iOS
-  keyboard. The footer is `sticky` inside a scrolling sheet now, which
-  should behave better than `fixed` did, but this has only been checked in
-  desktop Chromium. Test on a real phone before trusting it.
+- Item form (`#form-backdrop`), capsule editor, outfit builder and tag
+  editor: `.sheet-footer split`, `Cancel` on the left drawn quiet, the save
+  on the right named after what it saves.
+- Their top-left Back is gone, and with it the last `.sheet-header` inside
+  a sheet. `.sheet-header` CSS deleted; `stickSheetTabs` no longer looks
+  for one and parks a category row at the sheet's own top.
+- The builder's save was "Keep outfit" and is now "Save outfit", for the
+  one vocabulary across the four. Worth a second look some day: *keep* is
+  this app's own word for favouriting, and the heart on a card still says
+  it. Saving a built outfit and hearting the same combination are the same
+  act, so the two words now describe one thing.
+- The tag editor's **Delete tag** stays in the body. Throwing the tag away
+  is not the same act as leaving without renaming it.
+- `hideAllSheets` now clears the drag-to-close intent. The tag editor draws
+  itself without `pushSheet`, so it used to inherit whatever the last sheet
+  meant by closing — a half-typed rename could be flicked away. Covered by
+  `test_guard` section 10, which was checked against the bug before the
+  fix went in.
+
+---
+
+## Still open
+
+- **The keyboard, untested.** A bottom bar can sit behind the iOS
+  keyboard. The footer is `sticky` inside a scrolling sheet, which should
+  behave better than `fixed` did, but this has only been checked in desktop
+  Chromium. Test on a real phone.
+- **The tag editor has no dirty guard.** Every other staged sheet asks
+  before throwing a draft away; the tag editor's Cancel closes silently,
+  exactly as its Back used to. Deliberately left as it was — it is a change
+  of behaviour rather than of layout, so it wants deciding rather than
+  assuming.
+- **The piece sheet's actions stay in the body** (Edit / Add to capsule).
+  Revisit after living with it.
+- **"Keep" vs "Save"** — see the builder note above.
 
 ---
 

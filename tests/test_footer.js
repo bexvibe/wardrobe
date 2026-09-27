@@ -1,7 +1,8 @@
-// An editor's Save is pinned to the bottom of the screen rather than sitting
-// at the end of a form you have to scroll to reach, and Cancel is the ← at
-// the top instead of a second button beside it. The two editors — a piece and
-// a capsule — follow the same pattern.
+// An editor's bar sits at the foot of the sheet rather than at the end of a
+// form you have to scroll to reach — and both of its acts are on it: the
+// way out on the left, drawn quiet, and the save on the right, named after
+// what it saves. Nothing is left in the top corner. The editors — a piece,
+// a capsule, an outfit and a tag — all follow the one pattern.
 const { chromium } = require('playwright');
 const fs=require('fs'), path=require('path');
 const REPO = require('path').join(__dirname, '..');
@@ -29,16 +30,22 @@ const footer = (p, scope) => p.evaluate(sel=>{
   const f = document.querySelector(sel + ' .sheet-footer');
   if(!f) return null;
   const r = f.getBoundingClientRect();
-  const btn = f.querySelector('.btn').getBoundingClientRect();
-  const body = document.querySelector(sel + ' .modal-body');
+  const out = f.querySelector('.btn.secondary');
+  const save = f.querySelector('.btn:not(.secondary)');
+  const o = out.getBoundingClientRect(), v = save.getBoundingClientRect();
   return {
     top: Math.round(r.top), bottom: Math.round(r.bottom),
     left: Math.round(r.left), right: Math.round(r.right),
-    fixed: getComputedStyle(f).position,
-    btnW: Math.round(btn.width), btnH: Math.round(btn.height),
-    btnLabel: f.querySelector('.btn').textContent.trim(),
-    secondaries: f.querySelectorAll('.btn.secondary').length,
-    bodyPadBottom: Math.round(parseFloat(getComputedStyle(body).paddingBottom)),
+    stick: getComputedStyle(f).position,
+    split: f.classList.contains('split'),
+    outLabel: out.textContent.trim(), saveLabel: save.textContent.trim(),
+    outW: Math.round(o.width), outH: Math.round(o.height),
+    saveW: Math.round(v.width), saveH: Math.round(v.height),
+    order: Math.round(o.left) < Math.round(v.left),
+    gap: Math.round(v.left - o.right),
+    highest: Math.round(Math.min(o.top, v.top)),
+    buttons: f.querySelectorAll('.btn').length,
+    backArrow: Boolean(document.querySelector(sel + ' .sheet-back')),
     fold: window.innerHeight, vw: window.innerWidth,
   };
 }, scope);
@@ -68,26 +75,35 @@ const hidingUnderTheBar = (p, scope) => p.evaluate(sel=>{
     .map(e => e.id || e.className || e.tagName);
 }, scope);
 
-// A second way out down beside the save. The header's back button is not
-// one of these — it is up at the top, which is the whole point.
-const bottomWaysOut = (p, scope) => p.evaluate(sel =>
-  Array.from(document.querySelectorAll(sel + ' .sheet-footer button, ' +
-                                       sel + ' .modal-body button'))
+// Ways out loose in the body of the sheet. There should be none: leaving
+// is the bar's left-hand act, said once.
+const straysInTheBody = (p, scope) => p.evaluate(sel =>
+  Array.from(document.querySelectorAll(sel + ' .modal-body button'))
     .filter(x => x.offsetParent !== null &&
                  /^(cancel|back|discard)$/i.test(x.textContent.trim()))
-    .length, scope);
+    .map(x => x.textContent.trim()), scope);
 
 async function assertPattern(p, scope, label, name){
   const f = await footer(p, scope);
-  check(`${name}: the save rides at the foot of the sheet`, f && f.fixed === 'sticky', f && f.fixed);
+  check(`${name}: the bar rides at the foot of the sheet`, f && f.stick === 'sticky', f && f.stick);
   check(`${name}: and sits at the very bottom of the screen`,
     f.bottom >= f.fold - 1, `${f.top}–${f.bottom} of ${f.fold}`);
   check(`${name}: full width, edge to edge`,
     f.left === 0 && f.right === f.vw, `${f.left}–${f.right} of ${f.vw}`);
-  check(`${name}: it is the save`, f.btnLabel === label, f.btnLabel);
-  check(`${name}: with a thumb-sized target`, f.btnH >= 44 && f.btnW > 200,
-    `${f.btnW}x${f.btnH}`);
-  check(`${name}: no second button beside it`, f.secondaries === 0);
+  check(`${name}: it holds the two acts and nothing else`,
+    f.split && f.buttons === 2, `${f.buttons}: ${f.outLabel} / ${f.saveLabel}`);
+  check(`${name}: the save is named after what it saves`,
+    f.saveLabel === label, f.saveLabel);
+  check(`${name}: and the way out is Cancel`, f.outLabel === 'Cancel', f.outLabel);
+  check(`${name}: Cancel on the left, so a right thumb falls on the save`, f.order);
+  check(`${name}: pushed apart, not a pair under one thumb`,
+    f.gap > 100, `${f.gap}px between them`);
+  check(`${name}: both thumb-sized`,
+    f.outH >= 44 && f.saveH >= 44 && f.outW >= 70 && f.saveW >= 70,
+    `${f.outW}x${f.outH} / ${f.saveW}x${f.saveH}`);
+  check(`${name}: and both down where a thumb is`,
+    f.highest > f.fold * 0.6, `${f.highest} of ${f.fold}`);
+  check(`${name}: nothing left in the top corner to reach for`, !f.backArrow);
   await scrollSheetToEnd(p, scope);
   const hidden = await hidingUnderTheBar(p, scope);
   check(`${name}: and at the end of the form nothing is stuck under it`,
@@ -95,10 +111,9 @@ async function assertPattern(p, scope, label, name){
   const still = await footer(p, scope);
   check(`${name}: while the bar itself has not moved`,
     still.bottom >= still.fold - 1, `${still.top}–${still.bottom} of ${still.fold}`);
-  check(`${name}: no second way out at the bottom`, (await bottomWaysOut(p, scope)) === 0);
-  check(`${name}: the way out is the back button at the top`,
-    (await p.textContent(scope + ' .sheet-back')).trim() === 'Back',
-    (await p.textContent(scope + ' .sheet-back')).trim());
+  const strays = await straysInTheBody(p, scope);
+  check(`${name}: and leaving is said once, on the bar`,
+    strays.length === 0, strays.join(', '));
 }
 
 (async()=>{
@@ -108,7 +123,7 @@ async function assertPattern(p, scope, label, name){
   {
     const p=await open(b);
     await p.click('#add-item-btn'); await p.waitForTimeout(500);
-    await assertPattern(p, '#form-backdrop', 'Save', 'new piece');
+    await assertPattern(p, '#form-backdrop', 'Save piece', 'new piece');
 
     // It has to still be reachable after scrolling to the end of a long form.
     await scrollSheetToEnd(p, '#form-backdrop');
@@ -130,7 +145,7 @@ async function assertPattern(p, scope, label, name){
     const p=await open(b);
     await p.click('#gallery .tile'); await p.waitForTimeout(450);
     await p.click('.modal button:has-text("Edit")'); await p.waitForTimeout(500);
-    await assertPattern(p, '#form-backdrop', 'Save', 'edit piece');
+    await assertPattern(p, '#form-backdrop', 'Save piece', 'edit piece');
     await p.close();
   }
 
@@ -150,6 +165,35 @@ async function assertPattern(p, scope, label, name){
     await p.click('#capsule-gallery .outfit-card'); await p.waitForTimeout(400);
     await p.click('#capsule-gallery button:has-text("Edit capsule")'); await p.waitForTimeout(600);
     await assertPattern(p, '#modal', 'Save capsule', 'edit capsule');
+    await p.close();
+  }
+
+  // ---- 3b. The other two editors, on the same bar ----
+  {
+    const p=await open(b);
+    await p.click('#nav-outfits-btn');
+    await p.waitForFunction(()=>outfitDisplayed.length > 0);
+    await p.evaluate(()=>closeFilterSheet()); await p.waitForTimeout(400);
+    await p.evaluate(()=>openOutfitBuilder()); await p.waitForTimeout(700);
+    await assertPattern(p, '#modal', 'Save outfit', 'outfit builder');
+    // The save waits for an outfit to exist, which is not the same as the
+    // bar being half-drawn: Cancel is live from the first frame.
+    check('the save waits until there is an outfit to save',
+      await p.evaluate(()=>document.getElementById('builder-save-btn').disabled));
+    check('while the way out is offered straight away',
+      await p.evaluate(()=>!document.querySelector('#modal .sheet-footer .btn.secondary').disabled));
+    await p.evaluate(()=>discardOutfitBuilder()); await p.waitForTimeout(500);
+
+    await p.evaluate(()=>openTagEditor('winter')); await p.waitForTimeout(600);
+    await assertPattern(p, '#modal', 'Save', 'tag editor');
+    // Throwing the tag away is not the same act as leaving without
+    // renaming it, so it keeps its own place in the body.
+    check('and Delete tag stays in the body, away from the pair',
+      await p.evaluate(()=>Array.from(document.querySelectorAll('#modal .modal-body button'))
+        .some(b=>b.textContent.trim()==='Delete tag')));
+    check('not on the bar with them',
+      await p.evaluate(()=>!Array.from(document.querySelectorAll('#modal .sheet-footer .btn'))
+        .some(b=>/delete/i.test(b.textContent))));
     await p.close();
   }
 

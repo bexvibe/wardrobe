@@ -39,7 +39,7 @@ const trail = p => p.evaluate(()=>sheetTrail.map(e=>e.sheet));
 // bar, or by the strip of page showing above it.
 const back = async p => {
   if(await formUp(p)){
-    await p.click('#form-backdrop .sheet-back');
+    await p.click('#form-backdrop .sheet-footer .btn.secondary');
     await p.waitForTimeout(600);
     return;
   }

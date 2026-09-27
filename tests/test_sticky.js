@@ -139,21 +139,23 @@ const rowTop = (p, sel) => p.evaluate(s =>
     await p.evaluate(()=>{ document.getElementById('modal').scrollTop = 1200; });
     await p.waitForTimeout(600);
     const after = await p.evaluate(()=>{
-      const head = document.querySelector('#modal .sheet-header').getBoundingClientRect();
+      // Nothing sits above the row any more, so it comes to rest at the
+      // sheet's own top rather than under a header.
+      const sheet = document.getElementById('modal').getBoundingClientRect();
       const tabs = document.getElementById('capsule-tabs').getBoundingClientRect();
-      return {headBottom: Math.round(head.bottom), tabsTop: Math.round(tabs.top),
+      return {sheetTop: Math.round(sheet.top), tabsTop: Math.round(tabs.top),
               scrolled: document.getElementById('modal').scrollTop};
     });
     check('the sheet really scrolled', after.scrolled > 600, String(after.scrolled));
     check('the categories came with it', after.tabsTop < before,
       `${before} -> ${after.tabsTop}`);
-    check('and stopped under the back button rather than behind it',
-      after.tabsTop >= after.headBottom - 1 && after.tabsTop <= after.headBottom + 2,
+    check('and stopped at the top of the sheet rather than sliding out of it',
+      after.tabsTop >= after.sheetTop - 1 && after.tabsTop <= after.sheetTop + 2,
       JSON.stringify(after));
-    check('the back button is still where you left it',
+    check('and the bar you leave by is still down where you left it',
       await p.evaluate(()=>{
-        const b = document.querySelector('#modal .sheet-back').getBoundingClientRect();
-        return b.top >= 0 && b.bottom <= 844;
+        const b = document.querySelector('#modal .sheet-footer').getBoundingClientRect();
+        return b.bottom >= window.innerHeight - 1;
       }));
     check('its background reaches the sheet\'s edges',
       await p.evaluate(()=>{

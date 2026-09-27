@@ -232,14 +232,14 @@ const ticked = p => p.evaluate(()=>Array.from(document.querySelectorAll('#builde
   // ---- 6. Backing out of a half-built one asks first ----
   {
     const p=await open(b);
-    await p.click('.modal .sheet-back'); await p.waitForTimeout(600);
+    await p.click('#modal .sheet-footer .btn.secondary'); await p.waitForTimeout(600);
     check('an untouched one just closes',
       await p.evaluate(()=>!document.getElementById('confirm-backdrop').classList.contains('open') &&
         !document.getElementById('modal-backdrop').classList.contains('open')));
 
     await p.click('#build-outfit-btn'); await p.waitForTimeout(800);
     await pick(p, 'Tops', 0);
-    await p.click('.modal .sheet-back'); await p.waitForTimeout(600);
+    await p.click('#modal .sheet-footer .btn.secondary'); await p.waitForTimeout(600);
     check('one with a piece in it stops to ask',
       await p.evaluate(()=>document.getElementById('confirm-backdrop').classList.contains('open')));
     check('naming what would be lost',
@@ -249,7 +249,7 @@ const ticked = p => p.evaluate(()=>Array.from(document.querySelectorAll('#builde
     await p.click('#confirm-stay'); await p.waitForTimeout(500);
     check('staying keeps the draft',
       await p.evaluate(()=>Boolean(outfitDraft && outfitDraft.picks.top)));
-    await p.click('.modal .sheet-back'); await p.waitForTimeout(500);
+    await p.click('#modal .sheet-footer .btn.secondary'); await p.waitForTimeout(500);
     await p.click('#confirm-go'); await p.waitForTimeout(700);
     check('leaving throws it away and keeps nothing',
       await p.evaluate(()=>outfitDraft === null && favoriteOutfits.length === 0));

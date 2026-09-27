@@ -60,10 +60,10 @@ async function open(b){
     ['search shut',        async()=>{ await p.click('#search-back'); }],
     ['a piece',            async()=>{ await p.click('#gallery .tile'); }],
     ['the edit sheet',     async()=>{ await p.click('.modal button:has-text("Edit")'); }],
-    ['the new piece form', async()=>{ await p.click('#form-backdrop .sheet-back');
+    ['the new piece form', async()=>{ await p.click('#form-backdrop .sheet-footer .btn.secondary');
                                       await p.evaluate(()=>closeModal());
                                       await p.click('#add-item-btn'); }],
-    ['outfits',            async()=>{ await p.click('#form-backdrop .sheet-back');
+    ['outfits',            async()=>{ await p.click('#form-backdrop .sheet-footer .btn.secondary');
                                       await p.click('#nav-outfits-btn'); }],
     ['an outfit open',     async()=>{ await p.click('.hero-card'); }],
     ['the tag editor',     async()=>{ const c = await p.locator('#sheet-tag-chips .tag-chip').first().boundingBox();

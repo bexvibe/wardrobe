@@ -31,16 +31,18 @@ module.exports = {
   // reaches for the control it means.
   //
   // `save` picks the side on a staged sheet, and defaults to keeping your
-  // work.
+  // work. The piece form is on a backdrop of its own, so it is looked for
+  // first: when it is up, it is the sheet you are on.
   async leaveSheet(page, opts){
     const save = !opts || opts.save !== false;
+    const side = save ? ':not(.secondary)' : '.secondary';
 
-    if(await page.$('#modal .sheet-footer.split .btn')){
-      await page.click('#modal .sheet-footer .btn' + (save ? ':not(.secondary)' : '.secondary'));
+    if(await page.$('#form-backdrop.open .sheet-footer .btn')){
+      await page.click('#form-backdrop .sheet-footer .btn' + side);
+    } else if(await page.$('#modal .sheet-footer.split .btn')){
+      await page.click('#modal .sheet-footer .btn' + side);
     } else if(await page.$('#modal .sheet-footer .btn')){
       await page.click('#modal .sheet-footer .btn');          // live: Done
-    } else if(await page.$('#modal .sheet-back')){
-      await page.click('#modal .sheet-back');                 // an editor, for now
     } else {
       // Read-only: tap the page showing above the sheet, which means the
       // same as pushing the sheet down.

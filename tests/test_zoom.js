@@ -47,7 +47,7 @@ const results=[]; const check=(n,p,d)=>{results.push(p);console.log(`${p?'PASS':
       .map(el=>({id:el.id||el.tagName, px:parseFloat(getComputedStyle(el).fontSize)}))
       .filter(x=>x.px < 16));
   check('no field in the add form is under 16px', small.length===0, JSON.stringify(small));
-  await p.click('#form-backdrop .sheet-back'); await p.waitForTimeout(300);
+  await p.click('#form-backdrop .sheet-footer .btn.secondary'); await p.waitForTimeout(300);
 
   // the capsule editor has its own name field
   await p.click('#nav-capsules-btn'); await p.waitForTimeout(500);

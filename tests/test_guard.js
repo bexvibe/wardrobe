@@ -96,7 +96,7 @@ const confirmText = p => p.evaluate(()=>({
   {
     const p=await open(b);
     await p.click('#add-item-btn'); await p.waitForTimeout(500);
-    await p.click('#form-backdrop .sheet-back'); await p.waitForTimeout(400);
+    await p.click('#form-backdrop .sheet-footer .btn.secondary'); await p.waitForTimeout(400);
     check('a new piece form you typed nothing into just closes',
       !(await confirmOpen(p)) &&
       !(await p.evaluate(()=>document.getElementById('form-backdrop').classList.contains('open'))));
@@ -107,7 +107,7 @@ const confirmText = p => p.evaluate(()=>({
     const was = await p.inputValue('#form-name');
     await p.fill('#form-name', was + 'x'); await p.waitForTimeout(150);
     await p.fill('#form-name', was); await p.waitForTimeout(150);
-    await p.click('#form-backdrop .sheet-back'); await p.waitForTimeout(400);
+    await p.click('#form-backdrop .sheet-footer .btn.secondary'); await p.waitForTimeout(400);
     check('an edit you undid yourself leaves quietly too', !(await confirmOpen(p)));
     await p.close();
   }
@@ -117,7 +117,7 @@ const confirmText = p => p.evaluate(()=>({
     const p=await open(b);
     await p.click('#add-item-btn'); await p.waitForTimeout(500);
     await p.fill('#form-brand', 'Toteme'); await p.waitForTimeout(150);
-    await p.click('#form-backdrop .sheet-back'); await p.waitForTimeout(400);
+    await p.click('#form-backdrop .sheet-footer .btn.secondary'); await p.waitForTimeout(400);
     check('one field filled in is enough to be asked', await confirmOpen(p));
     const t = await confirmText(p);
     check('it asks "Go back?"', t.title === 'Go back?', t.title);
@@ -143,7 +143,7 @@ const confirmText = p => p.evaluate(()=>({
       !(await confirmOpen(p)) &&
       (await p.inputValue('#form-brand')) === 'Toteme');
 
-    await p.click('#form-backdrop .sheet-back'); await p.waitForTimeout(300);
+    await p.click('#form-backdrop .sheet-footer .btn.secondary'); await p.waitForTimeout(300);
     await p.click('#confirm-go'); await p.waitForTimeout(400);
     check('Discard closes the form and the question with it',
       !(await confirmOpen(p)) &&
@@ -159,7 +159,7 @@ const confirmText = p => p.evaluate(()=>({
     await p.click('#gallery .tile'); await p.waitForTimeout(400);
     await p.click('.modal button:has-text("Edit")'); await p.waitForTimeout(500);
     await p.fill('#form-brand', 'Toteme'); await p.waitForTimeout(150);
-    await p.click('#form-backdrop .sheet-back'); await p.waitForTimeout(400);
+    await p.click('#form-backdrop .sheet-footer .btn.secondary'); await p.waitForTimeout(400);
     check('an edit in progress is named as changes, not a new piece',
       (await confirmText(p)).body === "Your changes to this piece won't be saved.",
       (await confirmText(p)).body);
@@ -188,12 +188,12 @@ const confirmText = p => p.evaluate(()=>({
     const p=await open(b);
     await p.click('#nav-capsules-btn'); await p.waitForTimeout(800);
     await p.click('#new-capsule-btn'); await p.waitForTimeout(500);
-    await p.click('.modal .sheet-back'); await p.waitForTimeout(400);
+    await p.click('#modal .sheet-footer .btn.secondary'); await p.waitForTimeout(400);
     check('an empty new capsule closes without asking', !(await confirmOpen(p)));
 
     await p.click('#new-capsule-btn'); await p.waitForTimeout(500);
     await p.fill('#capsule-name-input', 'Spring'); await p.waitForTimeout(200);
-    await p.click('.modal .sheet-back'); await p.waitForTimeout(400);
+    await p.click('#modal .sheet-footer .btn.secondary'); await p.waitForTimeout(400);
     check('a named one asks', await confirmOpen(p));
     check('and calls it a new capsule',
       (await confirmText(p)).body === "Your new capsule won't be saved.",
@@ -203,7 +203,7 @@ const confirmText = p => p.evaluate(()=>({
     // Picking a piece counts as work even with no name typed.
     await p.fill('#capsule-name-input', ''); await p.waitForTimeout(200);
     await p.click('#capsule-editor-gallery .tile'); await p.waitForTimeout(300);
-    await p.click('.modal .sheet-back'); await p.waitForTimeout(400);
+    await p.click('#modal .sheet-footer .btn.secondary'); await p.waitForTimeout(400);
     check('choosing a piece counts as work too', await confirmOpen(p));
     await p.click('#confirm-go'); await p.waitForTimeout(500);
     check('and going back leaves no capsule behind',
@@ -216,13 +216,13 @@ const confirmText = p => p.evaluate(()=>({
     const p=await open(b);
     await p.click('#nav-capsules-btn'); await p.waitForTimeout(800);
     await p.evaluate(()=>openCapsuleEditor('c1')); await p.waitForTimeout(600);
-    await p.click('.modal .sheet-back'); await p.waitForTimeout(400);
+    await p.click('#modal .sheet-footer .btn.secondary'); await p.waitForTimeout(400);
     check('opening a capsule and closing it again does not ask',
       !(await confirmOpen(p)));
 
     await p.evaluate(()=>openCapsuleEditor('c1')); await p.waitForTimeout(600);
     await p.fill('#capsule-name-input', 'Weekend away'); await p.waitForTimeout(200);
-    await p.click('.modal .sheet-back'); await p.waitForTimeout(400);
+    await p.click('#modal .sheet-footer .btn.secondary'); await p.waitForTimeout(400);
     check('a renamed one asks, and says changes',
       (await confirmOpen(p)) &&
       (await confirmText(p)).body === "Your changes to this capsule won't be saved.",
@@ -286,17 +286,55 @@ const confirmText = p => p.evaluate(()=>({
     await p.close();
   }
 
-  // ---- 9. The editors have not come down yet ----
+  // ---- 9. Said once, everywhere ----
   {
-    // Recorded rather than approved: the piece form, the capsule editor,
-    // the outfit builder and the tag editor still leave by a Back arrow at
-    // the top. When they move to a Cancel on the bar this fails, and that
-    // is the signal to fold them into the section above.
+    // The rule stated against the source rather than one sheet at a time:
+    // no sheet in the app carries a back arrow any more. The only one left
+    // is on the wardrobe's own head, for leaving select mode, which is a
+    // page and not a sheet.
     const p=await open(b);
+    const src = fs.readFileSync(REPO + '/index.html', 'utf8');
+    const arrows = [...src.matchAll(/class="sheet-back"[^>]*/g)].map(m => m[0]);
+    check('one back arrow left in the whole app', arrows.length === 1,
+      `${arrows.length}: ${arrows.join(' | ').slice(0, 120)}`);
+    check('and it belongs to select mode, not to a sheet',
+      arrows[0] && arrows[0].includes('edit-back-btn'), arrows[0]);
+
+    // And the editors leave the way the pickers do.
     await p.click('#add-item-btn'); await p.waitForTimeout(500);
-    check('the piece form still says Back at the top',
-      (await p.textContent('#form-backdrop .sheet-back')).trim() === 'Back',
-      (await p.textContent('#form-backdrop .sheet-back')).trim());
+    const bar = await p.evaluate(()=>
+      Array.from(document.querySelectorAll('#form-backdrop .sheet-footer .btn'))
+        .map(x=>x.textContent.trim()));
+    check('the piece form leaves by Cancel on its bar',
+      bar.length === 2 && bar[0] === 'Cancel' && bar[1] === 'Save piece',
+      bar.join(' / '));
+    check('with nothing at the top of it',
+      await p.evaluate(()=>!document.querySelector('#form-backdrop .sheet-back')));
+    await p.close();
+  }
+
+  // ---- 10. A sheet cannot inherit a gesture it never asked for ----
+  {
+    // Drag-down belongs to sheets with nothing to lose. A sheet holding a
+    // draft says so as it draws — but one drawn without a trail behind it
+    // says nothing at all, and used to be handed whatever the last sheet
+    // meant by closing. A half-typed rename flicked away is the kind of
+    // thing nobody reports; they just stop trusting the gesture.
+    const p=await open(b);
+    await p.evaluate(()=>openModal('seed_0')); await p.waitForTimeout(700);
+    check('a piece sheet answers the gesture, having nothing to lose',
+      await p.evaluate(()=>sheetIsUp()));
+    await p.evaluate(()=>closeModal()); await p.waitForTimeout(400);
+    check('and putting it away takes the gesture with it',
+      await p.evaluate(()=>!sheetIsUp()));
+
+    await p.evaluate(()=>openTagEditor('winter')); await p.waitForTimeout(600);
+    check('so the tag editor, which holds a draft, does not answer it',
+      await p.evaluate(()=>!sheetIsUp()));
+    check('and leaves by its bar instead',
+      await p.evaluate(()=>Array.from(
+        document.querySelectorAll('#modal .sheet-footer .btn')).map(x=>x.textContent.trim())
+        .join(' / ')) === 'Cancel / Save');
     await p.close();
   }
 
