@@ -67,9 +67,11 @@ Her reasoning where it matters:
 - **Top-left Back is gone from every sheet.** One arrow is left in the
   app: `#edit-back-btn`, for leaving select mode on the wardrobe, which is
   a page and not a sheet. `test_guard` section 9 holds that count at one.
-- **Cancel left, Save right, pushed apart.** A right thumb falls on the
-  right, so the safe side is the one that keeps your work. Cancel is drawn
-  quiet; they are at opposite ends, not a tidy pair.
+- **Cancel left and small, Save right and filling the rest.** A right
+  thumb falls on the right, so the safe side is the one that keeps your
+  work. Cancel is drawn quiet and only as wide as its word; the save
+  stretches across the rest of the bar. (Her call, replacing the earlier
+  "pushed to opposite ends" layout.)
 - **"Cancel", not "Discard"** — her call, the plainer word. This reverses
   an older rule that banned the word Cancel; `test_guard` section 8 now
   records the new one and why it changed.
@@ -95,8 +97,8 @@ All in `index.html`.
 - `.modal` is a **flex column** and `.modal-body` is `flex:1 0 auto`, so a
   short sheet still puts its bar at the foot instead of halfway up.
 - `.sheet-footer` is `position: sticky` inside the sheet (was `fixed` to
-  the viewport). `.sheet-footer.split` lays Cancel and Save at opposite
-  ends. Sticky is also in flow, so nothing can hide underneath it.
+  the viewport). `.sheet-footer.split` lays Cancel at its natural width
+  and lets Save fill the rest of the row. Sticky is also in flow, so nothing can hide underneath it.
 - `.sheet-grip` — the drag handle.
 - Drag-to-close generalised: `wireDragToClose(el, isOpen, onClose)` now
   serves both the filter panel and the sheets. Each sheet calls

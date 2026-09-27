@@ -632,18 +632,21 @@
 
   /* Two acts, not one: the thing you meant to do, and the way out without
      doing it. A right thumb falls on the right, so that side is the one
-     that keeps your work — and they are pushed to opposite ends rather
-     than sat side by side, because a pair of buttons under one thumb is a
-     pair you will eventually hit the wrong one of. */
+     that keeps your work. The way out is drawn quiet and kept to the width
+     of its word; the save takes all the rest of the row, so it is the
+     obvious target and the big one, and the quiet Cancel is a small,
+     deliberate reach to the left of it. */
   .sheet-footer.split .sheet-footer-inner{
-    display:flex;align-items:center;justify-content:space-between;gap:16px;
+    display:flex;align-items:center;gap:16px;
   }
   .sheet-footer.split .btn{width:auto;padding:0 22px;}
   .sheet-footer.split .btn.secondary{
+    flex:0 0 auto;
     padding:0 14px;
     border-color:transparent;
     color:var(--ink-soft);
   }
+  .sheet-footer.split .btn:not(.secondary){flex:1 1 auto;min-width:0;}
 
   /* Room for it, so the last field is not stuck underneath. */
   .modal-body.has-footer{padding-bottom:24px;}

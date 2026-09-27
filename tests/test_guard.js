@@ -257,6 +257,9 @@ const confirmText = p => p.evaluate(()=>({
         quiet: btns[0].classList.contains('secondary'),
         order: Math.round(l.left) < Math.round(r.left),
         gap: Math.round(r.left - l.right),
+        leftW: Math.round(l.width), rightW: Math.round(r.width),
+        rightEnd: Math.round(r.right),
+        innerEnd: Math.round(f.querySelector('.sheet-footer-inner').getBoundingClientRect().right),
         lowest: Math.round(Math.min(l.top, r.top)),
         fold: window.innerHeight,
         backArrow: Boolean(document.querySelector('#modal .sheet-back')),
@@ -267,8 +270,9 @@ const confirmText = p => p.evaluate(()=>({
     check('drawn quieter than the thing you came to do', bar.quiet);
     check('on the left, so a right thumb falls on the side that keeps your work',
       bar.order);
-    check('pushed apart rather than sat as a pair under one thumb',
-      bar.gap > 100, `${bar.gap}px between them`);
+    check('Cancel kept small, the save filling the rest of the bar',
+      bar.leftW * 2 < bar.rightW && bar.rightEnd === bar.innerEnd,
+      `${bar.leftW}px / ${bar.rightW}px, save ends at ${bar.rightEnd} of ${bar.innerEnd}`);
     check('both of them down where a thumb is',
       bar.lowest > bar.fold * 0.6, `${bar.lowest} of ${bar.fold}`);
     check('and nothing left in the top corner to reach for instead',

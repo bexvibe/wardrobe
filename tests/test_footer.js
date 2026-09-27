@@ -1,7 +1,8 @@
 // An editor's bar sits at the foot of the sheet rather than at the end of a
 // form you have to scroll to reach — and both of its acts are on it: the
-// way out on the left, drawn quiet, and the save on the right, named after
-// what it saves. Nothing is left in the top corner. The editors — a piece,
+// way out on the left, drawn quiet and only as wide as its word, and the
+// save on the right, named after what it saves and filling the rest of the
+// row. Nothing is left in the top corner. The editors — a piece,
 // a capsule, an outfit and a tag — all follow the one pattern.
 const { chromium } = require('playwright');
 const fs=require('fs'), path=require('path');
@@ -43,6 +44,15 @@ const footer = (p, scope) => p.evaluate(sel=>{
     saveW: Math.round(v.width), saveH: Math.round(v.height),
     order: Math.round(o.left) < Math.round(v.left),
     gap: Math.round(v.left - o.right),
+    saveRight: Math.round(v.right),
+    innerLeft: Math.round(f.querySelector('.sheet-footer-inner').getBoundingClientRect().left),
+    innerRight: Math.round(f.querySelector('.sheet-footer-inner').getBoundingClientRect().right),
+    outLeft: Math.round(o.left),
+    // What Cancel would measure on its own, with nothing stretching it.
+    outNatural: (()=>{ const c = out.cloneNode(true);
+      c.style.cssText = 'position:absolute;visibility:hidden;width:auto;flex:none;';
+      f.querySelector('.sheet-footer-inner').appendChild(c);
+      const w = c.getBoundingClientRect().width; c.remove(); return Math.round(w); })(),
     highest: Math.round(Math.min(o.top, v.top)),
     buttons: f.querySelectorAll('.btn').length,
     backArrow: Boolean(document.querySelector(sel + ' .sheet-back')),
@@ -96,8 +106,13 @@ async function assertPattern(p, scope, label, name){
     f.saveLabel === label, f.saveLabel);
   check(`${name}: and the way out is Cancel`, f.outLabel === 'Cancel', f.outLabel);
   check(`${name}: Cancel on the left, so a right thumb falls on the save`, f.order);
-  check(`${name}: pushed apart, not a pair under one thumb`,
-    f.gap > 100, `${f.gap}px between them`);
+  check(`${name}: Cancel keeps to the width of its word`,
+    Math.abs(f.outW - f.outNatural) <= 1, `${f.outW}px, ${f.outNatural}px on its own`);
+  check(`${name}: and the save fills the rest of the row`,
+    f.outLeft === f.innerLeft && f.saveRight === f.innerRight && f.gap >= 12 && f.gap <= 20,
+    `${f.innerLeft}–${f.innerRight}: cancel from ${f.outLeft}, ${f.gap}px gap, save to ${f.saveRight}`);
+  check(`${name}: so the save is the big target`, f.saveW > f.outW * 2,
+    `${f.outW}px / ${f.saveW}px`);
   check(`${name}: both thumb-sized`,
     f.outH >= 44 && f.saveH >= 44 && f.outW >= 70 && f.saveW >= 70,
     `${f.outW}x${f.outH} / ${f.saveW}x${f.saveH}`);
