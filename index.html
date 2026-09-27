@@ -446,9 +446,14 @@
   .modal-backdrop{
     display:none;
     position:fixed;inset:0;
-    background:rgba(0,0,0,0.28);
+    /* --dim is how much of the dimming is left: 1 at rest, falling towards
+       0 as a sheet is pulled down, so the page comes back as the sheet goes.
+       Eased back on the sheet's own curve when a pull is let go. */
+    background:rgba(0,0,0,calc(0.28 * var(--dim, 1)));
+    transition:background-color var(--sheet-ease-ms) var(--sheet-ease);
     z-index:130;
   }
+  .modal-backdrop.sheet-dragging{transition:none;}
   .modal-backdrop.open{display:block;}
 
   /* Backing out of something half-written is the one place the app stops
@@ -506,14 +511,14 @@
        halfway up a mostly empty sheet. */
     display:flex;flex-direction:column;
     overflow-y:auto;
-    overscroll-behavior:contain;
+    /* None rather than contain: contain stops the scroll leaking to the
+       page but still lets iOS bounce the sheet's contents, grip and all,
+       inside a sheet that is not moving. */
+    overscroll-behavior:none;
     box-shadow:0 -10px 34px rgba(0,0,0,0.18);
     /* Off the bottom rather than hidden, so it arrives by travelling. */
     transform:translateY(100%);
-    /* Opacity too: a drag fades the sheet as it goes, and letting go has to
-       bring it back on the same curve rather than popping it to full. */
-    transition:transform var(--sheet-ease-ms) var(--sheet-ease),
-               opacity var(--sheet-ease-ms) var(--sheet-ease);
+    transition:transform var(--sheet-ease-ms) var(--sheet-ease);
   }
   .modal-backdrop.open .modal{transform:translateY(0);}
   /* Following a thumb: no easing while it is under your finger. */
@@ -2655,7 +2660,28 @@ function toggleFilterSheet(){
 //
 // Only what has nothing to lose can be flicked away. A sheet holding a
 // draft is dismissed on purpose, through its own bar.
-const SHEET_DRAG_CLOSE = 56;   // how far down is far enough to mean it
+//
+// Two ways to mean it. Far enough: 100px, or a quarter of the thing if a
+// quarter is less, so a small panel is not asked to travel most of its own
+// height. Or fast enough: a flick down at half a pixel a millisecond
+// (500px a second) or more, measured over the last tenth of a second
+// before letting go, so a quick flick counts but a pull that stopped
+// before the finger lifted does not.
+const SHEET_DRAG_CLOSE = 100;       // px
+const SHEET_DRAG_CLOSE_SHARE = 0.25; // of the thing's own height
+const SHEET_FLICK_SPEED = 0.5;      // px per ms, downward
+const SHEET_FLICK_WINDOW = 100;     // ms of movement the speed is read over
+
+function sheetCloseDistance(el){
+  return Math.min(SHEET_DRAG_CLOSE, el.offsetHeight * SHEET_DRAG_CLOSE_SHARE);
+}
+
+// The dimmed backdrop behind a sheet, if it has one. The filter panel
+// floats over the page with nothing behind it.
+function sheetBackdrop(el){
+  const b = el.parentElement;
+  return b && b.classList.contains('modal-backdrop') ? b : null;
+}
 
 let sheetDrag = null;
 
@@ -2666,6 +2692,7 @@ function dragStart(el, isOpen, e){
     el, id: e.pointerId,
     x: e.clientX, y: e.clientY,
     dy: 0,
+    trail: [{t: e.timeStamp, y: e.clientY}],   // recent moves, for the speed
     // Only something already at its top can be pulled down; anywhere else
     // the gesture is its own scrolling.
     eligible: el.scrollTop <= 0,
@@ -2681,6 +2708,7 @@ function dragMove(e){
   const dx = e.clientX - sheetDrag.x;
   const dy = e.clientY - sheetDrag.y;
   sheetDrag.dy = dy;
+  noteDragPoint(e);
 
   // Which way is this going? Settled once, at the first real movement, so
   // a drift part-way through cannot steal the gesture from the row you
@@ -2690,19 +2718,41 @@ function dragMove(e){
     sheetDrag.pulling = sheetDrag.eligible && dy > Math.abs(dx);
     if(sheetDrag.pulling){
       el.classList.add('dragging');
+      sheetBackdrop(el)?.classList.add('sheet-dragging');
       try{ el.setPointerCapture(e.pointerId); }catch(err){ }
     }
   }
   if(!sheetDrag.pulling) return;
 
-  // Downward only, and stiffening as it goes — something that slid a whole
-  // screen would look like it had come loose.
+  // Downward only, and exactly under the finger: the sheet is the thing
+  // being held, so it goes where the finger goes. It stays solid — what
+  // gives way is the dimming behind it, in step with how far down it is.
   const travel = Math.max(0, dy);
-  const eased = travel <= SHEET_DRAG_CLOSE
-    ? travel
-    : SHEET_DRAG_CLOSE + (travel - SHEET_DRAG_CLOSE) * 0.4;
-  el.style.transform = `translateY(${eased}px)`;
-  el.style.opacity = String(Math.max(0.35, 1 - travel / 320));
+  el.style.transform = `translateY(${travel}px)`;
+  const backdrop = sheetBackdrop(el);
+  if(backdrop){
+    const left = 1 - Math.min(1, travel / Math.max(1, el.offsetHeight));
+    backdrop.style.setProperty('--dim', left.toFixed(3));
+  }
+}
+
+function noteDragPoint(e){
+  const trail = sheetDrag.trail;
+  trail.push({t: e.timeStamp, y: e.clientY});
+  while(trail.length > 2 && e.timeStamp - trail[0].t > SHEET_FLICK_WINDOW) trail.shift();
+}
+
+// Downward speed over the last SHEET_FLICK_WINDOW ms of movement, in px
+// per ms. A finger that sat still for longer than that before lifting has
+// stopped, whatever it was doing before, so it has no speed.
+function dragSpeed(now){
+  const trail = sheetDrag.trail;
+  const z = trail[trail.length - 1];
+  if(now - z.t > SHEET_FLICK_WINDOW) return 0;
+  const recent = trail.filter(p => z.t - p.t <= SHEET_FLICK_WINDOW);
+  if(recent.length < 2) return 0;
+  const a = recent[0];
+  return z.t > a.t ? (z.y - a.y) / (z.t - a.t) : 0;
 }
 
 // A finger has a second claimant: the browser, which reads a drag on
@@ -2730,13 +2780,25 @@ function dragEnd(onClose, e){
   if(!sheetDrag) return;
   if(e && e.pointerId !== sheetDrag.id) return;
   const el = sheetDrag.el;
-  const pulled = sheetDrag.pulling ? sheetDrag.dy : 0;
+  let farEnough = false, fastEnough = false;
+  if(sheetDrag.pulling && onClose && e){
+    // The last move, not the lift: where a finger reports lifting is not
+    // something every browser agrees on. The lift's time still counts, so
+    // a pause before it reads as no speed at all.
+    const pulled = sheetDrag.dy;
+    farEnough = pulled >= sheetCloseDistance(el);
+    fastEnough = pulled > 0 && dragSpeed(e.timeStamp) >= SHEET_FLICK_SPEED;
+  }
   sheetDrag = null;
 
   el.classList.remove('dragging');
   el.style.transform = '';
-  el.style.opacity = '';
-  if(onClose && pulled >= SHEET_DRAG_CLOSE) onClose();
+  const backdrop = sheetBackdrop(el);
+  if(backdrop){
+    backdrop.classList.remove('sheet-dragging');
+    backdrop.style.removeProperty('--dim');
+  }
+  if(farEnough || fastEnough) onClose();
 }
 
 // Hands a thing the gesture. `isOpen` so a drag on something already down

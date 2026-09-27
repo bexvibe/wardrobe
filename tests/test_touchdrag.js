@@ -7,6 +7,11 @@
 // sheet twitched down, grip and all, sprang back, and never closed. This
 // suite drives real touch input through the DevTools protocol so it goes
 // through the same arbitration a phone does.
+//
+// How it behaves once it has the finger: the sheet goes exactly where the
+// finger goes and stays solid, the dimming behind it gives way instead,
+// and it closes when pulled 100px (a quarter of a smaller panel) or
+// flicked down at 0.5px/ms or faster.
 const { chromium } = require('playwright');
 const fs=require('fs'), path=require('path');
 const REPO = require('path').join(__dirname, '..');
@@ -45,6 +50,10 @@ const where = (p, sel) => p.evaluate(sel=>{
     grip: g ? Math.round(g.getBoundingClientRect().top - r.top) : null,
     foot: f ? Math.round(f.getBoundingClientRect().top - r.top) : null,
     scroll: Math.round(m.scrollTop),
+    opacity: +getComputedStyle(m).opacity,
+    dim: m.parentElement.classList.contains('modal-backdrop')
+      ? +(getComputedStyle(m.parentElement).backgroundColor.match(/[\d.]+(?=\)$)/) || [1])[0]
+      : null,
   };
 }, sel);
 
@@ -69,6 +78,21 @@ async function touchDrag(p, sel, from, dx, dy, mid){
   return {seen, cancels: await p.evaluate(()=>window.__cancels)};
 }
 
+// A quick flick: a short distance in a few fast moves, then either lift
+// straight away or hold still for `hold` ms first.
+// Headless Chromium hands over a move roughly every 40ms, so the flick is
+// three big steps rather than many small ones.
+async function flick(p, from, dy, hold){
+  const at = f => [{x: from.x, y: from.y + dy*f, id: 1}];
+  await p.cdp.send('Input.dispatchTouchEvent', {type:'touchStart', touchPoints: at(0)});
+  for(let i = 1; i <= 3; i++){
+    await p.cdp.send('Input.dispatchTouchEvent', {type:'touchMove', touchPoints: at(i/3)});
+  }
+  if(hold) await p.waitForTimeout(hold);
+  await p.cdp.send('Input.dispatchTouchEvent', {type:'touchEnd', touchPoints: []});
+  await p.waitForTimeout(600);
+}
+
 const pointIn = (p, sel, dyFromTop) => p.evaluate(([sel, d])=>{
   const r = document.querySelector(sel).getBoundingClientRect();
   return {x: Math.round(r.left + r.width/2), y: Math.round(r.top + d)};
@@ -89,6 +113,14 @@ const sheetOpen = p => p.evaluate(()=>
     check('the browser does not take the gesture away', cancels === 0, `${cancels} pointercancel`);
     check('the sheet follows the finger all the way down',
       low.top - rest.top > 80, `${rest.top} → ${low.top}`);
+    check('exactly under it, with no give: 170px of finger is 170px of sheet',
+      Math.abs((low.top - rest.top) - 170) <= 1, `${low.top - rest.top}px`);
+    check('the sheet stays solid the whole way',
+      seen.every(s => s.opacity === 1), [...new Set(seen.map(s=>s.opacity))].join(','));
+    check('while the dimming behind it gives way as it comes down',
+      rest.dim > 0.27 && seen.every((s, i) => i === 0 || s.dim <= seen[i-1].dim) &&
+      low.dim < rest.dim - 0.03,
+      `${rest.dim} → ${low.dim}`);
     check('and the grip rides with it, pinned to the top of the sheet',
       seen.every(s => s.grip === rest.grip), [...new Set(seen.map(s=>s.grip))].join(','));
     check('never moving back up while the finger goes down',
@@ -114,19 +146,26 @@ const sheetOpen = p => p.evaluate(()=>
     const p=await open(b);
     await p.evaluate(()=>openModal('seed_0')); await p.waitForTimeout(600);
     const rest = await where(p, '#modal');
-    let midOpacity = 1;
-    await touchDrag(p, '#modal', await pointIn(p, '#modal', 10), 0, 36, async()=>{
-      midOpacity = await p.evaluate(()=>+getComputedStyle(document.getElementById('modal')).opacity);
+    let mid = null;
+    await touchDrag(p, '#modal', await pointIn(p, '#modal', 10), 0, 80, async()=>{
+      mid = await where(p, '#modal');
     });
     const back = await where(p, '#modal');
-    check('a short pull leaves it open', await sheetOpen(p));
+    check('a slow pull short of 100px leaves it open', await sheetOpen(p));
     check('and back where it was', back.top === rest.top && back.grip === rest.grip,
       `${rest.top} → ${back.top}`);
-    check('fully opaque again', await p.evaluate(()=>
-      getComputedStyle(document.getElementById('modal')).opacity === '1'));
-    check('it had faded under the finger', midOpacity < 1, String(midOpacity));
-    check('and the fade eases back on the same curve as the slide',
-      await p.evaluate(()=>/opacity/.test(getComputedStyle(document.getElementById('modal')).transitionProperty)));
+    check('the sheet was solid under the finger', mid.opacity === 1, String(mid.opacity));
+    check('the backdrop had lightened', mid.dim < rest.dim, `${rest.dim} → ${mid.dim}`);
+    check('and is fully dimmed again after', Math.abs(back.dim - rest.dim) < 0.005,
+      `${back.dim}`);
+    check('easing back on the same curve as the slide',
+      await p.evaluate(()=>{
+        const b = getComputedStyle(document.getElementById('modal-backdrop'));
+        const m = getComputedStyle(document.getElementById('modal'));
+        return /background-color/.test(b.transitionProperty) &&
+               b.transitionDuration === m.transitionDuration &&
+               b.transitionTimingFunction === m.transitionTimingFunction;
+      }));
     await p.context().close();
   }
 
@@ -175,6 +214,44 @@ const sheetOpen = p => p.evaluate(()=>
     check('a draft sheet does not come down', seen.every(s => s.top === rest.top),
       [...new Set(seen.map(s=>s.top))].join(','));
     check('and stays open', await sheetOpen(p));
+    await p.context().close();
+  }
+
+  // ---- 6b. Far enough, or fast enough ----
+  {
+    const p=await open(b);
+    await p.evaluate(()=>openModal('seed_0')); await p.waitForTimeout(600);
+    await touchDrag(p, '#modal', await pointIn(p, '#modal', 10), 0, 112);
+    check('a slow pull past 100px closes it', !(await sheetOpen(p)));
+
+    await p.evaluate(()=>openModal('seed_0')); await p.waitForTimeout(600);
+    await p.evaluate(()=>{ const m = document.getElementById('modal');
+      m.addEventListener('pointerup', ()=>{ window.__flickSpeed = sheetDrag && dragSpeed(performance.now()); }, true); });
+    await flick(p, await pointIn(p, '#modal', 10), 90);
+    check('a quick flick short of 100px closes it too', !(await sheetOpen(p)),
+      `${(await p.evaluate(()=>window.__flickSpeed||0)).toFixed(2)}px/ms`);
+
+    await p.evaluate(()=>openModal('seed_0')); await p.waitForTimeout(600);
+    const rest = await where(p, '#modal');
+    await flick(p, await pointIn(p, '#modal', 10), 90, 250);
+    check('but the same flick held still before letting go does not',
+      await sheetOpen(p));
+    check('and springs back', (await where(p, '#modal')).top === rest.top);
+
+    await p.evaluate(()=>openItemCapsulePicker('seed_0')); await p.waitForTimeout(600);
+    await flick(p, await pointIn(p, '#modal', 40), 90);
+    check('a flick on a sheet holding a draft does nothing', await sheetOpen(p) &&
+      await p.evaluate(()=>Boolean(document.getElementById('capsule-picks-save'))));
+    await p.context().close();
+  }
+
+  // ---- 6c. Nothing bounces inside a sheet ----
+  {
+    const p=await open(b);
+    await p.evaluate(()=>openModal('seed_0')); await p.waitForTimeout(600);
+    check('the sheets do not let iOS bounce their contents',
+      await p.evaluate(()=>Array.from(document.querySelectorAll('.modal'))
+        .every(m => getComputedStyle(m).overscrollBehaviorY === 'none')));
     await p.context().close();
   }
 

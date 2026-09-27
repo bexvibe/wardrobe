@@ -175,10 +175,28 @@ ever dragged with a mouse, which has no such rival, so they never saw it.
   untouched. Fixes the piece sheet, the slot picker and the filter panel.
 - `pointercancel` now springs the sheet back instead of counting as a
   release: whatever took the gesture did not mean "close".
-- `.modal` transitions `opacity` as well as `transform`, so letting go no
-  longer pops the faded sheet back to full opacity.
 - `test_touchdrag` drives real touch input through CDP. Checked against the
   old code first: 10 of its 25 checks fail there.
+
+### How the pull feels now (her four calls)
+
+- **Closes when far enough or fast enough.** Far enough is
+  `min(100px, 25% of the thing's height)`: 100px on the 85% sheets, a
+  quarter of the filter panel if that is less. Fast enough is a downward
+  flick of **0.5px/ms (500px/s)** or more, read over the last 100ms of
+  movement; a finger that sat still for over 100ms before lifting counts
+  as stopped. Constants `SHEET_DRAG_CLOSE`, `SHEET_DRAG_CLOSE_SHARE`,
+  `SHEET_FLICK_SPEED`, `SHEET_FLICK_WINDOW`.
+- **1:1 under the finger.** The old stiffening past 56px is gone.
+- **The sheet stays solid; the backdrop fades.** `.modal-backdrop` dims by
+  `--dim` (1 at rest), which falls in proportion to how far the sheet has
+  travelled down its own height, and eases back on the sheet's own curve
+  (`--sheet-ease-ms`, `--sheet-ease`) when let go. The filter panel has no
+  backdrop, so it simply moves, solid.
+- **No bounce inside a sheet.** `.modal` is `overscroll-behavior: none`
+  (was `contain`, which still let iOS rubber-band the contents).
+- Unchanged: draft sheets ignore the gesture, a sideways swipe belongs to
+  its row, dragging up scrolls.
 
 ---
 
