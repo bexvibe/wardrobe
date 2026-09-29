@@ -63,7 +63,7 @@ const chip = (p, label) => p.evaluate(l => {
 async function setSlot(p, key, choice){
   await p.evaluate(k => openSlotPicker(k), key);
   await p.waitForTimeout(350);
-  await p.click(`#picker-quick-picks .base-btn:has-text("Clear")`);
+  await p.click(`#picker-quick-picks button:has-text("Clear")`);
   await p.waitForTimeout(250);
   await leaveSheet(p, {settle:600});
 }
@@ -214,7 +214,7 @@ async function setSlot(p, key, choice){
 
     await p.evaluate(()=>openSlotPicker('Tops')); await p.waitForTimeout(500);
     const quick = await p.evaluate(()=>Array.from(
-      document.querySelectorAll('#picker-quick-picks .base-btn'))
+      document.querySelectorAll('#picker-quick-picks button'))
         .map(e=>Math.round(e.getBoundingClientRect().height)));
     check('the picker\'s own Any is 44px as well',
       quick.length===1 && quick.every(n=>n>=44), JSON.stringify(quick));

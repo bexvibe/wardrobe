@@ -48,7 +48,7 @@ async function pin(p, cat){
 async function unpin(p, cat){
   await p.evaluate(k=>openSlotPicker(k), cat);
   await p.waitForTimeout(400);
-  await p.click('#picker-quick-picks .base-btn:has-text("Clear")');
+  await p.click('#picker-quick-picks button:has-text("Clear")');
   await p.waitForTimeout(250);
   await leaveSheet(p, {settle:700});
 }

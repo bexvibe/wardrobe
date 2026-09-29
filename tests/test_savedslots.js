@@ -55,7 +55,7 @@ const chipLabels = p => p.evaluate(()=>
 async function setAny(p, key){
   await p.evaluate(k=>openSlotPicker(k), key);
   await p.waitForTimeout(350);
-  await p.click('#picker-quick-picks .base-btn:has-text("Clear")');
+  await p.click('#picker-quick-picks button:has-text("Clear")');
   await p.waitForTimeout(250);
   await leaveSheet(p, {settle:600});
 }

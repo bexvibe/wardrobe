@@ -54,7 +54,7 @@ const state=p=>p.evaluate(()=>[...document.querySelectorAll('#picker-quick-picks
   await openFilters(p); await p.click('.filter-chip:has-text("Jumper")'); await p.waitForTimeout(400);
   let s=await state(p);
   check('the picker offers Any and nothing else',
-    s.length===1 && s[0].label==='Clear jumpers filters', JSON.stringify(s));
+    s.length===1 && s[0].label==='Clear', JSON.stringify(s));
   check('Clear is disabled while nothing is narrowed', s[0].disabled, JSON.stringify(s));
   check('and None is the first tile',
     await p.evaluate(()=>document.querySelector('#picker-gallery .picker-tile').classList.contains('picker-none')));
@@ -83,7 +83,7 @@ const state=p=>p.evaluate(()=>[...document.querySelectorAll('#picker-quick-picks
   await leaveSheet(p, {settle:400});
   await openFilters(p); await p.click('.filter-chip:has-text("Top")'); await p.waitForTimeout(400);
   s=await state(p);
-  check('a base category offers the same one', s.length===1 && s[0].label==='Clear tops filters' && s[0].disabled,
+  check('a base category offers the same one', s.length===1 && s[0].label==='Clear' && s[0].disabled,
     JSON.stringify(s));
 
   await b.close();

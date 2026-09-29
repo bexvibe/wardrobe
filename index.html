@@ -1287,8 +1287,12 @@
     font-family:'Work Sans',sans-serif;font-size:12px;
     color:var(--ink-soft);margin:14px 0 0;
   }
-  .quick-picks{display:flex;gap:8px;margin-bottom:14px;}
-  .base-btn:disabled{opacity:0.45;cursor:default;}
+  /* Title left, Clear right, on one line. Clear is the panel's own button, and
+     is out of sight while there is nothing to clear. */
+  .picker-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;}
+  .quick-picks{display:flex;}
+  .quick-picks .filter-sheet-clear{display:inline-flex;}
+  .quick-picks .filter-sheet-clear:disabled{visibility:hidden;}
   .picker-tile{border:1px solid var(--line);position:relative;}
   .picker-tile.picker-selected{border:2px solid var(--accent);}
   .picker-check{
@@ -3157,8 +3161,10 @@ function openSlotPicker(slotKey){
   modal.innerHTML = `
     <div class="sheet-grip"></div>
     <div class="modal-body has-footer">
-      <div class="modal-name" style="margin-bottom:14px;">Choose ${slotKey}</div>
-      <div class="quick-picks" id="picker-quick-picks"></div>
+      <div class="picker-head">
+        <div class="modal-name">Choose ${esc(slotKey.toLowerCase())}</div>
+        <div class="quick-picks" id="picker-quick-picks"></div>
+      </div>
       <p class="picker-empty" id="picker-empty" style="display:none;"></p>
       <div class="gallery" id="picker-gallery"></div>
     </div>
@@ -3174,6 +3180,13 @@ function openSlotPicker(slotKey){
   document.getElementById('modal-backdrop').classList.add('open');
 }
 
+// One garment, not a category: "No jacket", not "None" or "No jackets".
+const SINGULAR_TAB = {Dresses:'dress', Shorts:'shorts', Pants:'pants'};
+function noneLabel(tab){
+  const one = SINGULAR_TAB[tab] || tab.toLowerCase().replace(/s$/, '');
+  return 'No ' + one;
+}
+
 // Clear is the way back from a pinned selection, or from None, to the whole
 // category. It only has something to do while the category is narrowed.
 function renderQuickPicks(slotKey){
@@ -3181,7 +3194,7 @@ function renderQuickPicks(slotKey){
   const el = document.getElementById('picker-quick-picks');
   if(!el) return;
   el.innerHTML =
-    `<button class="base-btn" ${f.type === 'any' ? 'disabled' : ''} onclick="setSlotAny('${slotKey}')">Clear ${esc(slotKey.toLowerCase())} filters</button>`;
+    `<button class="filter-sheet-clear" ${f.type === 'any' ? 'disabled' : ''} onclick="setSlotAny('${slotKey}')">Clear</button>`;
 }
 
 function renderPickerGallery(slotKey){
@@ -3199,7 +3212,7 @@ function renderPickerGallery(slotKey){
   // First tile: outfits with nothing from this category.
   const noneSelected = f.type === 'none';
   const noneTile = `<div class="tile picker-tile picker-none ${noneSelected ? 'picker-selected' : ''}" role="button" aria-pressed="${noneSelected}" onclick="toggleSlotNone('${slotKey}')">
-      <span class="no-photo">None</span>
+      <span class="no-photo">${esc(noneLabel(slotKey))}</span>
       ${noneSelected ? `<span class="picker-check">✓</span>` : ''}
     </div>`;
 
