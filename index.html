@@ -1893,10 +1893,10 @@ function orderedTabs(tabs){
     .map(pair => pair[0]);
 }
 
-// Every category an outfit is built from, owned or not — a shelf you have
-// not filled yet is still a shelf, and the row scrolls. The empty ones sit
-// at the end, where they are out of the way until you own one.
-function filterTabs(){ return orderedTabs(OUTFIT_TABS); }
+// Every category an outfit is built from that you own something in. An
+// empty shelf is a chip that can only ever return nothing, so it stays out
+// of the row and comes back the moment you add a piece to it.
+function filterTabs(){ return orderedTabs(OUTFIT_TABS).filter(t => itemsInTab(t).length > 0); }
 
 function emptySlotFilters(){
   const f = {};
