@@ -178,8 +178,8 @@ const cards = p => p.evaluate(()=>
     check('and narrowing them', (await cards(p)) === 2, String(await cards(p)));
     check('the chip in the panel agrees',
       await p.evaluate(()=>Array.from(
-        document.querySelectorAll('#sheet-without-chips .tag-chip.active'))
-          .map(e=>e.dataset.without).join(',') === 'Jackets'));
+        document.querySelectorAll('#sheet-filter-grid .filter-chip.active'))
+          .map(e=>e.textContent.trim()).join(',') === 'Jackets'));
 
     // And Clear all clears the one set, from either side.
     await p.evaluate(()=>openFilterSheet()); await p.waitForTimeout(600);

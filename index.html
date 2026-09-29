@@ -918,38 +918,11 @@
   /* Tags. Both kinds of chip in the filter sheet are the same control, so
      they share .filter-chip's type, shape and states — the only difference
      is that tags wrap onto a second row rather than scrolling sideways. */
-  /* One row that scrolls sideways, the same as the pieces below it. Tags
-     accumulate, and folding them behind a count meant a control to read
-     before you could read the tags. The most-used come first, so what you
-     reach for most is already under your thumb. */
+  /* Rows wrap rather than scroll, so every chip is on screen at once. */
   .tag-chips{
     display:flex;
-    flex-wrap:nowrap;
+    flex-wrap:wrap;
     gap:8px;
-    overflow-x:auto;
-    padding-bottom:2px;
-    -webkit-overflow-scrolling:touch;
-    scrollbar-width:none;
-  }
-  .tag-chips::-webkit-scrollbar{display:none;}
-  /* A row of chips is usually wider than the panel — twelve tags is 920px
-     against 358 — and with the scrollbar hidden nothing said so. The edge
-     with more behind it fades out, so the row admits there is more of it.
-     Only that edge: a fade at the start when you are already at the start
-     is a hint about nothing. */
-  .chip-row.more-right:not(.more-left){
-    -webkit-mask-image:linear-gradient(to right, #000 calc(100% - 30px), transparent);
-            mask-image:linear-gradient(to right, #000 calc(100% - 30px), transparent);
-  }
-  .chip-row.more-left:not(.more-right){
-    -webkit-mask-image:linear-gradient(to right, transparent, #000 30px);
-            mask-image:linear-gradient(to right, transparent, #000 30px);
-  }
-  .chip-row.more-left.more-right{
-    -webkit-mask-image:linear-gradient(to right, transparent, #000 30px,
-                                       #000 calc(100% - 30px), transparent);
-            mask-image:linear-gradient(to right, transparent, #000 30px,
-                                       #000 calc(100% - 30px), transparent);
   }
   /* How you would find the tag editor, since a long press cannot advertise
      itself. Quieter than the label it sits beside. */
@@ -1246,18 +1219,11 @@
   .base-btn.active{background:var(--accent);border-color:var(--accent);color:#fff;}
   .filter-grid{
     display:flex;
+    flex-wrap:wrap;
     gap:8px;
-    overflow-x:auto;
-    /* A row that scrolls sideways clips what hangs above it, and the count
-       badges hang above it by design. The negative margin gives the room
-       back, so the row sits where it did and the badges are simply no
-       longer cut off. */
+    /* The count badges hang above the chips; leave them room. */
     padding-top:7px;margin-top:-7px;
-    padding-bottom:2px;
-    -webkit-overflow-scrolling:touch;
-    scrollbar-width:none;
   }
-  .filter-grid::-webkit-scrollbar{display:none;}
   .filter-chip{
     flex:none;
     position:relative;
@@ -1302,16 +1268,6 @@
     /* Against the page, not against the chip it overlaps. */
     box-shadow:0 0 0 2px var(--surface);
   }
-  /* The mark of a chip that opens something. Beside it in the same panel
-     sit the tag chips, which toggle where they stand — identical in every
-     other respect, which made one row promise what the other does. */
-  .chip-caret{
-    flex:none;
-    width:11px;height:11px;display:block;
-    margin-left:-2px;
-    color:var(--ink-soft);
-  }
-  .filter-chip.active .chip-caret{color:var(--ink);}
   /* Building an outfit by hand. The outfit as it stands, small: it is here
      to be glanced at, and a full-size card pushed the pieces you are
      choosing from off the screen. */
@@ -1331,6 +1287,7 @@
     color:var(--ink-soft);margin:14px 0 0;
   }
   .quick-picks{display:flex;gap:8px;margin-bottom:14px;}
+  .base-btn:disabled{opacity:0.45;cursor:default;}
   .picker-tile{border:1px solid var(--line);position:relative;}
   .picker-tile.picker-selected{border:2px solid var(--accent);}
   .picker-check{
@@ -2377,31 +2334,6 @@ function countNarrowedSlots(filters){
   return Object.keys(filters).filter(k => filters[k].type !== 'any').length;
 }
 
-// The panel asks two different questions about pieces — which ones, and
-// whether at all — and they get a row each, so each row counts its own.
-function countPinnedSlots(filters){
-  return Object.keys(filters).filter(k => filters[k].type === 'items').length;
-}
-function countWithoutSlots(filters){
-  return Object.keys(filters).filter(k => filters[k].type === 'none').length;
-}
-
-// Where "without one" describes an outfit you would actually look for. A
-// jumper or a jacket is a layer an outfit can simply not have; ruling tops
-// or dresses out is how you ask for the other shape. "No shorts" is not a
-// question anybody asks, so the row stays short.
-const WITHOUT_TABS = ['Tops', 'Dresses', 'Jumpers', 'Jackets'];
-// One garment, not a category: you are describing the outfit, not the shelf.
-const WITHOUT_LABEL = {
-  Tops: 'No top', Dresses: 'No dress', Jumpers: 'No jumper', Jackets: 'No jacket'
-};
-
-// A category you own nothing in is already absent from every outfit, so
-// ruling it out would be a chip that can never change anything.
-function withoutTabs(){
-  return WITHOUT_TABS.filter(t => itemsInTab(t).length > 0);
-}
-
 function activeFilterCount(){
   if(appMode !== 'outfits' && appMode !== 'saved') return 0;
   return countNarrowedSlots(outfitFilters) + (outfitTags.length ? 1 : 0);
@@ -2444,15 +2376,8 @@ const FILTER_MOUNTS = [
   { ns: 'sheet', mode: null },
 ];
 
-// Without first. It is the quickest question of the three — one tap, no
-// picker behind it — and the panel opens against the foot of the screen,
-// so the top row is the one nearest your thumb.
 function filterControlsHtml(ns){
   return `
-    <div class="filter-section">
-      <span class="filter-sheet-label">Without<span class="label-count" id="${ns}-without-count"></span></span>
-      <div class="tag-chips chip-row" id="${ns}-without-chips"></div>
-    </div>
     <div class="filter-section">
       <span class="filter-sheet-label">Tags<span class="label-count" id="${ns}-tag-count"></span></span>
       <div class="tag-chips chip-row" id="${ns}-tag-chips"></div>
@@ -2471,24 +2396,6 @@ function setLabelCount(id, n){
   el.textContent = n ? ` (${n})` : '';
 }
 
-// Which end of a row has more behind it, so only that edge fades. Wired
-// once per element; the rows are rebuilt on every render, so the handler
-// goes on and stays on rather than being added again each time.
-function markRowEdges(row){
-  const hidden = row.scrollWidth - row.clientWidth;
-  row.classList.toggle('more-left', row.scrollLeft > 2);
-  row.classList.toggle('more-right', row.scrollLeft < hidden - 2);
-}
-
-function watchRowEdges(row){
-  if(!row) return;
-  if(!row.dataset.edgesWatched){
-    row.dataset.edgesWatched = '1';
-    row.addEventListener('scroll', () => markRowEdges(row), {passive:true});
-  }
-  markRowEdges(row);
-}
-
 function renderFilterControls(){
   FILTER_MOUNTS.forEach(({ ns, mode }) => {
     const host = document.querySelector(`[data-filter-ns="${ns}"]`);
@@ -2498,29 +2405,10 @@ function renderFilterControls(){
     // The panel only exists on the two pages that have filters.
     if(m !== 'outfits' && m !== 'saved'){ host.innerHTML = ''; return; }
 
-    // Tapping a chip redraws both rows from scratch, which would put them
-    // back at the left-hand end — so scrolling along to a tag and tapping
-    // it snatched the row out from under your thumb. Nothing scrolls them
-    // now, in either direction: where you left a row is where it stays,
-    // and the count beside the section label says a filter is on without
-    // moving anything.
-    const rowIds = [`${ns}-tag-chips`, `${ns}-filter-grid`, `${ns}-without-chips`];
-    const wasAt = rowIds.map(id => (document.getElementById(id) || {}).scrollLeft || 0);
-
     host.innerHTML = filterControlsHtml(ns);
 
     renderTagChips(`${ns}-tag-chips`, outfitTags, 'setOutfitTag');
     renderSlotChips(`${ns}-filter-grid`);
-    renderWithoutChips(`${ns}-without-chips`);
-
-    rowIds.forEach((id, i) => {
-      const row = document.getElementById(id);
-      if(!row) return;
-      // Clamped by the browser if the row is shorter than it was — a tag
-      // deleted out from under it, say.
-      row.scrollLeft = wasAt[i];
-      watchRowEdges(row);
-    });
 
     // How many of each row is on, beside the row's own name. A row is
     // wider than the panel, so the chip that is filtering may be off to
@@ -2528,8 +2416,7 @@ function renderFilterControls(){
     // there, and it does not move when you tap.
     const slots = outfitFilters;
     setLabelCount(`${ns}-tag-count`, outfitTags.length);
-    setLabelCount(`${ns}-piece-count`, countPinnedSlots(slots));
-    setLabelCount(`${ns}-without-count`, countWithoutSlots(slots));
+    setLabelCount(`${ns}-piece-count`, countNarrowedSlots(slots));
   });
 
   // Clear all is the only thing left in the head, so the head goes with
@@ -3005,23 +2892,16 @@ function renderSlotChips(gridId){
     // Every chip reads the same whatever else is set. A slot the chosen
     // shape does not have simply filters nothing — dimming it was one more
     // state to decode for no gain.
-    const cls = ['filter-chip', f.type === 'items' ? 'active' : ''].filter(Boolean).join(' ');
+    const cls = ['filter-chip', f.type !== 'any' ? 'active' : ''].filter(Boolean).join(' ');
     const badge = f.type === 'items' ? `<span class="chip-count">${f.ids.length}</span>` : '';
     // The words survive for anything reading the page aloud, where a badge
     // does not carry.
     const said = f.type === 'items' ? `${f.ids.length} selected`
-               : f.type === 'none' ? 'ruled out below' : 'any';
+               : f.type === 'none' ? 'none' : 'any';
 
-    // A tag chip is a tap and done; this one is a door to a picker. Until
-    // it said so the two rows made the same promise for different
-    // behaviour, so it carries the caret that means "this opens
-    // something" — and reports itself as a door rather than a switch.
     return `<button class="${cls}" data-state="${f.type}" aria-haspopup="dialog"`
       + ` aria-label="${esc(key)}: ${said}" onclick="openSlotPicker('${key}')">`
-      + `<span class="chip-label">${key}</span>`
-      + `<svg class="chip-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor"`
-      + ` stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">`
-      + `<path d="M6 10l6 6 6-6"/></svg>${badge}</button>`;
+      + `<span class="chip-label">${key}</span>${badge}</button>`;
   }).join('');
 }
 
@@ -3224,39 +3104,6 @@ async function saveBuiltOutfit(){
   renderSavedOutfits();
 }
 
-// The other half of the piece question: not which ones, but whether at
-// all. A toggle, like a tag, and deliberately not a caret — you are not
-// opening anything, and the two rows beside it have taught that a caret
-// means a picker.
-//
-// It writes the same slot the Pieces row does, so the two cannot
-// contradict each other: ruling a category out drops whatever was pinned
-// in it, and pinning something drops the rule. One field, one answer.
-function renderWithoutChips(rowId){
-  const row = document.getElementById(rowId);
-  if(!row) return;
-  const f = activeSlotFilters();
-  row.innerHTML = withoutTabs().map(tab => {
-    const on = (f[tab] || {}).type === 'none';
-    return `<button class="tag-chip ${on ? 'active' : ''}" data-without="${esc(tab)}"`
-      + ` aria-pressed="${on}" onclick='toggleWithout(${JSON.stringify(tab)})'>`
-      + `${esc(WITHOUT_LABEL[tab] || 'No ' + tab)}</button>`;
-  }).join('');
-}
-
-function toggleWithout(tab){
-  const f = activeSlotFilters();
-  f[tab] = (f[tab] || {}).type === 'none' ? anyFilter() : {type:'none', ids:[]};
-  renderFilterControls();
-  renderFiltersFab();
-  if(appMode === 'saved'){
-    expandedSavedKey = null;   // an expanded card may be filtered away
-    renderSavedOutfits();
-  } else {
-    resetOutfitResults();
-  }
-}
-
 // Live, because a filter is a temporary state you can clear in a tap —
 // there is nothing here to commit, so the bar holds one word: Done. No
 // arrow at the top: it would have done the same thing from the hardest
@@ -3283,19 +3130,14 @@ function openSlotPicker(slotKey){
   document.getElementById('modal-backdrop').classList.add('open');
 }
 
-// Any / None are a mutually exclusive choice alongside picking individual
-// pieces, so they carry the same selected state the item tiles do —
-// otherwise there is no way to see which one a slot is currently on.
+// Clear is the way back from a pinned selection, or from None, to the whole
+// category. It only has something to do while the category is narrowed.
 function renderQuickPicks(slotKey){
   const f = activeSlotFilters()[slotKey];
   const el = document.getElementById('picker-quick-picks');
   if(!el) return;
-  // Any is the whole story: the way back from a pinned selection to the
-  // whole category. Ruling a category out altogether used to sit beside
-  // it, and was the one filter that narrowed by subtraction — a different
-  // idea in the same row of buttons.
   el.innerHTML =
-    `<button class="base-btn ${f.type === 'any' ? 'active' : ''}" onclick="setSlotAny('${slotKey}')">Any</button>`;
+    `<button class="base-btn" ${f.type === 'any' ? 'disabled' : ''} onclick="setSlotAny('${slotKey}')">Clear ${esc(slotKey.toLowerCase())} filters</button>`;
 }
 
 function renderPickerGallery(slotKey){
@@ -3310,7 +3152,14 @@ function renderPickerGallery(slotKey){
     note.textContent = `No ${slotKey.toLowerCase()}`;
   }
 
-  document.getElementById('picker-gallery').innerHTML = items.map(i => {
+  // First tile: outfits with nothing from this category.
+  const noneSelected = f.type === 'none';
+  const noneTile = `<div class="tile picker-tile picker-none ${noneSelected ? 'picker-selected' : ''}" role="button" aria-pressed="${noneSelected}" onclick="toggleSlotNone('${slotKey}')">
+      <span class="no-photo">None</span>
+      ${noneSelected ? `<span class="picker-check">✓</span>` : ''}
+    </div>`;
+
+  document.getElementById('picker-gallery').innerHTML = noneTile + items.map(i => {
     const selected = f.type === 'items' && f.ids.includes(i.id);
     return `<div class="tile picker-tile ${selected ? 'picker-selected' : ''}" onclick="toggleSlotItem('${slotKey}','${i.id}')">
       ${i.photo ? `<img src="${esc(i.photo)}" alt="" referrerpolicy="no-referrer" loading="lazy" decoding="async">` : `<span class="no-photo">No photo</span>`}
@@ -3321,6 +3170,14 @@ function renderPickerGallery(slotKey){
 
 function setSlotAny(slotKey){
   activeSlotFilters()[slotKey] = anyFilter();
+  renderQuickPicks(slotKey);
+  renderPickerGallery(slotKey);
+}
+
+// None and pinned pieces are one field, so choosing one drops the other.
+function toggleSlotNone(slotKey){
+  const f = activeSlotFilters();
+  f[slotKey] = f[slotKey].type === 'none' ? anyFilter() : {type:'none', ids:[]};
   renderQuickPicks(slotKey);
   renderPickerGallery(slotKey);
 }

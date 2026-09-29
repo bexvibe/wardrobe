@@ -116,14 +116,14 @@ const tiles = p => p.evaluate(()=>document.querySelectorAll('#gallery .tile').le
     await p.evaluate(()=>openSlotPicker('Shorts')); await p.waitForTimeout(500);
     check('the Shorts picker offers the shorts and only the shorts',
       await p.evaluate(id=>{
-        const tiles = Array.from(document.querySelectorAll('#picker-gallery .picker-tile'));
+        const tiles = Array.from(document.querySelectorAll('#picker-gallery .picker-tile:not(.picker-none)'));
         return tiles.length === itemsInTab('Shorts').length &&
                tiles.some(t=>(t.getAttribute('onclick')||'').includes(id));
       }, shortsId));
     check('and the Pants picker does not', await (async()=>{
       await leaveSheet(p, {settle:400});
       await p.evaluate(()=>openSlotPicker('Pants')); await p.waitForTimeout(400);
-      return p.evaluate(id=>!Array.from(document.querySelectorAll('#picker-gallery .picker-tile'))
+      return p.evaluate(id=>!Array.from(document.querySelectorAll('#picker-gallery .picker-tile:not(.picker-none)'))
         .some(t=>(t.getAttribute('onclick')||'').includes(id)), shortsId);
     })());
 

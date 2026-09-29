@@ -55,7 +55,7 @@ const chipLabels = p => p.evaluate(()=>
 async function setAny(p, key){
   await p.evaluate(k=>openSlotPicker(k), key);
   await p.waitForTimeout(350);
-  await p.click('#picker-quick-picks .base-btn:has-text("Any")');
+  await p.click('#picker-quick-picks .base-btn:has-text("Clear")');
   await p.waitForTimeout(250);
   await leaveSheet(p, {settle:600});
 }
@@ -72,8 +72,8 @@ async function pin(p, key, id){
 async function pinFirst(p, key){
   await p.evaluate(k=>openSlotPicker(k), key);
   await p.waitForTimeout(350);
-  const id = await p.evaluate(()=>document.querySelector('#picker-gallery .picker-tile').getAttribute('onclick'));
-  await p.click('#picker-gallery .picker-tile'); await p.waitForTimeout(250);
+  const id = await p.evaluate(()=>document.querySelector('#picker-gallery .picker-tile:not(.picker-none)').getAttribute('onclick'));
+  await p.click('#picker-gallery .picker-tile:not(.picker-none)'); await p.waitForTimeout(250);
   await leaveSheet(p, {settle:600});
   return id;
 }

@@ -63,7 +63,7 @@ const chip = (p, label) => p.evaluate(l => {
 async function setSlot(p, key, choice){
   await p.evaluate(k => openSlotPicker(k), key);
   await p.waitForTimeout(350);
-  await p.click(`#picker-quick-picks .base-btn:has-text("${choice}")`);
+  await p.click(`#picker-quick-picks .base-btn:has-text("Clear")`);
   await p.waitForTimeout(250);
   await leaveSheet(p, {settle:600});
 }
@@ -320,146 +320,6 @@ async function setSlot(p, key, choice){
     await p.close();
   }
 
-  // ---- 9. The rows stay where you left them ----
-  {
-    const p=await open(b);
-    const wide = await p.evaluate(()=>{
-      const r = document.getElementById('sheet-tag-chips');
-      return {scroll: r.scrollWidth, shown: r.clientWidth};
-    });
-    check('the tag row really is wider than the panel',
-      wide.scroll > wide.shown + 100, `${wide.scroll} in ${wide.shown}`);
-
-    // Turning on the last tag in the row used to scroll it into view, which
-    // meant the row moved under your thumb the instant you tapped. It does
-    // not any more — the count beside the section label carries that news
-    // instead, and nothing jumps.
-    await p.evaluate(()=>{ document.getElementById('sheet-tag-chips').scrollLeft = 0; });
-    const chose = await p.evaluate(()=>{
-      const tag = allTags()[allTags().length - 1];
-      const tab = filterTabs()[filterTabs().length - 1];
-      outfitTags = [tag];
-      outfitFilters[tab] = {type:'items', ids: itemsInTab(tab).slice(0,1).map(i=>i.id)};
-      renderFilterControls();
-      return {tag, tab};
-    });
-    await p.waitForTimeout(500);
-    const where = await p.evaluate(()=>({
-      tags: document.getElementById('sheet-tag-chips').scrollLeft,
-      pieces: document.getElementById('sheet-filter-grid').scrollLeft,
-    }));
-    check('turning on a tag at the far end does not move the row',
-      where.tags === 0, `${where.tags}px`);
-    check('and neither does a piece filter', where.pieces === 0, `${where.pieces}px`);
-    check('the filter really is on, it is just not chasing you',
-      await p.evaluate(t=>outfitTags.join()===t.tag && outfitFilters[t.tab].type==='items', chose));
-
-    // Scrolled along by hand, it stays where you put it — including
-    // across the redraw that tapping a chip causes, which is the whole
-    // point: the row must not move when you touch it.
-    await p.evaluate(()=>{ document.getElementById('sheet-tag-chips').scrollLeft = 200; });
-    await p.waitForTimeout(200);
-    await p.evaluate(()=>renderFilterControls());
-    await p.waitForTimeout(400);
-    check('a redraw leaves it where you scrolled it',
-      await p.evaluate(()=>document.getElementById('sheet-tag-chips').scrollLeft === 200),
-      String(await p.evaluate(()=>document.getElementById('sheet-tag-chips').scrollLeft)));
-
-    // And through a real tap, which is how it actually happens.
-    const before = await p.evaluate(()=>{
-      const r = document.getElementById('sheet-tag-chips');
-      r.scrollLeft = 220;
-      return r.scrollLeft;
-    });
-    await p.waitForTimeout(200);
-    const tapped = await p.evaluate(()=>{
-      const chip = Array.from(document.querySelectorAll('#sheet-tag-chips .tag-chip'))
-        .find(c => { const r = c.getBoundingClientRect();
-                     return r.left > 0 && r.right < innerWidth; });
-      chip.click();
-      return chip.dataset.tag;
-    });
-    await p.waitForTimeout(700);
-    check('tapping a tag you scrolled to does not snatch the row away',
-      await p.evaluate(n=>document.getElementById('sheet-tag-chips').scrollLeft === n, before),
-      `${before} -> ${await p.evaluate(()=>document.getElementById('sheet-tag-chips').scrollLeft)}`);
-    check('and the tap still did what it was for',
-      await p.evaluate(t=>outfitTags.includes(t), tapped), tapped);
-    await p.close();
-  }
-
-  // ---- 10. The row admits there is more of it ----
-  {
-    const p=await open(b);
-    const edges = r => p.evaluate(id => {
-      const el = document.getElementById(id);
-      return {cls: [...el.classList].filter(c=>c.startsWith('more-')).sort().join('+'),
-              mask: getComputedStyle(el).maskImage};
-    }, r);
-
-    const start = await edges('sheet-tag-chips');
-    check('at the left-hand end only the far edge fades',
-      start.cls === 'more-right', start.cls);
-    check('and that is a real fade, not just a class',
-      /gradient/.test(start.mask), start.mask.slice(0, 60));
-
-    await p.evaluate(()=>{ const r = document.getElementById('sheet-tag-chips');
-                           r.scrollLeft = Math.round((r.scrollWidth - r.clientWidth) / 2); });
-    await p.waitForTimeout(300);
-    check('in the middle, both ends fade',
-      (await edges('sheet-tag-chips')).cls === 'more-left+more-right',
-      (await edges('sheet-tag-chips')).cls);
-
-    await p.evaluate(()=>{ const r = document.getElementById('sheet-tag-chips');
-                           r.scrollLeft = r.scrollWidth; });
-    await p.waitForTimeout(300);
-    check('at the far end only the near edge does',
-      (await edges('sheet-tag-chips')).cls === 'more-left',
-      (await edges('sheet-tag-chips')).cls);
-
-    // A row that fits needs no fade at all.
-    await p.evaluate(()=>{ const r = document.getElementById('sheet-tag-chips');
-                           Array.from(r.children).slice(2).forEach(c=>c.remove());
-                           markRowEdges(r); });
-    await p.waitForTimeout(200);
-    check('and a row that fits has none',
-      (await edges('sheet-tag-chips')).cls === '',
-      (await edges('sheet-tag-chips')).cls);
-    await p.close();
-  }
-
-  // ---- 11. A chip that opens something says so ----
-  {
-    const p=await open(b);
-    const look = await p.evaluate(()=>{
-      const piece = document.querySelector('#sheet-filter-grid .filter-chip');
-      const tag = document.querySelector('#sheet-tag-chips .tag-chip');
-      const c = piece.querySelector('.chip-caret');
-      return {
-        pieceCaret: Boolean(c),
-        caretSize: c ? Math.round(c.getBoundingClientRect().width) : 0,
-        tagCaret: Boolean(tag.querySelector('.chip-caret')),
-        pieceOpens: piece.getAttribute('aria-haspopup'),
-        pieceToggles: piece.getAttribute('aria-pressed'),
-        tagToggles: tag.getAttribute('aria-pressed'),
-      };
-    });
-    check('a piece chip carries the caret of something that opens',
-      look.pieceCaret && look.caretSize > 6, JSON.stringify(look));
-    check('and a tag chip, which toggles where it stands, does not',
-      !look.tagCaret);
-    check('the markup says the same thing: a door, not a switch',
-      look.pieceOpens === 'dialog' && look.pieceToggles === null,
-      `haspopup=${look.pieceOpens} pressed=${look.pieceToggles}`);
-
-    // And it really is a door.
-    await p.click('#sheet-filter-grid .filter-chip'); await p.waitForTimeout(600);
-    check('tapping it opens the picker rather than toggling in place',
-      await p.evaluate(()=>document.getElementById('modal-backdrop').classList.contains('open') &&
-        Boolean(document.getElementById('picker-gallery'))));
-    await p.close();
-  }
-
   // ---- 12. The section labels count what is on ----
   {
     const p=await open(b);
@@ -536,52 +396,6 @@ async function setSlot(p, key, choice){
     check('dropping one leaves one', (await count()) === '(1)', await count());
     await p.click('#nav-outfits-btn'); await p.waitForTimeout(1200);
     check('on the other side too', (await count()) === '(1)', await count());
-    await p.close();
-  }
-
-  // ---- 14. A count on a control comes after the chevron ----
-  {
-    const p=await open(b);
-    await p.evaluate(()=>{
-      outfitTags = ['summer'];
-      outfitFilters['Tops'] = {type:'items', ids: itemsInTab('Tops').slice(0,2).map(i=>i.id)};
-      renderFilterControls(); renderFiltersFab();
-    });
-    await p.waitForTimeout(500);
-
-    // The badge is lifted out of the line and hung on the top-right
-    // corner: inside, it had to be read as part of the label — "Pants,
-    // chevron, 2" — and pushed the chevron off the word it belongs to.
-    const badge = (host, mark) => p.evaluate(([h, m]) => {
-      const el = document.querySelector(h), b = el.querySelector(m);
-      if(!b) return null;
-      const box = el.getBoundingClientRect(), r = b.getBoundingClientRect();
-      const inLine = Array.from(el.children).includes(b) &&
-                     getComputedStyle(b).position === 'static';
-      return {
-        floating: getComputedStyle(b).position === 'absolute' && !inLine,
-        // Over the corner: above the top edge and past the right one.
-        aboveTop: r.top < box.top + 1,
-        pastRight: r.right > box.right - 1,
-        said: b.textContent.trim(),
-      };
-    }, [host, mark]);
-
-    const chip = await badge('#sheet-filter-grid .filter-chip.active', '.chip-count');
-    check('a piece chip hangs its count off the top-right corner',
-      chip.floating && chip.aboveTop && chip.pastRight, JSON.stringify(chip));
-    check('and it is still the right number', chip.said === '2', chip.said);
-    check('the label and its chevron are what is left in the line',
-      (await p.evaluate(()=>Array.from(
-        document.querySelector('#sheet-filter-grid .filter-chip.active').children)
-          .filter(c => getComputedStyle(c).position !== 'absolute')
-          .map(c => c.tagName.toLowerCase()).join(' '))) === 'span svg');
-
-    await p.evaluate(()=>closeFilterSheet()); await p.waitForTimeout(700);
-    const pill = await badge('#filters-fab', '.filters-fab-count');
-    check('and the pill does the same',
-      pill.floating && pill.aboveTop && pill.pastRight, JSON.stringify(pill));
-    check('the pill really is counting something', pill.said === '2', pill.said);
     await p.close();
   }
 

@@ -146,7 +146,7 @@ function wellOrdered(list, owned){
         muted: cs.color !== getComputedStyle(document.body).color,
         quick: Array.from(document.querySelectorAll('#picker-quick-picks .base-btn'))
           .map(e=>e.textContent.trim()),
-        tiles: document.querySelectorAll('#picker-gallery .picker-tile').length,
+        tiles: document.querySelectorAll('#picker-gallery .picker-tile:not(.picker-none)').length,
       };
     });
     check('it says so, in the category\'s own words', empty.text==='No skirts', empty.text);
@@ -154,7 +154,7 @@ function wellOrdered(list, owned){
       empty.shown && empty.size <= 13 && empty.muted, `${empty.size}px`);
     check('there is nothing to choose from', empty.tiles===0);
     check('and Any is the only quick pick, as everywhere',
-      JSON.stringify(empty.quick)===JSON.stringify(['Any']), empty.quick.join(', '));
+      JSON.stringify(empty.quick)===JSON.stringify(['Clear skirts filters']), empty.quick.join(', '));
     await p.close();
   }
 
@@ -167,19 +167,19 @@ function wellOrdered(list, owned){
       note: document.getElementById('picker-empty').offsetParent !== null,
       quick: Array.from(document.querySelectorAll('#picker-quick-picks .base-btn'))
         .map(e=>e.textContent.trim()),
-      tiles: document.querySelectorAll('#picker-gallery .picker-tile').length,
+      tiles: document.querySelectorAll('#picker-gallery .picker-tile:not(.picker-none)').length,
     }));
     check('no note where there is something to show', !full.note);
     check('Any and nothing else, the same as an empty one',
-      JSON.stringify(full.quick)===JSON.stringify(['Any']), full.quick.join(', '));
+      JSON.stringify(full.quick)===JSON.stringify(['Clear tops filters']), full.quick.join(', '));
     check('and the pieces to choose from', full.tiles > 0, String(full.tiles));
 
     // Narrowing is done by picking, and Any is the way back from it.
-    await p.click('#picker-gallery .picker-tile'); await p.waitForTimeout(300);
+    await p.click('#picker-gallery .picker-tile:not(.picker-none)'); await p.waitForTimeout(300);
     check('picking a piece narrows the category',
       await p.evaluate(()=>outfitFilters['Tops'].type==='items' &&
                            outfitFilters['Tops'].ids.length===1));
-    await p.click('#picker-quick-picks .base-btn:has-text("Any")');
+    await p.click('#picker-quick-picks .base-btn:has-text("Clear")');
     await p.waitForTimeout(300);
     check('and Any is the way back to the whole of it',
       await p.evaluate(()=>outfitFilters['Tops'].type==='any'));
@@ -197,12 +197,12 @@ function wellOrdered(list, owned){
     // offered, and it simply cannot do anything.
     await p.evaluate(()=>openSlotPicker('Skirts')); await p.waitForTimeout(500);
     check('the picker opens on nothing to choose',
-      await p.evaluate(()=>document.querySelectorAll('#picker-gallery .picker-tile').length===0));
+      await p.evaluate(()=>document.querySelectorAll('#picker-gallery .picker-tile:not(.picker-none)').length===0));
     check('with Any already on, and no other way to change it',
       await p.evaluate(()=>{
         const btns = Array.from(document.querySelectorAll('#picker-quick-picks .base-btn'));
-        return btns.length===1 && btns[0].textContent.trim()==='Any' &&
-               btns[0].classList.contains('active');
+        return btns.length===1 && btns[0].textContent.trim()==='Clear skirts filters' &&
+               btns[0].disabled;
       }));
     await leaveSheet(p, {settle:800});
     check('so the page is exactly as you left it',

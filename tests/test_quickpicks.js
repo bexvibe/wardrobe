@@ -37,7 +37,7 @@ const path=require('path');
 const results=[];
 const check=(n,p,d)=>{results.push(p);console.log(`${p?'PASS':'FAIL'}  ${n}${d?'  — '+d:''}`);};
 const state=p=>p.evaluate(()=>[...document.querySelectorAll('#picker-quick-picks button')]
-  .map(b=>({label:b.textContent.trim(), active:b.classList.contains('active')})));
+  .map(b=>({label:b.textContent.trim(), active:b.classList.contains('active'), disabled:b.disabled})));
 
 (async()=>{
   const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium'});
@@ -54,26 +54,26 @@ const state=p=>p.evaluate(()=>[...document.querySelectorAll('#picker-quick-picks
   await openFilters(p); await p.click('.filter-chip:has-text("Jumper")'); await p.waitForTimeout(400);
   let s=await state(p);
   check('the picker offers Any and nothing else',
-    s.length===1 && s[0].label==='Any', JSON.stringify(s));
-  check('Any shows as selected by default', s[0].active, JSON.stringify(s));
-  check('and None is not on offer anywhere in the picker',
-    !(await p.evaluate(()=>/\bNone\b/.test(document.querySelector('.modal').innerText))));
+    s.length===1 && s[0].label==='Clear jumpers filters', JSON.stringify(s));
+  check('Clear is disabled while nothing is narrowed', s[0].disabled, JSON.stringify(s));
+  check('and None is the first tile',
+    await p.evaluate(()=>document.querySelector('#picker-gallery .picker-tile').classList.contains('picker-none')));
   await p.screenshot({path:shot('qp-any.png')});
 
   // Picking a specific item takes Any off.
-  await p.click('#picker-gallery .picker-tile'); await p.waitForTimeout(300);
+  await p.click('#picker-gallery .picker-tile:not(.picker-none)'); await p.waitForTimeout(300);
   s=await state(p);
   const tileChecked=await p.evaluate(()=>document.querySelectorAll('#picker-gallery .picker-selected').length);
-  check('picking an item deselects Any', !s[0].active && tileChecked===1,
+  check('picking an item enables Clear', !s[0].disabled && tileChecked===1,
     JSON.stringify(s)+` tiles=${tileChecked}`);
 
   // And taking it off again returns to Any.
   await p.click('#picker-gallery .picker-tile.picker-selected'); await p.waitForTimeout(300);
   s=await state(p);
-  check('clearing the last item returns Any to selected', s[0].active, JSON.stringify(s));
+  check('clearing the last item disables Clear again', s[0].disabled, JSON.stringify(s));
 
   // A pinned selection survives shutting the picker and opening it again.
-  await p.click('#picker-gallery .picker-tile'); await p.waitForTimeout(250);
+  await p.click('#picker-gallery .picker-tile:not(.picker-none)'); await p.waitForTimeout(250);
   await leaveSheet(p, {settle:500});
   await openFilters(p); await p.click('.filter-chip:has-text("Jumper")'); await p.waitForTimeout(400);
   check('reopening the picker still shows what you pinned',
@@ -83,7 +83,7 @@ const state=p=>p.evaluate(()=>[...document.querySelectorAll('#picker-quick-picks
   await leaveSheet(p, {settle:400});
   await openFilters(p); await p.click('.filter-chip:has-text("Top")'); await p.waitForTimeout(400);
   s=await state(p);
-  check('a base category offers the same one', s.length===1 && s[0].label==='Any' && s[0].active,
+  check('a base category offers the same one', s.length===1 && s[0].label==='Clear tops filters' && s[0].disabled,
     JSON.stringify(s));
 
   await b.close();

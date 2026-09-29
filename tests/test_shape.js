@@ -39,7 +39,7 @@ const bases = p => p.evaluate(()=>outfitDisplayed.map(c=>c.base));
 async function pin(p, cat){
   await p.evaluate(k=>openSlotPicker(k), cat);
   await p.waitForTimeout(400);
-  await p.click('#picker-gallery .picker-tile');
+  await p.click('#picker-gallery .picker-tile:not(.picker-none)');
   await p.waitForTimeout(250);
   await leaveSheet(p, {settle:700});
 }
@@ -48,7 +48,7 @@ async function pin(p, cat){
 async function unpin(p, cat){
   await p.evaluate(k=>openSlotPicker(k), cat);
   await p.waitForTimeout(400);
-  await p.click('#picker-quick-picks .base-btn:has-text("Any")');
+  await p.click('#picker-quick-picks .base-btn:has-text("Clear")');
   await p.waitForTimeout(250);
   await leaveSheet(p, {settle:700});
 }
