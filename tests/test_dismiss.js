@@ -101,19 +101,17 @@ async function reopen(p){
     await p.close();
   }
 
-  // ---- 3. A scroll closes it, a nudge does not ----
+  // ---- 3. The page behind the panel does not scroll ----
   {
     const p=await open(b);
-    await scrollBy(p, 10); await p.waitForTimeout(500);
-    check('a few pixels of drift leaves it alone', await isOpen(p),
-      String(await p.evaluate(()=>Math.round(scrollY))));
-    await scrollBy(p, 300); await p.waitForTimeout(700);
-    check('scrolling the page closes it', !(await isOpen(p)),
-      String(await p.evaluate(()=>Math.round(scrollY))));
-
-    // And it stays closed while you carry on scrolling.
-    await scrollBy(p, 400); await p.waitForTimeout(500);
-    check('and it stays closed', !(await isOpen(p)));
+    const y0 = await p.evaluate(()=>Math.round(scrollY));
+    await scrollBy(p, 300); await p.waitForTimeout(500);
+    check('a wheel over the page does not move it',
+      (await p.evaluate(()=>Math.round(scrollY))) === y0, String(await p.evaluate(()=>Math.round(scrollY))));
+    check('and the panel stays up', await isOpen(p));
+    await p.keyboard.press('PageDown'); await p.waitForTimeout(300);
+    check('nor does a key',
+      (await p.evaluate(()=>Math.round(scrollY))) === y0);
     await p.close();
   }
 
@@ -121,6 +119,7 @@ async function reopen(p){
   {
     const p=await open(b);
     // Leave Outfits partway down, so coming back restores a position.
+    await p.evaluate(()=>closeFilterSheet());
     await scrollBy(p, 600); await p.waitForTimeout(700);
     await p.click('#nav-inventory-btn'); await p.waitForTimeout(800);
     await p.click('#nav-outfits-btn'); await p.waitForTimeout(1200);
@@ -139,9 +138,10 @@ async function reopen(p){
     await toFaves(p, 1000);
     await reopen(p);
     check('the panel opens on Faves too', await isOpen(p));
-    await p.click('#saved-empty-title').catch(()=>{});
+    const fy = await p.evaluate(()=>Math.round(scrollY));
     await scrollBy(p, 200); await p.waitForTimeout(700);
-    check('and closes the same way', !(await isOpen(p)));
+    check('and holds the page the same way',
+      (await isOpen(p)) && (await p.evaluate(()=>Math.round(scrollY))) === fy);
     await p.close();
   }
 
@@ -172,11 +172,6 @@ async function reopen(p){
     check('and the panel stayed up through it', after.open, JSON.stringify(after));
     check('with the tag actually on', after.on.join() === 'summer', after.on.join());
 
-    // And a real scroll still puts it away, which is the whole point of
-    // the behaviour being there.
-    await scrollBy(p, -300);
-    await p.waitForTimeout(700);
-    check('a scroll you did make still closes it', !(await isOpen(p)));
     await p.close();
   }
 

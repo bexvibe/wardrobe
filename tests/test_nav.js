@@ -184,10 +184,9 @@ const vis=(p,s)=>p.isVisible(s);
   await p.mouse.move(195, 400);
   await p.mouse.wheel(0, -900);
   await p.waitForTimeout(600);
-  // That scroll put the panel away by itself, which is what a scroll is for
-  // now. Bring it back before testing the way it is put away by hand.
-  check('scrolling the page had already closed it', !(await sheetOpen()));
-  await p.click('#filters-fab'); await p.waitForTimeout(500);
+  // The page does not scroll under an open panel, so the wheel changes
+  // nothing and the panel is still up.
+  check('scrolling the page leaves the panel up', await sheetOpen());
 
   // Collapsing it, and getting it back.
   await p.click('#filters-fab'); await p.waitForTimeout(450);

@@ -1156,6 +1156,7 @@
     max-height:min(52vh, 420px);
     max-height:min(52svh, 420px);
     overflow-y:auto;
+    overscroll-behavior:contain;
     /* Grows out of the pill below it, so the two read as one motion. */
     transform-origin:50% 100%;
     transform:translateY(10px) scale(0.97);
@@ -2752,6 +2753,49 @@ function watchForSheetDismiss(){
 let lastScrollGesture = 0;
 const SCROLL_GESTURE_GRACE = 700;
 const SCROLL_KEYS = ['ArrowUp','ArrowDown','PageUp','PageDown','Home','End',' ','Spacebar'];
+
+// While the panel is up the page behind it stays put. Wheel, touch and keys
+// that would scroll the page are refused; the panel's own scrolling (it can
+// be taller than its box) is left alone, and stopped from chaining out to the
+// page when it reaches an end.
+function filterSheetHoldsPage(){
+  return filterSheetOpen() && !sheetOverTheTop();
+}
+
+function insideScrollableSheet(target, dy){
+  const sheet = document.getElementById('filter-sheet');
+  if(!sheet || !target.closest || !target.closest('#filter-sheet')) return false;
+  const room = sheet.scrollHeight - sheet.clientHeight;
+  if(room <= 1) return false;
+  if(dy === undefined) return true;
+  // dy > 0 wants to see further down.
+  return dy > 0 ? sheet.scrollTop < room - 1 : sheet.scrollTop > 0;
+}
+
+let holdTouchY = 0;
+window.addEventListener('touchstart', e => {
+  if(e.touches[0]) holdTouchY = e.touches[0].clientY;
+}, {passive:true, capture:true});
+window.addEventListener('touchmove', e => {
+  if(!filterSheetHoldsPage()) return;
+  const y = e.touches[0] ? e.touches[0].clientY : holdTouchY;
+  const dy = holdTouchY - y;          // finger up = content wants to go down
+  holdTouchY = y;
+  if(insideScrollableSheet(e.target, dy)) return;
+  if(e.cancelable) e.preventDefault();
+}, {passive:false, capture:true});
+window.addEventListener('wheel', e => {
+  if(!filterSheetHoldsPage()) return;
+  if(insideScrollableSheet(e.target, e.deltaY)) return;
+  if(e.cancelable) e.preventDefault();
+}, {passive:false, capture:true});
+window.addEventListener('keydown', e => {
+  if(!filterSheetHoldsPage() || !SCROLL_KEYS.includes(e.key)) return;
+  const t = e.target;
+  // Space on a button is a press, and arrows in a field move the caret.
+  if(t && t.closest && t.closest('button, a, input, textarea, select, [contenteditable], #filter-sheet')) return;
+  e.preventDefault();
+});
 
 function noteScrollGesture(){ lastScrollGesture = Date.now(); }
 ['wheel', 'touchmove'].forEach(type =>
