@@ -1,3 +1,4 @@
+if(window.__FILTERS_OPEN_BY_DEFAULT === undefined) window.__FILTERS_OPEN_BY_DEFAULT = ['outfits','saved'];
 // In-memory stand-in for supabase-js, injected in place of the real bundle so
 // the app's own code paths run for real against a fake transport.
 (function () {

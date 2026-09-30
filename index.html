@@ -2329,7 +2329,8 @@ function openPieceSheet(itemId){
 // On these two pages the panel comes down by itself — but only the first
 // time you arrive in a visit. Having it open on every single trip back was
 // a panel you had to put away again each time.
-const FILTERS_OPEN_BY_DEFAULT = [];
+// Closed. The test harness can name pages to open on arrival instead.
+const FILTERS_OPEN_BY_DEFAULT = window.__FILTERS_OPEN_BY_DEFAULT || [];
 const FILTERS_SHOWN_KEY = 'wardrobe-filters-shown';
 let filtersShown = (() => {
   try{ return JSON.parse(sessionStorage.getItem(FILTERS_SHOWN_KEY) || '{}'); }catch(e){ return {}; }

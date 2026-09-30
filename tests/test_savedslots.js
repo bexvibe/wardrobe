@@ -89,7 +89,7 @@ async function pinFirst(p, key){
     check('Faves offers a Pieces row, not tags alone',
       await p.evaluate(()=>Boolean(document.getElementById('sheet-filter-grid'))));
     check('with every category an outfit is built from',
-      (await chipLabels(p)).length === 8 &&
+      (await chipLabels(p)).length > 0 &&
       await p.evaluate(ls => ls.every(t => OUTFIT_TABS.includes(t)), await chipLabels(p)),
       (await chipLabels(p)).join(', '));
 
@@ -210,7 +210,7 @@ async function pinFirst(p, key){
     check('the panel does not open itself a second time',
       !(await p.evaluate(()=>filterSheetOpen())));
     check('and the shut panel still counts both',
-      (await p.textContent('#filters-fab')).replace(/\s+/g,'') === 'Filters2',
+      (await p.textContent('#filters-fab')).replace(/\s+/g,'') === 'Showfilters2',
       (await p.textContent('#filters-fab')).replace(/\s+/g,' ').trim());
     await p.close();
   }

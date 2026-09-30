@@ -103,8 +103,8 @@ const onPanel = (p, down) => p.evaluate(d=>{
     check('the pill is still there with the panel up',
       await p.evaluate(()=>getComputedStyle(
         document.getElementById('filters-fab')).display !== 'none'));
-    check('unchanged but for its arrow — the word is still on it',
-      (await p.textContent('#filters-fab')).replace(/\s+/g,' ').trim().startsWith('Filters'),
+    check('it says Hide filters while the panel is up',
+      (await p.textContent('#filters-fab')).replace(/\s+/g,' ').trim().startsWith('Hide filters'),
       (await p.textContent('#filters-fab')).replace(/\s+/g,' ').trim());
     check('pointing down, which is where the panel is going',
       (await arrow(p)) === DOWN, await arrow(p));
@@ -123,8 +123,8 @@ const onPanel = (p, down) => p.evaluate(d=>{
     // Nothing inside it does the closing any more.
     check('no second chevron inside the panel',
       await p.evaluate(()=>!document.querySelector('.filter-sheet-collapse')));
-    check('and no title repeating what the button already says',
-      await p.evaluate(()=>!document.querySelector('.filter-sheet-title')));
+    check('and the panel is titled Filters',
+      await p.evaluate(()=>{ const t=document.querySelector('.filter-sheet-title'); return Boolean(t) && t.textContent.trim()==='Filters'; }));
     await p.close();
   }
 
