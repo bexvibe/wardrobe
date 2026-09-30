@@ -1181,13 +1181,16 @@
      filters, and the button that opened it is still on screen to close it.
      What is left is the one thing the head was for. */
   .filter-sheet-head{
-    display:flex;align-items:center;justify-content:flex-end;
+    display:flex;align-items:center;justify-content:space-between;
     gap:12px;
     margin-bottom:10px;
   }
   /* A full thumb's worth of target. The negative margin keeps the head the
      height the title gives it, so the bigger target costs the panel no
      room — it just reaches further than it is drawn. */
+  .filter-sheet-title{
+    font-family:'Fraunces', serif;font-size:22px;font-weight:500;
+  }
   .filter-sheet-clear{
     align-items:center;
     min-height:44px;margin:-11px 0;
@@ -1664,6 +1667,7 @@
 
 <div class="filter-sheet" id="filter-sheet" inert>
   <div class="filter-sheet-head">
+    <span class="filter-sheet-title">Filters</span>
     <button class="filter-sheet-clear" id="filter-sheet-clear" onclick="clearFilters()">Clear all</button>
   </div>
   <div class="filter-sheet-body" id="filter-sheet-body" data-filter-ns="sheet"></div>
@@ -2325,7 +2329,7 @@ function openPieceSheet(itemId){
 // On these two pages the panel comes down by itself — but only the first
 // time you arrive in a visit. Having it open on every single trip back was
 // a panel you had to put away again each time.
-const FILTERS_OPEN_BY_DEFAULT = ['outfits', 'saved'];
+const FILTERS_OPEN_BY_DEFAULT = [];
 const FILTERS_SHOWN_KEY = 'wardrobe-filters-shown';
 let filtersShown = (() => {
   try{ return JSON.parse(sessionStorage.getItem(FILTERS_SHOWN_KEY) || '{}'); }catch(e){ return {}; }
@@ -2364,7 +2368,7 @@ function renderFiltersFab(){
   // The pill is unchanged but for its arrow, which points the way the
   // panel will go — and that is the other way each time you press it.
   fab.innerHTML = `
-    <span class="filters-fab-label">Filters</span>
+    <span class="filters-fab-label">${up ? 'Hide filters' : 'Show filters'}</span>
     <svg class="filters-fab-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor"
          stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
       <path d="${up ? 'M6 10l6 6 6-6' : 'M6 14l6-6 6 6'}"/>
@@ -2429,8 +2433,9 @@ function renderFilterControls(){
   const clear = document.getElementById('filter-sheet-clear');
   const head = document.querySelector('#filter-sheet .filter-sheet-head');
   const anything = activeFilterCount() > 0;
-  if(clear) clear.style.display = anything ? 'inline-flex' : 'none';
-  if(head) head.style.display = anything ? 'flex' : 'none';
+  // The head always stays, for its title; Clear all is only out of sight.
+  if(clear){ clear.style.display = 'inline-flex'; clear.style.visibility = anything ? 'visible' : 'hidden'; }
+  if(head) head.style.display = 'flex';
 
   // Tagging a piece can give the panel a row it did not have, which changes
   // how much room the page has to leave under it.
