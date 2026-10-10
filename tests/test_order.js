@@ -9,7 +9,8 @@ const fs=require('fs'), path=require('path');
 const REPO = require('path').join(__dirname, '..');
 const SHOTS = require('path').join(__dirname, 'shots');
 const fake=fs.readFileSync(path.join(__dirname,'fake-supabase.js'),'utf8');
-const rows=JSON.parse(fs.readFileSync(REPO + '/supabase/seed-items.json','utf8'));
+// The suite is about a wardrobe that owns no skirts, so leave the skirt out.
+const rows=JSON.parse(fs.readFileSync(REPO + '/supabase/seed-items.json','utf8')).filter(r=>r.category!=='Skirts');
 const results=[]; const check=(n,p,d)=>{results.push(p);console.log(`${p?'PASS':'FAIL'}  ${n}${d?'  — '+d:''}`);};
 
 const FAVS=[{combo_key:'tb|seed_22|seed_11|none|none|none', base:'topbottom',

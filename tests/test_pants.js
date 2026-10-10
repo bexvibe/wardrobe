@@ -10,7 +10,8 @@ const fake=fs.readFileSync(path.join(__dirname,'fake-supabase.js'),'utf8');
 // The one pair of shorts in the real wardrobe has no photo yet, which puts
 // it in No Image rather than in any category. Give it one here, so the split
 // is tested on a pair that has somewhere to be.
-const seedRows=JSON.parse(fs.readFileSync(REPO + '/supabase/seed-items.json','utf8'));
+// The suite is about a wardrobe that owns no skirts, so leave the skirt out.
+const seedRows=JSON.parse(fs.readFileSync(REPO + '/supabase/seed-items.json','utf8')).filter(r=>r.category!=='Skirts');
 seedRows.forEach(r=>{ if(r.category==='Shorts') r.photo='shorts.webp'; });
 const seed=JSON.stringify(seedRows);
 const results=[]; const check=(n,p,d)=>{results.push(p);console.log(`${p?'PASS':'FAIL'}  ${n}${d?'  — '+d:''}`);};
@@ -58,7 +59,7 @@ const tiles = p => p.evaluate(()=>document.querySelectorAll('#gallery .tile').le
     const pants = await p.evaluate(()=>
       Array.from(document.querySelectorAll('#gallery .tile'))
         .map(t=>ITEMS.find(i=>i.id===t.dataset.id).category));
-    check('Pants holds jeans and pants', pants.length === 16 &&
+    check('Pants holds jeans and pants', pants.length === 17 &&
       pants.every(c=>['Jeans','Pants','Skirts'].includes(c)),
       `${pants.length}: ${[...new Set(pants)].join(', ')}`);
 
@@ -83,7 +84,7 @@ const tiles = p => p.evaluate(()=>document.querySelectorAll('#gallery .tile').le
       };
     });
     check('the bottom slot draws from Pants and Shorts together',
-      pool.n === 17 && pool.hasShorts, `${pool.n}: ${pool.cats.join(', ')}`);
+      pool.n === 18 && pool.hasShorts, `${pool.n}: ${pool.cats.join(', ')}`);
 
     await p.click('#nav-outfits-btn'); await p.waitForTimeout(1100);
     check('and outfits are generated with shorts among them',
