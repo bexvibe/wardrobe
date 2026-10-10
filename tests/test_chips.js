@@ -286,7 +286,7 @@ async function setSlot(p, key, choice){
     }
     check('no tab stop lands inside it', !landed.some(l=>l.startsWith('IN THE PANEL')),
       landed.filter(l=>l.startsWith('IN THE PANEL')).join(', ') || landed.slice(0,6).join(', '));
-    // Tabbing past 80 tiles would take all day, so ask the pill directly:
+    // Tabbing past 83 tiles would take all day, so ask the pill directly:
     // it is the one control near the panel that must stay reachable.
     check('the pill that opens it is still reachable',
       await p.evaluate(()=>{

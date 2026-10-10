@@ -97,7 +97,7 @@ const TAGS={seed_22:['summer'], seed_11:['summer'], seed_23:['winter']};
   await p.click('#sheet-tag-chips .tag-chip:has-text("summer")'); await p.waitForTimeout(300);
   await closeFilters(p);
   await p.click('#nav-inventory-btn'); await p.waitForTimeout(400);
-  check('the wardrobe is not filtered by it', (await shown(p)) === 80);
+  check('the wardrobe is not filtered by it', (await shown(p)) === 83);
   await p.click('#nav-outfits-btn'); await p.waitForTimeout(700);
   check('the tag is still on over on All',
     await p.evaluate(()=>outfitTags.includes('summer')));

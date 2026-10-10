@@ -82,7 +82,7 @@ const db = p => p.evaluate(()=>({
 
     await p.fill('#capsule-name-input','winter');
     const tiles = await p.evaluate(()=>document.querySelectorAll('#capsule-editor-gallery .picker-tile').length);
-    check('the editor offers the whole wardrobe to pick from', tiles===80, `${tiles} tiles`);
+    check('the editor offers the whole wardrobe to pick from', tiles===83, `${tiles} tiles`);
 
     await p.click('#capsule-editor-gallery .picker-tile:nth-child(1)');
     await p.click('#capsule-editor-gallery .picker-tile:nth-child(2)');
@@ -229,7 +229,7 @@ const db = p => p.evaluate(()=>({
       await p.evaluate(()=>capsules[0].itemIds.join(',')));
     check('the membership row is deleted, the piece is not',
       await p.evaluate(()=>window.__WARDROBE_STATE.capsule_items.length)===1 &&
-      await p.evaluate(()=>window.__WARDROBE_STATE.items.length)===80);
+      await p.evaluate(()=>window.__WARDROBE_STATE.items.length)===83);
     check('the piece is still in the wardrobe',
       await p.evaluate(()=>ITEMS.some(i=>i.id==='seed_0')));
 
@@ -306,7 +306,7 @@ const db = p => p.evaluate(()=>({
     check('its memberships are kept, so a restore brings it back whole',
       state.members.length===2);
     check('no piece left the wardrobe',
-      await p.evaluate(()=>ITEMS.length)===80);
+      await p.evaluate(()=>ITEMS.length)===83);
     await p.close();
   }
 
@@ -334,7 +334,7 @@ const db = p => p.evaluate(()=>({
   {
     const p=await open(b, {noCapsules:true});
     check('before the migration the app still loads',
-      (await shown(p)) === 80);
+      (await shown(p)) === 83);
     check('and Capsules stays out of the nav rather than leading nowhere',
       !(await p.isVisible('#nav-capsules-btn')));
     await p.close();

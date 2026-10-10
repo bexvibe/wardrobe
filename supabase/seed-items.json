@@ -798,5 +798,35 @@
     "source": "",
     "notes": "",
     "photo": "wardrobe-photos/red-tee-nobg.webp"
+  },
+  {
+    "name": "White lace collar blouse",
+    "brand": "",
+    "size": "-",
+    "category": "Tops",
+    "price": "",
+    "source": "",
+    "notes": "",
+    "photo": "wardrobe-photos/white-lace-collar-blouse-nobg.webp"
+  },
+  {
+    "name": "Agnis Flares Carob",
+    "brand": "Agnis",
+    "size": "-",
+    "category": "Pants",
+    "price": "",
+    "source": "",
+    "notes": "",
+    "photo": "wardrobe-photos/agnis-flares-carob-nobg.webp"
+  },
+  {
+    "name": "Gingham Maxi Skirt",
+    "brand": "",
+    "size": "-",
+    "category": "Skirts",
+    "price": "",
+    "source": "",
+    "notes": "",
+    "photo": "wardrobe-photos/gingham-maxi-skirt-nobg.webp"
   }
 ]
