@@ -139,7 +139,7 @@ const selected = p => p.evaluate(()=>Array.from(selectedIds));
     check('and it offered the pieces back instead',
       await p.evaluate(()=>Boolean(document.querySelector('.toast-undo'))));
     check('selected pieces archive, and the mode ends',
-      !(await inEdit(p)) && (await shown(p)) === 78,
+      !(await inEdit(p)) && (await shown(p)) === 81,
       String(await shown(p)));
     check('they are archived, not deleted',
       await p.evaluate(()=>window.__WARDROBE_STATE.items.filter(r=>r.archived_at).length)===2);

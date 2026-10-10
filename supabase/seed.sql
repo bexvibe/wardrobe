@@ -90,5 +90,8 @@ insert into public.items (id, name, brand, size, category, price, source, notes,
   ('seed_76', 'Denim Jacket', 'Levi''s', '-', 'Jackets', '', '', 'Corduroy collar.', 'wardrobe-photos/levis-denim-jacket-corduroy-collar-nobg.webp'),
   ('seed_77', 'Quilted Jacket', '', '-', 'Jackets', '', '', 'Navy.', 'wardrobe-photos/quilted-jacket-navy-nobg.webp'),
   ('seed_78', 'White Jeans', 'AGOLDE', '-', 'Jeans', '', '', '', 'wardrobe-photos/agolde-white-jeans-nobg.webp'),
-  ('seed_79', 'Red Tee', '', '-', 'Tops', '', '', '', 'wardrobe-photos/red-tee-nobg.webp')
+  ('seed_79', 'Red Tee', '', '-', 'Tops', '', '', '', 'wardrobe-photos/red-tee-nobg.webp'),
+  ('seed_80', 'White lace collar blouse', '', '-', 'Tops', '', '', '', 'wardrobe-photos/white-lace-collar-blouse-nobg.webp'),
+  ('seed_81', 'Agnis Flares Carob', 'Agnis', '-', 'Pants', '', '', '', 'wardrobe-photos/agnis-flares-carob-nobg.webp'),
+  ('seed_82', 'Gingham Maxi Skirt', '', '-', 'Skirts', '', '', '', 'wardrobe-photos/gingham-maxi-skirt-nobg.webp')
 on conflict (id) do nothing;

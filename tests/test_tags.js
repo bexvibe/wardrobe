@@ -46,7 +46,7 @@ async function open(b, {withTags=true, tags={}}={}){
   {
     const p=await open(b,{withTags:false});
     check('works before the migration: items still load',
-      (await shown(p)) === 80);
+      (await shown(p)) === 83);
     check('no Filters pill on the wardrobe at all', !(await p.isVisible('#filters-fab')));
     await p.click('#add-item-btn'); await p.waitForTimeout(300);
     check('tags field hidden in the form', !(await p.isVisible('#form-tags-field')));
@@ -84,15 +84,15 @@ async function open(b, {withTags=true, tags={}}={}){
     // and its search are how you narrow a grid of pieces.
     const p=await open(b,{tags:{seed_22:['summer'], seed_11:['summer'], seed_0:['winter']}});
     check('the wardrobe shows every piece even with tags about',
-      (await shown(p)) === 80, String(await shown(p)));
+      (await shown(p)) === 83, String(await shown(p)));
     check('there is no filter control on the page',
       !(await p.isVisible('#filters-fab')) &&
       await p.evaluate(()=>!filterSheetHasContent()));
     check('and its list ignores tags entirely',
-      await p.evaluate(()=>visibleFilteredItems('').length) === 80);
+      await p.evaluate(()=>visibleFilteredItems('').length) === 83);
     check('search still narrows it, which is what that page has',
       await p.evaluate(()=>visibleFilteredItems('jeans').length) > 0 &&
-      await p.evaluate(()=>visibleFilteredItems('jeans').length) < 80,
+      await p.evaluate(()=>visibleFilteredItems('jeans').length) < 83,
       String(await p.evaluate(()=>visibleFilteredItems('jeans').length)));
     await p.screenshot({path:shot('tags-inventory.png')});
     await p.close();
@@ -118,7 +118,7 @@ async function open(b, {withTags=true, tags={}}={}){
     await closeFilters(p);
     await p.click('#nav-inventory-btn'); await p.waitForTimeout(400);
     check('the wardrobe is untouched by the outfit filter',
-      (await shown(p)) === 80, String(await shown(p)));
+      (await shown(p)) === 83, String(await shown(p)));
     await p.close();
   }
 

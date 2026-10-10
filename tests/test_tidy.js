@@ -63,7 +63,7 @@ const foldedCount = p => p.evaluate(()=>
     check('and the panel has nothing to offer there',
       !(await p.evaluate(()=>filterSheetHasContent())) && !(await sheetOpen(p)));
     check('the wardrobe shows everything despite twenty tags existing',
-      await p.evaluate(()=>visibleFilteredItems('').length) === 80);
+      await p.evaluate(()=>visibleFilteredItems('').length) === 83);
     check('nothing is left of the old wardrobe tag filter',
       await p.evaluate(()=>typeof setInventoryTag === 'undefined' &&
                            typeof window.inventoryTag === 'undefined'));

@@ -90,7 +90,7 @@ async function login(page) {
     check('correct password unlocks the app', await page.isVisible('#app-root'));
 
     const count = await shown(page);
-    check('items load from the database', count === 80, String(count));
+    check('items load from the database', count === 83, String(count));
     await page.screenshot({ path: shot('v1-inventory.png') });
     await page.close();
   }
@@ -108,13 +108,13 @@ async function login(page) {
     await page.waitForTimeout(700);
 
     const afterCount = await shown(page);
-    check('archiving removes the item from inventory', afterCount === 79, String(afterCount));
+    check('archiving removes the item from inventory', afterCount === 82, String(afterCount));
 
     const dbState = await page.evaluate(() => {
       const rows = window.__WARDROBE_STATE.items;
       return {
         archived: rows.filter((r) => r.archived_at).length,
-        hardDeleted: rows.length !== 80,
+        hardDeleted: rows.length !== 83,
       };
     });
     check('archived row is soft-deleted, not removed', dbState.archived === 1 && !dbState.hardDeleted,
@@ -186,7 +186,7 @@ async function login(page) {
     check('new item is inserted with a generated id',
       added.length === 1 && added[0].id.startsWith('itm_'), added.length ? added[0].id : 'none');
     check('inventory count reflects the new piece',
-      (await shown(page)) === 81);
+      (await shown(page)) === 84);
     await page.close();
   }
 

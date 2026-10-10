@@ -44,7 +44,7 @@ const shown = p => p.evaluate(() =>
   const submitted = await p.evaluate(()=>window.__SUBMITTED_EMAIL);
   check('app signs in using the configured email', submitted===EMAIL, submitted);
   check('correct password unlocks the wardrobe', await p.isVisible('#app-root'));
-  check('items load after login', (await shown(p)) === 80);
+  check('items load after login', (await shown(p)) === 83);
 
   // wrong password must be refused
   const p2=await b.newPage({viewport:{width:390,height:844}});

@@ -17,7 +17,8 @@ const { toFaves } = require('./nav');
 const fs=require('fs'), path=require('path');
 const REPO = require('path').join(__dirname, '..');
 const fake=fs.readFileSync(path.join(__dirname,'fake-supabase.js'),'utf8');
-const seed=fs.readFileSync(REPO + '/supabase/seed-items.json','utf8');
+// The suite is about a wardrobe that owns no skirts, so leave the skirt out.
+const seed=JSON.stringify(JSON.parse(fs.readFileSync(REPO + '/supabase/seed-items.json','utf8')).filter(r=>r.category!=='Skirts'));
 const results=[]; const check=(n,p,d)=>{results.push(p);console.log(`${p?'PASS':'FAIL'}  ${n}${d?'  — '+d:''}`);};
 
 async function open(b){

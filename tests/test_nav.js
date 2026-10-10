@@ -57,7 +57,7 @@ const vis=(p,s)=>p.isVisible(s);
 
   // --- wardrobe ---
   check('opens on the wardrobe', await vis(p,'#inventory-view'));
-  check('items listed', (await shown(p)) === 80);
+  check('items listed', (await shown(p)) === 83);
   // The wardrobe has no inline filter mount — only Outfits and Saved do —
   // so the category row is all that sits above its grid.
   check('the category row is the only thing above the grid',
