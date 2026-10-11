@@ -698,6 +698,63 @@
   .heart-glyph{display:block;width:22px;height:22px;}
   .nav-heart .heart-glyph{width:17px;height:17px;}
 
+  /* The fave heart: one shape that grows richer over three levels. The
+     button is the 44px target; the glyph inside it is smaller. */
+  .fave-heart{width:44px;height:44px;top:4px;right:4px;padding:0;overflow:visible;}
+  .fave-heart:focus-visible{outline:2px solid var(--brand);outline-offset:2px;}
+  .fave-inner{
+    position:relative;display:block;width:24px;height:24px;
+    transform:scale(var(--s,1));
+  }
+  .fave-heart[data-level="2"] .fave-inner{--s:1.08;}
+  .fave-heart[data-level="3"] .fave-inner{--s:1.15;}
+  .fave-svg{display:block;width:100%;height:100%;overflow:visible;position:relative;}
+  .fh-body{
+    fill:transparent;stroke:#A6A6A6;stroke-width:2;stroke-linejoin:round;
+    transition:fill .25s ease, stroke .25s ease;
+  }
+  .fh-shine{fill:none;stroke:#fff;stroke-width:1.8;stroke-linecap:round;opacity:0;transition:opacity .25s ease;}
+  .fave-heart[data-level="1"] .fh-body,.fave-chip-heart[data-level="1"] .fh-body{fill:#F6C4CF;stroke:#F6C4CF;}
+  .fave-heart[data-level="2"] .fh-body,.fave-chip-heart[data-level="2"] .fh-body{fill:#E4607F;stroke:#E4607F;}
+  .fave-heart[data-level="3"] .fh-body,.fave-chip-heart[data-level="3"] .fh-body{fill:#B3124A;stroke:#B3124A;}
+  .fave-heart[data-level="2"] .fh-shine,.fave-heart[data-level="3"] .fh-shine,
+  .fave-chip-heart[data-level="2"] .fh-shine,.fave-chip-heart[data-level="3"] .fh-shine{opacity:.9;}
+  .fave-glow{
+    position:absolute;left:50%;top:50%;width:44px;height:44px;margin:-22px 0 0 -22px;
+    border-radius:50%;pointer-events:none;opacity:0;transition:opacity .3s ease;
+    background:radial-gradient(circle,rgba(179,18,74,.38) 0%,rgba(179,18,74,0) 68%);
+  }
+  .fave-heart[data-level="3"] .fave-glow{opacity:1;}
+  .fave-fx{position:absolute;left:50%;top:50%;width:0;height:0;pointer-events:none;}
+  .fave-fx > *{position:absolute;left:-5px;top:-5px;width:10px;height:10px;will-change:transform,opacity;}
+  .fave-fx svg{display:block;width:100%;height:100%;}
+  .fave-sparkle{position:absolute;right:-4px;top:-5px;width:11px;height:11px;opacity:0;pointer-events:none;}
+  @media (prefers-reduced-motion:reduce){
+    .fave-heart .fave-inner{--s:1 !important;}
+    .fh-body,.fh-shine,.fave-glow{transition:none;}
+  }
+
+  /* Fave filter chips, above the grid. Scroll sideways when they must. */
+  .fave-chips{
+    display:flex;gap:8px;overflow-x:auto;flex-wrap:nowrap;
+    padding:2px 2px 10px;margin:0 -2px;
+    scrollbar-width:none;-webkit-overflow-scrolling:touch;
+  }
+  .fave-chips::-webkit-scrollbar{display:none;}
+  .fave-chip{
+    flex:none;display:inline-flex;align-items:center;gap:6px;
+    min-height:44px;padding:0 14px;border-radius:999px;
+    border:1px solid var(--line);background:transparent;color:var(--ink-soft);
+    font-family:'Work Sans',sans-serif;font-size:12px;font-weight:600;
+    cursor:pointer;white-space:nowrap;
+    transition:background .12s ease,border-color .12s ease,color .12s ease;
+  }
+  .fave-chip.active{border-color:transparent;background:var(--accent-soft);color:var(--ink);}
+  .fave-chip:focus-visible{outline:2px solid var(--brand);outline-offset:2px;}
+  .fave-chip .fave-n{font-weight:500;opacity:.7;}
+  .fave-chip-heart{display:inline-block;width:15px;height:15px;}
+  .fave-chip-heart .fave-svg{width:100%;height:100%;}
+
   .toast{
     position:fixed;
     /* Clear of the nav bar. A toast that lands behind it is one you cannot
@@ -1555,6 +1612,7 @@
 
     <!-- One outfit, picked afresh each time you arrive: something to react to
          before you start narrowing anything down. -->
+    <div class="fave-chips" id="fave-chips-outfits" role="group" aria-label="Filter by fave level"></div>
     <div class="hero" id="outfit-hero"></div>
 
     <div class="outfit-gallery" id="outfit-gallery"></div>
@@ -1587,6 +1645,7 @@
         </button>
       </div>
     </header>
+    <div class="fave-chips" id="fave-chips-saved" role="group" aria-label="Filter by fave level"></div>
     <div class="outfit-gallery" id="saved-gallery"></div>
     <div class="empty" id="saved-empty" style="display:none;">
       <h3 id="saved-empty-title">No faves</h3>
@@ -2126,6 +2185,8 @@ function setMode(mode){
   // Leaving a page: note where you had got to on it.
   if(appMode && appMode !== mode) rememberScroll(appMode);
   appMode = mode;
+  favePinned.clear(); faveLingering.clear();
+  writeFaveUrl();
   // Search belongs to the wardrobe; leaving it open over another page would
   // be a bar that filters nothing you can see. A selection belongs to it
   // just as much, and it hides the navigation while it is on — leaving it
@@ -2437,6 +2498,8 @@ function renderFilterControls(){
   // The head always stays, for its title; Clear all is only out of sight.
   if(clear){ clear.style.display = 'inline-flex'; clear.style.visibility = anything ? 'visible' : 'hidden'; }
   if(head) head.style.display = 'flex';
+
+  renderFaveChips();
 
   // Tagging a piece can give the panel a row it did not have, which changes
   // how much room the page has to leave under it.
@@ -3473,10 +3536,14 @@ function wardrobeCanMakeOutfits(){
 
 function totalComboCount(){
   const all = comboCountWhere(false);
-  if(!outfitTags.length) return all;
   // A combination matches unless the tag appears on none of its pieces, so
   // subtracting the all-untagged combinations gives the exact figure.
-  return Math.max(0, all - comboCountWhere(true));
+  const tagged = outfitTags.length ? Math.max(0, all - comboCountWhere(true)) : all;
+  const wantFave = currentFave();
+  if(wantFave === 'all') return tagged;
+  const faved = favoriteOutfits.filter(f => savedOutfitMatches(f));
+  if(wantFave === 'none') return Math.max(0, tagged - faved.length);
+  return faved.filter(f => f.level === Number(wantFave)).length;
 }
 
 function resetOutfitResults(){
@@ -3516,7 +3583,7 @@ const HERO_KEY = 'wardrobe-hero-outfit';
 // again, or the one card the page leads with would be the one thing the
 // wand left alone.
 function heroSignature(){
-  return JSON.stringify({ deal: sessionSeed, tags: outfitTags, filters: outfitFilters });
+  return JSON.stringify({ deal: sessionSeed, tags: outfitTags, filters: outfitFilters, fave: faveFilter.outfits });
 }
 
 function readStoredHero(){
@@ -3598,13 +3665,10 @@ function renderHero(){
   host.style.display = 'block';
 
   const key = comboKey(heroCombo);
-  const fav = isFavorited(key);
   const isExpanded = expandedComboKey === key;
   host.innerHTML = `
     <div class="outfit-card hero-card ${isExpanded ? 'expanded' : ''}" onclick='toggleExpandCombo(${JSON.stringify(key)})'>
-      <button class="outfit-fav-btn ${fav ? 'favorited' : ''}" type="button"
-              aria-pressed="${fav}" aria-label="${fav ? 'Kept' : 'Keep this outfit'}"
-              onclick='event.stopPropagation();toggleFavoriteByKey(${JSON.stringify(key)})'>${heartSvg(fav)}</button>
+      ${faveHeartHtml(key)}
       <div class="outfit-thumbs">${outfitThumbsHtml(heroCombo)}</div>
       ${isExpanded ? outfitExpandedPanelHtml(heroCombo, key, {canHide:true}) : ''}
     </div>`;
@@ -3627,6 +3691,8 @@ function loadMoreOutfits(){
   let guard = 0;
   // Nothing matches, so there is nothing to walk towards.
   if(totalComboCount() === 0){ renderOutfits(); return; }
+  const wantFave = currentFave();
+  const levels = wantFave === 'all' ? null : new Map(favoriteOutfits.map(f => [f.key, f.level]));
   while(added < OUTFIT_PAGE_SIZE && guard < OUTFIT_SCAN_LIMIT){
     const next = outfitGen.next();
     guard++;
@@ -3634,6 +3700,7 @@ function loadMoreOutfits(){
     const key = comboKey(next.value);
     if(hiddenCombos.includes(key)) continue;
     if(!comboMatchesTag(next.value)) continue;
+    if(levels && !faveMatches(levels.get(key) || 0, wantFave)) continue;
     outfitDisplayed.push(next.value);
     added++;
   }
@@ -3641,7 +3708,7 @@ function loadMoreOutfits(){
 }
 
 function isFavorited(key){
-  return favoriteOutfits.some(f => f.key === key);
+  return faveLevel(key) >= 1;
 }
 
 function comboToFavoriteRecord(combo){
@@ -3652,7 +3719,8 @@ function comboToFavoriteRecord(combo){
     top: id(combo.top), bottom: id(combo.bottom), dress: id(combo.dress),
     jumper: id(combo.jumper), jacket: id(combo.jacket),
     // A freshly kept outfit has nothing on it yet.
-    extras: []
+    extras: [],
+    level: 1
   };
 }
 
@@ -3670,58 +3738,332 @@ function favoriteRecordToCombo(rec){
   };
 }
 
-// Un-hearting soft-deletes like everything else — the row keeps its
-// archived_at stamp rather than disappearing, and re-hearting the same
-// combination revives it.
-// `undo` is what the toast offers when a favourite is taken away. It is
-// passed in rather than built here because putting it back has to redraw
-// whichever page you did it from.
-async function setFavorited(key, favorited, combo, undo){
-  const db = client();
-  if(favorited){
-    const rec = comboToFavoriteRecord(combo);
-    const { error } = await db.from('saved_outfits').upsert(favoriteToRow(rec), { onConflict: 'combo_key' });
-    if(error) return dbFail(error, 'Could not save — check connection');
-    if(!isFavorited(key)) favoriteOutfits.push(rec);
-    // The heart fills where you tapped it. Removing is the asymmetric one:
-    // on the Faves page the card goes with it, so there is nothing left to
-    // tap and the toast keeps its undo.
+// ---- Fave levels --------------------------------------------
+// A favourite is a level, 0-3. Level 0 is not a row at all as far as the
+// app is concerned: the row is soft-deleted (archived_at) exactly as
+// un-hearting always did, and fave_level says 0 beside it.
+const FAVE_LABELS = ['Not faved', 'Like', 'Love', 'All-time fave'];
+const FAVE_COLORS = ['#F6C4CF', '#E4607F', '#B3124A'];
+const FAVE_SAVE_DELAY_MS = 400;
 
-  } else {
-    const { error } = await db.from('saved_outfits')
-      .update({ archived_at: new Date().toISOString() })
-      .eq('combo_key', key);
-    if(error) return dbFail(error, 'Could not remove — check connection');
+// Outfits whose heart was changed since the filter last changed. They stay
+// on screen — a card that vanishes under the thumb is worse than one that
+// no longer matches — until the filter changes or the page loads.
+const faveLingering = new Map();   // key -> record, for ones taken to level 0
+const favePinned = new Set();
+const faveSaves = new Map();       // key -> { timer, base, rec }
+
+function faveLevel(key){
+  const rec = favoriteOutfits.find(f => f.key === key);
+  return rec ? rec.level : 0;
+}
+
+// The heart. `level` is read from the data rather than passed, so every
+// heart for one outfit (the lead card and the grid) draws the same.
+function faveHeartBody(level){
+  return `<svg class="fave-svg" viewBox="0 0 24 24" aria-hidden="true"><path class="fh-body"
+    d="M12 21c-.5 0-9-5.6-9-11.2C3 6.6 5.2 4.5 7.9 4.5c1.7 0 3.1.8 4.1 2.3 1-1.5 2.4-2.3 4.1-2.3C18.8 4.5 21 6.6 21 9.8 21 15.4 12.5 21 12 21z"/><path class="fh-shine"
+    d="M5.8 9.4c.2-1.5 1.1-2.5 2.6-2.8"/></svg>`;
+}
+
+function faveHeartHtml(key){
+  const level = faveLevel(key);
+  return `<button class="outfit-fav-btn fave-heart" type="button" data-key="${esc(key)}" data-level="${level}"
+      aria-label="${faveAriaLabel(level)}"
+      onclick="faveHeartTap(event,this)"><span class="fave-glow"></span><span class="fave-inner">${faveHeartBody(level)}<svg class="fave-sparkle" viewBox="0 0 12 12" aria-hidden="true"><path fill="#FF8FB3" d="M6 0l1.3 4.7L12 6 7.3 7.3 6 12 4.7 7.3 0 6l4.7-1.3z"/></svg></span><span class="fave-fx"></span></button>`;
+}
+
+// A small static heart for the filter chips.
+function faveChipHeart(level){
+  return `<span class="fave-chip-heart" data-level="${level}">${faveHeartBody(level)}</span>`;
+}
+
+function faveAriaLabel(level){
+  return `Fave level: ${FAVE_LABELS[level]}. Tap to change.`;
+}
+
+function comboForKey(key){
+  let c = outfitDisplayed.find(c => comboKey(c) === key);
+  if(c) return c;
+  if(heroCombo && comboKey(heroCombo) === key) return heroCombo;
+  const rec = favoriteOutfits.find(f => f.key === key) || faveLingering.get(key);
+  return rec ? favoriteRecordToCombo(rec) : null;
+}
+
+function faveHeartTap(ev, btn){
+  // The card is a button too: tapping the heart must never open it.
+  ev.stopPropagation();
+  const key = btn.dataset.key;
+  const prev = faveLevel(key);
+  const next = (prev + 1) % 4;
+  const combo = comboForKey(key);
+  if(!combo && next >= 1) return;
+
+  setFaveLocal(key, next, combo);
+  syncFaveHearts(key, next, btn, prev);
+  scheduleFaveSave(key, prev);
+  renderFaveChips();
+}
+
+// Instant, in memory. Saving comes later and only once.
+function setFaveLocal(key, level, combo){
+  let rec = favoriteOutfits.find(f => f.key === key);
+  if(level >= 1){
+    if(!rec){
+      rec = faveLingering.get(key) || comboToFavoriteRecord(combo);
+      favoriteOutfits.push(rec);
+    }
+    rec.level = level;
+    faveLingering.delete(key);
+  } else if(rec){
     favoriteOutfits = favoriteOutfits.filter(f => f.key !== key);
-    showToast('Removed from Faves', undo);
+    faveLingering.set(key, rec);
+    rec.level = 0;
+  }
+  favePinned.add(key);
+}
+
+function syncFaveHearts(key, level, tapped, prev){
+  document.querySelectorAll('.fave-heart').forEach(b => {
+    if(b.dataset.key !== key) return;
+    b.dataset.level = level;
+    b.setAttribute('aria-label', faveAriaLabel(level));
+    if(b === tapped && prev !== undefined) faveAnimate(b, level, prev);
+  });
+}
+
+function scheduleFaveSave(key, prev){
+  let p = faveSaves.get(key);
+  if(!p){ p = { base: prev, timer: null }; faveSaves.set(key, p); }
+  clearTimeout(p.timer);
+  p.timer = setTimeout(() => flushFaveSave(key), FAVE_SAVE_DELAY_MS);
+}
+
+async function flushFaveSave(key){
+  const p = faveSaves.get(key);
+  if(!p) return;
+  faveSaves.delete(key);
+  const level = faveLevel(key);
+  if(level === p.base) return;
+  const ok = await persistFaveLevel(key, level);
+  if(ok) return;
+  // Quietly put it back the way the database has it.
+  const combo = comboForKey(key);
+  setFaveLocal(key, p.base, combo);
+  syncFaveHearts(key, p.base);
+  renderFaveChips();
+}
+
+async function persistFaveLevel(key, level){
+  const db = client();
+  const now = new Date().toISOString();
+  if(level >= 1){
+    const rec = favoriteOutfits.find(f => f.key === key);
+    if(!rec) return false;
+    const { error } = await db.from('saved_outfits')
+      .upsert(favoriteToRow(rec), { onConflict: 'combo_key' });
+    if(error){ console.error('[wardrobe] could not save fave', error); return false; }
+    return true;
+  }
+  const { error } = await db.from('saved_outfits')
+    .update({ archived_at: now, fave_level: 0, fave_updated_at: now })
+    .eq('combo_key', key);
+  if(error){ console.error('[wardrobe] could not clear fave', error); return false; }
+  return true;
+}
+
+// Other callers (the outfit builder) just want an outfit kept: level 1, now.
+async function setFavorited(key, favorited, combo){
+  if(favorited){
+    if(isFavorited(key)) return true;
+    setFaveLocal(key, 1, combo);
+  } else {
+    setFaveLocal(key, 0, combo);
+  }
+  const ok = await persistFaveLevel(key, faveLevel(key));
+  if(!ok){
+    setFaveLocal(key, favorited ? 0 : 1, combo);
+    return dbFail({ message: 'fave save failed' }, 'Could not save — check connection');
   }
   return true;
 }
 
-async function toggleFavoriteByKey(key){
-  const combo = outfitDisplayed.find(c => comboKey(c) === key);
-  if(!combo) return;
-  const wasFavorited = isFavorited(key);
-  // Un-hearting here is undone by hearting the same outfit again, which is
-  // the very call we are in — the outfit stays in the grid either way.
-  const undo = wasFavorited ? () => toggleFavoriteByKey(key) : null;
-  await setFavorited(key, !wasFavorited, combo, undo);
-  renderOutfits();
-  // The featured outfit is drawn outside the grid, so its heart has to be
-  // told separately — it is the one most likely to be tapped.
-  renderHero();
+// ---- The micro-interaction ----------------------------------
+const faveAnims = new WeakMap();
+
+function faveAnimate(btn, level, prev){
+  try{ if(navigator.vibrate) navigator.vibrate(level === 3 ? 25 : 10); }catch(e){}
+  if(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const inner = btn.querySelector('.fave-inner');
+  const fx = btn.querySelector('.fave-fx');
+  const spark = btn.querySelector('.fave-sparkle');
+  if(!inner || !inner.animate) return;
+
+  // Interrupt cleanly: whatever was still running stops where it is.
+  (faveAnims.get(btn) || []).forEach(a => { try{ a.cancel(); }catch(e){} });
+  fx.innerHTML = '';
+  const anims = [];
+  faveAnims.set(btn, anims);
+  const base = level === 3 ? 1.15 : level === 2 ? 1.08 : 1;
+
+  if(level === 0){
+    // A gentle deflate: smaller, then settling. No particles.
+    anims.push(inner.animate([
+      { transform: `scale(${prev === 3 ? 1.15 : 1.08})` },
+      { transform: 'scale(0.86)', offset: 0.45 },
+      { transform: 'scale(1)' }
+    ], { duration: 320, easing: 'ease-out' }));
+    return;
+  }
+
+  // Squish (80ms of 340), then spring past and settle.
+  anims.push(inner.animate([
+    { transform: `scale(${base})`, offset: 0 },
+    { transform: `scale(${base * 0.8})`, offset: 0.24, easing: 'cubic-bezier(.34,1.8,.5,1)' },
+    { transform: `scale(${base * 1.2})`, offset: 0.55, easing: 'ease-out' },
+    { transform: `scale(${base})`, offset: 1 }
+  ], { duration: 340 }));
+
+  const miniHeart = c => `<svg viewBox="0 0 24 24"><path fill="${c}" d="M12 21c-.5 0-9-5.6-9-11.2C3 6.6 5.2 4.5 7.9 4.5c1.7 0 3.1.8 4.1 2.3 1-1.5 2.4-2.3 4.1-2.3C18.8 4.5 21 6.6 21 9.8 21 15.4 12.5 21 12 21z"/></svg>`;
+  const add = (html, from, to, dur, delay) => {
+    const el = document.createElement('span');
+    el.innerHTML = html;
+    fx.appendChild(el);
+    const a = el.animate([
+      { transform: `translate(${from[0]}px,${from[1]}px) scale(.5)`, opacity: 1 },
+      { transform: `translate(${to[0]}px,${to[1]}px) scale(1)`, opacity: 0 }
+    ], { duration: dur, delay: delay || 0, easing: 'ease-out', fill: 'both' });
+    a.onfinish = () => el.remove();
+    anims.push(a);
+  };
+
+  if(level === 2){
+    [[-9, 0], [0, 40], [9, 80]].forEach(([x, d], i) =>
+      add(miniHeart(FAVE_COLORS[1]), [x, -4], [x * 1.6, -30 - i * 4], 420, d));
+  }
+  if(level === 3){
+    const n = 7;
+    for(let i = 0; i < n; i++){
+      const ang = (Math.PI * 2 * i) / n - Math.PI / 2;
+      const dist = 26 + (i % 2) * 7;
+      const color = FAVE_COLORS[i % 3];
+      const html = i % 2 ? `<span style="display:block;width:100%;height:100%;border-radius:50%;background:${color}"></span>`
+                         : miniHeart(color);
+      add(html, [0, 0], [Math.cos(ang) * dist, Math.sin(ang) * dist], 480, 0);
+    }
+    if(spark) anims.push(spark.animate([
+      { opacity: 0, transform: 'scale(0) rotate(0deg)' },
+      { opacity: 1, transform: 'scale(1.3) rotate(45deg)', offset: 0.5 },
+      { opacity: 0, transform: 'scale(0.4) rotate(90deg)' }
+    ], { duration: 560, easing: 'ease-in-out' }));
+  }
 }
 
-async function unfavoriteByKey(key){
-  // Hold the record before it goes: on this page the card disappears with
-  // it, so there is nothing left to read it back off.
-  const rec = favoriteOutfits.find(f => f.key === key);
-  const undo = rec ? async () => {
-    if(await setFavorited(key, true, favoriteRecordToCombo(rec))) renderSavedOutfits();
-  } : null;
-  if(!await setFavorited(key, false, null, undo)) return;
-  if(expandedSavedKey === key) expandedSavedKey = null;
-  renderSavedOutfits();
+// ---- Filtering by level -------------------------------------
+// One value per page: 'all', 'none' (Outfits only), or '1' '2' '3'.
+// It lives in the URL (?fave=2) so a refresh keeps it.
+const FAVE_CHIPS = [
+  { v: 'all',  label: 'All' },
+  { v: 'none', label: 'Not faved', level: 0, outfitsOnly: true },
+  { v: '1',    label: 'Like',     level: 1 },
+  { v: '2',    label: 'Love',     level: 2 },
+  { v: '3',    label: 'All-time', level: 3 },
+];
+const FAVE_EMPTY = {
+  '1': 'No likes yet. Tap a heart once to like an outfit.',
+  '2': 'No loves yet. Tap a heart twice to love one.',
+  '3': 'No all-time faves yet. Tap a heart three times to crown one.',
+  'none': 'Every outfit here is faved.',
+};
+const faveFilter = { outfits: 'all', saved: 'all' };
+
+function validFave(v, mode){
+  if(['1', '2', '3'].includes(v)) return v;
+  if(v === 'none' && mode === 'outfits') return v;
+  return 'all';
+}
+
+function readFaveUrl(){
+  try{
+    const q = new URLSearchParams(location.search);
+    const v = q.get('fave');
+    const mode = q.get('page') === 'faves' ? 'saved' : 'outfits';
+    if(v === null) return null;
+    faveFilter[mode] = validFave(v, mode);
+    return mode;
+  }catch(e){ return null; }
+}
+
+function writeFaveUrl(){
+  try{
+    const q = new URLSearchParams(location.search);
+    q.delete('fave'); q.delete('page');
+    if(appMode === 'outfits' || appMode === 'saved'){
+      const v = faveFilter[appMode];
+      if(v !== 'all'){
+        q.set('fave', v);
+        if(appMode === 'saved') q.set('page', 'faves');
+      }
+    }
+    const qs = q.toString();
+    history.replaceState(null, '', location.pathname + (qs ? '?' + qs : '') + location.hash);
+  }catch(e){}
+}
+
+function currentFave(){
+  return outfitRenderContext === 'modal' ? 'all' : faveFilter.outfits;
+}
+
+function faveMatches(level, v){
+  return v === 'all' || (v === 'none' ? level === 0 : level === Number(v));
+}
+
+function setFaveFilter(v){
+  const mode = appMode === 'saved' ? 'saved' : 'outfits';
+  faveFilter[mode] = validFave(v, mode);
+  favePinned.clear(); faveLingering.clear();
+  writeFaveUrl();
+  renderFaveChips();
+  if(mode === 'saved') renderSavedOutfits();
+  else resetOutfitResults();
+}
+
+// What each chip counts: faved outfits that pass the page's other filters.
+function faveCounts(){
+  const counts = [0, 0, 0, 0];
+  favoriteOutfits.forEach(rec => { if(savedOutfitMatches(rec)) counts[rec.level]++; });
+  const faved = counts[1] + counts[2] + counts[3];
+  if(appMode === 'saved'){ counts[0] = 0; return { counts, all: faved }; }
+  const saved = outfitRenderContext;
+  outfitRenderContext = 'tab';
+  const total = comboCountWhere(false) - (outfitTags.length ? comboCountWhere(true) : 0);
+  outfitRenderContext = saved;
+  counts[0] = Math.max(0, total - faved);
+  return { counts, all: Math.max(0, total) };
+}
+
+function renderFaveChips(){
+  const mode = appMode === 'saved' ? 'saved' : appMode === 'outfits' ? 'outfits' : null;
+  if(!mode) return;
+  const host = document.getElementById('fave-chips-' + mode);
+  if(!host) return;
+  const { counts, all } = faveCounts();
+  const active = faveFilter[mode];
+  host.innerHTML = FAVE_CHIPS.filter(c => !c.outfitsOnly || mode === 'outfits').map(c => {
+    const n = c.v === 'all' ? all : counts[c.level];
+    const on = c.v === active;
+    return `<button class="fave-chip ${on ? 'active' : ''}" type="button" aria-pressed="${on}"
+        onclick="setFaveFilter('${c.v}')">${c.level !== undefined ? faveChipHeart(c.level) : ''}`
+      + `<span>${c.label}</span><span class="fave-n">${n}</span></button>`;
+  }).join('');
+}
+
+// Is this the only thing narrowing the page? Then the empty state can say
+// something specific about it.
+function faveEmptyMessage(mode){
+  const v = faveFilter[mode];
+  if(v === 'all' || outfitTags.length || countNarrowedSlots(outfitFilters) > 0) return null;
+  return FAVE_EMPTY[v] || null;
 }
 
 function toggleExpandSaved(key){
@@ -3943,9 +4285,16 @@ function renderSavedOutfits(){
   // Dealt afresh each visit, like the generated half. They arrive from the
   // database oldest first, which meant the outfit you kept in March led
   // the page every time you opened it until you took it away.
+  // Ones whose heart was just changed stay put until the filter changes.
+  const want = faveFilter.saved;
+  const pool = favoriteOutfits.concat(
+    [...faveLingering.values()].filter(r => !favoriteOutfits.some(f => f.key === r.key)));
   const shown = shuffledForSession(
-    favoriteOutfits.filter(savedOutfitMatches), rec => rec.key);
+    pool.filter(rec => (favePinned.has(rec.key) || faveMatches(rec.level, want))
+                       && savedOutfitMatches(rec)),
+    rec => rec.key);
   const narrowed = outfitTags.length > 0 || countNarrowedSlots(outfitFilters) > 0;
+  renderFaveChips();
 
   // No count line: the cards are the count, and a line saying which
   // filters were on repeated what the panel above it already shows. The
@@ -3959,7 +4308,7 @@ function renderSavedOutfits(){
     // filters. Which tag or piece did it is in the panel above, so the
     // line does not repeat it.
     document.getElementById('saved-empty-title').textContent =
-      narrowed ? 'No outfits match' : 'No faves';
+      faveEmptyMessage('saved') || (narrowed || want !== 'all' ? 'No outfits match' : 'No faves');
     emptyState.style.display = 'block';
     return;
   }
@@ -3978,9 +4327,7 @@ function renderSavedOutfits(){
       : '';
 
     return `<div class="outfit-card ${isExpanded ? 'expanded' : ''}" onclick='toggleExpandSaved(${JSON.stringify(rec.key)})'>
-      <button class="outfit-fav-btn favorited" type="button"
-              aria-pressed="true" aria-label="Kept"
-              onclick='event.stopPropagation();unfavoriteByKey(${JSON.stringify(rec.key)})'>${heartSvg(true)}</button>
+      ${faveHeartHtml(rec.key)}
       <div class="outfit-thumbs">${thumbs}</div>
       ${expandedPanel}
     </div>`;
@@ -4360,7 +4707,8 @@ function renderOutfits(){
       const bare = ITEMS.length === 0 || !wardrobeCanMakeOutfits();
       const title = document.getElementById('outfit-empty-title');
       const action = document.getElementById('outfit-empty-action');
-      if(title) title.textContent = bare ? 'Add pieces to see outfits' : 'No outfits match';
+      if(title) title.textContent = bare ? 'Add pieces to see outfits'
+        : (onPage && faveEmptyMessage('outfits')) || 'No outfits match';
       if(action) action.style.display = bare ? 'inline-flex' : 'none';
       emptyState.style.display = 'block';
     }
@@ -4377,10 +4725,7 @@ function renderOutfits(){
     const expandedPanel = isExpanded ? outfitExpandedPanelHtml(combo, key, {canHide:true}) : '';
 
     return `<div class="outfit-card ${isExpanded ? 'expanded' : ''}" onclick='toggleExpandCombo(${JSON.stringify(key)})'>
-      <button class="outfit-fav-btn ${isFavorited(key) ? 'favorited' : ''}" type="button"
-              aria-pressed="${isFavorited(key)}"
-              aria-label="${isFavorited(key) ? 'Kept' : 'Keep this outfit'}"
-              onclick='event.stopPropagation();toggleFavoriteByKey(${JSON.stringify(key)})'>${heartSvg(isFavorited(key))}</button>
+      ${faveHeartHtml(key)}
       <div class="outfit-thumbs">${thumbs}</div>
       ${expandedPanel}
     </div>`;
@@ -4388,6 +4733,7 @@ function renderOutfits(){
 
   // Whether there is anything to deal again has just changed.
   renderShuffleFab();
+  if(onPage) renderFaveChips();
 }
 
 // A set of filters that asks for one piece and nothing else. Returned
@@ -4554,7 +4900,9 @@ function rowToFavorite(row){
     key: row.combo_key,
     base: row.base,
     top: row.top_id, bottom: row.bottom_id, dress: row.dress_id,
-    jumper: row.jumper_id, jacket: row.jacket_id
+    jumper: row.jumper_id, jacket: row.jacket_id,
+    // Rows from before the migration have no level and were all faves.
+    level: Number.isInteger(row.fave_level) ? Math.min(3, Math.max(1, row.fave_level)) : 1
     // extra_ids is not read: accessories live in outfit_extras now, against
     // the combination rather than against this row. The column still holds
     // what it held before the move, and is left alone.
@@ -4567,6 +4915,8 @@ function favoriteToRow(rec){
     base: rec.base,
     top_id: rec.top, bottom_id: rec.bottom, dress_id: rec.dress,
     jumper_id: rec.jumper, jacket_id: rec.jacket,
+    fave_level: rec.level || 1,
+    fave_updated_at: new Date().toISOString(),
     archived_at: null
   };
   return row;
@@ -5214,7 +5564,9 @@ async function startApp(){
 
   // Go through the nav rather than calling render() directly, so the bottom
   // bar, the sub-tabs and the visible panel all start in agreement.
-  setMode(appMode);
+  // A fave filter in the address means you were on Outfits or Faves.
+  const fromUrl = readFaveUrl();
+  setMode(fromUrl || appMode);
 }
 
 async function boot(){

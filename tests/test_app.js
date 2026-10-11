@@ -146,7 +146,7 @@ async function login(page) {
     await page.click('#nav-outfits-btn');
     await page.waitForTimeout(400);
     await page.click('.outfit-fav-btn');
-    await page.waitForTimeout(300);
+    await page.waitForTimeout(700);   // saving is debounced ~400ms
 
     const saved = await page.evaluate(() => window.__WARDROBE_STATE.saved_outfits);
     check('hearting writes a saved_outfits row', saved.length === 1 && !saved[0].archived_at,
@@ -156,8 +156,9 @@ async function login(page) {
     check('saved tab shows the hearted outfit',
       (await page.evaluate(()=>document.querySelectorAll('#saved-gallery .outfit-card').length))===1);
 
-    await page.click('#saved-gallery .outfit-fav-btn.favorited');
-    await page.waitForTimeout(300);
+    // Level 1 -> 2 -> 3 -> 0: three more taps clears it.
+    for(let i = 0; i < 3; i++) await page.click('#saved-gallery .outfit-fav-btn');
+    await page.waitForTimeout(700);
     const afterUnheart = await page.evaluate(() => window.__WARDROBE_STATE.saved_outfits);
     check('un-hearting soft-deletes rather than dropping the row',
       afterUnheart.length === 1 && Boolean(afterUnheart[0].archived_at),

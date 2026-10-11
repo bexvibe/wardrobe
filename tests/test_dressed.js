@@ -87,7 +87,7 @@ const rows = p => p.evaluate(()=>window.__WARDROBE_STATE.outfit_extras.slice());
   {
     const p=await open(b);
     const key = await dressFirst(p);
-    await p.evaluate(k=>toggleFavoriteByKey(k), key);
+    await p.evaluate(k=>setFavorited(k, true, comboForKey(k)), key);
     await p.waitForFunction(()=>favoriteOutfits.length === 1);
     await p.waitForTimeout(600);
 
@@ -102,7 +102,7 @@ const rows = p => p.evaluate(()=>window.__WARDROBE_STATE.outfit_extras.slice());
       }));
 
     // Take the fave away: the outfit stops being kept, stays dressed.
-    await p.evaluate(k=>unfavoriteByKey(k), key);
+    await p.evaluate(k=>setFavorited(k, false), key);
     await p.waitForTimeout(800);
     check('un-keeping it does not undress it either',
       await p.evaluate(k=>extrasFor(k).length === 1 && !isFavorited(k), key));

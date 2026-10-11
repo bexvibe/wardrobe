@@ -114,7 +114,7 @@ const hush = p => p.evaluate(()=>{
     const was = await p.evaluate(()=>favoriteOutfits.length);
     await p.evaluate(()=>{
       const btn = Array.from(document.querySelectorAll('.outfit-gallery .outfit-fav-btn'))
-        .find(b => !b.classList.contains('favorited'));
+        .find(b => b.dataset.level === '0');
       (btn || document.querySelector('.outfit-gallery .outfit-fav-btn')).click();
     });
     await p.waitForFunction(n=>favoriteOutfits.length === n + 1, was);
@@ -123,18 +123,16 @@ const hush = p => p.evaluate(()=>{
       (await toastUp(p)).said);
     check('because the heart fills where you tapped',
       await p.evaluate(()=>document.querySelectorAll(
-        '.outfit-gallery .outfit-fav-btn.favorited').length > 0));
+        '.outfit-gallery .fave-heart:not([data-level="0"])').length > 0));
 
-    // Taking one away on Faves is the asymmetric one: the card goes too, so
-    // there is nothing left to tap and the undo has to live somewhere.
+    // Clearing a fave is three more taps round the heart: the card stays
+    // under the thumb and tapping again brings it back, so no toast.
     await toFaves(p, 900);
     await p.evaluate(()=>closeFilterSheet()); await p.waitForTimeout(400);
     await hush(p);
-    await p.click('#saved-gallery .outfit-fav-btn'); await p.waitForTimeout(800);
-    const gone = await toastUp(p);
-    check('taking a fave away does raise one', gone.shown, gone.said);
-    check('and it carries the undo, because the card has gone with it',
-      await p.evaluate(()=>Boolean(document.querySelector('.toast-undo'))));
+    for(let i = 0; i < 3; i++) await p.click('#saved-gallery .fave-heart');
+    await p.waitForTimeout(800);
+    check('clearing a fave raises no toast', !(await toastUp(p)).shown, (await toastUp(p)).said);
     await p.close();
   }
 

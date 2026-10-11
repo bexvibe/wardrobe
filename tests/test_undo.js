@@ -151,40 +151,16 @@ async function holdFirstTile(p){
     await p.close();
   }
 
-  // ---- 4. Un-hearting, from both pages ----
+  // ---- 4. Hearting no longer needs an undo ----
+  // The heart cycles 0-1-2-3-0, so tapping again is the way back.
   {
     const p=await open(b);
     await p.click('#nav-outfits-btn'); await p.waitForTimeout(900);
-    await p.click('.outfit-gallery .outfit-fav-btn'); await p.waitForTimeout(500);
-    const key = await p.evaluate(()=>favoriteOutfits[0].key);
-    check('hearting says so without offering an undo — nothing was lost',
-      !(await toast(p)).undo, (await toast(p)).msg);
-
-    await p.click('.outfit-gallery .outfit-fav-btn'); await p.waitForTimeout(500);
-    const t = await toast(p);
-    check('un-hearting offers it back', t.undo && /Faves/.test(t.msg), t.msg);
-    check('it is off the list meanwhile',
-      await p.evaluate(k=>!favoriteOutfits.some(f=>f.key===k), key));
-
-    await tapUndo(p);
-    check('undo hearts it again',
-      await p.evaluate(k=>favoriteOutfits.some(f=>f.key===k), key));
-    check('and the row is live again in the database',
-      await p.evaluate(k=>{
-        const r = window.__WARDROBE_STATE.saved_outfits.find(x=>x.combo_key===k);
-        return Boolean(r) && !r.archived_at;
-      }, key));
-
-    // Now the same thing from the Faves page, where the card disappears.
-    await toFaves(p, 600);
-    check('the outfit is listed under Faves',
-      (await p.locator('#saved-gallery .outfit-card').count()) === 1);
-    await p.click('#saved-gallery .outfit-fav-btn'); await p.waitForTimeout(500);
-    check('removing it there offers it back too', (await toast(p)).undo);
-    check('and the card goes', (await p.locator('#saved-gallery .outfit-card').count()) === 0);
-    await tapUndo(p);
-    check('undo brings the card back to Faves',
-      (await p.locator('#saved-gallery .outfit-card').count()) === 1);
+    await p.click('.outfit-gallery .fave-heart'); await p.waitForTimeout(700);
+    check('hearting offers no undo — nothing was lost', !(await toast(p)).undo);
+    for(let i = 0; i < 3; i++) await p.click('.outfit-gallery .fave-heart');
+    await p.waitForTimeout(700);
+    check('clearing it offers no undo either', !(await toast(p)).undo);
     await p.close();
   }
 
