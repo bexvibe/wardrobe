@@ -95,8 +95,8 @@ const said = (p, sel) => p.evaluate(s => {
 
     // The rule, once, over all of them.
     check('and not one of them has a second line',
-      await p.evaluate(()=>document.querySelectorAll('.empty p').length === 0),
-      String(await p.evaluate(()=>document.querySelectorAll('.empty p').length)));
+      await p.evaluate(()=>[...document.querySelectorAll('.empty p')].every(e=>e.classList.contains('empty-hint') && !e.textContent)),
+      'only the fave-filter hint exists, and it is blank here');
     await p.close();
   }
 
@@ -191,7 +191,8 @@ const said = (p, sel) => p.evaluate(s => {
   {
     const src = fs.readFileSync(REPO + '/index.html', 'utf8');
     const blocks = [...src.matchAll(/class="empty"[^>]*>([\s\S]*?)<\/div>/g)].map(m => m[1]);
-    const withNotes = blocks.filter(b => /<p[\s>]/.test(b));
+    // The fave-filter hint is the one deliberate exception: empty unless a fave filter is on.
+    const withNotes = blocks.filter(b => /<p(?![^>]*empty-hint)[\s>]/.test(b));
     check('no empty state in the markup carries a paragraph',
       withNotes.length === 0, `${withNotes.length} of ${blocks.length}`);
     check('and there were empty states to check', blocks.length >= 4, String(blocks.length));
