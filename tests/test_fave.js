@@ -22,7 +22,7 @@ async function boot(b, url){
 }
 const lvl = p => p.evaluate(()=>document.querySelector('#outfit-gallery .fave-heart').dataset.level);
 const chip = (p, v) => p.evaluate(v=>{
-  const b=[...document.querySelectorAll('.fave-chip')].find(x=>x.offsetParent && x.textContent.includes(v));
+  const b=[...document.querySelectorAll('[data-fave-host] .filter-chip')].find(x=>x.offsetParent && x.textContent.includes(v));
   return b ? b.textContent.trim() : null;
 }, v);
 
@@ -63,9 +63,17 @@ const chip = (p, v) => p.evaluate(v=>{
 
   // filters
   await p.evaluate(()=>openFilterSheet()); await p.waitForTimeout(600);
-  check('Outfits has Not faved chip', Boolean(await chip(p,'Not faved')));
-  check('Love chip counts 1', /Love\s*1$/.test(await chip(p,'Love')), await chip(p,'Love'));
-  await p.evaluate(()=>[...document.querySelectorAll('.fave-chip')].find(x=>x.textContent.includes('Love')).click());
+  check('there is no Not faved chip', !(await chip(p,'Not faved')));
+  check('chips carry no count', (await chip(p,'Love')) === 'Love', await chip(p,'Love'));
+  check('fave chips are the same size as the other filter chips', await p.evaluate(()=>{
+    const f = document.querySelector('[data-fave-host] .filter-chip').getBoundingClientRect();
+    const o = document.querySelector('#filter-sheet-body .filter-grid:not([data-fave-host]) .filter-chip');
+    return !o || Math.abs(o.getBoundingClientRect().height - f.height) < 1;
+  }));
+  check('the panel grows to fit instead of scrolling', await p.evaluate(()=>{
+    const sh = document.getElementById('filter-sheet'); return sh.scrollHeight <= sh.clientHeight + 1;
+  }));
+  await p.evaluate(()=>[...document.querySelectorAll('[data-fave-host] .filter-chip')].find(x=>x.textContent.includes('Love')).click());
   await p.waitForTimeout(800);
   check('filter is in the URL', (await p.evaluate(()=>location.search)) === '?fave=2');
   check('only the loved outfit shows', await p.evaluate(()=>document.querySelectorAll('#outfit-gallery .outfit-card, #outfit-hero .outfit-card').length) === 1);
@@ -73,7 +81,11 @@ const chip = (p, v) => p.evaluate(v=>{
   await p.evaluate(()=>document.querySelector('.fave-heart').click()); await p.waitForTimeout(600);
   check('card stays after its level leaves the filter', await p.evaluate(()=>document.querySelectorAll('.fave-heart').length) >= 1);
 
-  await p.evaluate(()=>[...document.querySelectorAll('.fave-chip')].find(x=>x.textContent.includes('Like')).click());
+  await p.evaluate(()=>[...document.querySelectorAll('[data-fave-host] .filter-chip')].find(x=>x.textContent.includes('Love')).click());
+  await p.waitForTimeout(600);
+  check('tapping the active chip clears the filter', await p.evaluate(()=>faveFilter.outfits==='all' && location.search===''));
+  check('there is no All chip', !(await chip(p,'All')) || (await chip(p,'All')) === 'All-time');
+  await p.evaluate(()=>[...document.querySelectorAll('[data-fave-host] .filter-chip')].find(x=>x.textContent.includes('Like')).click());
   await p.waitForTimeout(800);
   check('empty state for a level with nothing',
     (await p.evaluate(()=>document.getElementById('outfit-empty-title').textContent)).startsWith('No likes yet')&&(await p.evaluate(()=>document.getElementById('outfit-empty-hint').textContent)).startsWith('Tap a heart'));
