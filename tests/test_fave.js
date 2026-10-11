@@ -62,6 +62,7 @@ const chip = (p, v) => p.evaluate(v=>{
   await p.waitForTimeout(700);
 
   // filters
+  await p.evaluate(()=>openFilterSheet()); await p.waitForTimeout(600);
   check('Outfits has Not faved chip', Boolean(await chip(p,'Not faved')));
   check('Love chip counts 1', /Love\s*1$/.test(await chip(p,'Love')), await chip(p,'Love'));
   await p.evaluate(()=>[...document.querySelectorAll('.fave-chip')].find(x=>x.textContent.includes('Love')).click());
@@ -75,7 +76,19 @@ const chip = (p, v) => p.evaluate(v=>{
   await p.evaluate(()=>[...document.querySelectorAll('.fave-chip')].find(x=>x.textContent.includes('Like')).click());
   await p.waitForTimeout(800);
   check('empty state for a level with nothing',
-    (await p.evaluate(()=>document.getElementById('outfit-empty-title').textContent)).startsWith('No likes yet'));
+    (await p.evaluate(()=>document.getElementById('outfit-empty-title').textContent)).startsWith('No likes yet')&&(await p.evaluate(()=>document.getElementById('outfit-empty-hint').textContent)).startsWith('Tap a heart'));
+
+  // Hats are drawn above the clothes, other accessories below.
+  const hatOrder = await p.evaluate(()=>{
+    const piece = (id, category) => ({ id, category, name: id, photo: null });
+    const base = { base:'topbottom', top: piece('t','Tops'), bottom: piece('b','Pants') };
+    const hat = piece('h','Hats'), shoe = piece('s','Shoes');
+    const html = outfitThumbsHtml({...base, extras:[shoe, hat]});
+    const d = document.createElement('div'); d.innerHTML = html;
+    const kids = [...d.children].map(c=>c.className.split(' ')[0]+(c.classList.contains('outfit-hats')?'-hats':''));
+    return kids.join(',');
+  });
+  check('hats row comes first, accessories last', /^outfit-extras-hats,.*outfit-extras$/.test(hatOrder), hatOrder);
 
   await p.reload(); await p.waitForTimeout(300);
   await p.close();

@@ -332,6 +332,8 @@
   }
 
   .empty{text-align:center;padding:60px 20px;color:var(--ink-soft);}
+  .empty-hint{margin:6px 0 0;font-size:13px;line-height:1.4;}
+  .empty-hint:empty{display:none;}
   .empty h3{font-family:'Fraunces', serif;font-weight:500;color:var(--ink);margin-bottom:0;}
   /* The line says what is missing; the button is how you fix it. A second
      line explaining the first was the app talking to itself. */
@@ -1401,6 +1403,7 @@
   /* What you put on afterwards, along the foot of the card. One sits
      centred like the shoes used to; more share the width. */
   .outfit-extras{margin-top:3px;display:flex;justify-content:center;gap:3px;flex:none;}
+  .outfit-extras.outfit-hats{margin:0 0 3px;}
   .outfit-extras > *{width:38%;aspect-ratio:1/1;}
   .outfit-extras.n2 > *{width:30%;}
   .outfit-extras.n3 > *{width:24%;}
@@ -1612,12 +1615,12 @@
 
     <!-- One outfit, picked afresh each time you arrive: something to react to
          before you start narrowing anything down. -->
-    <div class="fave-chips" id="fave-chips-outfits" role="group" aria-label="Filter by fave level"></div>
     <div class="hero" id="outfit-hero"></div>
 
     <div class="outfit-gallery" id="outfit-gallery"></div>
     <div class="empty" id="outfit-empty" style="display:none;">
       <h3 id="outfit-empty-title">No outfits match</h3>
+      <p class="empty-hint" id="outfit-empty-hint"></p>
       <button class="empty-action" id="outfit-empty-action" style="display:none;"
               onclick="openItemForm()" aria-label="Add a piece" title="Add a piece">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
@@ -1645,10 +1648,10 @@
         </button>
       </div>
     </header>
-    <div class="fave-chips" id="fave-chips-saved" role="group" aria-label="Filter by fave level"></div>
     <div class="outfit-gallery" id="saved-gallery"></div>
     <div class="empty" id="saved-empty" style="display:none;">
       <h3 id="saved-empty-title">No faves</h3>
+      <p class="empty-hint" id="saved-empty-hint"></p>
       <button class="empty-action" id="saved-empty-action" onclick="openOutfitBuilder()"
               aria-label="Build an outfit" title="Build an outfit">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
@@ -2407,7 +2410,8 @@ function countNarrowedSlots(filters){
 
 function activeFilterCount(){
   if(appMode !== 'outfits' && appMode !== 'saved') return 0;
-  return countNarrowedSlots(outfitFilters) + (outfitTags.length ? 1 : 0);
+  return countNarrowedSlots(outfitFilters) + (outfitTags.length ? 1 : 0)
+    + (faveFilter[appMode] !== 'all' ? 1 : 0);
 }
 
 // The pill is what the panel collapses into: it appears once the panel is
@@ -2449,6 +2453,10 @@ const FILTER_MOUNTS = [
 
 function filterControlsHtml(ns){
   return `
+    <div class="filter-section">
+      <span class="filter-sheet-label">Faves<span class="label-count" id="${ns}-fave-count"></span></span>
+      <div class="fave-chips" data-fave-host role="group" aria-label="Filter by fave level"></div>
+    </div>
     <div class="filter-section">
       <span class="filter-sheet-label">Tags<span class="label-count" id="${ns}-tag-count"></span></span>
       <div class="tag-chips chip-row" id="${ns}-tag-chips"></div>
@@ -2915,6 +2923,11 @@ window.addEventListener('scroll', () => {
 }, {passive:true});
 
 function clearFilters(){
+  if(appMode === 'outfits' || appMode === 'saved'){
+    faveFilter[appMode] = 'all';
+    favePinned.clear(); faveLingering.clear();
+    writeFaveUrl();
+  }
   if(appMode === 'outfits'){
     outfitTags = [];
     Object.keys(outfitFilters).forEach(k => { outfitFilters[k] = anyFilter(); });
@@ -3455,6 +3468,10 @@ function comboExtras(combo){
 // Lays a combo out the way it is worn — outer layers and the top on one
 // row, the bottom (or dress) beneath — so a card reads head-to-toe
 // instead of as unordered tiles.
+function isHat(piece){
+  return shelfForItem(piece) === 'Hats';
+}
+
 function outfitLayout(combo){
   const upper = (combo.base === 'dress'
     ? [combo.jacket, combo.jumper]
@@ -3462,9 +3479,11 @@ function outfitLayout(combo){
   return {
     upper,
     lower: (combo.base === 'dress' ? combo.dress : combo.bottom) || null,
-    // Accessories, on their own row under the clothes. Any outfit can have
-    // them, kept or not — they hang off the combination.
-    extras: comboExtras(combo)
+    // Hats are worn on top, so they get their own row above the clothes.
+    hats: comboExtras(combo).filter(isHat),
+    // The rest of the accessories, on their own row under the clothes. Any
+    // outfit can have them, kept or not — they hang off the combination.
+    extras: comboExtras(combo).filter(p => !isHat(p))
   };
 }
 
@@ -3472,8 +3491,9 @@ function outfitThumbsHtml(combo){
   const cell = p => p.photo
     ? `<img src="${esc(p.photo)}" alt="${esc(p.name)}" referrerpolicy="no-referrer" loading="lazy" decoding="async">`
     : `<div class="no-photo-mini">No photo</div>`;
-  const { upper, lower, extras } = outfitLayout(combo);
+  const { hats, upper, lower, extras } = outfitLayout(combo);
   return [
+    hats.length ? `<div class="outfit-extras outfit-hats n${Math.min(hats.length, 4)}">${hats.map(cell).join('')}</div>` : '',
     upper.length ? `<div class="outfit-upper n${upper.length}">${upper.map(cell).join('')}</div>` : '',
     lower ? `<div class="outfit-lower">${cell(lower)}</div>` : '',
     extras.length ? `<div class="outfit-extras n${Math.min(extras.length, 4)}">${extras.map(cell).join('')}</div>` : ''
@@ -3970,10 +3990,10 @@ const FAVE_CHIPS = [
   { v: '3',    label: 'All-time', level: 3 },
 ];
 const FAVE_EMPTY = {
-  '1': 'No likes yet. Tap a heart once to like an outfit.',
-  '2': 'No loves yet. Tap a heart twice to love one.',
-  '3': 'No all-time faves yet. Tap a heart three times to crown one.',
-  'none': 'Every outfit here is faved.',
+  '1': ['No likes yet', 'Tap a heart once to like an outfit.'],
+  '2': ['No loves yet', 'Tap a heart twice to love one.'],
+  '3': ['No all-time faves yet', 'Tap a heart three times to crown one.'],
+  'none': ['Every outfit here is faved', ''],
 };
 const faveFilter = { outfits: 'all', saved: 'all' };
 
@@ -4045,17 +4065,21 @@ function faveCounts(){
 function renderFaveChips(){
   const mode = appMode === 'saved' ? 'saved' : appMode === 'outfits' ? 'outfits' : null;
   if(!mode) return;
-  const host = document.getElementById('fave-chips-' + mode);
-  if(!host) return;
+  const hosts = document.querySelectorAll('[data-fave-host]');
+  if(!hosts.length) return;
   const { counts, all } = faveCounts();
   const active = faveFilter[mode];
-  host.innerHTML = FAVE_CHIPS.filter(c => !c.outfitsOnly || mode === 'outfits').map(c => {
+  const html = FAVE_CHIPS.filter(c => !c.outfitsOnly || mode === 'outfits').map(c => {
     const n = c.v === 'all' ? all : counts[c.level];
     const on = c.v === active;
     return `<button class="fave-chip ${on ? 'active' : ''}" type="button" aria-pressed="${on}"
         onclick="setFaveFilter('${c.v}')">${c.level !== undefined ? faveChipHeart(c.level) : ''}`
       + `<span>${c.label}</span><span class="fave-n">${n}</span></button>`;
   }).join('');
+  hosts.forEach(h => { h.innerHTML = html; });
+  document.querySelectorAll('[id$="-fave-count"]').forEach(el => {
+    el.textContent = active !== 'all' ? ' (1)' : '';
+  });
 }
 
 // Is this the only thing narrowing the page? Then the empty state can say
@@ -4307,8 +4331,10 @@ function renderSavedOutfits(){
     // Two states, two lines: nothing kept, or nothing that gets past the
     // filters. Which tag or piece did it is in the panel above, so the
     // line does not repeat it.
+    const faveMsg = faveEmptyMessage('saved');
     document.getElementById('saved-empty-title').textContent =
-      faveEmptyMessage('saved') || (narrowed || want !== 'all' ? 'No outfits match' : 'No faves');
+      faveMsg ? faveMsg[0] : (narrowed || want !== 'all' ? 'No outfits match' : 'No faves');
+    document.getElementById('saved-empty-hint').textContent = faveMsg ? faveMsg[1] : '';
     emptyState.style.display = 'block';
     return;
   }
@@ -4707,8 +4733,11 @@ function renderOutfits(){
       const bare = ITEMS.length === 0 || !wardrobeCanMakeOutfits();
       const title = document.getElementById('outfit-empty-title');
       const action = document.getElementById('outfit-empty-action');
+      const faveMsg = !bare && onPage ? faveEmptyMessage('outfits') : null;
       if(title) title.textContent = bare ? 'Add pieces to see outfits'
-        : (onPage && faveEmptyMessage('outfits')) || 'No outfits match';
+        : faveMsg ? faveMsg[0] : 'No outfits match';
+      const hint = document.getElementById('outfit-empty-hint');
+      if(hint) hint.textContent = faveMsg ? faveMsg[1] : '';
       if(action) action.style.display = bare ? 'inline-flex' : 'none';
       emptyState.style.display = 'block';
     }
