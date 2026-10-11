@@ -83,9 +83,14 @@ const chip = (p, v) => p.evaluate(v=>{
 
   await p.evaluate(()=>[...document.querySelectorAll('[data-fave-host] .filter-chip')].find(x=>x.textContent.includes('Love')).click());
   await p.waitForTimeout(600);
-  check('tapping the active chip clears the filter', await p.evaluate(()=>faveFilter.outfits==='all' && location.search===''));
+  check('tapping the active chip clears the filter', await p.evaluate(()=>faveFilter.outfits.length===0 && location.search===''));
   check('there is no All chip', !(await chip(p,'All')) || (await chip(p,'All')) === 'All-time');
   await p.evaluate(()=>[...document.querySelectorAll('[data-fave-host] .filter-chip')].find(x=>x.textContent.includes('Like')).click());
+  await p.evaluate(()=>[...document.querySelectorAll('[data-fave-host] .filter-chip')].find(x=>x.textContent.includes('Love')).click());
+  await p.waitForTimeout(500);
+  check('several levels can be on at once', await p.evaluate(()=>faveFilter.outfits.join()==='1,2' && location.search==='?fave=1%2C2'));
+  await p.evaluate(()=>[...document.querySelectorAll('[data-fave-host] .filter-chip')].find(x=>x.textContent.includes('Love')).click());
+  await p.waitForTimeout(500);
   await p.waitForTimeout(800);
   check('empty state for a level with nothing',
     (await p.evaluate(()=>document.getElementById('outfit-empty-title').textContent)).startsWith('No likes yet')&&(await p.evaluate(()=>document.getElementById('outfit-empty-hint').textContent)).startsWith('Tap a heart'));
@@ -107,7 +112,7 @@ const chip = (p, v) => p.evaluate(v=>{
 
   // refresh keeps the filter on Faves
   const q=await boot(b, '?fave=3&page=faves');
-  check('URL opens Faves with the filter', await q.evaluate(()=>appMode==='saved' && faveFilter.saved==='3'));
+  check('URL opens Faves with the filter', await q.evaluate(()=>appMode==='saved' && faveFilter.saved.join()==='3'));
   check('Faves has no Not faved chip', !(await chip(q,'Not faved')));
   check('Faves empty message', (await q.evaluate(()=>document.getElementById('saved-empty-title').textContent)).startsWith('No all-time faves yet'));
   await q.close();

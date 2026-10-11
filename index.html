@@ -2395,7 +2395,7 @@ function countNarrowedSlots(filters){
 function activeFilterCount(){
   if(appMode !== 'outfits' && appMode !== 'saved') return 0;
   return countNarrowedSlots(outfitFilters) + (outfitTags.length ? 1 : 0)
-    + (faveFilter[appMode] !== 'all' ? 1 : 0);
+    + (faveFilter[appMode].length ? 1 : 0);
 }
 
 // The pill is what the panel collapses into: it appears once the panel is
@@ -2908,7 +2908,7 @@ window.addEventListener('scroll', () => {
 
 function clearFilters(){
   if(appMode === 'outfits' || appMode === 'saved'){
-    faveFilter[appMode] = 'all';
+    faveFilter[appMode] = [];
     favePinned.clear(); faveLingering.clear();
     writeFaveUrl();
   }
@@ -3544,10 +3544,8 @@ function totalComboCount(){
   // subtracting the all-untagged combinations gives the exact figure.
   const tagged = outfitTags.length ? Math.max(0, all - comboCountWhere(true)) : all;
   const wantFave = currentFave();
-  if(wantFave === 'all') return tagged;
-  const faved = favoriteOutfits.filter(f => savedOutfitMatches(f));
-  if(wantFave === 'none') return Math.max(0, tagged - faved.length);
-  return faved.filter(f => f.level === Number(wantFave)).length;
+  if(!wantFave.length) return tagged;
+  return favoriteOutfits.filter(f => savedOutfitMatches(f) && wantFave.includes(f.level)).length;
 }
 
 function resetOutfitResults(){
@@ -3696,7 +3694,7 @@ function loadMoreOutfits(){
   // Nothing matches, so there is nothing to walk towards.
   if(totalComboCount() === 0){ renderOutfits(); return; }
   const wantFave = currentFave();
-  const levels = wantFave === 'all' ? null : new Map(favoriteOutfits.map(f => [f.key, f.level]));
+  const levels = !wantFave.length ? null : new Map(favoriteOutfits.map(f => [f.key, f.level]));
   while(added < OUTFIT_PAGE_SIZE && guard < OUTFIT_SCAN_LIMIT){
     const next = outfitGen.next();
     guard++;
@@ -3976,11 +3974,12 @@ const FAVE_EMPTY = {
   '2': ['No loves yet', 'Tap a heart twice to love one.'],
   '3': ['No all-time faves yet', 'Tap a heart three times to crown one.'],
 };
-const faveFilter = { outfits: 'all', saved: 'all' };
+// The levels each page is narrowed to — any of them, so several can be on.
+const faveFilter = { outfits: [], saved: [] };
 
-function validFave(v, mode){
-  if(['1', '2', '3'].includes(v)) return v;
-  return 'all';
+function parseFave(text){
+  const levels = String(text || '').split(',').map(Number).filter(n => n >= 1 && n <= 3);
+  return [...new Set(levels)].sort();
 }
 
 function readFaveUrl(){
@@ -3989,7 +3988,7 @@ function readFaveUrl(){
     const v = q.get('fave');
     const mode = q.get('page') === 'faves' ? 'saved' : 'outfits';
     if(v === null) return null;
-    faveFilter[mode] = validFave(v, mode);
+    faveFilter[mode] = parseFave(v);
     return mode;
   }catch(e){ return null; }
 }
@@ -4000,8 +3999,8 @@ function writeFaveUrl(){
     q.delete('fave'); q.delete('page');
     if(appMode === 'outfits' || appMode === 'saved'){
       const v = faveFilter[appMode];
-      if(v !== 'all'){
-        q.set('fave', v);
+      if(v.length){
+        q.set('fave', v.join(','));
         if(appMode === 'saved') q.set('page', 'faves');
       }
     }
@@ -4011,17 +4010,19 @@ function writeFaveUrl(){
 }
 
 function currentFave(){
-  return outfitRenderContext === 'modal' ? 'all' : faveFilter.outfits;
+  return outfitRenderContext === 'modal' ? [] : faveFilter.outfits;
 }
 
-function faveMatches(level, v){
-  return v === 'all' || (v === 'none' ? level === 0 : level === Number(v));
+function faveMatches(level, list){
+  return !list.length || list.includes(level);
 }
 
 function setFaveFilter(v){
   const mode = appMode === 'saved' ? 'saved' : 'outfits';
-  // No All chip: tapping the one that is on turns it off.
-  faveFilter[mode] = faveFilter[mode] === v ? 'all' : validFave(v, mode);
+  // Several can be on at once; tapping one that is on turns it off.
+  const n = Number(v);
+  const now = faveFilter[mode];
+  faveFilter[mode] = (now.includes(n) ? now.filter(x => x !== n) : now.concat(n)).sort();
   favePinned.clear(); faveLingering.clear();
   writeFaveUrl();
   renderFaveChips();
@@ -4036,14 +4037,14 @@ function renderFaveChips(){
   if(!hosts.length) return;
   const active = faveFilter[mode];
   const html = FAVE_CHIPS.filter(c => !c.outfitsOnly || mode === 'outfits').map(c => {
-    const on = c.v === active;
+    const on = active.includes(Number(c.v));
     return `<button class="filter-chip ${on ? 'active' : ''}" type="button" aria-pressed="${on}"
         onclick="setFaveFilter('${c.v}')">${c.level !== undefined ? faveChipHeart(c.level) : ''}`
       + `<span class="chip-label">${c.label}</span></button>`;
   }).join('');
   hosts.forEach(h => { h.innerHTML = html; });
   document.querySelectorAll('[id$="-fave-count"]').forEach(el => {
-    el.textContent = active !== 'all' ? ' (1)' : '';
+    el.textContent = active.length ? ` (${active.length})` : '';
   });
 }
 
@@ -4051,8 +4052,8 @@ function renderFaveChips(){
 // something specific about it.
 function faveEmptyMessage(mode){
   const v = faveFilter[mode];
-  if(v === 'all' || outfitTags.length || countNarrowedSlots(outfitFilters) > 0) return null;
-  return FAVE_EMPTY[v] || null;
+  if(!v.length || outfitTags.length || countNarrowedSlots(outfitFilters) > 0) return null;
+  return v.length === 1 ? FAVE_EMPTY[v[0]] : ['No faves at those levels yet', 'Tap a heart to cycle an outfit up through them.'];
 }
 
 function toggleExpandSaved(key){
@@ -4298,7 +4299,7 @@ function renderSavedOutfits(){
     // line does not repeat it.
     const faveMsg = faveEmptyMessage('saved');
     document.getElementById('saved-empty-title').textContent =
-      faveMsg ? faveMsg[0] : (narrowed || want !== 'all' ? 'No outfits match' : 'No faves');
+      faveMsg ? faveMsg[0] : (narrowed || want.length ? 'No outfits match' : 'No faves');
     document.getElementById('saved-empty-hint').textContent = faveMsg ? faveMsg[1] : '';
     emptyState.style.display = 'block';
     return;
