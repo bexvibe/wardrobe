@@ -63,7 +63,7 @@ const chip = (p, v) => p.evaluate(v=>{
 
   // filters
   await p.evaluate(()=>openFilterSheet()); await p.waitForTimeout(600);
-  check('Outfits has Not faved chip', Boolean(await chip(p,'Not faved')));
+  check('there is no Not faved chip', !(await chip(p,'Not faved')));
   check('chips carry no count', (await chip(p,'Love')) === 'Love', await chip(p,'Love'));
   check('fave chips are the same size as the other filter chips', await p.evaluate(()=>{
     const f = document.querySelector('[data-fave-host] .filter-chip').getBoundingClientRect();

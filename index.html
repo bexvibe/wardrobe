@@ -3964,10 +3964,9 @@ function faveAnimate(btn, level, prev){
 }
 
 // ---- Filtering by level -------------------------------------
-// One value per page: 'all', 'none' (Outfits only), or '1' '2' '3'.
+// One value per page: 'all', or '1' '2' '3'.
 // It lives in the URL (?fave=2) so a refresh keeps it.
 const FAVE_CHIPS = [
-  { v: 'none', label: 'Not faved', level: 0, outfitsOnly: true },
   { v: '1',    label: 'Like',     level: 1 },
   { v: '2',    label: 'Love',     level: 2 },
   { v: '3',    label: 'All-time', level: 3 },
@@ -3976,13 +3975,11 @@ const FAVE_EMPTY = {
   '1': ['No likes yet', 'Tap a heart once to like an outfit.'],
   '2': ['No loves yet', 'Tap a heart twice to love one.'],
   '3': ['No all-time faves yet', 'Tap a heart three times to crown one.'],
-  'none': ['Every outfit here is faved', ''],
 };
 const faveFilter = { outfits: 'all', saved: 'all' };
 
 function validFave(v, mode){
   if(['1', '2', '3'].includes(v)) return v;
-  if(v === 'none' && mode === 'outfits') return v;
   return 'all';
 }
 
