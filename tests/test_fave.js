@@ -81,6 +81,10 @@ const chip = (p, v) => p.evaluate(v=>{
   await p.evaluate(()=>document.querySelector('.fave-heart').click()); await p.waitForTimeout(600);
   check('card stays after its level leaves the filter', await p.evaluate(()=>document.querySelectorAll('.fave-heart').length) >= 1);
 
+  await p.evaluate(()=>[...document.querySelectorAll('[data-fave-host] .filter-chip')].find(x=>x.textContent.includes('Love')).click());
+  await p.waitForTimeout(600);
+  check('tapping the active chip clears the filter', await p.evaluate(()=>faveFilter.outfits==='all' && location.search===''));
+  check('there is no All chip', !(await chip(p,'All')) || (await chip(p,'All')) === 'All-time');
   await p.evaluate(()=>[...document.querySelectorAll('[data-fave-host] .filter-chip')].find(x=>x.textContent.includes('Like')).click());
   await p.waitForTimeout(800);
   check('empty state for a level with nothing',

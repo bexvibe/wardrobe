@@ -3967,7 +3967,6 @@ function faveAnimate(btn, level, prev){
 // One value per page: 'all', 'none' (Outfits only), or '1' '2' '3'.
 // It lives in the URL (?fave=2) so a refresh keeps it.
 const FAVE_CHIPS = [
-  { v: 'all',  label: 'All' },
   { v: 'none', label: 'Not faved', level: 0, outfitsOnly: true },
   { v: '1',    label: 'Like',     level: 1 },
   { v: '2',    label: 'Love',     level: 2 },
@@ -4024,7 +4023,8 @@ function faveMatches(level, v){
 
 function setFaveFilter(v){
   const mode = appMode === 'saved' ? 'saved' : 'outfits';
-  faveFilter[mode] = validFave(v, mode);
+  // No All chip: tapping the one that is on turns it off.
+  faveFilter[mode] = faveFilter[mode] === v ? 'all' : validFave(v, mode);
   favePinned.clear(); faveLingering.clear();
   writeFaveUrl();
   renderFaveChips();
