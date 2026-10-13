@@ -1991,6 +1991,41 @@ function itemsInTab(tabName){
 // them still narrow by AND.
 let outfitTags = [];
 
+// The capsules the page is narrowed to, by id — shared by both halves of the
+// switch like the tags. Any number can be on: the pool is every piece in any
+// of them, so two capsules mix with each other.
+let capsuleFilter = [];
+
+// The pieces the capsule filter allows, or null when it is not narrowing.
+function capsuleAllowedIds(){
+  capsuleFilter = capsuleFilter.filter(id => capsules.some(c => c.id === id));
+  if(!capsuleFilter.length) return null;
+  const ids = new Set();
+  capsules.filter(c => capsuleFilter.includes(c.id)).forEach(c => c.itemIds.forEach(id => ids.add(id)));
+  return ids;
+}
+
+// An outfit qualifies when each piece of clothing in it is in a chosen
+// capsule. Accessories put on by hand are not held to it.
+function comboInCapsules(combo){
+  const allowed = capsuleAllowedIds();
+  if(!allowed) return true;
+  return [combo.top, combo.bottom, combo.dress, combo.jumper, combo.jacket]
+    .filter(Boolean).every(p => allowed.has(p.id));
+}
+
+function toggleCapsuleFilter(id){
+  capsuleFilter = capsuleFilter.includes(id) ? capsuleFilter.filter(x => x !== id) : capsuleFilter.concat(id);
+  renderFilterControls();
+  renderFiltersFab();
+  if(appMode === 'saved'){
+    expandedSavedKey = null;
+    renderSavedOutfits();
+  } else {
+    resetOutfitResults();
+  }
+}
+
 function carriesAny(piece, tags){
   return (piece.tags || []).some(t => tags.includes(t));
 }
@@ -2395,7 +2430,8 @@ function countNarrowedSlots(filters){
 function activeFilterCount(){
   if(appMode !== 'outfits' && appMode !== 'saved') return 0;
   return countNarrowedSlots(outfitFilters) + (outfitTags.length ? 1 : 0)
-    + (faveFilter[appMode].length ? 1 : 0);
+    + (faveFilter[appMode].length ? 1 : 0)
+    + (capsuleAllowedIds() ? 1 : 0);
 }
 
 // The pill is what the panel collapses into: it appears once the panel is
@@ -2437,6 +2473,10 @@ const FILTER_MOUNTS = [
 
 function filterControlsHtml(ns){
   return `
+    ${capsulesAvailable && capsules.length ? `<div class="filter-section">
+      <span class="filter-sheet-label">Capsules<span class="label-count" id="${ns}-capsule-count"></span></span>
+      <div class="filter-grid chip-row" id="${ns}-capsule-chips" role="group" aria-label="Filter by capsule"></div>
+    </div>` : ''}
     <div class="filter-section">
       <span class="filter-sheet-label">Faves<span class="label-count" id="${ns}-fave-count"></span></span>
       <div class="filter-grid chip-row" data-fave-host role="group" aria-label="Filter by fave level"></div>
@@ -2470,6 +2510,16 @@ function renderFilterControls(){
 
     host.innerHTML = filterControlsHtml(ns);
 
+    capsuleAllowedIds();   // drops a capsule that has since gone
+    const capHost = document.getElementById(`${ns}-capsule-chips`);
+    if(capHost){
+      capHost.innerHTML = capsules.map(c => {
+        const on = capsuleFilter.includes(c.id);
+        return `<button class="filter-chip ${on ? 'active' : ''}" type="button" aria-pressed="${on}"
+          onclick='toggleCapsuleFilter(${JSON.stringify(c.id)})'><span class="chip-label">${esc(c.name)}</span></button>`;
+      }).join('');
+    }
+    setLabelCount(`${ns}-capsule-count`, capsuleFilter.length);
     renderTagChips(`${ns}-tag-chips`, outfitTags, 'setOutfitTag');
     renderSlotChips(`${ns}-filter-grid`);
 
@@ -2912,6 +2962,7 @@ function clearFilters(){
     favePinned.clear(); faveLingering.clear();
     writeFaveUrl();
   }
+  if(appMode === 'outfits' || appMode === 'saved') capsuleFilter = [];
   if(appMode === 'outfits'){
     outfitTags = [];
     Object.keys(outfitFilters).forEach(k => { outfitFilters[k] = anyFilter(); });
@@ -3352,7 +3403,12 @@ function slotList(filters, slot){
   // outfits with those shorts, not those shorts or any pair of pants.
   const pinned = tabs.filter(t => (filters[t] || {}).type === 'items');
   const from = pinned.length ? pinned : tabs;
-  const items = from.reduce((all, t) => all.concat(tabContribution(filters, t)), []);
+  let items = from.reduce((all, t) => all.concat(tabContribution(filters, t)), []);
+  // Only the page's own filters carry the capsules: a piece's sheet asks
+  // about that one piece, and the can-it-make-outfits check asks about the
+  // whole wardrobe.
+  const allowed = filters === outfitFilters ? capsuleAllowedIds() : null;
+  if(allowed) items = items.filter(i => allowed.has(i.id));
   // Every slot the generator draws from comes through here, so this is the
   // one place the order of the stream is decided. Shuffling per visit is
   // what stops the same few outfits leading the page every time you open
@@ -3585,7 +3641,7 @@ const HERO_KEY = 'wardrobe-hero-outfit';
 // again, or the one card the page leads with would be the one thing the
 // wand left alone.
 function heroSignature(){
-  return JSON.stringify({ deal: sessionSeed, tags: outfitTags, filters: outfitFilters, fave: faveFilter.outfits });
+  return JSON.stringify({ deal: sessionSeed, tags: outfitTags, filters: outfitFilters, fave: faveFilter.outfits, capsules: capsuleFilter });
 }
 
 function readStoredHero(){
@@ -4052,7 +4108,7 @@ function renderFaveChips(){
 // something specific about it.
 function faveEmptyMessage(mode){
   const v = faveFilter[mode];
-  if(!v.length || outfitTags.length || countNarrowedSlots(outfitFilters) > 0) return null;
+  if(!v.length || outfitTags.length || capsuleFilter.length || countNarrowedSlots(outfitFilters) > 0) return null;
   return v.length === 1 ? FAVE_EMPTY[v[0]] : ['No faves at those levels yet', 'Tap a heart to cycle an outfit up through them.'];
 }
 
@@ -4257,12 +4313,18 @@ function savedOutfitMatchesSlots(rec){
   });
 }
 
+function savedOutfitInCapsules(rec){
+  const allowed = capsuleAllowedIds();
+  if(!allowed) return true;
+  return ['top','bottom','dress','jumper','jacket'].every(f => !rec[f] || allowed.has(rec[f]));
+}
+
 function savedOutfitMatches(rec){
   // Hidden means hidden. It used to mean hidden from the generator only,
   // so a combination you had dismissed went on sitting on the other half
   // of the switch — the one place you were sure to look.
   if(hiddenCombos.includes(rec.key)) return false;
-  return savedOutfitMatchesTag(rec) && savedOutfitMatchesSlots(rec);
+  return savedOutfitMatchesTag(rec) && savedOutfitMatchesSlots(rec) && savedOutfitInCapsules(rec);
 }
 
 function renderSavedOutfits(){
@@ -4283,7 +4345,7 @@ function renderSavedOutfits(){
     pool.filter(rec => (favePinned.has(rec.key) || faveMatches(rec.level, want))
                        && savedOutfitMatches(rec)),
     rec => rec.key);
-  const narrowed = outfitTags.length > 0 || countNarrowedSlots(outfitFilters) > 0;
+  const narrowed = outfitTags.length > 0 || capsuleFilter.length > 0 || countNarrowedSlots(outfitFilters) > 0;
   renderFaveChips();
 
   // No count line: the cards are the count, and a line saying which
