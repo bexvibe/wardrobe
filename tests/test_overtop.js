@@ -1,4 +1,4 @@
-// An outfit can wear two tops, e.g. a tee and a shirt, in either stacking order.
+// A second layer (shirt, blouse) goes over a base layer (tee, singlet) or stands alone.
 const { chromium } = require('playwright');
 const fs=require('fs'), path=require('path');
 const REPO = path.join(__dirname, '..');
@@ -27,8 +27,11 @@ const results=[]; const check=(n,p,d)=>{results.push(p);console.log(`${p?'PASS':
       blouseOverCami: canLayerOver(blouse, cami),
       shirtOverTop: canLayerOver(shirt, plain),
       teeOverShirt: canLayerOver(tee, shirt),
-      teeOverTee: canLayerOver(tee, mk('t2','T-shirts')) !== canLayerOver(mk('t2','T-shirts'), tee),
-      shirtOverShirt: canLayerOver(shirt, mk('s2','Shirts')) !== canLayerOver(mk('s2','Shirts'), shirt),
+      teeOverTee: canLayerOver(tee, mk('t2','T-shirts')),
+      shirtOverShirt: canLayerOver(shirt, mk('s2','Shirts')),
+      singletOverTee: canLayerOver(mk('g','Singlets'), tee),
+      shirtOverSinglet: canLayerOver(shirt, mk('g','Singlets')),
+      singletShelf: shelfForItem(mk('g','Singlets')),
       shirtOverSelf: canLayerOver(shirt, shirt),
       shirtOverJeans: canLayerOver(shirt, jeans),
     };
@@ -37,22 +40,25 @@ const results=[]; const check=(n,p,d)=>{results.push(p);console.log(`${p?'PASS':
     out.plainKey = comboKey({...combo, overtop:null});
     out.pieces = comboPieces(combo).map(x => x.id);
     out.upper = outfitLayout(combo).upper.map(x => x.id);
-    let seen = 0, layered = 0, bad = 0;
+    let seen = 0, layered = 0, bad = 0, shirtAlone = 0;
     const g = comboGenerator();
-    for(let i = 0; i < 4000; i++){
+    for(let i = 0; i < 200000; i++){
       const n = g.next(); if(n.done) break;
       const c = n.value; seen++;
+      if(c.top && c.top.category === 'Shirts' && !c.overtop) shirtAlone++;
       if(c.overtop){ layered++; if(!canLayerOver(c.overtop, c.top)) bad++; }
     }
-    out.seen = seen; out.layered = layered; out.bad = bad;
+    out.shirtAlone = shirtAlone; out.seen = seen; out.layered = layered; out.bad = bad;
     return out;
   });
   check('shirt goes over a tee', r.shirtOverTee);
   check('blouse goes over a camisole', r.blouseOverCami);
   check('shirt goes over a plain top', r.shirtOverTop);
-  check('a pair is one outfit, not two mirror images', !r.teeOverShirt);
-  check('two tees pair up once', r.teeOverTee);
-  check('two shirts pair up once', r.shirtOverShirt);
+  check('a base layer does not go over a shirt', !r.teeOverShirt);
+  check('two base layers do not pair', !r.teeOverTee && !r.singletOverTee);
+  check('two shirts do not pair', !r.shirtOverShirt);
+  check('a shirt goes over a singlet, and a singlet is a top', r.shirtOverSinglet && r.singletShelf === 'Tops');
+  check('a shirt can be worn without anything under it', r.shirtAlone > 0, String(r.shirtAlone));
   check('nothing goes over itself', !r.shirtOverSelf);
   check('only tops are layered over', !r.shirtOverJeans);
   check('key without a layer is the old key', r.plainKey === 'tb|t|j|none|none|none', r.plainKey);

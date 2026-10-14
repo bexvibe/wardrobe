@@ -1017,6 +1017,7 @@
     scrollbar-width:none;
   }
   .picker-options::-webkit-scrollbar{display:none;}
+  .picker-option-group{opacity:.55;font-size:.85em;margin-left:4px;}
   .picker-option{
     flex:none;
     font-family:'Work Sans',sans-serif;
@@ -1841,6 +1842,7 @@ const TAB_ORDER = ['All','Tops','Pants','Shorts','Skirts','Dresses','Jumpsuits',
 const CATEGORY_TO_TAB = {
   'Tops':'Tops','Shirts':'Tops','Blouses':'Tops','T-shirts':'Tops','Tees':'Tops',
   'Vests':'Tops','Camisoles':'Tops','Bodysuits':'Tops',
+  'Singlets':'Tops','Tank tops':'Tops',
 
   // The bottom half used to be one tab called Bottoms. Pants, shorts and
   // skirts are worn in different weather and wanted at different times, so
@@ -1923,18 +1925,19 @@ const TAB_SLOT = {
 // A layer you can go without. The rest are what an outfit is.
 const OPTIONAL_SLOTS = ['jumper','jacket','shoes'];
 
-// An outfit can wear two tops: singlet or tee, then a shirt, then a jumper
-// and jacket. Any two pieces from the Tops tab can be paired, in either
-// order — which one is "over" only decides how the card stacks them. A shirt
-// or blouse sits outside a tee or singlet; between two of the same kind it
-// falls back to id, so each pair is one outfit rather than two mirror images.
-const OUTER_CATEGORIES = ['Shirts','Blouses'];
-const layerRank = p => OUTER_CATEGORIES.includes(p.category) ? 1 : 0;
+// Layers, in the order they are put on: a base layer (singlet, tee, camisole),
+// a second layer (shirt, blouse), a jumper, a jacket. All of the first two
+// live in the Tops tab, and either can be worn alone — a shirt does not need
+// a tee under it. Only the pairing is a rule: a second layer can go over a
+// base layer, never over another second layer, and a base layer never goes
+// over anything. The layer is a fact about the category, so adding a more
+// specific category (Singlets, say) is all it takes to place a new kind of top.
+const SECOND_LAYER_CATEGORIES = ['Shirts','Blouses'];
+const isSecondLayer = p => SECOND_LAYER_CATEGORIES.includes(p.category);
 function canLayerOver(over, under){
   return Boolean(over && under && over.id !== under.id
     && shelfForItem(over) === 'Tops' && shelfForItem(under) === 'Tops'
-    && (layerRank(under) < layerRank(over)
-        || (layerRank(under) === layerRank(over) && under.id < over.id)));
+    && isSecondLayer(over) && !isSecondLayer(under));
 }
 
 function tabsForSlot(slot){ return OUTFIT_TABS.filter(t => TAB_SLOT[t] === slot); }
@@ -6200,7 +6203,14 @@ function dropSheetTrail(){
 }
 
 // ---- Add / edit a piece ------------------------------------
-const CATEGORY_OPTIONS = Object.keys(CATEGORY_TO_TAB).sort();
+// Grouped by the shelf each lands on, the specific ones before the catch-all
+// that shares its name, so the list reads Shirts, Singlets, Tees... Tops.
+const CATEGORY_OPTIONS = Object.keys(CATEGORY_TO_TAB).sort((a, b) => {
+  const shelves = Object.values(CATEGORY_TO_TAB);
+  const rank = c => shelves.indexOf(CATEGORY_TO_TAB[c]);
+  const generic = c => c === CATEGORY_TO_TAB[c];
+  return rank(a) - rank(b) || generic(a) - generic(b) || a.localeCompare(b);
+});
 let editingItemId = null;
 
 function openItemForm(id){
@@ -6274,6 +6284,8 @@ function renderFormPhotoRow(item){
 // a dropdown made you hunt, and only offered what was already on the list.
 // What you type stands whether or not it matches: a new category is just a
 // word nothing has used yet.
+// The group each category goes into is shown beside it, so a specific name
+// like Singlets still says it is a top.
 function renderCategoryOptions(){
   const input = document.getElementById('form-category');
   const list = document.getElementById('form-category-options');
@@ -6286,7 +6298,7 @@ function renderCategoryOptions(){
 
   list.style.display = matches.length && !settled ? 'flex' : 'none';
   list.innerHTML = matches.map(c => `
-    <button type="button" class="picker-option" onclick='pickCategory(${JSON.stringify(c)})'>${esc(c)}</button>
+    <button type="button" class="picker-option" onclick='pickCategory(${JSON.stringify(c)})'>${esc(c)}${CATEGORY_TO_TAB[c] !== c ? ` <span class="picker-option-group">${esc(CATEGORY_TO_TAB[c])}</span>` : ''}</button>
   `).join('');
 }
 
