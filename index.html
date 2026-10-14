@@ -1923,6 +1923,17 @@ const TAB_SLOT = {
 // A layer you can go without. The rest are what an outfit is.
 const OPTIONAL_SLOTS = ['jumper','jacket','shoes'];
 
+// A shirt can be worn over another top. Only a shirt or blouse goes on the
+// outside, and only over something meant to be worn underneath it. It is a
+// rule about the garment, not the shelf: Shirts and Tees share the Tops tab.
+const OVERTOP_CATEGORIES = ['Shirts','Blouses'];
+const UNDERTOP_CATEGORIES = ['Tops','T-shirts','Tees','Camisoles','Vests','Bodysuits'];
+function canLayerOver(over, under){
+  return Boolean(over && under && over.id !== under.id
+    && OVERTOP_CATEGORIES.includes(over.category)
+    && UNDERTOP_CATEGORIES.includes(under.category));
+}
+
 function tabsForSlot(slot){ return OUTFIT_TABS.filter(t => TAB_SLOT[t] === slot); }
 
 // One order for the categories, used by the wardrobe's own tabs and by the
@@ -2010,7 +2021,7 @@ function capsuleAllowedIds(){
 function comboInCapsules(combo){
   const allowed = capsuleAllowedIds();
   if(!allowed) return true;
-  return [combo.top, combo.bottom, combo.dress, combo.jumper, combo.jacket]
+  return [combo.top, combo.overtop, combo.bottom, combo.dress, combo.jumper, combo.jacket]
     .filter(Boolean).every(p => allowed.has(p.id));
 }
 
@@ -3427,11 +3438,14 @@ function* familyGenerator(family, jumpers, jackets, shoes){
     const tops = slotList(generatorFilters(), 'top');
     const bottoms = slotList(generatorFilters(), 'bottom');
     for(const top of tops)
-      for(const bottom of bottoms)
-        for(const jumper of jumpers)
-          for(const jacket of jackets)
-            for(const shoe of shoes)
-              yield {base:'topbottom', top, bottom, jumper, jacket, shoe};
+      // Nothing over the top comes first, as it does for the other optional
+      // layers, so the plain outfits are not buried under the layered ones.
+      for(const overtop of [null, ...tops.filter(o => canLayerOver(o, top))])
+        for(const bottom of bottoms)
+          for(const jumper of jumpers)
+            for(const jacket of jackets)
+              for(const shoe of shoes)
+                yield {base:'topbottom', top, overtop, bottom, jumper, jacket, shoe};
   } else {
     const dresses = slotList(generatorFilters(), 'dress');
     for(const dress of dresses)
@@ -3474,11 +3488,15 @@ function comboKey(combo){
   if(combo.base === 'dress'){
     return ['dress', id(combo.dress), id(combo.jumper), id(combo.jacket), 'none'].join('|');
   }
-  return ['tb', id(combo.top), id(combo.bottom), id(combo.jumper), id(combo.jacket), 'none'].join('|');
+  const key = ['tb', id(combo.top), id(combo.bottom), id(combo.jumper), id(combo.jacket), 'none'];
+  // Only written when there is one, so every key from before shirts could be
+  // layered still matches the same outfit.
+  if(combo.overtop) key.push(combo.overtop.id);
+  return key.join('|');
 }
 
 function comboPieces(combo){
-  return [combo.top, combo.bottom, combo.dress, combo.jumper, combo.jacket]
+  return [combo.top, combo.overtop, combo.bottom, combo.dress, combo.jumper, combo.jacket]
     .concat(comboExtras(combo))
     .filter(Boolean);
 }
@@ -3515,7 +3533,7 @@ function isHat(piece){
 function outfitLayout(combo){
   const upper = (combo.base === 'dress'
     ? [combo.jacket, combo.jumper]
-    : [combo.jacket, combo.jumper, combo.top]).filter(Boolean);
+    : [combo.jacket, combo.jumper, combo.overtop, combo.top]).filter(Boolean);
   return {
     upper,
     lower: (combo.base === 'dress' ? combo.dress : combo.bottom) || null,
@@ -3550,6 +3568,14 @@ function slotCount(slot, untaggedOnly){
   return list.length;
 }
 
+// Tops, counting each one again for every shirt that can be worn over it
+// (and once bare). Walks the same list the generator does.
+function topCount(untaggedOnly){
+  let tops = slotList(generatorFilters(), 'top');
+  if(untaggedOnly) tops = tops.filter(x => !x || !carriesAny(x, outfitTags));
+  return tops.reduce((n, top) => n + 1 + tops.filter(o => canLayerOver(o, top)).length, 0);
+}
+
 function comboCountWhere(untaggedOnly){
   const jumpers = slotCount('jumper', untaggedOnly);
   const jackets = slotCount('jacket', untaggedOnly);
@@ -3559,7 +3585,7 @@ function comboCountWhere(untaggedOnly){
   // generator walks — the count and the stream have to agree.
   return outfitFamilies().reduce((total, family) => {
     const own = family === 'topbottom'
-      ? slotCount('top', untaggedOnly) * slotCount('bottom', untaggedOnly)
+      ? topCount(untaggedOnly) * slotCount('bottom', untaggedOnly)
       : slotCount('dress', untaggedOnly);
     return total + own * jumpers * jackets * shoes;
   }, 0);
@@ -3774,7 +3800,7 @@ function comboToFavoriteRecord(combo){
   return {
     key: comboKey(combo),
     base: combo.base,
-    top: id(combo.top), bottom: id(combo.bottom), dress: id(combo.dress),
+    top: id(combo.top), overtop: id(combo.overtop), bottom: id(combo.bottom), dress: id(combo.dress),
     jumper: id(combo.jumper), jacket: id(combo.jacket),
     // A freshly kept outfit has nothing on it yet.
     extras: [],
@@ -3791,7 +3817,7 @@ function favoriteRecordToCombo(rec){
     // clothing would be given today — see comboExtras.
     key: rec.key,
     base: rec.base,
-    top: pieceById(rec.top), bottom: pieceById(rec.bottom), dress: pieceById(rec.dress),
+    top: pieceById(rec.top), overtop: pieceById(rec.overtop), bottom: pieceById(rec.bottom), dress: pieceById(rec.dress),
     jumper: pieceById(rec.jumper), jacket: pieceById(rec.jacket)
   };
 }
@@ -4956,7 +4982,7 @@ function rowToFavorite(row){
   return {
     key: row.combo_key,
     base: row.base,
-    top: row.top_id, bottom: row.bottom_id, dress: row.dress_id,
+    top: row.top_id, overtop: row.overtop_id || null, bottom: row.bottom_id, dress: row.dress_id,
     jumper: row.jumper_id, jacket: row.jacket_id,
     // Rows from before the migration have no level and were all faves.
     level: Number.isInteger(row.fave_level) ? Math.min(3, Math.max(1, row.fave_level)) : 1
@@ -4976,6 +5002,9 @@ function favoriteToRow(rec){
     fave_updated_at: new Date().toISOString(),
     archived_at: null
   };
+  // Only sent when there is one, so saving still works before
+  // supabase/add-overtop.sql has been run.
+  if(rec.overtop) row.overtop_id = rec.overtop;
   return row;
 }
 

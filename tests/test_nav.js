@@ -168,8 +168,12 @@ const vis=(p,s)=>p.isVisible(s);
   // The page can still be scrolled clear of the panel — the last row is not
   // stranded underneath it.
   const clears = await p.evaluate(async()=>{
-    window.scrollTo({top:document.body.scrollHeight});
-    await new Promise(r=>setTimeout(r,400));
+    // Twice: reaching the bottom loads the next page when there is one,
+    // and it is the bottom of the longer page that is being asked about.
+    for(let i = 0; i < 3; i++){
+      window.scrollTo({top:document.body.scrollHeight});
+      await new Promise(r=>setTimeout(r,400));
+    }
     const cards=document.querySelectorAll('#outfit-gallery .outfit-card');
     const last=cards[cards.length-1].getBoundingClientRect();
     const sheet=document.getElementById('filter-sheet').getBoundingClientRect();

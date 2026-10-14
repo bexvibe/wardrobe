@@ -80,7 +80,7 @@ const on = p => p.evaluate(()=>Array.from(
       await p.evaluate(()=>{
         let walked = 0;
         for(const c of comboGenerator()){
-          if(++walked > 60000) break;   // the whole space here is smaller
+          if(++walked > 400000) break;   // the whole space here is smaller
           if(!comboMatchesTag(c)) continue;
           const t = new Set(comboPieces(c).flatMap(x => x.tags||[]));
           if(t.has('summer') !== t.has('winter')) return true;
@@ -91,7 +91,7 @@ const on = p => p.evaluate(()=>Array.from(
     // The count the page works out must agree with what it can generate.
     check('the count agrees with the stream it came from',
       await p.evaluate(()=>{
-        let n = 0; for(const c of comboGenerator()){ if(comboMatchesTag(c)) n++; if(n > 60000) break; }
+        let n = 0; for(const c of comboGenerator()){ if(comboMatchesTag(c)) n++; if(n > 400000) break; }
         return n === totalComboCount();
       }), String(await p.evaluate(()=>totalComboCount())));
 

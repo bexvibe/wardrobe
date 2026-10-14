@@ -199,7 +199,7 @@ const ticked = p => p.evaluate(()=>Array.from(document.querySelectorAll('#builde
     check('the same outfit is one the generator makes',
       await p.evaluate(k=>{
         let n = 0;
-        for(const c of comboGenerator()){ if(comboKey(c) === k) return true; if(++n > 60000) break; }
+        for(const c of comboGenerator()){ if(comboKey(c) === k) return true; if(++n > 400000) break; }
         return false;
       }, key));
     check('and its heart is filled without anything being told to fill it',

@@ -97,7 +97,8 @@ const tiles = p => p.evaluate(()=>document.querySelectorAll('#gallery .tile').le
 
     // The arithmetic in the count has to use the same two tabs the stream does.
     const agree = await p.evaluate(()=>{
-      const tops = itemsInTab('Tops').length;
+      // Each top, once bare and once under every shirt that can go over it.
+      const tops = topCount(false);
       const bottoms = slotList(outfitFilters, 'bottom').length;
       const dresses = itemsInTab('Dresses').length;
       const jum = itemsInTab('Jumpers').length + 1;
