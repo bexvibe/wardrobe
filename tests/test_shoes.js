@@ -60,7 +60,7 @@ async function run(browser, shoesOn){
         // Both shapes are in one stream now, so the expected figure is
         // (tops x bottoms + dresses) x the layers, not tops x bottoms alone.
         expected: (()=>{const n=s=>slotList(outfitFilters,s).length;
-          return (n('top')*n('bottom') + n('dress')) * n('jumper') * n('jacket');})(),
+          return (topCount(false)*n('bottom') + n('dress')) * n('jumper') * n('jacket');})(),
         filterChips: Array.from(document.querySelectorAll('#sheet-filter-grid .filter-chip')).map(e=>e.textContent.trim().split('\n')[0]),
       };
     });

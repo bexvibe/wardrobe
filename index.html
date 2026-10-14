@@ -1923,15 +1923,18 @@ const TAB_SLOT = {
 // A layer you can go without. The rest are what an outfit is.
 const OPTIONAL_SLOTS = ['jumper','jacket','shoes'];
 
-// A shirt can be worn over another top. Only a shirt or blouse goes on the
-// outside, and only over something meant to be worn underneath it. It is a
-// rule about the garment, not the shelf: Shirts and Tees share the Tops tab.
-const OVERTOP_CATEGORIES = ['Shirts','Blouses'];
-const UNDERTOP_CATEGORIES = ['Tops','T-shirts','Tees','Camisoles','Vests','Bodysuits'];
+// An outfit can wear two tops: singlet or tee, then a shirt, then a jumper
+// and jacket. Any two pieces from the Tops tab can be paired, in either
+// order — which one is "over" only decides how the card stacks them. A shirt
+// or blouse sits outside a tee or singlet; between two of the same kind it
+// falls back to id, so each pair is one outfit rather than two mirror images.
+const OUTER_CATEGORIES = ['Shirts','Blouses'];
+const layerRank = p => OUTER_CATEGORIES.includes(p.category) ? 1 : 0;
 function canLayerOver(over, under){
   return Boolean(over && under && over.id !== under.id
-    && OVERTOP_CATEGORIES.includes(over.category)
-    && UNDERTOP_CATEGORIES.includes(under.category));
+    && shelfForItem(over) === 'Tops' && shelfForItem(under) === 'Tops'
+    && (layerRank(under) < layerRank(over)
+        || (layerRank(under) === layerRank(over) && under.id < over.id)));
 }
 
 function tabsForSlot(slot){ return OUTFIT_TABS.filter(t => TAB_SLOT[t] === slot); }

@@ -1,4 +1,4 @@
-// A shirt or blouse can be worn over another top.
+// An outfit can wear two tops, e.g. a tee and a shirt, in either stacking order.
 const { chromium } = require('playwright');
 const fs=require('fs'), path=require('path');
 const REPO = path.join(__dirname, '..');
@@ -19,7 +19,7 @@ const results=[]; const check=(n,p,d)=>{results.push(p);console.log(`${p?'PASS':
   await p.waitForSelector('#app-root',{state:'visible'}); await p.waitForTimeout(800);
 
   const r = await p.evaluate(() => {
-    const mk = (id, category) => ({id, category});
+    const mk = (id, category) => ({id, category, photo:'x'});
     const shirt = mk('s','Shirts'), blouse = mk('b','Blouses'), tee = mk('t','T-shirts'),
           cami = mk('c','Camisoles'), plain = mk('p','Tops'), jeans = mk('j','Jeans');
     const out = {
@@ -27,8 +27,8 @@ const results=[]; const check=(n,p,d)=>{results.push(p);console.log(`${p?'PASS':
       blouseOverCami: canLayerOver(blouse, cami),
       shirtOverTop: canLayerOver(shirt, plain),
       teeOverShirt: canLayerOver(tee, shirt),
-      teeOverTee: canLayerOver(tee, mk('t2','T-shirts')),
-      shirtOverShirt: canLayerOver(shirt, mk('s2','Shirts')),
+      teeOverTee: canLayerOver(tee, mk('t2','T-shirts')) !== canLayerOver(mk('t2','T-shirts'), tee),
+      shirtOverShirt: canLayerOver(shirt, mk('s2','Shirts')) !== canLayerOver(mk('s2','Shirts'), shirt),
       shirtOverSelf: canLayerOver(shirt, shirt),
       shirtOverJeans: canLayerOver(shirt, jeans),
     };
@@ -50,9 +50,9 @@ const results=[]; const check=(n,p,d)=>{results.push(p);console.log(`${p?'PASS':
   check('shirt goes over a tee', r.shirtOverTee);
   check('blouse goes over a camisole', r.blouseOverCami);
   check('shirt goes over a plain top', r.shirtOverTop);
-  check('a tee does not go over a shirt', !r.teeOverShirt);
-  check('a tee does not go over a tee', !r.teeOverTee);
-  check('a shirt does not go over a shirt', !r.shirtOverShirt);
+  check('a pair is one outfit, not two mirror images', !r.teeOverShirt);
+  check('two tees pair up once', r.teeOverTee);
+  check('two shirts pair up once', r.shirtOverShirt);
   check('nothing goes over itself', !r.shirtOverSelf);
   check('only tops are layered over', !r.shirtOverJeans);
   check('key without a layer is the old key', r.plainKey === 'tb|t|j|none|none|none', r.plainKey);

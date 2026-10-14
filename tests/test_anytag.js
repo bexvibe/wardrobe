@@ -47,8 +47,10 @@ const results=[]; const check=(n,p,d)=>{results.push(p);console.log(`${p?'PASS':
     const jum=[null].concat(itemsInTab('Jumpers')), jac=[null].concat(itemsInTab('Jackets'));
     const has=i=>i && (i.tags||[]).includes('summer');
     let n=0;
-    for(const t of tops) for(const bo of bottoms) for(const j of jum) for(const ja of jac)
-      if(has(t)||has(bo)||has(j)||has(ja)) n++;
+    // Each top bare, and under every top that can be worn over it.
+    for(const t of tops) for(const ov of [null].concat(tops.filter(o=>canLayerOver(o,t))))
+      for(const bo of bottoms) for(const j of jum) for(const ja of jac)
+        if(has(t)||has(ov)||has(bo)||has(j)||has(ja)) n++;
     return n;
   });
   check('reported count matches a brute-force count exactly', tagged===truth, `reported ${tagged}, actual ${truth}`);
