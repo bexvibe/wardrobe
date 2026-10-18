@@ -2,7 +2,7 @@ if(window.__FILTERS_OPEN_BY_DEFAULT === undefined) window.__FILTERS_OPEN_BY_DEFA
 // In-memory stand-in for supabase-js, injected in place of the real bundle so
 // the app's own code paths run for real against a fake transport.
 (function () {
-  const PASSWORD = 'correct-horse';
+  const PASSWORD = window.__FAKE_PASSWORD || 'correct-horse';
 
   // The app deals both outfit lists in a different order each visit, from a
   // seed it keeps in sessionStorage. Left alone that would make every suite
@@ -54,7 +54,7 @@ if(window.__FILTERS_OPEN_BY_DEFAULT === undefined) window.__FILTERS_OPEN_BY_DEFA
   // A real Postgres keeps its rows across a page reload; persist the fake's
   // to localStorage so reload-survival is actually testable. Tests wanting a
   // clean slate get one, since each test runs in a fresh browser context.
-  const DB_KEY = 'fake-sb-db';
+  const DB_KEY = window.__FAKE_DB_KEY || 'fake-sb-db';
   function loadState() {
     try {
       const stored = localStorage.getItem(DB_KEY);
@@ -71,7 +71,7 @@ if(window.__FILTERS_OPEN_BY_DEFAULT === undefined) window.__FILTERS_OPEN_BY_DEFA
   // Real supabase-js persists the session to localStorage (persistSession
   // defaults to true) and restores it in getSession(). Mirror that, or the
   // "stays unlocked on this device" behaviour cannot be tested.
-  const SESSION_KEY = 'fake-sb-session';
+  const SESSION_KEY = window.__FAKE_SESSION_KEY || 'fake-sb-session';
 
   function createClient() {
     const state = window.__WARDROBE_STATE;

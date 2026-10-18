@@ -1815,8 +1815,19 @@
 <div class="toast" id="toast"></div>
 <input type="file" id="hidden-photo-input" accept="image/*" style="display:none" onchange="handlePhotoUpload(event)">
 
-<script src="vendor/supabase-js-2.116.0.min.js"></script>
-<script src="config.js"></script>
+<script>
+// /demo and /demo-empty run the app against an in-browser stand-in for the
+// database, so friends can click around without touching the real wardrobe.
+(function(){
+  var m = location.pathname.match(/^\/demo(-empty)?\/?$/);
+  window.__DEMO = m ? (m[1] ? 'empty' : 'full') : null;
+  var src = !window.__DEMO
+    ? ['vendor/supabase-js-2.116.0.min.js', 'config.js']
+    : (window.__DEMO === 'full' ? ['/demo/snapshot.js'] : [])
+        .concat(['/demo/demo.js', '/tests/fake-supabase.js']);
+  src.forEach(function(s){ document.write('<script src="' + s + '"><\/script>'); });
+})();
+</script>
 <script>
 let ITEMS = [];
 let activeTab = 'All';
