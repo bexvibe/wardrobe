@@ -6174,7 +6174,16 @@ function triggerPhotoUpload(id){
 async function handlePhotoUpload(event){
   const file = event.target.files[0];
   event.target.value = '';
-  if(!file || !pendingPhotoItemId) return;
+  if(!file) return;
+
+  // The new-piece form: hold the photo until there is a piece to give it to.
+  if(!pendingPhotoItemId && document.getElementById('form-backdrop').classList.contains('open') && !editingItemId){
+    clearStagedPhoto();
+    stagedPhoto = { file, url: URL.createObjectURL(file) };
+    renderFormPhotoRow(null);
+    return;
+  }
+  if(!pendingPhotoItemId) return;
 
   const itemId = pendingPhotoItemId;
   pendingPhotoItemId = null;
@@ -6602,6 +6611,14 @@ const CATEGORY_OPTIONS = Object.keys(CATEGORY_TO_TAB).sort((a, b) => {
   return rank(a) - rank(b) || generic(a) - generic(b) || a.localeCompare(b);
 });
 let editingItemId = null;
+// A new piece has no id to attach a photo to yet, so the one chosen in the
+// form waits here and is uploaded once the piece is saved.
+let stagedPhoto = null; // { file, url }
+
+function clearStagedPhoto(){
+  if(stagedPhoto) URL.revokeObjectURL(stagedPhoto.url);
+  stagedPhoto = null;
+}
 
 function openItemForm(id){
   pushSheet({ sheet: 'form', id: id || null });
@@ -6610,6 +6627,7 @@ function openItemForm(id){
 
 function drawItemForm(id){
   editingItemId = id || null;
+  clearStagedPhoto();
   const item = id ? ITEMS.find(i => i.id === id) : null;
 
   document.getElementById('form-title').textContent = item ? 'Edit piece' : 'New piece';
@@ -6623,8 +6641,8 @@ function drawItemForm(id){
   document.getElementById('form-tags-field').style.display = tagsAvailable ? '' : 'none';
   renderTagSuggestions();
 
-  // A piece that does not exist yet has no photo to replace and nowhere to
-  // be archived to: it gets neither row, and is offered a photo once saved.
+  // A piece that does not exist yet has nowhere to be archived to, but it
+  // can still be given a photo, which is kept until it is saved.
   renderFormPhotoRow(item);
   const actions = document.getElementById('form-item-actions');
   actions.innerHTML = item ? `
@@ -6660,13 +6678,13 @@ function itemFormIsDirty(){
 function renderFormPhotoRow(item){
   const row = document.getElementById('form-photo-row');
   if(!row) return;
-  if(!item){ row.innerHTML = ''; return; }
+  const photo = item ? item.photo : (stagedPhoto && stagedPhoto.url);
   row.innerHTML = `
-    <button type="button" class="form-photo" onclick='triggerPhotoUpload(${JSON.stringify(item.id)})'>
-      <span class="form-photo-thumb">${item.photo
-        ? `<img src="${esc(item.photo)}" alt="" referrerpolicy="no-referrer" decoding="async">`
+    <button type="button" class="form-photo" onclick='triggerPhotoUpload(${JSON.stringify(item ? item.id : null)})'>
+      <span class="form-photo-thumb">${photo
+        ? `<img src="${esc(photo)}" alt="" referrerpolicy="no-referrer" decoding="async">`
         : `<span>No<br>photo</span>`}</span>
-      <span class="form-photo-label">${item.photo ? 'Replace photo' : 'Add photo'}</span>
+      <span class="form-photo-label">${photo ? 'Replace photo' : 'Add photo'}</span>
     </button>`;
 }
 
@@ -6733,6 +6751,7 @@ function closeItemForm(){
 
 function discardItemForm(){
   itemFormBaseline = null;
+  clearStagedPhoto();
   editingItemId = null;
   // Back to the piece you were editing if that is where you came from,
   // rather than out to whatever page happens to be underneath.
@@ -6782,10 +6801,18 @@ async function submitItemForm(){
   if(!saved) return;
 
   const wasEditing = Boolean(editingItemId);
+  const staged = stagedPhoto && stagedPhoto.file;
   discardItemForm();
   render();
   showToast(wasEditing ? 'Saved' : 'Added to wardrobe');
-  if(!wasEditing && !saved.photo) triggerPhotoUpload(saved.id);
+  if(!wasEditing && staged){
+    try{
+      if(await uploadPhotoFor(saved.id, staged)) render();
+    }catch(e){
+      console.error('[wardrobe] photo upload failed', e);
+      showToast('Added, but could not read that photo');
+    }
+  }
 }
 
 // A sheet stops short of the top of the screen, so the strip of page above
