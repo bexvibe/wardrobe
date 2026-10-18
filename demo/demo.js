@@ -71,7 +71,10 @@
     var bar = document.createElement('div');
     bar.style.cssText = 'position:sticky;top:0;z-index:9999;display:flex;gap:12px;justify-content:center;align-items:center;padding:8px 16px;font:13px/1.3 system-ui,sans-serif;background:#2b2b2b;color:#fff';
     bar.innerHTML = '<span>Demo — changes stay on this device only</span>' +
-      '<button style="font:inherit;color:inherit;background:none;border:1px solid #fff8;border-radius:6px;padding:2px 10px;cursor:pointer">Reset</button>';
+      '<button style="font:inherit;color:inherit;background:none;border:1px solid #fff8;border-radius:6px;padding:2px 10px;cursor:pointer">Reset</button>' +
+      // The other demo, so each can be shown without typing the address.
+      '<a href="' + (kind === 'empty' ? '/demo' : '/demo-empty') + '" style="color:inherit;text-decoration:underline">' +
+      (kind === 'empty' ? 'See the full demo' : 'See the empty demo') + '</a>';
     bar.querySelector('button').onclick = function () {
       try { localStorage.removeItem(window.__FAKE_DB_KEY); } catch (e) {}
       location.reload();
