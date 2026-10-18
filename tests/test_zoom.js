@@ -51,7 +51,7 @@ const results=[]; const check=(n,p,d)=>{results.push(p);console.log(`${p?'PASS':
 
   // the capsule editor has its own name field
   await p.click('#nav-capsules-btn'); await p.waitForTimeout(500);
-  await p.click('#new-capsule-btn'); await p.waitForTimeout(500);
+  await p.click('#new-capsule-btn:visible, #capsule-empty .empty-action:visible'); await p.waitForTimeout(500);
   check('capsule name field clears the threshold', (await px('#capsule-name-input')) >= 16,
     `${await px('#capsule-name-input')}px`);
 

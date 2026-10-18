@@ -130,7 +130,7 @@ const rowTop = (p, sel) => p.evaluate(s =>
   {
     const p=await open(b);
     await p.click('#nav-capsules-btn'); await p.waitForTimeout(800);
-    await p.click('#new-capsule-btn'); await p.waitForTimeout(700);
+    await p.click('#new-capsule-btn:visible, #capsule-empty .empty-action:visible'); await p.waitForTimeout(700);
     check('the editor is up with its categories',
       await p.evaluate(()=>document.querySelectorAll('#capsule-tabs .tab').length > 1));
 

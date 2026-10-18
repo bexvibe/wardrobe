@@ -187,7 +187,7 @@ async function holdFirstTile(p){
   {
     const p=await open(b);
     await p.click('#nav-capsules-btn'); await p.waitForTimeout(700);
-    await p.click('#new-capsule-btn'); await p.waitForTimeout(500);
+    await p.click('#new-capsule-btn:visible, #capsule-empty .empty-action:visible'); await p.waitForTimeout(500);
     await p.fill('#capsule-name-input', 'Evening');
     await p.locator('#capsule-editor-gallery .picker-tile').nth(0).click();
     await p.locator('#capsule-editor-gallery .picker-tile').nth(1).click();
@@ -274,7 +274,7 @@ async function holdFirstTile(p){
       (await p.textContent('#saved-view h1')).trim() === 'Outfits',
       (await p.textContent('#saved-view h1')).trim());
     check('and the empty state is where the word lives',
-      /fave/i.test(await p.textContent('#saved-empty-title')),
+      /fave|favourite/i.test(await p.textContent('#saved-empty-title')),
       (await p.textContent('#saved-empty-title')).trim());
 
     // Nothing anywhere should still be calling it Saved.

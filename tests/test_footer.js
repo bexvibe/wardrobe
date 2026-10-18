@@ -168,7 +168,7 @@ async function assertPattern(p, scope, label, name){
   {
     const p=await open(b);
     await p.click('#nav-capsules-btn'); await p.waitForTimeout(700);
-    await p.click('#new-capsule-btn'); await p.waitForTimeout(600);
+    await p.click('#new-capsule-btn:visible, #capsule-empty .empty-action:visible'); await p.waitForTimeout(600);
     await assertPattern(p, '#modal', 'Save capsule', 'new capsule');
 
     await p.fill('#capsule-name-input', 'Footer Capsule');
@@ -216,7 +216,7 @@ async function assertPattern(p, scope, label, name){
   {
     const p=await open(b);
     await p.click('#nav-capsules-btn'); await p.waitForTimeout(700);
-    await p.click('#new-capsule-btn'); await p.waitForTimeout(600);
+    await p.click('#new-capsule-btn:visible, #capsule-empty .empty-action:visible'); await p.waitForTimeout(600);
     const tabs = await p.evaluate(()=>
       Array.from(document.querySelectorAll('#capsule-tabs .tab'))
         .map(t=>({label:t.textContent.trim(), counted:Boolean(t.querySelector('.count'))})));

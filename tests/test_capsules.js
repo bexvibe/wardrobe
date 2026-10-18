@@ -74,7 +74,7 @@ const db = p => p.evaluate(()=>({
     check('the Filters pill stays out of the capsules page', !(await p.isVisible('#filters-fab')));
 
     // build one
-    await p.click('#new-capsule-btn'); await p.waitForTimeout(400);
+    await p.click('#new-capsule-btn:visible, #capsule-empty .empty-action:visible'); await p.waitForTimeout(400);
     await p.click('#capsule-save-btn'); await p.waitForTimeout(300);
     check('a capsule cannot be saved without a name',
       (await p.textContent('#capsule-error')).includes('name'),

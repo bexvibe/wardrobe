@@ -1646,8 +1646,8 @@
     <div class="outfit-gallery" id="saved-gallery"></div>
     <div class="empty" id="saved-empty" style="display:none;">
       <span class="empty-emoji" id="saved-empty-emoji" aria-hidden="true">💗</span>
-      <h3 id="saved-empty-title">Keep your favourite outfits</h3>
-      <p class="empty-sub" id="saved-empty-sub">Tap a heart on any outfit to save it here</p>
+      <h3 id="saved-empty-title">Save your favourites</h3>
+      <p class="empty-sub" id="saved-empty-sub">Tap a heart to save it here</p>
       <p class="empty-hint" id="saved-empty-hint"></p>
       <button class="empty-action" id="saved-empty-action" onclick="openOutfitBuilder()"
               aria-label="Build an outfit" title="Build an outfit">
@@ -4424,8 +4424,8 @@ function renderSavedOutfits(){
     const firstVisit = !faveMsg && !narrowed && !want.length;
     document.getElementById('saved-empty-emoji').style.display = firstVisit ? '' : 'none';
     document.getElementById('saved-empty-title').textContent =
-      faveMsg ? faveMsg[0] : (firstVisit ? 'Keep your favourite outfits' : 'No outfits match');
-    document.getElementById('saved-empty-sub').textContent = firstVisit ? 'Tap a heart on any outfit to save it here' : '';
+      faveMsg ? faveMsg[0] : (firstVisit ? 'Save your favourites' : 'No outfits match');
+    document.getElementById('saved-empty-sub').textContent = firstVisit ? 'Tap a heart to save it here' : '';
     document.getElementById('saved-empty-hint').textContent = faveMsg ? faveMsg[1] : '';
     // While empty, the + sits in the middle of the page instead.
     document.getElementById('build-outfit-btn').style.display = firstVisit ? 'none' : '';
