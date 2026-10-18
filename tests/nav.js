@@ -9,6 +9,11 @@
 module.exports = {
   // The kept half.
   async toFaves(page, settle){
+    // The heart only shows once you are on Outfits.
+    if(!(await page.$('#nav-saved-btn'))){
+      await page.click('#nav-outfits-btn');
+      await page.waitForSelector('#nav-saved-btn');
+    }
     await page.click('#nav-saved-btn');
     await page.waitForFunction(() => appMode === 'saved');
     await page.waitForTimeout(settle === undefined ? 900 : settle);

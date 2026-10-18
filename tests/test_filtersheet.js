@@ -361,7 +361,7 @@ const onSheet = (p, down) => p.evaluate(d=>{
   // ---- 6. A piece page on Faves ----
   {
     const p=await open(b);
-    await p.click('#nav-saved-btn'); await p.waitForTimeout(1000);
+    await require('./nav').toFaves(p, 0); await p.waitForTimeout(1000);
     await raise(p);
     check('Faves has the same sheet, with Clear all and a See button',
       (await text(p, '#filter-sheet-title')) === 'Filters' &&

@@ -66,55 +66,36 @@ const cards = p => p.evaluate(()=>
     check('three destinations, not four',
       JSON.stringify(await dests(p)) === JSON.stringify(['Wardrobe','Outfits','Capsules']),
       (await dests(p)).join(' | '));
-    // Both ways in are on the bar from the start: what you kept is one tap
-    // from the wardrobe, not a control you have to arrive somewhere to
-    // find.
+    // Off Outfits the pill is just the destination's name; the heart
+    // only appears once you are there.
     const cold = await segs(p);
-    check('the switch is there before you go anywhere', cold.length === 2,
-      JSON.stringify(cold));
-    check('with neither half lit, because you are not there yet',
-      !cold[0].on && !cold[1].on);
-    check('and the heart goes straight to what you kept', await (async()=>{
-      await p.click('#nav-saved-btn');
-      await p.waitForFunction(()=>appMode === 'saved');
-      await p.waitForTimeout(1000);
-      return (await segs(p))[1].on;
-    })());
+    check('the pill is a lone Outfits label before you go anywhere',
+      cold.length === 1 && cold[0].id === 'nav-outfits-btn', JSON.stringify(cold));
+    check('and there is no heart on the bar yet', !(await p.$('#nav-saved-btn')));
 
     await p.click('#nav-outfits-btn'); await p.waitForTimeout(1400);
     const s = await segs(p);
-    check('and the word goes to everything', s.length === 2, JSON.stringify(s));
-    check('which starts on everything', s[0].id === 'nav-outfits-btn' && s[0].on && !s[1].on);
-    check('and the name of the destination is that half',
-      (await p.textContent('#nav-outfits-btn')).trim() === 'Outfits',
+    check('on Outfits it becomes All plus the heart', s.length === 2, JSON.stringify(s));
+    check('which starts on All', s[0].id === 'nav-outfits-btn' && s[0].on && !s[1].on);
+    check('and the first half now says All',
+      (await p.textContent('#nav-outfits-btn')).trim() === 'All',
       (await p.textContent('#nav-outfits-btn')).trim());
     check('and says so to a screen reader',
       s[0].pressed === 'true' && s[1].pressed === 'false');
-    // Neither half may be smaller than a thumb.
     check('both halves are a full target',
       s.every(x => x.w >= 44 && x.h >= 44), JSON.stringify(s.map(x=>`${x.w}x${x.h}`)));
-    check('the destination reads as one control, lit',
+    check('the pill reads as one control, lit',
       await p.evaluate(()=>{
         const dest = document.querySelector('#bottom-bar .bottom-btn.nav-switch');
         return Boolean(dest) && dest.classList.contains('active') &&
                dest.querySelectorAll('.nav-seg').length === 2;
       }));
-    // The pair the cards use, drawn rather than typed: one shape, hollow
-    // until it is the half you are on. Read from the path's fill, since a
-    // drawn heart has no text to compare.
-    const heartFill = () => p.evaluate(()=>
-      document.querySelector('#nav-saved-btn .heart-glyph').getAttribute('fill'));
-    check('the kept half is hollow while you are on everything',
-      (await heartFill()) === 'none', await heartFill());
+    // The heart is the cards' love heart: level 2 when on, level 0 when off.
+    const heartLevel = () => p.evaluate(()=>
+      document.querySelector('#nav-saved-btn .fave-chip-heart').getAttribute('data-level'));
+    check('the heart is hollow while you are on All', (await heartLevel()) === '0', await heartLevel());
     await p.click('#nav-saved-btn'); await p.waitForTimeout(1100);
-    check('and fills when it is',
-      (await heartFill()) === 'currentColor', await heartFill());
-    check('the same drawing either way, so it cannot change width',
-      await p.evaluate(()=>{
-        const svg = document.querySelector('#nav-saved-btn .heart-glyph');
-        const box = svg.getBoundingClientRect();
-        return Math.round(box.width) === 17 && Math.round(box.height) === 17;
-      }));
+    check('and the love heart when it is', (await heartLevel()) === '2', await heartLevel());
     await p.click('#nav-outfits-btn'); await p.waitForTimeout(1300);
 
     // It has to fit next to two other labels on a small phone, and it is
@@ -126,8 +107,7 @@ const cards = p => p.evaluate(()=>
     const onAll = await width();
     check('and the bar still fits the screen', onAll <= room, `${onAll} of ${room}`);
     await p.click('#nav-inventory-btn'); await p.waitForTimeout(700);
-    check('and is the same bar on every page', (await width()) === onAll,
-      `${await width()} vs ${onAll}`);
+    check('and still fits off Outfits', (await width()) <= room, `${await width()} of ${room}`);
     await p.click('#nav-outfits-btn'); await p.waitForTimeout(1300);
     check('with nothing pushed off the side',
       !(await p.evaluate(()=>document.documentElement.scrollWidth > window.innerWidth)));

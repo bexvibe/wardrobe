@@ -261,15 +261,8 @@ async function holdFirstTile(p){
     // The bar no longer spells it out — the switch is a heart, which is
     // the same mark the cards use — so the page is where the word lives.
     await toFaves(p, 600);
-    check('the switch is the heart the cards use',
-      await p.evaluate(()=>{
-        const navPath = document.querySelector('#nav-saved-btn .heart-glyph path');
-        // What a card would draw, from the one function that draws it.
-        const drawn = document.createElement('div');
-        drawn.innerHTML = heartSvg(true);
-        const cardPath = drawn.querySelector('path');
-        return Boolean(navPath) && navPath.getAttribute('d') === cardPath.getAttribute('d');
-      }));
+    check('the switch is the love heart the cards use',
+      await p.evaluate(()=>Boolean(document.querySelector('#nav-saved-btn .fave-chip-heart .fh-body'))));
     check('while the page keeps the destination\'s name',
       (await p.textContent('#saved-view h1')).trim() === 'Outfits',
       (await p.textContent('#saved-view h1')).trim());

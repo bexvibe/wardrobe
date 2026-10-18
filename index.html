@@ -722,6 +722,7 @@
      size, so it is the same shape at both sizes it is used at. */
   .heart-glyph{display:block;width:22px;height:22px;}
   .nav-heart .heart-glyph{width:17px;height:17px;}
+  .nav-heart .fave-chip-heart{width:20px;height:20px;}
 
   /* The fave heart: one shape that grows richer over three levels. The
      button is the 44px target; the glyph inside it is smaller. */
@@ -1812,7 +1813,7 @@
     </svg>
     Shuffle
   </button>
-  <button class="filters-fab" id="filters-fab" type="button" aria-haspopup="dialog"
+  <button class="filters-fab" id="filters-fab" type="button" style="display:none" aria-haspopup="dialog"
           onclick="toggleFilterSheet()"></button>
 </div>
 
@@ -2293,16 +2294,21 @@ function renderBottomBar(){
     `<button class="nav-seg ${on ? 'on' : ''}" id="${id}" type="button"
              aria-pressed="${on}" ${extra || ''}>${label}</button>`;
 
+  // The grey pill reads "Outfits" from elsewhere; once you are on Outfits
+  // it becomes All plus the love heart for what you kept.
+  const outfitsPill = onOutfits
+    ? `${seg('nav-outfits-btn', !kept, 'All', `onclick="setMode('outfits')"`)}
+       ${seg('nav-saved-btn', kept,
+             `<span class="nav-heart">${faveChipHeart(kept ? 2 : 0)}</span>`,
+             `onclick="setMode('saved')" aria-label="Faves"`)}`
+    : `<button class="nav-seg" id="nav-outfits-btn" type="button"
+               onclick="setMode('outfits')">Outfits</button>`;
+
   bar.innerHTML = `
     <button class="bottom-btn ${appMode === 'inventory' || appMode === 'archive' ? 'active' : ''}"
             id="nav-inventory-btn" type="button" onclick="setMode('inventory')">Wardrobe</button>
     <span class="bottom-btn nav-switch ${onOutfits ? 'active' : ''}"
-          role="group" aria-label="Which outfits">
-      ${seg('nav-outfits-btn', onOutfits && !kept, 'Outfits', `onclick="setMode('outfits')"`)}
-      ${seg('nav-saved-btn', kept,
-            `<span class="nav-heart">${heartSvg(kept)}</span>`,
-            `onclick="setMode('saved')" aria-label="Faves"`)}
-    </span>
+          role="group" aria-label="Outfits">${outfitsPill}</span>
     ${capsulesAvailable
       ? `<button class="bottom-btn ${appMode === 'capsules' ? 'active' : ''}"
                  id="nav-capsules-btn" type="button" onclick="setMode('capsules')">Capsules</button>`
@@ -5777,7 +5783,6 @@ function showGate(state, message){
 function hideGate(){
   document.getElementById('gate').style.display = 'none';
   document.getElementById('app-root').style.display = 'block';
-  document.getElementById('bottom-bar').classList.add('unlocked');
 }
 
 async function signIn(){
@@ -5833,6 +5838,9 @@ async function startApp(){
   // A fave filter in the address means you were on Outfits or Faves.
   const fromUrl = readFaveUrl();
   setMode(fromUrl || appMode);
+  // The bar and the Filters pill stay hidden until everything is loaded
+  // and drawn, so neither shows up half-formed.
+  document.getElementById('bottom-bar').classList.add('unlocked');
 }
 
 async function boot(){

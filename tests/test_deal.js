@@ -47,7 +47,7 @@ async function toStream(p){
 const stream = p => p.evaluate(()=>outfitDisplayed.slice(0, 8).map(c=>comboKey(c)));
 const total  = p => p.evaluate(()=>totalComboCount());
 const kept = async p => {
-  await p.click('#nav-saved-btn'); await p.waitForTimeout(1200);
+  await require('./nav').toFaves(p, 0); await p.waitForTimeout(1200);
   await p.evaluate(()=>closeFilterSheet()); await p.waitForTimeout(400);
   return p.evaluate(()=>Array.from(document.querySelectorAll('#saved-gallery .outfit-card'))
     .map(c=>c.querySelector('img') ? c.querySelector('img').getAttribute('alt') : '?'));
