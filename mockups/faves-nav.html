@@ -1,0 +1,246 @@
+<title>Faves Navigation Mockup</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;500&family=IBM+Plex+Mono:wght@400;500&family=Work+Sans:wght@400;500;600&display=swap">
+<style>
+  /* Layout: a compare toggle above one phone, with a note column beside it on wide screens and below it on a phone.
+     The phone reuses the wardrobe app's own neutral scale, fonts and bottom bar so the mockup reads as the real thing. */
+  :root{
+    --bg:#ECEBEA; --fg:#161616; --muted:#5E5E5E; --card:#FFFFFF; --edge:#D4D3D1; --flag:#9A3B1F; --flag-soft:#F3E3DC; --good:#2F6B4A; --good-soft:#DCEBE2;
+    /* the phone, always the app's own light palette */
+    --page:#F2F2F2; --surface:#FFFFFF; --line:#DCDCDC; --accent-soft:#E7E7E7; --ink-soft:#6E6E6E; --ink:#121212; --brand:#756694;
+    --serif:'Fraunces',Georgia,serif; --sans:'Work Sans',system-ui,sans-serif; --mono:'IBM Plex Mono',ui-monospace,monospace;
+  }
+  @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+    --bg:#1B1B1A; --fg:#EDEBE8; --muted:#A5A29D; --card:#262625; --edge:#3A3938; --flag:#E39A7E; --flag-soft:#3A2820; --good:#8FCBA8; --good-soft:#1F3328; color-scheme:dark; } }
+  :root[data-theme="dark"]{
+    --bg:#1B1B1A; --fg:#EDEBE8; --muted:#A5A29D; --card:#262625; --edge:#3A3938; --flag:#E39A7E; --flag-soft:#3A2820; --good:#8FCBA8; --good-soft:#1F3328; color-scheme:dark; }
+  *{box-sizing:border-box;margin:0}
+  body{background:var(--bg);color:var(--fg);font-family:var(--sans);line-height:1.5;
+    padding-block:24px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));}
+  .wrap{max-width:960px;margin:0 auto;display:grid;gap:24px;grid-template-columns:minmax(0,1fr);}
+  @media (min-width:860px){ .wrap{grid-template-columns:minmax(0,380px) minmax(0,1fr);gap:40px;align-items:start;} }
+  h1{font-family:var(--serif);font-weight:500;font-size:26px;line-height:1.2;text-wrap:balance}
+  .lede{color:var(--muted);font-size:14px;margin-top:6px;max-width:60ch}
+  .head{grid-column:1/-1}
+  /* compare toggle */
+  .seg{display:inline-flex;margin-top:16px;padding:3px;border-radius:999px;background:var(--card);border:1px solid var(--edge)}
+  .seg button{font:600 13px var(--sans);padding:8px 16px;border:0;border-radius:999px;background:none;color:var(--muted);cursor:pointer;min-height:40px}
+  .seg button[aria-pressed="true"]{background:var(--fg);color:var(--bg)}
+  button:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+
+  /* phone */
+  .phone{width:100%;max-width:380px;height:720px;margin:0 auto;position:relative;overflow:hidden;background:var(--page);color:var(--ink);
+    border-radius:34px;border:8px solid #1c1c1c;box-shadow:0 18px 40px rgba(0,0,0,.22);font-family:var(--sans);color-scheme:light}
+  .scroll{position:absolute;inset:0;overflow-y:auto;padding:28px 14px 300px}
+  .title{font-family:var(--serif);font-weight:500;font-size:28px;line-height:1.1}
+  .sub{font-family:var(--mono);font-size:11px;color:var(--ink-soft);margin:4px 0 14px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .card{background:var(--surface);border-radius:14px;padding:10px;position:relative;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+  .flat{display:grid;gap:5px;justify-items:center;padding:6px 0 4px}
+  .g{border-radius:6px}
+  .g.top{width:62px;height:40px}.g.bot{width:44px;height:52px}.g.sho{width:46px;height:14px;border-radius:7px}
+  .heart{position:absolute;top:2px;right:2px;width:34px;height:34px;display:grid;place-items:center;border:0;background:none;padding:0}
+  .heart svg{width:18px;height:18px}
+  .hb{fill:none;stroke:#BDBDBD;stroke-width:1.8;stroke-linejoin:round}
+  .l1 .hb{fill:#F6C4CF;stroke:#F6C4CF}.l2 .hb{fill:#E4607F;stroke:#E4607F}.l3 .hb{fill:#B3124A;stroke:#B3124A}
+  .tag{font-family:var(--mono);font-size:10px;color:var(--ink-soft);text-align:center;margin-top:2px}
+  .empty{grid-column:1/-1;text-align:center;padding:40px 12px;font-family:var(--serif);font-size:17px}
+  .empty small{display:block;font:400 12px var(--sans);color:var(--ink-soft);margin-top:4px}
+
+  /* docked filter panel */
+  .panel{position:absolute;left:12px;right:12px;bottom:158px;background:var(--surface);border-radius:20px;padding:12px 14px 10px;
+    box-shadow:0 6px 24px rgba(0,0,0,.16);max-height:300px;overflow-y:auto;transition:transform .26s cubic-bezier(.32,.72,0,1),opacity .2s}
+  .panel[hidden]{display:block!important;transform:translateY(24px);opacity:0;pointer-events:none}
+  .sec{padding:6px 0}
+  .sec+.sec{border-top:0;margin-top:2px}
+  .lab{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);display:block;margin-bottom:6px}
+  .chips{display:flex;flex-wrap:wrap;gap:6px}
+  .chip{display:inline-flex;align-items:center;gap:5px;min-height:34px;padding:0 12px;border-radius:999px;border:1px solid var(--line);background:var(--surface);font:500 12.5px var(--sans);color:var(--ink);cursor:pointer}
+  .chip.on{background:var(--accent-soft);border-color:#BDBDBD}
+  .chip svg{width:13px;height:13px}
+  .flagged{outline:2px dashed var(--flag);outline-offset:4px;border-radius:12px;position:relative}
+  .flagtag{position:absolute;top:-10px;right:6px;background:var(--flag);color:#fff;font:600 10px var(--mono);padding:1px 7px;border-radius:99px;letter-spacing:.04em}
+
+  /* proposed: level strip pinned in the thumb zone */
+  .strip{position:absolute;left:12px;right:12px;bottom:92px;display:flex;gap:2px;padding:4px;border-radius:999px;background:var(--surface);box-shadow:0 4px 16px rgba(0,0,0,.14)}
+  .strip button{flex:1;min-height:36px;border:0;border-radius:999px;background:none;font:600 12px var(--sans);color:var(--ink-soft);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px}
+  .strip button.on{background:var(--accent-soft);color:var(--ink)}
+  .strip svg{width:12px;height:12px}
+  .strip.flagged{outline-color:var(--good)}
+  .strip .flagtag{background:var(--good);top:-14px}
+
+  /* floating pill + shuffle */
+  .fabs{position:absolute;left:0;right:0;bottom:78px;display:flex;justify-content:space-between;align-items:center;padding:0 16px;pointer-events:none}
+  .fab{pointer-events:auto;min-height:40px;padding:0 16px;border-radius:999px;border:0;font:600 13px var(--sans);cursor:pointer}
+  .fab.f{background:var(--ink);color:#fff}
+  .fab.s{background:var(--brand);color:#fff}
+  .nofab{display:none}
+
+  /* bottom bar, same construction as the app */
+  .bar{position:absolute;left:12px;right:12px;bottom:12px;height:62px;border-radius:999px;background:var(--surface);box-shadow:0 4px 18px rgba(0,0,0,.18);display:flex;align-items:center;justify-content:space-around;padding:0 6px}
+  .bb{min-height:52px;padding:0 13px;border-radius:999px;border:0;background:none;font:600 13px var(--sans);color:var(--ink-soft);cursor:pointer}
+  .bb.active{background:var(--accent-soft);color:var(--ink)}
+  .sw{display:flex;gap:2px;padding:4px;border-radius:999px}
+  .sw.active{background:var(--accent-soft)}
+  .seg2{min-height:44px;min-width:44px;padding:0 13px;border:0;border-radius:999px;background:none;font:600 13px var(--sans);color:var(--ink-soft);cursor:pointer;display:flex;align-items:center;justify-content:center}
+  .seg2.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.14)}
+  .seg2 svg{width:17px;height:17px}
+
+  /* notes column */
+  .notes{display:grid;gap:14px;min-width:0}
+  .note{background:var(--card);border:1px solid var(--edge);border-radius:12px;padding:14px 16px}
+  .note h2{font-family:var(--serif);font-weight:500;font-size:17px;margin-bottom:4px}
+  .note p,.note li{font-size:14px;color:var(--muted)}
+  .note ul{padding-left:18px;display:grid;gap:4px}
+  .pill{display:inline-block;font:600 11px var(--mono);letter-spacing:.04em;padding:2px 8px;border-radius:99px;margin-right:6px;vertical-align:1px}
+  .pill.bad{background:var(--flag-soft);color:var(--flag)}
+  .pill.ok{background:var(--good-soft);color:var(--good)}
+  .hint{font-size:12px;color:var(--muted);text-align:center;margin-top:10px}
+</style>
+
+<div class="wrap">
+  <div class="head">
+    <h1>Faves in the bottom bar</h1>
+    <p class="lede">A mockup of your wardrobe app's Outfits page, drawn from the real code, comparing how it works today with one small change. Tap the buttons in the bar and the chips in the panel. They work.</p>
+    <div class="seg" role="group" aria-label="Version">
+      <button id="v-current" type="button" aria-pressed="true">Today</button>
+      <button id="v-proposed" type="button" aria-pressed="false">Proposed</button>
+    </div>
+  </div>
+
+  <div>
+    <div class="phone" id="phone">
+      <div class="scroll" id="scroll">
+        <div class="title" id="title">Outfits</div>
+        <div class="sub" id="sub"></div>
+        <div class="grid" id="grid"></div>
+      </div>
+
+      <div class="panel" id="panel"></div>
+      <div class="strip flagged" id="strip" hidden></div>
+
+      <div class="fabs">
+        <button class="fab f" id="fab-filters" type="button"></button>
+        <button class="fab s" id="fab-shuffle" type="button">Shuffle</button>
+      </div>
+
+      <div class="bar" id="bar"></div>
+    </div>
+    <p class="hint">Hearts show an outfit's level: Like, Love, All-time.</p>
+  </div>
+
+  <div class="notes" id="notes"></div>
+</div>
+
+<script>
+  var HEART = '<svg viewBox="0 0 24 24" aria-hidden="true"><path class="hb" d="M12 20.5s-7.5-4.6-9.2-9.4C1.6 7.6 3.7 4.5 7 4.5c2 0 3.7 1.1 5 3 1.3-1.9 3-3 5-3 3.3 0 5.4 3.1 4.2 6.6-1.7 4.8-9.2 9.4-9.2 9.4z"/></svg>';
+  function heart(level){ return '<span class="l'+level+'" style="display:contents">'+HEART+'</span>'; }
+  function heartChip(level){ return '<span class="l'+level+'" style="display:contents">'+HEART+'</span>'; }
+
+  var OUTFITS = [
+    {n:'Linen shirt, navy trousers',  c:['#C9D3E0','#2E3A52','#8B6B4A'], lvl:3},
+    {n:'Black tee, ecru jeans',       c:['#1F1F1F','#D8CDB8','#EDEDED'], lvl:0},
+    {n:'Olive knit, grey trousers',   c:['#6E7550','#8E8E8E','#2B2B2B'], lvl:2},
+    {n:'Stripe tee, indigo denim',    c:['#E8E4DA','#3B4C70','#B9A98B'], lvl:1},
+    {n:'Rust jumper, black jeans',    c:['#A5583A','#232323','#7A5C3E'], lvl:0},
+    {n:'White shirt, sand chinos',    c:['#F1F1EE','#CDBB98','#4A3B2D'], lvl:2},
+    {n:'Camel coat, charcoal knit',   c:['#B48A5A','#44474D','#1E1E1E'], lvl:3},
+    {n:'Sage tee, stone shorts',      c:['#A3B09A','#BFB7A6','#E9E7E2'], lvl:0}
+  ];
+  var LEVELS = [{v:1,label:'Like'},{v:2,label:'Love'},{v:3,label:'All-time'}];
+
+  var state = { variant:'current', mode:'outfits', panel:true, levels:{outfits:[],saved:[]} };
+
+  function $(id){ return document.getElementById(id); }
+
+  function card(o){
+    return '<div class="card"><div class="heart"><span class="l'+o.lvl+'" style="display:contents">'+HEART+'</span></div>'
+      + '<div class="flat"><div class="g top" style="background:'+o.c[0]+'"></div><div class="g bot" style="background:'+o.c[1]+'"></div><div class="g sho" style="background:'+o.c[2]+'"></div></div>'
+      + '<div class="tag">'+o.n+'</div></div>';
+  }
+
+  function levelChips(mode, withAll){
+    var active = state.levels[mode];
+    return LEVELS.map(function(l){
+      return '<button type="button" class="chip '+(active.indexOf(l.v)>-1?'on':'')+'" data-level="'+l.v+'" aria-pressed="'+(active.indexOf(l.v)>-1)+'">'+heartChip(l.v)+l.label+'</button>';
+    }).join('');
+  }
+
+  function renderPhone(){
+    var saved = state.mode === 'saved', proposed = state.variant === 'proposed';
+    var active = state.levels[state.mode];
+
+    // cards
+    var list = saved ? OUTFITS.filter(function(o){ return o.lvl>0 && (!active.length || active.indexOf(o.lvl)>-1); })
+                     : OUTFITS.filter(function(o){ return !active.length || active.indexOf(o.lvl)>-1; });
+    $('title').textContent = saved ? 'Faves' : 'Outfits';
+    $('sub').textContent = saved ? list.length+' kept' : (active.length ? 'Searching the generator for matches…' : 'Endless. Shuffle for a new set.');
+    $('grid').innerHTML = list.length ? list.map(card).join('')
+      : '<div class="empty">No matches yet<small>Nothing in this set has that level. Shuffle or clear the filter.</small></div>';
+
+    // panel contents
+    var faveSection = '<div class="sec '+(!proposed && !saved ? 'flagged' : '')+'"><span class="lab">Faves</span><div class="chips" id="lvl-chips">'+levelChips(state.mode)+'</div>'
+      + (!proposed && !saved ? '<span class="flagtag">DUPLICATES ♥</span>' : '') + '</div>';
+    var showFaveInPanel = proposed ? false : true;
+    $('panel').innerHTML =
+      (showFaveInPanel ? faveSection : '')
+      + '<div class="sec"><span class="lab">Tags</span><div class="chips"><span class="chip">Work</span><span class="chip">Weekend</span><span class="chip">Dinner</span><span class="chip">Travel</span></div></div>'
+      + '<div class="sec"><span class="lab">Pieces</span><div class="chips"><span class="chip">Tops</span><span class="chip">Bottoms</span><span class="chip">Shoes</span><span class="chip">Outerwear</span></div></div>';
+    $('panel').hidden = !state.panel;
+
+    // proposed strip: only on Faves, always in thumb reach
+    var strip = $('strip');
+    strip.hidden = !(proposed && saved);
+    strip.innerHTML = '<span class="flagtag">MOVED HERE</span>'
+      + '<button type="button" data-level="0" class="'+(active.length?'':'on')+'">All</button>'
+      + LEVELS.map(function(l){ return '<button type="button" data-level="'+l.v+'" class="'+(active.indexOf(l.v)>-1?'on':'')+'">'+heartChip(l.v)+l.label+'</button>'; }).join('');
+
+    // fab row: lift the panel clear of the strip in the proposed Faves view
+    $('panel').style.bottom = (proposed && saved) ? '204px' : '158px';
+    $('fab-filters').textContent = state.panel ? 'Hide filters' : 'Show filters';
+    $('fab-shuffle').style.visibility = saved ? 'hidden' : 'visible';
+
+    // bottom bar
+    $('bar').innerHTML =
+      '<button class="bb" type="button">Wardrobe</button>'
+      + '<span class="sw active"><button type="button" class="seg2 '+(saved?'':'on')+'" data-mode="outfits">Outfits</button>'
+      + '<button type="button" class="seg2 '+(saved?'on':'')+'" data-mode="saved" aria-label="Faves"><span class="l'+(saved?2:0)+'" style="display:contents">'+HEART+'</span></button></span>'
+      + '<button class="bb" type="button">Capsules</button>';
+
+    renderNotes();
+  }
+
+  function renderNotes(){
+    var proposed = state.variant === 'proposed';
+    $('notes').innerHTML = proposed
+      ? '<div class="note"><h2><span class="pill ok">PROPOSED</span>One way to see faves</h2>'
+        + '<p>The ♥ in the bar is the only door to what you kept, so the Outfits panel no longer has a Faves row.</p></div>'
+        + '<div class="note"><h2>Levels move to the thumb</h2>'
+        + '<p>On the Faves page, <b>All / Like / Love / All-time</b> sit as a slim strip above the bar instead of a row inside the panel. You can switch level without opening the panel, and the panel is left for tags and pieces.</p></div>'
+        + '<div class="note"><h2>What stays the same</h2><ul><li>One tap to Faves from anywhere, bottom of the screen.</li><li>The same page, cards and filters as Outfits.</li><li>Tags and pieces still carry over between the two halves.</li></ul></div>'
+      : '<div class="note"><h2><span class="pill bad">TODAY</span>Two ways to the same list</h2>'
+        + '<p>Your bar already has the shortcut: <b>Outfits | ♥</b>, one tap, thumb height. The overlap is the <b>Faves row inside the filter panel</b> on the Outfits page. Try tapping Love there, then tapping the ♥ in the bar.</p></div>'
+        + '<div class="note"><h2>Why it feels awkward</h2>'
+        + '<p>On Outfits the chips filter an endless generator, so a rare level can search for a long time. On the ♥ page the same chips filter rows you actually kept. Same controls, two different behaviours.</p></div>'
+        + '<div class="note"><h2>Switch to “Proposed” above</h2><p>It removes the duplicate and keeps your one-tap access.</p></div>';
+  }
+
+  document.addEventListener('click', function(e){
+    var t = e.target.closest('button,span.chip'); if(!t) return;
+    if(t.id === 'v-current' || t.id === 'v-proposed'){
+      state.variant = t.id === 'v-proposed' ? 'proposed' : 'current';
+      $('v-current').setAttribute('aria-pressed', state.variant==='current');
+      $('v-proposed').setAttribute('aria-pressed', state.variant==='proposed');
+      state.levels.outfits = []; renderPhone(); return;
+    }
+    if(t.dataset.mode){ state.mode = t.dataset.mode; $('scroll').scrollTop = 0; renderPhone(); return; }
+    if(t.id === 'fab-filters'){ state.panel = !state.panel; renderPhone(); return; }
+    if(t.dataset.level !== undefined){
+      var v = Number(t.dataset.level), a = state.levels[state.mode];
+      if(v === 0) a.length = 0;
+      else { var i = a.indexOf(v); if(i>-1) a.splice(i,1); else a.push(v); }
+      renderPhone(); return;
+    }
+  });
+  renderPhone();
+</script>
