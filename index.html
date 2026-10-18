@@ -1184,7 +1184,8 @@
   /* The filters open as a bottom sheet, like every other sheet in the app:
      a grip, a dimmed page, rounded top corners, and the way out at the foot
      where a thumb already is. It is as tall as its filters need and grows
-     up to the top of the screen when they need more; it covers the floating
+     up to the top of the screen when they need more, so nothing scrolls
+     while there is room on the screen; it covers the floating
      pair and the nav, which ease down behind it.
 
      Choosing pieces is a second page inside this same sheet rather than a
@@ -1215,7 +1216,10 @@
     position:absolute;
     left:0;right:0;bottom:0;
     max-width:640px;margin:0 auto;
-    max-height:92%;
+    /* Grows with its content and only scrolls once it has used the whole
+       screen, less a sliver of page at the top (and the phone's status bar,
+       if there is one) so there is still something to tap or pull on. */
+    max-height:calc(100% - max(12px, env(safe-area-inset-top, 0px)));
     background:var(--page);
     border-radius:18px 18px 0 0;
     display:flex;flex-direction:column;
