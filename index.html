@@ -1242,7 +1242,9 @@
      there by growing or shrinking rather than jumping. */
   .filter-sheet.morphing{
     transition:transform var(--sheet-ease-ms) var(--sheet-ease),
-               height 380ms var(--sheet-ease);
+               height 420ms var(--sheet-ease);
+    /* No scrollbar flicker while the height is in between. */
+    overflow-y:hidden;
   }
   /* Following a thumb down. No easing while it is being dragged — it is
      under your finger, not travelling on its own. */
@@ -1262,11 +1264,6 @@
     min-height:44px;
   }
   .filter-sheet-heading{display:flex;flex-direction:column;min-width:0;}
-  .filter-sheet-crumb{
-    font-family:'IBM Plex Mono',monospace;font-size:10px;
-    letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-soft);
-    margin-bottom:1px;
-  }
   .filter-sheet-title{
     font-family:'Fraunces', serif;font-size:22px;font-weight:500;line-height:1.2;
   }
@@ -1773,7 +1770,6 @@
       <div class="sheet-grip"></div>
       <div class="filter-sheet-head">
         <div class="filter-sheet-heading">
-          <span class="filter-sheet-crumb" id="filter-sheet-crumb" style="display:none;"></span>
           <span class="filter-sheet-title" id="filter-sheet-title">Filters</span>
         </div>
         <button class="filter-sheet-clear" id="filter-sheet-clear" type="button" onclick="clearFromSheetHead()">Clear all</button>
@@ -2698,6 +2694,8 @@ function closeFilterSheet(){
   renderFiltersFab();
   // After the pill, so there is somewhere for focus to land.
   syncSheetReach();
+  // Once the sheet has finished leaving.
+  if(filterResultsStale) setTimeout(() => { if(!filterSheetOpen()) applyFilterResults(); }, 300);
 }
 
 // One button, both directions.
@@ -2717,10 +2715,10 @@ function morphFilterSheet(change, dir){
   if(still){ change(); return; }
   clearTimeout(filterMorphTimer);
   sheet.classList.remove('morphing');
-  const h0 = sheet.offsetHeight;
+  const h0 = sheet.getBoundingClientRect().height;
   sheet.style.height = 'auto';
   change();
-  const h1 = sheet.offsetHeight;
+  const h1 = sheet.getBoundingClientRect().height;
   body.classList.remove('filter-slide-fwd', 'filter-slide-back');
   void body.offsetWidth;
   body.classList.add(dir === 'back' ? 'filter-slide-back' : 'filter-slide-fwd');
@@ -2728,11 +2726,11 @@ function morphFilterSheet(change, dir){
   sheet.style.height = h0 + 'px';
   void sheet.offsetHeight;
   sheet.classList.add('morphing');
-  sheet.style.height = h1 + 'px';
+  requestAnimationFrame(() => { sheet.style.height = h1 + 'px'; });
   filterMorphTimer = setTimeout(() => {
     sheet.classList.remove('morphing');
     sheet.style.height = '';
-  }, 400);
+  }, 460);
 }
 
 // Choosing pieces from one category: a second page inside this sheet, not a
@@ -2764,18 +2762,14 @@ function clearFromSheetHead(){
 
 function renderFilterHead(){
   const title = document.getElementById('filter-sheet-title');
-  const crumb = document.getElementById('filter-sheet-crumb');
   const clear = document.getElementById('filter-sheet-clear');
   if(!title || !clear) return;
   if(filterPage){
-    crumb.textContent = 'Filters';
-    crumb.style.display = '';
     title.textContent = filterPage;
     clear.textContent = 'Clear';
     clear.setAttribute('aria-label', 'Clear ' + filterPage.toLowerCase());
     clear.style.visibility = activeSlotFilters()[filterPage].type === 'any' ? 'hidden' : 'visible';
   } else {
-    crumb.style.display = 'none';
     title.textContent = 'Filters';
     clear.textContent = 'Clear all';
     clear.removeAttribute('aria-label');
@@ -3435,7 +3429,26 @@ function renderPickerGallery(slotKey){
       ${noneSelected ? `<span class="picker-check">✓</span>` : ''}
     </div>`;
 
-  document.getElementById('picker-gallery').innerHTML = noneTile + items.map(i => {
+  const gallery = document.getElementById('picker-gallery');
+  // Same page, same pieces: only the ticks change. Rebuilding the tiles
+  // reloaded every photo and the whole grid flickered on each tap.
+  const ids = items.map(i => i.id).join('|');
+  if(gallery.dataset.slot === slotKey && gallery.dataset.ids === ids && gallery.children.length === items.length + 1){
+    const setTile = (el, selected) => {
+      el.classList.toggle('picker-selected', selected);
+      const tick = el.querySelector('.picker-check');
+      if(selected && !tick) el.insertAdjacentHTML('beforeend', '<span class="picker-check">✓</span>');
+      else if(!selected && tick) tick.remove();
+    };
+    const none = gallery.children[0];
+    none.setAttribute('aria-pressed', noneSelected);
+    setTile(none, noneSelected);
+    items.forEach((i, n) => setTile(gallery.children[n + 1], f.type === 'items' && f.ids.includes(i.id)));
+    return;
+  }
+  gallery.dataset.slot = slotKey;
+  gallery.dataset.ids = ids;
+  gallery.innerHTML = noneTile + items.map(i => {
     const selected = f.type === 'items' && f.ids.includes(i.id);
     return `<div class="tile picker-tile ${selected ? 'picker-selected' : ''}" onclick="toggleSlotItem('${slotKey}','${i.id}')">
       ${i.photo ? `<img src="${esc(i.photo)}" alt="" referrerpolicy="no-referrer" loading="lazy" decoding="async">` : `<span class="no-photo">No photo</span>`}
@@ -3452,6 +3465,16 @@ function slotFilterChanged(slotKey){
   renderFilterHead();
   renderFilterFooter();
   renderFiltersFab();
+  // The page behind is dimmed and covered, and redrawing it reloads every
+  // photo on it — so it catches up once the sheet has gone, not on each tap.
+  filterResultsStale = true;
+  if(!filterSheetOpen()) applyFilterResults();
+}
+
+let filterResultsStale = false;
+function applyFilterResults(){
+  if(!filterResultsStale) return;
+  filterResultsStale = false;
   if(appMode === 'saved'){
     expandedSavedKey = null;
     renderSavedOutfits();

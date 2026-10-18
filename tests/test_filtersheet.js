@@ -277,9 +277,8 @@ const onSheet = (p, down) => p.evaluate(d=>{
     check('with a gallery of tiles: one for none, then every piece in the category',
       await p.evaluate(k=>document.querySelectorAll('#picker-gallery .picker-tile').length === 1 + itemsInTab(k).length &&
         document.querySelectorAll('#picker-gallery .picker-none').length === 1, key));
-    check('titled for the category, with Filters as the crumb above it',
-      (await text(p, '#filter-sheet-title')) === key && (await text(p, '#filter-sheet-crumb')) === 'Filters',
-      `${await text(p, '#filter-sheet-title')} / ${await text(p, '#filter-sheet-crumb')}`);
+    check('titled for the category',
+      (await text(p, '#filter-sheet-title')) === key, await text(p, '#filter-sheet-title'));
     check('the tags and chips of the main page are gone from it',
       await p.evaluate(()=>!document.getElementById('sheet-tag-chips') && !document.getElementById('sheet-filter-grid')));
     check('Clear says just Clear, and is out of sight with nothing chosen',

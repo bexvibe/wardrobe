@@ -41,9 +41,7 @@ const head=p=>p.evaluate(()=>{
   const c=document.getElementById('filter-sheet-clear');
   return {label:c.textContent.trim(), visible:getComputedStyle(c).visibility!=='hidden',
           disabled:c.disabled,
-          title:document.getElementById('filter-sheet-title').textContent.trim(),
-          crumb:getComputedStyle(document.getElementById('filter-sheet-crumb')).display!=='none'
-                ? document.getElementById('filter-sheet-crumb').textContent.trim() : null};
+          title:document.getElementById('filter-sheet-title').textContent.trim()};
 });
 const foot=p=>p.evaluate(()=>({
   see:(document.getElementById('filter-sheet-see')||{}).textContent,
@@ -64,12 +62,12 @@ const foot=p=>p.evaluate(()=>({
   await openFilters(p);
   let h=await head(p);
   check('the main page is titled Filters with Clear all, hidden while nothing is narrowed',
-    h.title==='Filters' && h.label==='Clear all' && !h.visible && h.crumb===null, JSON.stringify(h));
+    h.title==='Filters' && h.label==='Clear all' && !h.visible, JSON.stringify(h));
 
   await p.click('#filter-sheet .filter-chip:has-text("Jumper")'); await p.waitForTimeout(500);
   h=await head(p);
-  check('a category page is titled for the category, with a Filters crumb and a plain Clear',
-    /^Jumpers?$/.test(h.title) && h.crumb==='Filters' && h.label==='Clear', JSON.stringify(h));
+  check('a category page is titled for the category, with a plain Clear',
+    /^Jumpers?$/.test(h.title) && h.label==='Clear', JSON.stringify(h));
   check('Clear is hidden, not disabled, while nothing is narrowed',
     !h.visible && !h.disabled, JSON.stringify(h));
   check('and None is the first tile',
@@ -124,7 +122,7 @@ const foot=p=>p.evaluate(()=>({
   await leaveSheet(p, {settle:400});
   await openFilters(p); await p.click('#filter-sheet .filter-chip:has-text("Top")'); await p.waitForTimeout(500);
   h=await head(p);
-  check('a base category has the same head', h.label==='Clear' && h.crumb==='Filters', JSON.stringify(h));
+  check('a base category has the same head', h.label==='Clear', JSON.stringify(h));
 
   await b.close();
   const failed=results.filter(r=>!r).length;
