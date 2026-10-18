@@ -11,6 +11,8 @@ const fs=require('fs'), path=require('path');
 const REPO = require('path').join(__dirname, '..');
 const fake=fs.readFileSync(path.join(__dirname,'fake-supabase.js'),'utf8');
 const seed=fs.readFileSync(REPO + '/supabase/seed-items.json','utf8');
+const TAGS={seed_0:['sporty'],seed_1:['sporty'],seed_2:['sporty','summer'],seed_3:['summer'],
+            seed_4:['winter'],seed_5:['work'],seed_6:['work']};
 const results=[]; const check=(n,p,d)=>{results.push(p);console.log(`${p?'PASS':'FAIL'}  ${n}${d?'  — '+d:''}`);};
 
 async function open(b, viewport){
@@ -18,7 +20,7 @@ async function open(b, viewport){
   p.on('pageerror',e=>console.log('  PAGEERROR:',e.message));
   p.setDefaultTimeout(8000);
   await p.route('**/vendor/supabase-js-*.js', r=>r.fulfill({contentType:'application/javascript',
-    body:`window.__SEED_ITEMS=${seed};window.__WITH_TAGS=true;\n${fake}`}));
+    body:`window.__SEED_ITEMS=${seed};window.__WITH_TAGS=true;window.__SEED_TAGS=${JSON.stringify(TAGS)};\n${fake}`}));
   await p.route('**/config.js', r=>r.fulfill({contentType:'application/javascript',
     body:`window.WARDROBE_CONFIG={supabaseUrl:'https://fake.supabase.co',supabaseAnonKey:'anon',authEmail:'x@y.z'};`}));
   await p.goto('http://localhost:8933/index.html'); await p.waitForTimeout(400);

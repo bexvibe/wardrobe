@@ -284,6 +284,7 @@ const confirmText = p => p.evaluate(()=>({
     // says what you now have and puts the sheet away; a category page adds
     // a quiet Filters on the left to go back a page. Neither says Done, and
     // neither leaves an arrow in the top corner.
+    console.log('DBG', await p.evaluate(()=>[document.getElementById('modal-backdrop').className, sheetIsUp(), getComputedStyle(document.getElementById('nav-outfits-btn')).visibility, document.getElementById('bottom-bar').className]));
     await p.click('#nav-outfits-btn'); await p.waitForTimeout(1200);
     await p.click('#filters-fab'); await p.waitForTimeout(500);
     const foot = () => p.evaluate(()=>({
