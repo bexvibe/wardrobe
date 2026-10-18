@@ -680,6 +680,23 @@
   .outfit-expanded-panel{
     margin-top:10px;
     padding-top:10px;
+    transform-origin:top center;
+    animation:outfit-panel-in .22s cubic-bezier(.2,.8,.2,1);
+  }
+  .outfit-expanded-panel.closing{
+    animation:outfit-panel-out .16s ease-in forwards;
+    pointer-events:none;
+  }
+  @keyframes outfit-panel-in{
+    from{opacity:0;transform:translateY(-8px) scaleY(.96);}
+    to{opacity:1;transform:none;}
+  }
+  @keyframes outfit-panel-out{
+    from{opacity:1;transform:none;}
+    to{opacity:0;transform:translateY(-6px) scaleY(.97);}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .outfit-expanded-panel,.outfit-expanded-panel.closing{animation:none;}
   }
   .outfit-collapse-btn{
     font-family:'Work Sans',sans-serif;
@@ -4256,9 +4273,20 @@ function faveEmptyMessage(mode){
   return v.length === 1 ? FAVE_EMPTY[v[0]] : ['No faves at those levels yet', 'Tap a heart to cycle an outfit up through them.'];
 }
 
+// Expanding or collapsing redraws the card at full width, which used to snap.
+// An open panel fades out first, then the redraw lets the new one animate in.
+function withPanelCollapse(isClosing, redraw){
+  const panel = isClosing ? document.querySelector('.outfit-card.expanded .outfit-expanded-panel') : null;
+  if(!panel || window.matchMedia('(prefers-reduced-motion: reduce)').matches){ redraw(); return; }
+  panel.classList.add('closing');
+  setTimeout(redraw, 150);
+}
+
 function toggleExpandSaved(key){
-  expandedSavedKey = (expandedSavedKey === key) ? null : key;
-  renderSavedOutfits();
+  withPanelCollapse(expandedSavedKey !== null, () => {
+    expandedSavedKey = (expandedSavedKey === key) ? null : key;
+    renderSavedOutfits();
+  });
 }
 
 // ---- Accessories on an outfit ------------------------------
@@ -4663,8 +4691,10 @@ function renderCapsules(){
 }
 
 function toggleExpandCapsule(id){
-  expandedCapsuleId = (expandedCapsuleId === id) ? null : id;
-  renderCapsules();
+  withPanelCollapse(expandedCapsuleId !== null, () => {
+    expandedCapsuleId = (expandedCapsuleId === id) ? null : id;
+    renderCapsules();
+  });
 }
 
 // ---- Capsule editor ----------------------------------------
@@ -4879,21 +4909,23 @@ async function unhideCombo(key){
 }
 
 function toggleExpandCombo(key){
-  const opening = expandedComboKey !== key;
-  expandedComboKey = opening ? key : null;
-  // Either the lead card or the grid may be holding this outfit, so both are
-  // redrawn — the hero is not in the grid's list.
-  renderOutfits();
-  if(outfitRenderContext !== 'modal') renderHero();
+  withPanelCollapse(expandedComboKey !== null, () => {
+    const opening = expandedComboKey !== key;
+    expandedComboKey = opening ? key : null;
+    // Either the lead card or the grid may be holding this outfit, so both are
+    // redrawn — the hero is not in the grid's list.
+    renderOutfits();
+    if(outfitRenderContext !== 'modal') renderHero();
 
-  // What you just opened can land under the docked filter panel, which is
-  // the one thing on the page that does not scroll with it.
-  if(opening){
-    requestAnimationFrame(() => {
-      const panel = document.querySelector('.outfit-card.expanded .outfit-expanded-panel');
-      if(panel) panel.scrollIntoView({ block: 'nearest' });
-    });
-  }
+    // What you just opened can land under the docked filter panel, which is
+    // the one thing on the page that does not scroll with it.
+    if(opening){
+      requestAnimationFrame(() => {
+        const panel = document.querySelector('.outfit-card.expanded .outfit-expanded-panel');
+        if(panel) panel.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      });
+    }
+  });
 }
 
 function renderOutfits(){
