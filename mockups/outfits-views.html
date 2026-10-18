@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Outfits Views Mockup</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{--page:#F2F2F2;--surface:#fff;--line:#DCDCDC;--soft:#E7E7E7;--ink:#121212;--ink-soft:#6E6E6E;--brand:#756694;
+    --bg:#FAFAF9;--fg:#171717;--muted:#66666A;--rule:#E2E2E0;}
+  @media (prefers-color-scheme:dark){:root{--bg:#121213;--fg:#EDEDEB;--muted:#9A9AA0;--rule:#2C2C2F;}}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 'Work Sans',system-ui,sans-serif;padding:32px 16px 64px}
+  .wrap{max-width:1100px;margin:0 auto}
+  h1,h2{font-family:'Fraunces',Georgia,serif;font-weight:400;margin:0}
+  h1{font-size:34px}h2{font-size:22px;margin-bottom:4px}
+  .lead{color:var(--muted);max-width:60ch;margin:8px 0 36px}
+  section{margin-bottom:48px;padding-top:20px;border-top:1px solid var(--rule)}
+  .note{color:var(--muted);font-size:14px;max-width:62ch;margin:0 0 18px}
+  .pair{display:flex;flex-wrap:wrap;gap:24px}
+  figure{margin:0}figcaption{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px}
+  .phone{width:260px;height:480px;background:var(--page);border-radius:28px;border:1px solid var(--line);position:relative;overflow:hidden;
+    box-shadow:0 8px 28px rgba(0,0,0,.10);color:var(--ink)}
+  .top{padding:22px 16px 8px}
+  .top h3{font-family:'Fraunces',serif;font-weight:400;font-size:26px;margin:0;display:flex;align-items:center;gap:8px}
+  .top .sub{font-size:12px;color:var(--ink-soft);margin-top:2px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:8px 16px}
+  .card{height:92px;border-radius:12px;background:var(--surface);border:1px solid var(--line);position:relative}
+  .card i{position:absolute;inset:14px 18px;border-radius:8px;background:linear-gradient(#e9e4f2,#f6f3fa)}
+  .card svg{position:absolute;top:5px;right:5px;width:16px;height:16px}
+  .float{position:absolute;left:0;right:0;bottom:78px;display:flex;justify-content:center;gap:8px;font-size:12px;font-weight:600}
+  .float span{padding:11px 16px;border-radius:999px;background:var(--surface);border:1px solid var(--line)}
+  .float .sh{background:var(--brand);color:#fff;border-color:var(--brand)}
+  .nav{position:absolute;left:50%;transform:translateX(-50%);bottom:14px;display:flex;gap:4px;padding:5px;background:var(--surface);
+    border:1px solid var(--line);border-radius:999px;box-shadow:0 6px 24px rgba(0,0,0,.11);font-size:12px;font-weight:600}
+  .nb{min-height:44px;padding:0 9px;display:flex;align-items:center;gap:2px;border-radius:999px;color:var(--ink-soft);position:relative}
+  .nb.act{background:var(--soft);color:var(--ink)}
+  .seg{min-height:36px;min-width:36px;padding:0 11px;display:flex;align-items:center;justify-content:center;border-radius:999px}
+  .seg.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.14)}
+  .hrt{width:17px;height:17px;vertical-align:middle}
+  /* active-tab variants */
+  .nav.v-dot .nb.act{background:none}
+  .nav.v-dot .nb.act::after{content:"";position:absolute;bottom:3px;left:50%;width:4px;height:4px;margin-left:-2px;border-radius:50%;background:var(--brand)}
+  .nav.v-brand .nb.act{background:var(--brand);color:#fff}
+  .nav.v-brand .seg.on{background:rgba(255,255,255,.95);color:var(--ink)}
+  .nav.v-tint .nb.act{background:#F1ECF8;color:var(--brand)}
+  .nav.v-tint .seg.on{background:var(--surface);color:var(--brand)}
+  .nav.v-ul .nb.act{background:none;color:var(--ink)}
+  .nav.v-ul .nb.act::after{content:"";position:absolute;bottom:5px;left:16px;right:16px;height:2px;border-radius:2px;background:var(--ink)}
+  /* page variants */
+  .wash{background:linear-gradient(#FBEFF3,var(--page) 40%)}
+  .seg-in{margin:6px 16px 4px;display:inline-flex;gap:2px;padding:3px;background:var(--soft);border-radius:999px;font-size:12px;font-weight:600}
+  .seg-in span{padding:6px 14px;border-radius:999px;color:var(--ink-soft)}
+  .seg-in span.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.14)}
+  .pill{font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px;background:#FBE4EB;color:#B3124A;font-family:'Work Sans',sans-serif}
+</style></head><body><div class="wrap">
+<h1>Outfits: All vs Faves</h1>
+<p class="lead">Three ways to tell the two pages apart, each shown on All (left) and Faves (right). Below them, five styles for the active nav tab that can pair with any option. The Filters pill has no icon in all of them.</p>
+<div id="out"></div>
+</div>
+<script>
+const heart=(f,c)=>`<svg class="hrt" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21c-.5 0-9-5.6-9-11.2C3 6.6 5.2 4.5 7.9 4.5c1.7 0 3.1.8 4.1 2.3 1-1.5 2.4-2.3 4.1-2.3C18.8 4.5 21 6.6 21 9.8 21 15.4 12.5 21 12 21z" fill="${f?c:'none'}" stroke="${f?c:'#A6A6A6'}" stroke-width="2" stroke-linejoin="round"/></svg>`;
+const cards=(n,faves)=>Array.from({length:n},()=>`<div class="card"><i></i>${heart(faves,'#E4607F')}</div>`).join('');
+function nav(faves,v){
+  return `<div class="nav ${v}"><div class="nb">Wardrobe</div>
+   <div class="nb act" style="padding:4px;gap:2px"><div class="seg ${faves?'':'on'}">All</div><div class="seg ${faves?'on':''}">${heart(faves,'#E4607F')}</div></div>
+   <div class="nb">Capsules</div></div>`;
+}
+const float=f=>`<div class="float"><span class="sh">✦ Shuffle</span><span>Filters</span></div>`;
+function phone(faves,{head,extra,wash,v}){
+  return `<div class="phone ${wash&&faves?'wash':''}"><div class="top">${head(faves)}</div>${extra?extra(faves):''}<div class="grid">${cards(faves?4:6,faves)}</div>${float()}${nav(faves,v)}</div>`;
+}
+const opts=[
+ {t:'A. Title changes',d:'The page title says where you are, with a count on Faves. Quietest change; closest to today.',
+  cfg:{head:f=>f?`<h3>Faves <span class="pill">12</span></h3><div class="sub">Outfits you kept</div>`:`<h3>Outfits</h3><div class="sub">Dealt fresh each visit</div>`}},
+ {t:'B. Switch on the page',d:'Same title, with an All / Faves switch under it, mirroring the one in the nav. Easier to reach at the top; duplicates the nav pill.',
+  cfg:{head:f=>`<h3>Outfits</h3>`,extra:f=>`<div class="seg-in"><span class="${f?'':'on'}">All</span><span class="${f?'on':''}">♥ Faves</span></div>`}},
+ {t:'C. Pink wash + heart',d:'Faves gets a soft pink wash behind the header and a heart by the title, so it feels like a different room without a new layout.',
+  cfg:{head:f=>f?`<h3>Outfits ${heart(true,'#E4607F')}</h3><div class="sub">Your faves</div>`:`<h3>Outfits</h3><div class="sub">All combinations</div>`,wash:true}},
+];
+const navs=[['v-grey','Grey wash (today)'],['v-dot','Dot under label'],['v-tint','Brand tint'],['v-brand','Solid brand'],['v-ul','Underline']];
+document.getElementById('out').innerHTML=opts.map(o=>`<section><h2>${o.t}</h2><p class="note">${o.d}</p>
+ <div class="pair"><figure><figcaption>All</figcaption>${phone(false,{...o.cfg,v:''})}</figure><figure><figcaption>Faves</figcaption>${phone(true,{...o.cfg,v:''})}</figure></div></section>`).join('')
++`<section><h2>Active nav tab</h2><p class="note">Pick one to pair with any option above. Shown on Faves, and on Wardrobe for contrast.</p><div class="pair">${navs.map(([v,n])=>`<figure><figcaption>${n}</figcaption><div style="position:relative;width:260px;height:76px;background:var(--page);border-radius:20px;border:1px solid var(--line)"><div class="nav ${v}" style="bottom:12px;color:var(--ink)">
+ <div class="nb">Wardrobe</div><div class="nb act" style="padding:4px"><div class="seg">All</div><div class="seg on">${heart(true,'#E4607F')}</div></div><div class="nb">Capsules</div></div></div></figure>`).join('')}</div></section>`;
+</script></body></html>

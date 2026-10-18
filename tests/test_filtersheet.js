@@ -135,7 +135,7 @@ const onSheet = (p, down) => p.evaluate(d=>{
   {
     const p=await open(b);
     check('it says Filters', (await fabText(p)) === 'Filters', await fabText(p));
-    check('with its icon', await p.evaluate(()=>Boolean(document.querySelector('#filters-fab .filters-fab-icon'))));
+    check('and no icon', await p.evaluate(()=>!document.querySelector('#filters-fab .filters-fab-icon')));
     check('and no count badge while nothing is filtered',
       await p.evaluate(()=>!document.querySelector('#filters-fab .filters-fab-count')));
     check('not yet expanded to a screen reader',

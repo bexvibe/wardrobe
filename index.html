@@ -1202,10 +1202,6 @@
        happen to be behind it. */
     box-shadow:0 0 0 2px var(--surface);
   }
-  .filters-fab-icon{
-    flex:none;width:16px;height:16px;display:block;
-    color:var(--ink-soft);
-  }
 
   /* The filters open as a bottom sheet, like every other sheet in the app:
      a grip, a dimmed page, rounded top corners, and the way out at the foot
@@ -2537,10 +2533,6 @@ function renderFiltersFab(){
   fab.classList.toggle('active', n > 0);
   fab.setAttribute('aria-expanded', String(up));
   fab.innerHTML = `
-    <svg class="filters-fab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-         stroke-width="2" stroke-linecap="round" aria-hidden="true">
-      <path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/>
-    </svg>
     <span class="filters-fab-label">Filters</span>
     ${n ? `<span class="filters-fab-count">${n}</span>` : ''}`;
 
