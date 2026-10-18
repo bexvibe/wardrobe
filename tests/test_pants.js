@@ -129,14 +129,14 @@ const tiles = p => p.evaluate(()=>document.querySelectorAll('#gallery .tile').le
         .some(t=>(t.getAttribute('onclick')||'').includes(id)), shortsId);
     })());
 
-    // Tap the pair on the Shorts page. It applies behind the sheet at once —
-    // there is nothing to close to make it take.
+    // Tap the pair on the Shorts page. The outfits behind the sheet are left
+    // alone while it is open — redrawing them reloaded every photo — and
+    // catch up once it is closed.
     await p.click('#filter-sheet-back'); await p.waitForTimeout(500);
     await p.evaluate(()=>openFilterPage('Shorts')); await p.waitForTimeout(500);
     await p.click(`#picker-gallery .picker-tile[onclick*="${shortsId}"]`); await p.waitForTimeout(900);
-    check('pinning them narrows the outfits behind the sheet before it is closed',
-      await p.evaluate(id=>filterSheetOpen() && outfitDisplayed.length > 0 &&
-        outfitDisplayed.every(c=>c.bottom && c.bottom.id === id), shortsId));
+    check('the page behind is not redrawn while the sheet is open',
+      await p.evaluate(()=>filterSheetOpen() && filterResultsStale));
     await leaveSheet(p, {settle:600});
     // Pants is still on Any, but asking for a particular pair of shorts is
     // asking for those shorts — the other bottoms step aside rather than

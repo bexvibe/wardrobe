@@ -163,7 +163,7 @@ const said = (p, sel) => p.evaluate(s => {
     await p.evaluate(()=>(filterSheetOpen()||openFilterSheet(),openFilterPage('Skirts'))); await p.waitForTimeout(600);
     check('the piece picker still names the category it has none of',
       (await said(p, '#picker-empty')) === 'No skirts', await said(p, '#picker-empty'));
-    await p.evaluate(()=>closeModal()); await p.waitForTimeout(500);
+    await p.evaluate(()=>closeFilterSheet()); await p.waitForTimeout(600);
 
     // A capsule with nothing in it.
     await p.evaluate(async()=>{ await saveCapsule({ id:null, name:'Winter', itemIds:[] }); });
