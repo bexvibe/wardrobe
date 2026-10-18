@@ -60,9 +60,12 @@ const said = (p, sel) => p.evaluate(s => {
 
     await toFaves(p, 900);
     await p.evaluate(()=>closeFilterSheet()); await p.waitForTimeout(500);
-    check('Faves says No faves',
-      (await said(p, '#saved-empty-title')) === 'No faves',
+    check('Faves says what the page is for, and how to fill it',
+      (await said(p, '#saved-empty-title')) === 'Keep your favourite outfits'
+      && (await said(p, '#saved-empty-sub')) === 'Tap a heart on any outfit to save it here',
       await said(p, '#saved-empty-title'));
+    check('and the header + steps aside for the one in the middle',
+      await p.evaluate(()=>document.getElementById('build-outfit-btn').style.display === 'none'));
     // It used to have no button, because a fave was something you found
     // rather than something you made. The builder is the other way in.
     check('and offers to build one, which is now something you can do here',
@@ -134,11 +137,11 @@ const said = (p, sel) => p.evaluate(s => {
     check('a fave filter nothing matches reads the same',
       (await said(p, '#saved-empty-title')) === 'No outfits match',
       await said(p, '#saved-empty-title'));
-    check('and without it, it is back to No faves', await (async()=>{
+    check('and without it, it is back to the welcome', await (async()=>{
       await p.evaluate(()=>{ outfitFilters = emptySlotFilters();
                              favoriteOutfits = []; renderSavedOutfits(); });
       await p.waitForTimeout(400);
-      return (await said(p, '#saved-empty-title')) === 'No faves';
+      return (await said(p, '#saved-empty-title')) === 'Keep your favourite outfits';
     })());
     await p.close();
   }
