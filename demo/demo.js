@@ -73,7 +73,7 @@
     bar.innerHTML = '<span>Demo — changes stay on this device only</span>' +
       '<button style="font:inherit;color:inherit;background:none;border:1px solid #fff8;border-radius:6px;padding:2px 10px;cursor:pointer">Reset</button>' +
       // The other demo, so each can be shown without typing the address.
-      '<a href="' + (kind === 'empty' ? '/demo' : '/demo-empty') + '" style="color:inherit;text-decoration:underline">' +
+      '<a href="' + (kind === 'empty' ? '/demo' : '/demo-empty') + '" style="font:inherit;color:inherit;text-decoration:none;border:1px solid #fff8;border-radius:6px;padding:2px 10px">' +
       (kind === 'empty' ? 'See the full demo' : 'See the empty demo') + '</a>';
     bar.querySelector('button').onclick = function () {
       try { localStorage.removeItem(window.__FAKE_DB_KEY); } catch (e) {}
