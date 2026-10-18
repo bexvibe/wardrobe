@@ -225,6 +225,7 @@ const foldedCount = p => p.evaluate(()=>
   {
     const p=await open(b);
     await p.click('#nav-outfits-btn'); await p.waitForTimeout(900);
+    await p.click('#filters-fab'); await p.waitForTimeout(600);
 
     const row = await p.evaluate(()=>{
       const el = document.getElementById('sheet-tag-chips');

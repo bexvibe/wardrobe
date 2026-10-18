@@ -51,7 +51,8 @@ const chipLabels = p => p.evaluate(()=>
     .map(e=>e.childNodes[0].textContent.trim()));
 // The page no longer prints a count line; the cards are the count.
 
-// Any is the only quick pick — the way back from a pinned selection.
+// The way back from a pinned selection: open the piece's page in the filter
+// sheet, press its Clear (top right), and leave by the foot button.
 async function setAny(p, key){
   await p.evaluate(k=>(filterSheetOpen()||openFilterSheet(),openFilterPage(k)), key);
   await p.waitForTimeout(350);
@@ -85,7 +86,9 @@ async function pinFirst(p, key){
   {
     const p=await open(b);
     check('three kept outfits to start with', (await cards(p))===3, String(await cards(p)));
-    check('the panel is open on arrival', await p.evaluate(()=>filterSheetOpen()));
+    check('the filter sheet is closed on arrival', !(await p.evaluate(()=>filterSheetOpen())));
+    await p.click('#filters-fab'); await p.waitForTimeout(450);
+    check('the Filters pill raises it', await p.evaluate(()=>filterSheetOpen()));
     check('Faves offers a Pieces row, not tags alone',
       await p.evaluate(()=>Boolean(document.getElementById('sheet-filter-grid'))));
     check('with every category an outfit is built from',
@@ -96,9 +99,13 @@ async function pinFirst(p, key){
     // And the Outfits page shows the same set, so "the same as Outfits" is a
     // fact rather than a coincidence of this fixture. Shoes are on neither:
     // they go on a kept outfit by hand, they are not something it is made of.
+    await leaveSheet(p);                       // the sheet covers the nav
     await p.click('#nav-outfits-btn'); await p.waitForTimeout(900);
+    await p.click('#filters-fab'); await p.waitForTimeout(450);
     const onOutfits = await chipLabels(p);
+    await leaveSheet(p);
     await toFaves(p, 700);
+    await p.click('#filters-fab'); await p.waitForTimeout(450);
     check('literally the same row as the Outfits page',
       JSON.stringify(onOutfits)===JSON.stringify(await chipLabels(p)), onOutfits.join(', '));
     check('and neither page offers Shoes', !onOutfits.includes('Shoes'));
@@ -176,13 +183,14 @@ async function pinFirst(p, key){
     await p.close();
   }
 
-  // ---- 6. One panel, carried across the switch ----
+  // ---- 6. One set of filters, carried across the switch ----
   {
     const p=await open(b);
     await pin(p, 'Dresses', 'seed_32');
     check('the filter is set', await p.evaluate(()=>outfitFilters['Dresses'].type)==='items');
 
     await p.click('#nav-outfits-btn'); await p.waitForTimeout(900);
+    await p.click('#filters-fab'); await p.waitForTimeout(450);   // chips are on the sheet
     check('it is still set on the other half of the switch',
       await p.evaluate(()=>outfitFilters['Dresses'].type==='items'));
     check('and the chip says so there too',
@@ -199,18 +207,18 @@ async function pinFirst(p, key){
     await p.evaluate(()=>{ outfitFilters['Tops'] = {type:'items', ids:['seed_22']};
                            renderFilterControls(); });
     await p.waitForTimeout(400);
+    await leaveSheet(p);                       // the sheet covers the nav
     await toFaves(p, 700);
     check('both survive the round trip',
       await p.evaluate(()=>outfitFilters['Dresses'].type==='items' && outfitFilters['Tops'].type==='items'));
     check('and the kept ones are narrowed by both', (await cards(p))===0, String(await cards(p)));
 
-    // Coming back a second time in the same visit, the panel stays down —
-    // it only comes up by itself the first time — so the pill is already
-    // standing in for it.
-    check('the panel does not open itself a second time',
+    // Arriving on either half the sheet stays down, so the pill is what
+    // stands in for it.
+    check('the sheet does not open itself on arriving',
       !(await p.evaluate(()=>filterSheetOpen())));
-    check('and the shut panel still counts both',
-      (await p.textContent('#filters-fab')).replace(/\s+/g,'') === 'Showfilters2',
+    check('and the shut sheet still counts both on the pill',
+      (await p.textContent('#filters-fab')).replace(/\s+/g,'') === 'Filters2',
       (await p.textContent('#filters-fab')).replace(/\s+/g,' ').trim());
     await p.close();
   }
@@ -219,6 +227,7 @@ async function pinFirst(p, key){
   {
     const p=await open(b);
     await pin(p, 'Dresses', 'seed_32');
+    await p.click('#filters-fab'); await p.waitForTimeout(450);
     await p.click('#sheet-tag-chips .tag-chip'); await p.waitForTimeout(500);
     check('a tag and a slot are both on', await p.evaluate(()=>activeFilterCount())>=2,
       String(await p.evaluate(()=>activeFilterCount())));

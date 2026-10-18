@@ -34,13 +34,17 @@ const chipState = (p, label) => p.evaluate(l=>{
 }, label);
 const bases = p => p.evaluate(()=>outfitDisplayed.map(c=>c.base));
 
-// Through the real picker, the way she would: open the category, tap the
-// first piece in it, come back. Pinning is the only narrowing there is.
+// Through the real category page, the way she would: open the category, tap
+// the first piece in it (the results behind the sheet follow at once), go
+// back to the main page with the foot's Filters, then put the sheet away.
+// Pinning is the only narrowing there is.
 async function pin(p, cat){
   await p.evaluate(k=>(filterSheetOpen()||openFilterSheet(),openFilterPage(k)), cat);
   await p.waitForTimeout(400);
   await p.click('#picker-gallery .picker-tile:not(.picker-none)');
   await p.waitForTimeout(250);
+  await p.click('#filter-sheet-back');
+  await p.waitForTimeout(500);
   await leaveSheet(p, {settle:700});
 }
 
@@ -50,6 +54,8 @@ async function unpin(p, cat){
   await p.waitForTimeout(400);
   await p.click('#filter-sheet-clear');
   await p.waitForTimeout(250);
+  await p.click('#filter-sheet-back');
+  await p.waitForTimeout(500);
   await leaveSheet(p, {settle:700});
 }
 

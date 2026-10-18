@@ -70,22 +70,34 @@ const stream = p => p.evaluate(()=>outfitDisplayed.slice(0, 8).map(c=>comboKey(c
         return bg === 'rgb(117, 102, 148)' && brand === '#756694';
       }));
 
-    // The filters open above this row rather than under it, so the row is
-    // where it is whether they are up or down — nothing moves out from
-    // under your thumb when you open them.
+    // The filters are a sheet over the page and cover this row, so the row
+    // eases away behind it (#float-row.away) rather than being left poking
+    // out from under it.
+    const bottomBefore = (await box(p)).bottom;
+    await p.evaluate(()=>openFilterSheet()); await p.waitForTimeout(700);
     const open1 = await p.evaluate(()=>{
       const sheet = document.getElementById('filter-sheet').getBoundingClientRect();
       const fab = document.getElementById('shuffle-fab').getBoundingClientRect();
-      return {sheetBottom: Math.round(sheet.bottom), fabTop: Math.round(fab.top),
-              fabBottom: Math.round(fab.bottom), open: filterSheetOpen()};
+      const row = document.getElementById('float-row');
+      return {sheetTop: Math.round(sheet.top), fabTop: Math.round(fab.top),
+              fabBottom: Math.round(fab.bottom), open: filterSheetOpen(),
+              away: row.classList.contains('away'),
+              rowVisible: getComputedStyle(row).visibility !== 'hidden' &&
+                          parseFloat(getComputedStyle(row).opacity) > 0};
     });
-    check('with the filters open they sit above it, not over it',
-      open1.open && open1.sheetBottom <= open1.fabTop, JSON.stringify(open1));
+    check('with the filters up the sheet covers it and the row eases away',
+      open1.open && open1.sheetTop <= open1.fabTop && open1.away && !open1.rowVisible,
+      JSON.stringify(open1));
 
     await p.evaluate(()=>closeFilterSheet()); await p.waitForTimeout(700);
     const shut = await box(p);
-    check('and it has not moved a pixel either way',
-      shut.bottom === open1.fabBottom, `${shut.bottom} vs ${open1.fabBottom}`);
+    check('and when it goes down the row comes back exactly where it was',
+      shut.bottom === bottomBefore && shut.bottom === open1.fabBottom,
+      `${shut.bottom} vs ${bottomBefore} / ${open1.fabBottom}`);
+    check('visible again, no longer away', await p.evaluate(()=>{
+      const row = document.getElementById('float-row');
+      return !row.classList.contains('away') && parseFloat(getComputedStyle(row).opacity) === 1;
+    }));
     check('level with the filters pill', await p.evaluate(()=>{
       const fab = document.getElementById('shuffle-fab').getBoundingClientRect();
       const pill = document.getElementById('filters-fab').getBoundingClientRect();

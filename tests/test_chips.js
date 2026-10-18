@@ -198,9 +198,6 @@ async function clearSlot(p, key){
         piece: Array.from(document.querySelectorAll('#sheet-filter-grid .filter-chip')).map(h),
         tag: Array.from(document.querySelectorAll('#sheet-tag-chips .tag-chip')).map(h),
         clear: h(document.getElementById('filter-sheet-clear')),
-        fab: h(document.getElementById('filters-fab')),
-        fabW: (()=>{ const e=document.getElementById('filters-fab');
-                     return e ? Math.round(e.getBoundingClientRect().width) : null; })(),
       };
     });
     check('every piece chip is at least 44px tall',
@@ -208,19 +205,21 @@ async function clearSlot(p, key){
     check('every tag chip too',
       sizes.tag.length > 0 && sizes.tag.every(n=>n>=44), JSON.stringify(sizes.tag));
     check('Clear all is not a 21px sliver any more', sizes.clear>=44, String(sizes.clear));
-    check('and the pill that raises the sheet is a full target',
-      sizes.fab>=44 && sizes.fabW>=44, `${sizes.fabW}x${sizes.fab}`);
     await p.evaluate(()=>closeFilterSheet()); await p.waitForTimeout(600);
-    const fab = await p.evaluate(()=>
-      Math.round(document.getElementById('filters-fab').getBoundingClientRect().height));
-    check('and it still is with the sheet down', fab>=44, String(fab));
+    // (Measured with the sheet down: while it is up the pill eases away
+    // behind it.)
+    const fab = await p.evaluate(()=>{
+      const r = document.getElementById('filters-fab').getBoundingClientRect();
+      return {h:Math.round(r.height), w:Math.round(r.width)};
+    });
+    check('the pill that raises the sheet is a full target', fab.h>=44 && fab.w>=44, JSON.stringify(fab));
     await p.click('#filters-fab'); await p.waitForTimeout(500);
 
-    // Bigger targets, same sheet. The head reaches further than it is drawn
-    // rather than pushing the chips down the screen.
+    // The head is the 44px of its Clear and no more, so the chips are not
+    // pushed down the screen.
     const head = await p.evaluate(()=>
       Math.round(document.querySelector('.filter-sheet-head').getBoundingClientRect().height));
-    check('and the bigger targets cost the sheet no height', head <= 30, `${head}px`);
+    check('and the head is no taller than the Clear it holds', head <= 48, `${head}px`);
 
     await p.evaluate(()=>(filterSheetOpen()||openFilterSheet(),openFilterPage('Tops'))); await p.waitForTimeout(500);
     const page = await p.evaluate(()=>{

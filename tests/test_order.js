@@ -144,8 +144,8 @@ function wellOrdered(list, owned){
         shown: note.offsetParent !== null,
         size: parseFloat(cs.fontSize),
         muted: cs.color !== getComputedStyle(document.body).color,
-        quick: Array.from(document.querySelectorAll('#picker-quick-picks button'))
-          .map(e=>e.textContent.trim()),
+        clearShown: getComputedStyle(document.getElementById('filter-sheet-clear')).visibility !== 'hidden',
+        title: document.getElementById('filter-sheet-title').textContent.trim(),
         tiles: document.querySelectorAll('#picker-gallery .picker-tile:not(.picker-none)').length,
       };
     });
@@ -153,8 +153,8 @@ function wellOrdered(list, owned){
     check('small and light rather than a heading',
       empty.shown && empty.size <= 13 && empty.muted, `${empty.size}px`);
     check('there is nothing to choose from', empty.tiles===0);
-    check('and Any is the only quick pick, as everywhere',
-      JSON.stringify(empty.quick)===JSON.stringify(['Clear']), empty.quick.join(', '));
+    check('the page is titled for the category, and its Clear is hidden as everywhere',
+      empty.title==='Skirts' && !empty.clearShown, `${empty.title}, clear shown ${empty.clearShown}`);
     await p.close();
   }
 
@@ -165,13 +165,12 @@ function wellOrdered(list, owned){
     await p.evaluate(()=>(filterSheetOpen()||openFilterSheet(),openFilterPage('Tops'))); await p.waitForTimeout(500);
     const full = await p.evaluate(()=>({
       note: document.getElementById('picker-empty').offsetParent !== null,
-      quick: Array.from(document.querySelectorAll('#picker-quick-picks button'))
-        .map(e=>e.textContent.trim()),
+      clearShown: getComputedStyle(document.getElementById('filter-sheet-clear')).visibility !== 'hidden',
       tiles: document.querySelectorAll('#picker-gallery .picker-tile:not(.picker-none)').length,
     }));
     check('no note where there is something to show', !full.note);
-    check('Any and nothing else, the same as an empty one',
-      JSON.stringify(full.quick)===JSON.stringify(['Clear']), full.quick.join(', '));
+    check('and Clear is hidden until something is chosen, the same as an empty one',
+      !full.clearShown);
     check('and the pieces to choose from', full.tiles > 0, String(full.tiles));
 
     // Narrowing is done by picking, and Any is the way back from it.
@@ -179,6 +178,8 @@ function wellOrdered(list, owned){
     check('picking a piece narrows the category',
       await p.evaluate(()=>outfitFilters['Tops'].type==='items' &&
                            outfitFilters['Tops'].ids.length===1));
+    check('which brings Clear into view',
+      await p.evaluate(()=>getComputedStyle(document.getElementById('filter-sheet-clear')).visibility !== 'hidden'));
     await p.click('#filter-sheet-clear');
     await p.waitForTimeout(300);
     check('and Any is the way back to the whole of it',
@@ -196,14 +197,16 @@ function wellOrdered(list, owned){
     // from it — and a category you own none of has none to pick. So it is
     // offered, and it simply cannot do anything.
     await p.evaluate(()=>(filterSheetOpen()||openFilterSheet(),openFilterPage('Skirts'))); await p.waitForTimeout(500);
-    check('the picker opens on nothing to choose',
+    check('the page opens on nothing to choose',
       await p.evaluate(()=>document.querySelectorAll('#picker-gallery .picker-tile:not(.picker-none)').length===0));
-    check('with Any already on, and no other way to change it',
+    check('with Any already on, so Clear has nothing to do and is hidden',
       await p.evaluate(()=>{
-        const btns = Array.from(document.querySelectorAll('#picker-quick-picks button'));
-        return btns.length===1 && btns[0].textContent.trim()==='Clear' &&
-               btns[0].disabled;
+        const c = document.getElementById('filter-sheet-clear');
+        return getComputedStyle(c).visibility === 'hidden' &&
+               outfitFilters['Skirts'].type === 'any';
       }));
+    check('and the foot still counts every outfit',
+      await p.evaluate(b=>document.getElementById('filter-sheet-see').textContent.replace(/[^\d]/g,'') === String(b), before));
     await leaveSheet(p, {settle:800});
     check('so the page is exactly as you left it',
       (await p.evaluate(()=>totalComboCount()))===before,

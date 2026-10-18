@@ -14,13 +14,16 @@ const seed=fs.readFileSync(REPO + '/supabase/seed-items.json','utf8');
 const results=[]; const check=(n,p,d)=>{results.push(p);console.log(`${p?'PASS':'FAIL'}  ${n}${d?'  — '+d:''}`);};
 
 const FOLD = 844;
+// One capsule, so the page has something in it: with none, the new-capsule
+// button sits in the middle of the empty page instead of beside the title.
+const CAPS=[{id:'c1', name:'Weekend', archived_at:null, created_at:'2026-01-01', itemIds:['seed_0','seed_1']}];
 
 async function open(b){
   const p=await b.newPage({viewport:{width:390,height:FOLD},deviceScaleFactor:2});
   p.on('pageerror',e=>console.log('  PAGEERROR:',e.message));
   p.setDefaultTimeout(8000);
   await p.route('**/vendor/supabase-js-*.js', r=>r.fulfill({contentType:'application/javascript',
-    body:`window.__SEED_ITEMS=${seed};\n${fake}`}));
+    body:`window.__SEED_ITEMS=${seed};window.__WITH_CAPSULES=true;window.__SEED_CAPSULES=${JSON.stringify(CAPS)};\n${fake}`}));
   await p.route('**/config.js', r=>r.fulfill({contentType:'application/javascript',
     body:`window.WARDROBE_CONFIG={supabaseUrl:'https://fake.supabase.co',supabaseAnonKey:'anon',authEmail:'x@y.z'};`}));
   await p.goto('http://localhost:8933/index.html'); await p.waitForTimeout(400);
@@ -157,16 +160,22 @@ const rect = (p, sel) => p.evaluate(s=>{
       firstTile.top < FOLD, `first piece starts at ${firstTile.top}`);
 
     await p.click('#nav-outfits-btn'); await p.waitForTimeout(800);
-    const sheet = await rect(p, '#filter-sheet');
     const hero = await rect(p, '.hero-card');
-    check('Outfits keeps the filters reachable, docked under the title',
-      await p.evaluate(()=>filterSheetOpen()) && sheet.top < FOLD,
-      `panel starts at ${sheet.top}, fold at ${FOLD}`);
-    // The panel covers the foot of the card rather than the card shrinking
-    // to sit above it: the filters are over the page, not part of it.
-    check('the lead outfit is on screen under it, not squeezed above it',
-      hero.top < sheet.top && hero.bottom > sheet.top - 80,
-      `card ${hero.top}–${hero.bottom}, panel starts at ${sheet.top}`);
+    const fab = await rect(p, '#filters-fab');
+    check('Outfits keeps the filters reachable: the pill is on screen, above the nav',
+      await p.evaluate(()=>!filterSheetOpen() &&
+        document.getElementById('filters-fab').getBoundingClientRect().bottom <=
+        document.getElementById('bottom-bar').getBoundingClientRect().top),
+      `pill ${fab.top}–${fab.bottom}`);
+    // The sheet is not up on arrival, so nothing covers the lead outfit.
+    check('the lead outfit is on screen under the title, with nothing over it',
+      hero.top < FOLD / 2 && hero.bottom > hero.top + 100 && hero.top > 0,
+      `card ${hero.top}–${hero.bottom}`);
+    await p.click('#filters-fab'); await p.waitForTimeout(600);
+    const sheet = await rect(p, '#filter-sheet');
+    check('raising the sheet brings the filters fully on screen',
+      sheet.top > 0 && sheet.top < FOLD && Math.round(sheet.bottom) === FOLD,
+      `sheet ${sheet.top}–${sheet.bottom}, fold at ${FOLD}`);
     await p.screenshot({path:shot('ti-outfits.png')});
     await p.close();
   }
