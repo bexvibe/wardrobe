@@ -1,0 +1,654 @@
+<title>Filters Sheet Mockup</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500&family=Work+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  /* Layout: a review page around one live phone. Left, the phone you can use;
+     right, what the selected option does and what it costs. The phone is the
+     app's own light UI in the app's own tokens, so it reads as the app and
+     not as a redesign of it. The page around it follows the viewer's theme. */
+  :root{
+    --bg:#F7F7F6; --fg:#171717; --muted:#66666A; --panel:#FFFFFF; --rule:#E2E2E0;
+    --stage:#E9E9E7; --brand:#756694; --brand-ink:#FFFFFF; --good:#2F6B4A; --warn:#8A5A12;
+    --display:'Fraunces',Georgia,serif; --body:'Work Sans',system-ui,sans-serif; --mono:'IBM Plex Mono',ui-monospace,monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#121213; --fg:#EDEDEB; --muted:#9A9AA0; --panel:#1B1B1D; --rule:#2C2C2F;
+      --stage:#232326; --brand:#9A8CBB; --brand-ink:#17141F; --good:#7FC29A; --warn:#D9A74F; color-scheme:dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#121213; --fg:#EDEDEB; --muted:#9A9AA0; --panel:#1B1B1D; --rule:#2C2C2F;
+    --stage:#232326; --brand:#9A8CBB; --brand-ink:#17141F; --good:#7FC29A; --warn:#D9A74F; color-scheme:dark;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.5;
+    padding-block:32px 64px;
+    padding-left:max(16px, env(safe-area-inset-left, 0px));
+    padding-right:max(16px, env(safe-area-inset-right, 0px));
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1040px;margin:0 auto;}
+  h1,h2,h3{font-family:var(--display);font-weight:400;letter-spacing:-0.015em;text-wrap:balance;margin:0;}
+  h1{font-size:clamp(28px,6vw,40px);line-height:1.1;}
+  h2{font-size:24px;line-height:1.2;}
+  h3{font-size:18px;line-height:1.25;}
+  p{margin:0;}
+  .kicker{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);}
+  .intro{display:grid;gap:14px;max-width:62ch;margin-bottom:36px;}
+  .intro p{color:var(--muted);}
+
+  .rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px 28px;margin:0 0 44px;padding:0;list-style:none;}
+  .rules li{display:grid;gap:2px;padding-top:12px;border-top:1px solid var(--rule);}
+  .rules b{font-weight:600;font-size:14px;}
+  .rules span{color:var(--muted);font-size:14px;}
+
+  .picker{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 22px;}
+  .opt{
+    appearance:none;font:inherit;text-align:left;cursor:pointer;
+    padding:10px 16px;border-radius:12px;border:1px solid var(--rule);background:var(--panel);color:var(--fg);
+    display:grid;gap:1px;min-width:150px;
+  }
+  .opt .t{font-weight:600;font-size:14px;}
+  .opt .s{font-size:12px;color:var(--muted);}
+  .opt[aria-pressed="true"]{border-color:var(--fg);box-shadow:inset 0 0 0 1px var(--fg);}
+  .opt:focus-visible,.stagebtn:focus-visible{outline:2px solid var(--brand);outline-offset:2px;}
+  .tag{display:inline-block;font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;
+       padding:2px 8px;border-radius:999px;background:var(--brand);color:var(--brand-ink);vertical-align:middle;margin-left:6px;}
+
+  .demo{display:grid;grid-template-columns:minmax(0,420px) minmax(0,1fr);gap:40px;align-items:start;}
+  @media (max-width:860px){.demo{grid-template-columns:minmax(0,1fr);}}
+  .stage{background:var(--stage);border-radius:20px;padding:22px 12px;display:grid;justify-items:center;gap:12px;}
+  .stagebtn{appearance:none;font:inherit;font-size:13px;cursor:pointer;background:none;border:none;color:var(--muted);text-decoration:underline;text-underline-offset:3px;padding:6px;}
+  .notes{display:grid;gap:22px;min-width:0;}
+  .notes .lede{font-size:17px;max-width:52ch;}
+  .flow{margin:0;padding:0;list-style:none;display:grid;gap:8px;counter-reset:s;}
+  .flow li{counter-increment:s;display:grid;grid-template-columns:24px 1fr;gap:10px;color:var(--muted);font-size:14px;}
+  .flow li::before{content:counter(s);font-family:var(--mono);font-size:11px;color:var(--fg);border:1px solid var(--rule);
+                   border-radius:999px;width:22px;height:22px;display:grid;place-items:center;margin-top:1px;}
+  .flow li b{color:var(--fg);font-weight:600;}
+  .proscons{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:18px;}
+  .proscons h4{margin:0 0 6px;font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;}
+  .proscons .up h4{color:var(--good);} .proscons .down h4{color:var(--warn);}
+  .proscons ul{margin:0;padding-left:18px;color:var(--muted);font-size:14px;display:grid;gap:4px;}
+
+  table{border-collapse:collapse;width:100%;font-size:14px;}
+  .tablewrap{overflow-x:auto;}
+  th,td{text-align:left;padding:10px 12px 10px 0;border-top:1px solid var(--rule);vertical-align:top;}
+  th{font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);border-top:none;}
+  td:first-child{font-weight:600;white-space:nowrap;}
+  td{color:var(--muted);} td:first-child{color:var(--fg);}
+  section{margin-top:56px;display:grid;gap:14px;}
+  .qs{display:grid;gap:12px;margin:0;padding:0;list-style:none;max-width:68ch;}
+  .qs li{padding-top:12px;border-top:1px solid var(--rule);color:var(--muted);}
+  .qs b{color:var(--fg);font-weight:600;}
+
+  /* ================== The phone: the app's own tokens ================== */
+  .phone{
+    --page:#F2F2F2;--surface:#FFFFFF;--line:#DCDCDC;--accent-soft:#E7E7E7;--ink-soft:#6E6E6E;--accent:#1A1A1A;--ink:#121212;
+    --pbrand:#756694;--pbrand-deep:#655885;
+    --ease:cubic-bezier(0.32,0.72,0,1);--ease-ms:320ms;
+    width:min(100%,390px);height:780px;border-radius:46px;background:#101010;padding:9px;
+    box-shadow:0 24px 60px rgba(0,0,0,.28);color:var(--ink);font-family:var(--body);
+  }
+  .screen{position:relative;width:100%;height:100%;border-radius:38px;overflow:hidden;background:var(--page);isolation:isolate;}
+  .phone button{font-family:inherit;color:inherit;}
+
+  /* The page behind */
+  .pg{padding:30px 16px 0;height:100%;overflow:hidden;}
+  .pg-head{display:flex;align-items:center;justify-content:space-between;padding:18px 0 14px;}
+  .pg-head h4{font-family:var(--display);font-weight:400;font-size:28px;letter-spacing:-0.02em;margin:0;}
+  .plus{width:44px;height:44px;border-radius:999px;background:var(--ink);color:#fff;display:grid;place-items:center;}
+  .plus svg{width:20px;height:20px;}
+  .ocard{background:var(--surface);border-radius:12px;padding:12px;display:grid;justify-items:center;gap:2px;}
+  .ocard svg{width:46px;height:46px;display:block;}
+  .ocard.hero svg{width:62px;height:62px;}
+  .ocards{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;}
+
+  .nav{position:absolute;left:50%;transform:translateX(-50%);bottom:16px;z-index:5;display:flex;gap:4px;padding:5px;
+       background:var(--surface);border:1px solid var(--line);border-radius:999px;box-shadow:0 6px 24px rgba(0,0,0,.11);}
+  .nav span{min-height:44px;display:flex;align-items:center;padding:0 13px;font-size:13px;font-weight:600;color:var(--ink-soft);border-radius:999px;}
+  .nav span.on{background:var(--accent-soft);color:var(--ink);}
+  .floatrow{position:absolute;left:50%;bottom:94px;z-index:6;display:flex;gap:8px;transform:translateX(-50%);
+            transition:transform var(--ease-ms) var(--ease),opacity var(--ease-ms) var(--ease);}
+  .floatrow.away{transform:translateX(-50%) translateY(10px) scale(.96);opacity:0;pointer-events:none;}
+  .shuffle{display:flex;align-items:center;gap:7px;min-height:44px;padding:0 16px 0 14px;border-radius:999px;border:1px solid var(--pbrand-deep);
+           background:var(--pbrand);color:#fff!important;font-size:13px;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,.12);}
+  .shuffle svg{width:19px;height:19px;}
+  .fpill{position:relative;display:flex;align-items:center;gap:8px;min-height:44px;padding:0 18px;border-radius:999px;border:1px solid var(--line);
+         background:var(--surface);font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.12);}
+  .fpill svg{width:16px;height:16px;color:var(--ink-soft);}
+  .fpill.active{background:var(--accent-soft);}
+  .fpill:active,.shuffle:active{transform:scale(.96);}
+  .fbadge{position:absolute;top:-6px;right:-4px;min-width:20px;height:20px;padding:0 6px;display:inline-flex;align-items:center;justify-content:center;
+          border-radius:999px;background:var(--accent);color:#fff;font-size:11px;font-weight:600;box-shadow:0 0 0 2px var(--page);}
+
+  /* The sheet: same family as the app's other sheets */
+  .scrim{position:absolute;inset:0;z-index:20;background:rgba(0,0,0,.28);opacity:0;pointer-events:none;transition:opacity var(--ease-ms) var(--ease);}
+  .scrim.open{opacity:1;pointer-events:auto;}
+  .scrim.dragging,.sheet.dragging{transition:none!important;}
+  .sheet{
+    position:absolute;left:0;right:0;bottom:0;z-index:30;max-height:92%;
+    display:flex;flex-direction:column;background:var(--page);border-radius:18px 18px 0 0;
+    box-shadow:0 -10px 34px rgba(0,0,0,.18);
+    transform:translateY(100%);transition:transform var(--ease-ms) var(--ease);
+    visibility:hidden;
+  }
+  .sheet.open{transform:translateY(0);visibility:visible;}
+  .sheet.closing{visibility:visible;}
+  .sheet.morphing{transition:transform var(--ease-ms) var(--ease),height 380ms var(--ease);}
+  .sh-head{flex:none;touch-action:none;cursor:grab;padding:0 18px 8px;}
+  .grip{display:flex;justify-content:center;padding:8px 0 6px;}
+  .grip::before{content:'';width:38px;height:4px;border-radius:999px;background:var(--line);}
+  .sh-title{font-family:var(--display);font-size:22px;font-weight:500;margin:0;line-height:1.2;}
+  .sh-crumb{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:2px;}
+  .sh-body{position:relative;flex:1 1 auto;overflow-y:auto;overscroll-behavior:none;padding:6px 18px 24px;scrollbar-width:none;}
+  .sh-body::-webkit-scrollbar{display:none;}
+  .sh-foot{flex:none;background:var(--page);box-shadow:0 -6px 20px rgba(0,0,0,.07);padding:12px 16px 20px;position:relative;z-index:4;}
+  .sh-foot-in{display:flex;align-items:center;gap:16px;}
+  .btn{min-height:48px;font-size:14px;font-weight:600;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0 22px;border:1px solid var(--ink);background:var(--ink);color:var(--page)!important;}
+  .btn.primary{flex:1 1 auto;min-width:0;}
+  .btn.quiet{flex:0 0 auto;padding:0 12px;background:transparent;border-color:transparent;color:var(--ink-soft)!important;}
+  .btn[disabled]{opacity:.4;cursor:default;}
+  .btn .chev{width:16px;height:16px;margin-right:4px;}
+  .num{display:inline-block;}
+  .num.roll{animation:roll 320ms var(--ease);}
+  @keyframes roll{0%{transform:translateY(7px);opacity:0;}100%{transform:none;opacity:1;}}
+
+  .sec{margin-bottom:18px;}
+  .lab{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:9px;}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;padding-top:7px;margin-top:-7px;}
+  .chip{position:relative;display:inline-flex;align-items:center;gap:7px;min-height:44px;font-size:12px;font-weight:600;padding:0 16px;border-radius:999px;
+        border:1px solid var(--line);background:transparent;color:var(--ink-soft)!important;cursor:pointer;white-space:nowrap;
+        transition:background .12s ease,border-color .12s ease,color .12s ease;flex:none;}
+  .chip.on,.chip.pinned{border-color:transparent;background:var(--accent-soft);color:var(--ink)!important;}
+  .chip.open{background:var(--ink);border-color:var(--ink);color:var(--page)!important;}
+  .chip .badge{position:absolute;top:-5px;right:-4px;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:var(--accent);color:#fff;
+               font-size:10px;font-weight:600;line-height:18px;text-align:center;box-shadow:0 0 0 2px var(--page);}
+  .chip.open .badge{background:#fff;color:var(--ink);box-shadow:0 0 0 2px var(--ink);}
+  .chip svg{width:13px;height:13px;}
+  /* Option C: with a category open, the chips turn into the one-row rail the
+     outfit builder already uses, and stay pinned while the grid scrolls. */
+  .chips.rail{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;position:sticky;top:-6px;z-index:3;background:var(--page);
+              margin:-6px -18px 0;padding:12px 18px 10px;}
+  .chips.rail::-webkit-scrollbar{display:none;}
+
+  .drawer-in{animation:fadein 280ms var(--ease);}
+  @keyframes fadein{0%{opacity:0;transform:translateY(8px);}100%{opacity:1;transform:none;}}
+  .ghead{display:flex;align-items:center;justify-content:space-between;margin:6px 0 10px;min-height:32px;}
+  .ghead .hint{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);}
+  .gclear{background:none;border:none;font-family:var(--mono);font-size:11px;letter-spacing:.06em;min-height:44px;margin:-6px 0;padding:0 6px;cursor:pointer;}
+  .gclear[hidden]{display:none;}
+  .pgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding-bottom:4px;}
+  .ptile{position:relative;aspect-ratio:1/1;border-radius:8px;border:1px solid var(--line);background:var(--page);display:grid;place-items:center;cursor:pointer;
+         transition:border-color .12s ease,transform .12s ease;}
+  .ptile:active{transform:scale(.97);}
+  .ptile svg{width:68%;height:68%;}
+  .ptile.sel{border:2px solid var(--accent);}
+  .ptile .ck{position:absolute;top:5px;right:5px;width:20px;height:20px;border-radius:999px;background:var(--accent);color:#fff;display:none;place-items:center;}
+  .ptile.sel .ck{display:grid;}
+  .ptile .ck svg{width:12px;height:12px;}
+  .ptile.none{font-size:12px;font-weight:500;color:var(--ink-soft);text-align:center;padding:6px;}
+
+  /* Option A: rows */
+  .arow{background:var(--surface);border:1px solid var(--line);border-radius:12px;margin-bottom:8px;overflow:hidden;}
+  .arow-head{width:100%;display:flex;align-items:center;gap:12px;min-height:56px;padding:6px 14px;background:none;border:none;cursor:pointer;text-align:left;font-size:14px;font-weight:600;}
+  .arow-head .nm{flex:1;}
+  .arow-head .st{font-size:12px;font-weight:500;color:var(--ink-soft);}
+  .arow-head .mini{display:flex;}
+  .arow-head .mini span{width:32px;height:32px;border-radius:6px;border:1px solid var(--line);background:var(--page);display:grid;place-items:center;margin-left:-8px;}
+  .arow-head .mini span:first-child{margin-left:0;}
+  .arow-head .mini svg{width:70%;height:70%;}
+  .arow-head .cv{width:18px;height:18px;color:var(--ink-soft);transition:transform var(--ease-ms) var(--ease);}
+  .arow.open .cv{transform:rotate(180deg);}
+  .arow .drawer-in{padding:0 12px 12px;}
+
+  /* Option B: a second page inside the same sheet */
+  .slide-fwd{animation:sfwd 340ms var(--ease);}
+  .slide-back{animation:sback 340ms var(--ease);}
+  @keyframes sfwd{0%{opacity:0;transform:translateX(36px);}100%{opacity:1;transform:none;}}
+  @keyframes sback{0%{opacity:0;transform:translateX(-36px);}100%{opacity:1;transform:none;}}
+  .hearts{display:inline-flex;gap:1px;}
+  @media (prefers-reduced-motion: reduce){
+    .phone{--ease-ms:0ms;} .sheet.morphing{transition:none;} .drawer-in,.slide-fwd,.slide-back,.num.roll{animation:none;}
+  }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="g-top" viewBox="0 0 48 48"><path d="M16 8 8 14l3 6 4-2v22h18V18l4 2 3-6-8-6c-3 4-9 4-16 0Z"/></symbol>
+    <symbol id="g-jacket" viewBox="0 0 48 48"><path d="M15 7 6 14l3 8 5-2v22h20V20l5 2 3-8-9-7-5 4h-4Z"/><path d="M24 11v31" stroke="rgba(0,0,0,.25)" fill="none"/></symbol>
+    <symbol id="g-pants" viewBox="0 0 48 48"><path d="M15 6h18l3 38h-9l-3-24-3 24h-9Z"/></symbol>
+    <symbol id="g-shorts" viewBox="0 0 48 48"><path d="M14 10h20l3 24h-11l-2-12-2 12H11Z"/></symbol>
+    <symbol id="g-skirt" viewBox="0 0 48 48"><path d="M18 8h12l9 32H9Z"/></symbol>
+    <symbol id="g-dress" viewBox="0 0 48 48"><path d="M18 5h3l3 6 3-6h3l1 14 8 25H8l8-25Z"/></symbol>
+    <symbol id="g-shoe" viewBox="0 0 48 48"><path d="M6 17h10l4 7 6 3h14c2 3 2 6 0 8H6Z"/></symbol>
+    <symbol id="g-hat" viewBox="0 0 48 48"><path d="M10 28c0-9 6-14 14-14s14 5 14 14Z"/><path d="M5 28h38v4H5Z"/></symbol>
+  </defs>
+</svg>
+
+<div class="wrap">
+  <div class="intro">
+    <span class="kicker">The Archive · Outfits &amp; Faves</span>
+    <h1>Filters as a bottom sheet</h1>
+    <p>The <b>Filters</b> button raises a sheet that works like the app's other sheets. It starts as tall as its content and grows up to the height of the screen when it needs to. The one open question is how you pick pieces from inside it, so the phone below has three versions to try. Everything else is the same in all three.</p>
+  </div>
+
+  <ul class="rules">
+    <li><b>No sheet on a sheet</b><span>Choosing pieces happens inside the Filters sheet. The separate "Choose tops" picker goes away.</span></li>
+    <li><b>Thumb reach</b><span>"See 1,284 outfits" is docked at the bottom edge, with Clear all quiet beside it. Nothing you need is in the top corners.</span></li>
+    <li><b>Same rules as the other sheets</b><span>Grip, 85–92% height, dimmed page, rounded top, Cancel-style quiet button on the left and the main action filling the right.</span></li>
+    <li><b>"See X outfits" is how you hide filters</b><span>The count updates as you tap. There is no separate Hide button.</span></li>
+    <li><b>Swipe down to close</b><span>Try it on the grip or title. Same distance and flick speed as the current sheets.</span></li>
+    <li><b>Floats above Shuffle and the pill</b><span>The sheet covers both, and they ease down behind it.</span></li>
+  </ul>
+
+  <h2>How you pick pieces</h2>
+  <div class="picker" role="group" aria-label="Piece picking option">
+    <button class="opt" data-mode="tabs" aria-pressed="true"><span class="t">C · Chips as tabs<span class="tag">Recommended</span></span><span class="s">Grid opens under the chips</span></button>
+    <button class="opt" data-mode="rows" aria-pressed="false"><span class="t">A · Rows that expand</span><span class="s">Accordion, one open at a time</span></button>
+    <button class="opt" data-mode="drill" aria-pressed="false"><span class="t">B · Second page</span><span class="s">Slides in, Back at the foot</span></button>
+  </div>
+
+  <div class="demo">
+    <div class="stage">
+      <div class="phone" id="phone">
+        <div class="screen" id="screen">
+          <div class="pg" aria-hidden="true">
+            <div class="pg-head"><h4>Outfits</h4><span class="plus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span></div>
+            <div class="ocard hero" id="hero"></div>
+            <div class="ocards" id="cards"></div>
+          </div>
+          <div class="floatrow" id="floatrow">
+            <button class="shuffle" type="button" tabindex="-1">
+              <svg viewBox="0 -960 960 960" fill="currentColor"><path d="m176-120-56-56 301-302-181-45 198-123-17-234 179 151 216-88-87 217 151 178-234-16-124 198-45-181-301 301Zm24-520-80-80 80-80 80 80-80 80Zm355 197 48-79 93 7-60-71 35-86-86 35-71-59 7 92-79 49 90 22 23 90Zm165 323-80-80 80-80 80 80-80 80ZM569-570Z"/></svg>
+              Shuffle</button>
+            <button class="fpill" id="fpill" type="button" aria-haspopup="dialog"></button>
+          </div>
+          <nav class="nav" aria-hidden="true"><span class="on">Outfits</span><span>♥</span><span>Wardrobe</span><span>Capsules</span></nav>
+          <div class="scrim" id="scrim"></div>
+          <div class="sheet" id="sheet" role="dialog" aria-label="Filters">
+            <div class="sh-head" id="shhead"><div class="grip"></div><div id="shtitle"></div></div>
+            <div class="sh-body" id="shbody"></div>
+            <div class="sh-foot" id="shfoot"></div>
+          </div>
+        </div>
+      </div>
+      <button class="stagebtn" id="reset" type="button">Reset the demo</button>
+    </div>
+
+    <div class="notes" id="notes" aria-live="polite"></div>
+  </div>
+
+  <section>
+    <h2>Tops, then pants</h2>
+    <p style="color:var(--muted);max-width:60ch">The case to judge the three options on: pick two tops, then move on to pants.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th></th><th>C · Chips as tabs</th><th>A · Rows</th><th>B · Second page</th></tr></thead>
+        <tbody>
+          <tr><td>Taps from Tops to Pants</td><td>1</td><td>1</td><td>2 (Back, then Pants)</td></tr>
+          <tr><td>What you picked in Tops</td><td>A count on the Tops chip, still on screen</td><td>Its thumbnails stay in the collapsed row</td><td>Out of sight until you go Back</td></tr>
+          <tr><td>Other filters (faves, tags)</td><td>Scroll up to reach them</td><td>Scroll up to reach them</td><td>Back to reach them</td></tr>
+          <tr><td>Sheet height</td><td>Grows once, then stays</td><td>Grows, shrinks and grows as rows change</td><td>Fixed per page</td></tr>
+          <tr><td>Fits the app's patterns</td><td>Same one-row tab rail as the outfit builder</td><td>New pattern</td><td>Closest to the old picker, but with a Back</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>To confirm before building</h2>
+    <ul class="qs">
+      <li><b>Which option for picking pieces?</b> I'd build C. It's one tap between categories, and it reuses the tab rail from the outfit builder.</li>
+      <li><b>Dimmed page behind the sheet.</b> Shown dimmed, like every other sheet. The old panel let you watch results change above it. A tall sheet covers most of that, so the count on the button now carries it. The alternative is no dim, and a shorter sheet.</li>
+      <li><b>Clear all lives in the footer</b>, on the left and quiet, and only appears when a filter is on. The old position was the top right of the panel.</li>
+      <li><b>Everything applies live,</b> like the current piece picker. There is no Save or Cancel, so the footer stays one main button.</li>
+      <li><b>On Faves,</b> the same sheet says "See 12 saved outfits". Is that the wording you want?</li>
+    </ul>
+  </section>
+</div>
+
+<script>
+(function(){
+  var CATS = [['Tops',12,'top'],['Pants',9,'pants'],['Shorts',5,'shorts'],['Skirts',6,'skirt'],['Dresses',8,'dress'],['Jackets',7,'jacket'],['Shoes',10,'shoe'],['Hats',4,'hat']];
+  var NONE = {Tops:'No top',Pants:'No pants',Shorts:'No shorts',Skirts:'No skirt',Dresses:'No dress',Jackets:'No jacket',Shoes:'No shoes',Hats:'No hat'};
+  var PAL = ['#2F3B52','#EFEBE2','#9A3B3B','#5E7B6A','#C9B79C','#222222','#7A8DA6','#FAFAFA','#B4846C','#8C8C8C','#D5C3D9','#3F5F4A'];
+  var GROUPS = {
+    capsule:{label:'Capsules', items:['Summer','Office','Fiji']},
+    fave:{label:'Faves', items:['Like','Love','All-time']},
+    tag:{label:'Tags', items:['Work','Weekend','Dressy','Travel']}
+  };
+  var BASE = 35224;
+
+  var state, lastCount = null;
+  function fresh(){
+    var sel = {};
+    CATS.forEach(function(c){ sel[c[0]] = {none:false, ids:new Set()}; });
+    return {mode: state ? state.mode : 'tabs', open:null, view:null, sel:sel,
+            groups:{capsule:new Set(), fave:new Set(), tag:new Set()}};
+  }
+  state = fresh();
+
+  var $ = function(id){ return document.getElementById(id); };
+  var sheet=$('sheet'), scrim=$('scrim'), body=$('shbody'), foot=$('shfoot'), titleEl=$('shtitle'), pill=$('fpill'), floatrow=$('floatrow');
+  var isOpen = false;
+
+  function cat(name){ return CATS.filter(function(c){return c[0]===name;})[0]; }
+  function narrowed(n){ var s=state.sel[n]; return s.none || s.ids.size>0; }
+  function activeCount(){
+    var n = CATS.filter(function(c){return narrowed(c[0]);}).length;
+    ['capsule','fave','tag'].forEach(function(g){ if(state.groups[g].size) n++; });
+    return n;
+  }
+  function outfitCount(){
+    var n = BASE;
+    CATS.forEach(function(c){ var s=state.sel[c[0]]; if(s.none) n*=0.18; else if(s.ids.size) n*=s.ids.size/c[1]; });
+    if(state.groups.capsule.size) n*=0.3+0.1*state.groups.capsule.size;
+    if(state.groups.fave.size) n*=0.25*state.groups.fave.size+0.1;
+    if(state.groups.tag.size) n*=0.28+0.08*state.groups.tag.size;
+    return Math.max(0,Math.round(n));
+  }
+  function glyph(kind,color,size){
+    return '<svg viewBox="0 0 48 48" aria-hidden="true"><use href="#g-'+kind+'" fill="'+color+'" stroke="rgba(0,0,0,.14)" stroke-width="1"/></svg>';
+  }
+  function colorFor(ci,i){ return PAL[(i*5+ci*3)%PAL.length]; }
+  var CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg>';
+  var CHEV = '<svg class="cv" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
+  var HEART = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7.5-4.6-9.6-9.2C.9 8.4 3 5 6.3 5c2 0 3.6 1 5.7 3.3C14.1 6 15.7 5 17.7 5 21 5 23.1 8.4 21.6 11.8 19.5 16.4 12 21 12 21Z"/></svg>';
+
+  /* ----- the page behind ----- */
+  function paintPage(){
+    var kinds=['top','pants','shoe'];
+    function stack(seed){ return kinds.map(function(k,i){ return glyph(k, PAL[(seed*3+i*4)%PAL.length]); }).join(''); }
+    $('hero').innerHTML = stack(1);
+    $('cards').innerHTML = [2,5,7,9].map(function(s){ return '<div class="ocard">'+stack(s)+'</div>'; }).join('');
+  }
+
+  /* ----- pill ----- */
+  function paintPill(){
+    var n = activeCount();
+    pill.classList.toggle('active', n>0);
+    pill.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>'
+      + '<span>Filters</span>' + (n ? '<span class="fbadge">'+n+'</span>' : '');
+  }
+
+  /* ----- markup ----- */
+  function chipHtml(c){
+    var n=c[0];
+    return '<button class="chip" type="button" data-cat="'+n+'">'+n+'</button>';
+  }
+  function groupHtml(g){
+    var G=GROUPS[g];
+    return '<div class="sec"><span class="lab">'+G.label+'<span data-gcount="'+g+'"></span></span><div class="chips">'
+      + G.items.map(function(it){
+          var heart = g==='fave' ? '<span class="hearts">'+HEART.repeat(G.items.indexOf(it)+1)+'</span>' : '';
+          return '<button class="chip" type="button" data-g="'+g+'" data-v="'+it+'">'+heart+it+'</button>';
+        }).join('')
+      + '</div></div>';
+  }
+  function gridHtml(n){
+    var c=cat(n), tiles='<div class="ptile none" role="button" tabindex="0" data-cat="'+n+'" data-none="1">'+NONE[n]+'<span class="ck">'+CHECK+'</span></div>';
+    for(var i=0;i<c[1];i++){
+      tiles += '<div class="ptile" role="button" tabindex="0" data-cat="'+n+'" data-id="'+i+'">'+glyph(c[2],colorFor(CATS.indexOf(c),i))+'<span class="ck">'+CHECK+'</span></div>';
+    }
+    return '<div class="drawer-in"><div class="ghead"><span class="hint">Pick any number</span><button class="gclear" type="button" data-clear="'+n+'" hidden>Clear</button></div><div class="pgrid">'+tiles+'</div></div>';
+  }
+  function piecesHtml(){
+    var m=state.mode, label='<span class="lab">Pieces<span data-gcount="pieces"></span></span>', out='<div class="sec" id="pieces">'+label;
+    if(m==='rows'){
+      out += CATS.map(function(c){
+        var n=c[0], open=state.open===n;
+        return '<div class="arow'+(open?' open':'')+'" data-row="'+n+'"><button class="arow-head" type="button" data-cat="'+n+'" aria-expanded="'+open+'"><span class="nm">'+n+'</span><span class="mini" data-mini="'+n+'"></span><span class="st" data-st="'+n+'"></span>'+CHEV+'</button>'+(open?gridHtml(n):'')+'</div>';
+      }).join('');
+    } else {
+      var rail = (m==='tabs' && state.open);
+      out += '<div class="chips'+(rail?' rail':'')+'" id="catchips">'+CATS.map(chipHtml).join('')+'</div>';
+      if(m==='tabs' && state.open) out += gridHtml(state.open);
+    }
+    return out+'</div>';
+  }
+  function mainHtml(){ return groupHtml('capsule')+groupHtml('fave')+groupHtml('tag')+piecesHtml(); }
+  function drillHtml(){ return gridHtml(state.view); }
+
+  function titleHtml(){
+    if(state.view) return '<div class="sh-crumb">Filters</div><h3 class="sh-title">'+state.view+'</h3>';
+    return '<h3 class="sh-title">Filters</h3>';
+  }
+
+  /* ----- build (structure) and refresh (values) ----- */
+  function build(anim){
+    var st = body.scrollTop;
+    titleEl.innerHTML = titleHtml();
+    body.innerHTML = state.view ? drillHtml() : mainHtml();
+    if(anim){ body.classList.remove('slide-fwd','slide-back'); void body.offsetWidth; body.classList.add(anim); }
+    body.scrollTop = st;
+    refresh();
+  }
+  function refresh(){
+    // groups
+    body.querySelectorAll('[data-g]').forEach(function(el){
+      el.classList.toggle('on', state.groups[el.dataset.g].has(el.dataset.v));
+    });
+    ['capsule','fave','tag'].forEach(function(g){
+      var el=body.querySelector('[data-gcount="'+g+'"]'); if(el) el.textContent = state.groups[g].size ? ' ('+state.groups[g].size+')' : '';
+    });
+    var pc=body.querySelector('[data-gcount="pieces"]');
+    if(pc){ var k=CATS.filter(function(c){return narrowed(c[0]);}).length; pc.textContent = k ? ' ('+k+')' : ''; }
+    // category chips (tabs / drill)
+    body.querySelectorAll('#catchips .chip').forEach(function(el){
+      var n=el.dataset.cat, s=state.sel[n];
+      el.classList.toggle('pinned', narrowed(n));
+      el.classList.toggle('open', state.mode==='tabs' && state.open===n);
+      var b=el.querySelector('.badge');
+      if(s.ids.size){ if(!b){ b=document.createElement('span'); b.className='badge'; el.appendChild(b); } b.textContent=s.ids.size; }
+      else if(b) b.remove();
+    });
+    // rows
+    body.querySelectorAll('[data-mini]').forEach(function(el){
+      var n=el.dataset.mini, s=state.sel[n], c=cat(n), ids=Array.from(s.ids).slice(0,3);
+      el.innerHTML = ids.map(function(i){ return '<span>'+glyph(c[2],colorFor(CATS.indexOf(c),i))+'</span>'; }).join('');
+    });
+    body.querySelectorAll('[data-st]').forEach(function(el){
+      var n=el.dataset.st, s=state.sel[n];
+      el.textContent = s.none ? NONE[n] : s.ids.size ? (s.ids.size>3 ? '+'+(s.ids.size-3) : '') : 'Any';
+    });
+    // tiles
+    body.querySelectorAll('.ptile').forEach(function(el){
+      var s=state.sel[el.dataset.cat];
+      var on = el.dataset.none ? s.none : s.ids.has(+el.dataset.id);
+      el.classList.toggle('sel', on);
+      el.setAttribute('aria-pressed', on);
+    });
+    body.querySelectorAll('[data-clear]').forEach(function(el){ el.hidden = !narrowed(el.dataset.clear); });
+    paintFoot(); paintPill();
+  }
+  function paintFoot(){
+    var n=outfitCount(), any=activeCount()>0, empty=n<1;
+    var label = empty ? 'No outfits match' : '<span>See <span class="num" id="num">'+n.toLocaleString('en-US')+'</span> '+(n===1?'outfit':'outfits')+'</span>';
+    var left = state.view
+      ? '<button class="btn quiet" type="button" data-act="back"><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>Filters</button>'
+      : (any ? '<button class="btn quiet" type="button" data-act="clearall">Clear all</button>' : '');
+    foot.innerHTML = '<div class="sh-foot-in">'+left+'<button class="btn primary" type="button" data-act="see"'+(empty?' disabled':'')+'>'+label+'</button></div>';
+    if(lastCount!==null && lastCount!==n){ var el=$('num'); if(el) el.classList.add('roll'); }
+    lastCount=n;
+  }
+
+  /* ----- height that follows its content ----- */
+  var morphTimer;
+  function morph(fn, after){
+    if(!isOpen){ fn(); return; }
+    clearTimeout(morphTimer);
+    sheet.classList.remove('morphing');
+    var h0 = sheet.offsetHeight;
+    sheet.style.height='auto';
+    fn();
+    var h1 = sheet.offsetHeight;
+    if(h0===h1){ sheet.style.height=''; if(after) after(); return; }
+    sheet.style.height = h0+'px';
+    void sheet.offsetHeight;
+    sheet.classList.add('morphing');
+    sheet.style.height = h1+'px';
+    morphTimer = setTimeout(function(){ sheet.classList.remove('morphing'); sheet.style.height=''; if(after) after(); }, 400);
+  }
+  function scrollTo(el, pad){
+    if(!el) return;
+    body.scrollTo({top: Math.max(0, el.offsetTop - (pad||0)), behavior:'smooth'});
+  }
+
+  /* ----- open / close ----- */
+  function openSheet(){
+    if(isOpen) return;
+    isOpen = true;
+    state.open=null; state.view=null;
+    build();
+    sheet.classList.remove('closing');
+    sheet.classList.add('open'); scrim.classList.add('open'); floatrow.classList.add('away');
+    $('screen').querySelector('.sheet').setAttribute('aria-hidden','false');
+  }
+  function closeSheet(){
+    if(!isOpen) return;
+    isOpen = false;
+    sheet.classList.add('closing');
+    sheet.classList.remove('open'); scrim.classList.remove('open'); floatrow.classList.remove('away');
+    setTimeout(function(){ if(!isOpen){ sheet.classList.remove('closing'); state.open=null; state.view=null; build(); } }, 360);
+    paintPill();
+  }
+
+  /* ----- interactions ----- */
+  function toggleTile(el){
+    var s=state.sel[el.dataset.cat];
+    if(el.dataset.none){ s.none=!s.none; if(s.none) s.ids.clear(); }
+    else { var id=+el.dataset.id; if(s.ids.has(id)) s.ids.delete(id); else s.ids.add(id); s.none=false; }
+    refresh();
+  }
+  function openCategory(n){
+    var m=state.mode;
+    if(m==='drill'){
+      morph(function(){ state.view=n; build('slide-fwd'); body.scrollTop=0; });
+      return;
+    }
+    var wasOpen = !!state.open, closing = state.open===n;
+    morph(function(){
+      state.open = closing ? null : n;
+      build();
+      var ch=$('catchips');
+      if(m==='tabs' && ch){
+        var a=ch.querySelector('.chip.open'); if(a && ch.classList.contains('rail')) a.scrollIntoView({inline:'center',block:'nearest'});
+      }
+    }, function(){
+      if(closing) return;
+      if(m==='tabs' && !wasOpen) scrollTo($('pieces'), 4);
+      if(m==='rows') scrollTo(body.querySelector('[data-row="'+n+'"]'), 8);
+    });
+  }
+
+  sheet.addEventListener('click', function(e){
+    var t;
+    if((t=e.target.closest('.ptile'))) return toggleTile(t);
+    if((t=e.target.closest('[data-clear]'))){ var s=state.sel[t.dataset.clear]; s.none=false; s.ids.clear(); return refresh(); }
+    if((t=e.target.closest('[data-g]'))){
+      var set=state.groups[t.dataset.g], v=t.dataset.v;
+      if(set.has(v)) set.delete(v); else set.add(v);
+      return refresh();
+    }
+    if((t=e.target.closest('.chip[data-cat], .arow-head[data-cat]'))) return openCategory(t.dataset.cat);
+    if((t=e.target.closest('[data-act]'))){
+      var a=t.dataset.act;
+      if(a==='see') return closeSheet();
+      if(a==='clearall'){
+        CATS.forEach(function(c){ state.sel[c[0]].none=false; state.sel[c[0]].ids.clear(); });
+        Object.keys(state.groups).forEach(function(g){ state.groups[g].clear(); });
+        return refresh();
+      }
+      if(a==='back') return morph(function(){ state.view=null; build('slide-back'); });
+    }
+  });
+  sheet.addEventListener('keydown', function(e){
+    if((e.key==='Enter'||e.key===' ') && e.target.classList.contains('ptile')){ e.preventDefault(); toggleTile(e.target); }
+  });
+  pill.addEventListener('click', openSheet);
+  scrim.addEventListener('click', closeSheet);
+  document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeSheet(); });
+
+  /* ----- swipe down to close (same rule as the app's sheets) ----- */
+  var drag=null;
+  sheet.addEventListener('pointerdown', function(e){
+    if(!isOpen) return;
+    var inHead = e.target.closest('#shhead');
+    if(!inHead && (body.scrollTop>0 || e.target.closest('.rail') || e.target.closest('.sh-foot'))) return;
+    drag={id:e.pointerId,y:e.clientY,dy:0,active:false,s:[[performance.now(),e.clientY]]};
+  });
+  window.addEventListener('pointermove', function(e){
+    if(!drag) return;
+    var dy=e.clientY-drag.y;
+    if(!drag.active){
+      if(dy>6){ drag.active=true; sheet.classList.add('dragging'); scrim.classList.add('dragging'); try{sheet.setPointerCapture(drag.id);}catch(_){} }
+      else { if(dy<-6) drag=null; return; }
+    }
+    drag.dy=Math.max(0,dy);
+    sheet.style.transform='translateY('+drag.dy+'px)';
+    scrim.style.opacity = String(1-Math.min(1,drag.dy/sheet.offsetHeight));
+    var now=performance.now(); drag.s.push([now,e.clientY]);
+    while(drag.s.length>2 && now-drag.s[0][0]>100) drag.s.shift();
+  });
+  function endDrag(cancel){
+    if(!drag) return;
+    var d=drag; drag=null;
+    if(!d.active) return;
+    var s=d.s, speed = s.length>1 ? (s[s.length-1][1]-s[0][1])/Math.max(1,s[s.length-1][0]-s[0][0]) : 0;
+    var far = d.dy >= Math.min(100, sheet.offsetHeight*0.25);
+    sheet.classList.remove('dragging'); scrim.classList.remove('dragging');
+    sheet.style.transform=''; scrim.style.opacity='';
+    if(!cancel && (far || speed>=0.5)) closeSheet();
+  }
+  window.addEventListener('pointerup', function(){ endDrag(false); });
+  window.addEventListener('pointercancel', function(){ endDrag(true); });
+
+  /* ----- option switcher and notes ----- */
+  var NOTES = {
+    tabs:{
+      lede:'The category chips stay where they are. Tap one and its grid opens underneath, and the chips pin to the top as a single row you can swipe. Moving to the next category is one tap on that row.',
+      flow:['<b>Tap Filters.</b> The sheet rises, sized to its content, with the page dimmed behind it.','<b>Tap Tops.</b> The chips pin to one row, the Tops grid opens under it and the sheet grows.','<b>Pick two.</b> A 2 appears on the Tops chip and the button count drops as you tap.','<b>Tap Pants in the same row.</b> The grid swaps. Tops keeps its 2, your scroll position stays and nothing slides away.','<b>Tap See outfits,</b> or swipe the sheet down.'],
+      up:['One tap between categories, from anywhere in the grid','What you have already picked stays visible as counts on the chips','Reuses the tab rail from the outfit builder, so it already feels familiar'],
+      down:['Faves, tags and capsules scroll up out of view while a grid is open','The sheet is nearly full height whenever a grid is open']
+    },
+    rows:{
+      lede:'Each category is a row showing what you have picked as small thumbnails. Tapping a row opens its grid in place and closes the one before it.',
+      flow:['<b>Tap Filters.</b> The sheet rises with the same filters, and Pieces is a list of rows.','<b>Tap the Tops row.</b> It opens under itself and the sheet grows.','<b>Pick two.</b> Their thumbnails appear in the row header.','<b>Tap the Pants row.</b> Tops folds up showing its two thumbnails. Pants opens and scrolls to the top.','<b>Tap See outfits.</b>'],
+      up:['You can see your picks for every category at once, as pictures','Nothing to learn: it behaves like any expanding list'],
+      down:['The sheet grows and shrinks each time a row changes, which is the busiest motion of the three','A new pattern the app does not use anywhere else','Eight rows are much taller than one row of chips']
+    },
+    drill:{
+      lede:'Tapping a category slides the sheet to a second page for that category. Back sits at the foot next to the count. It is the closest to how the old picker worked, minus the second sheet.',
+      flow:['<b>Tap Filters.</b> The sheet rises with chips for each category.','<b>Tap Tops.</b> The page slides left and the title becomes Tops. The footer now reads Filters on the left.','<b>Pick two.</b> The count still updates in the See button.','<b>Tap Filters (Back), then Pants.</b> Two taps, and the Tops chip shows a 2 on the way past.','<b>Tap See outfits.</b>'],
+      up:['Each category gets the whole sheet to itself','Clear, simple model: one page per thing'],
+      down:['Two taps between categories, every time','Your picks in other categories are out of sight while you choose','Adds a second level of navigation to a sheet that has none today']
+    }
+  };
+  function paintNotes(){
+    var n=NOTES[state.mode];
+    $('notes').innerHTML =
+      '<p class="lede">'+n.lede+'</p>'
+      + '<div><span class="kicker">Walk-through</span><ol class="flow" style="margin-top:10px">'+n.flow.map(function(f){return '<li><span>'+f+'</span></li>';}).join('')+'</ol></div>'
+      + '<div class="proscons"><div class="up"><h4>Good</h4><ul>'+n.up.map(function(x){return '<li>'+x+'</li>';}).join('')+'</ul></div>'
+      + '<div class="down"><h4>Costs</h4><ul>'+n.down.map(function(x){return '<li>'+x+'</li>';}).join('')+'</ul></div></div>';
+  }
+  function setMode(m){
+    state.mode=m; state.open=null; state.view=null;
+    document.querySelectorAll('.opt').forEach(function(b){ b.setAttribute('aria-pressed', String(b.dataset.mode===m)); });
+    paintNotes();
+    if(isOpen){ morph(function(){ build(); }); body.scrollTop=0; } else { build(); openSheet(); }
+  }
+  document.querySelectorAll('.opt').forEach(function(b){ b.addEventListener('click', function(){ setMode(b.dataset.mode); }); });
+  $('reset').addEventListener('click', function(){
+    var m=state.mode; closeSheet(); state=fresh(); state.mode=m; lastCount=null;
+    setTimeout(function(){ build(); }, 380);
+  });
+
+  paintPage(); paintNotes(); build();
+})();
+</script>
