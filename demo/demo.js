@@ -70,11 +70,15 @@
 
     var bar = document.createElement('div');
     bar.style.cssText = 'position:sticky;top:0;z-index:9999;display:flex;gap:12px;justify-content:center;align-items:center;padding:8px 16px;font:13px/1.3 system-ui,sans-serif;background:#2b2b2b;color:#fff';
+    // Full | Empty: a two-way switch between the demos; the one you are on is filled in.
+    var seg = 'font:inherit;color:inherit;text-decoration:none;padding:2px 10px;';
+    var on = 'background:#fff;color:#2b2b2b;';
     bar.innerHTML = '<span>Demo — changes stay on this device only</span>' +
-      '<button style="font:inherit;color:inherit;background:none;border:1px solid #fff8;border-radius:6px;padding:2px 10px;cursor:pointer">Reset</button>' +
-      // The other demo, so each can be shown without typing the address.
-      '<a href="' + (kind === 'empty' ? '/demo' : '/demo-empty') + '" style="font:inherit;color:inherit;text-decoration:none;border:1px solid #fff8;border-radius:6px;padding:2px 10px">' +
-      (kind === 'empty' ? 'See the full demo' : 'See the empty demo') + '</a>';
+      '<span style="display:inline-flex;flex:none;white-space:nowrap;border:1px solid #fff8;border-radius:6px;overflow:hidden">' +
+        '<a href="/demo" style="' + seg + (kind === 'empty' ? '' : on) + '"' + (kind === 'empty' ? '' : ' aria-current="page"') + '>Full</a>' +
+        '<a href="/demo-empty" style="' + seg + (kind === 'empty' ? on : '') + '"' + (kind === 'empty' ? ' aria-current="page"' : '') + '>Empty</a>' +
+      '</span>' +
+      '<button style="flex:none;font:inherit;color:inherit;background:none;border:1px solid #fff8;border-radius:6px;padding:2px 10px;cursor:pointer">Reset</button>';
     bar.querySelector('button').onclick = function () {
       try { localStorage.removeItem(window.__FAKE_DB_KEY); } catch (e) {}
       location.reload();
