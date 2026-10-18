@@ -1,5 +1,5 @@
-// This round of tidying: no filters on the wardrobe, a filter panel that
-// comes up once a visit rather than every trip, tags folded to two rows and
+// This round of tidying: no filters on the wardrobe, a filter sheet that
+// only comes up when asked for, tags folded to two rows and
 // ordered by use, a capsule's layers cascading, the pieces no capsule has
 // claimed, and a piece's capsules editable from the piece itself.
 const { chromium } = require('playwright');
@@ -60,7 +60,7 @@ const foldedCount = p => p.evaluate(()=>
   {
     const p=await open(b);
     check('no Filters pill on the wardrobe', !(await p.isVisible('#filters-fab')));
-    check('and the panel has nothing to offer there',
+    check('and the sheet has nothing to offer there',
       !(await p.evaluate(()=>filterSheetHasContent())) && !(await sheetOpen(p)));
     check('the wardrobe shows everything despite twenty tags existing',
       await p.evaluate(()=>visibleFilteredItems('').length) === 83);
@@ -70,40 +70,40 @@ const foldedCount = p => p.evaluate(()=>
     await p.close();
   }
 
-  // ---- 2. The panel comes up once a visit, not every time ----
+  // ---- 2. The sheet comes up when asked for, never by itself ----
   {
     const p=await open(b);
     await p.click('#nav-outfits-btn'); await p.waitForTimeout(900);
-    check('it comes down by itself the first time you arrive', await sheetOpen(p));
+    check('it does not come up by itself on arrival', !(await sheetOpen(p)));
+    check('the pill is there to raise it', await p.isVisible('#filters-fab'));
+    await p.click('#filters-fab'); await p.waitForTimeout(450);
+    check('and raising it by hand works', await sheetOpen(p));
+    await p.click('#filter-sheet-see'); await p.waitForTimeout(500);
 
     await p.click('#nav-inventory-btn'); await p.waitForTimeout(500);
     await p.click('#nav-outfits-btn'); await p.waitForTimeout(800);
     check('and stays down on the next trip back', !(await sheetOpen(p)));
-    check('the pill is there to raise it', await p.isVisible('#filters-fab'));
-    await p.click('#filters-fab'); await p.waitForTimeout(450);
-    check('and raising it by hand still works', await sheetOpen(p));
 
-    // Faves has its own once, independent of Outfits.
+    // Faves is the same.
     await toFaves(p, 800);
-    check('Faves gets its own first time', await sheetOpen(p));
+    check('Faves does not raise it either', !(await sheetOpen(p)));
     await p.click('#nav-outfits-btn'); await p.waitForTimeout(800);
     await toFaves(p, 800);
-    check('and only the once', !(await sheetOpen(p)));
+    check('not on a second visit to Faves', !(await sheetOpen(p)));
 
-    // A new visit starts over.
+    // A new visit is no different.
     await p.reload(); await p.waitForTimeout(1200);
     const q=await open(b);
     await q.click('#nav-outfits-btn'); await q.waitForTimeout(900);
-    check('a fresh visit gets the panel again', await sheetOpen(q));
+    check('a fresh visit does not raise it', !(await sheetOpen(q)));
     await q.close();
     await p.close();
   }
 
-  // ---- 2b. The pill: centred on the nav, and the two states are one motion ----
+  // ---- 2b. The pill: centred on the nav, and it eases away behind the sheet ----
   {
     const p=await open(b);
     await p.click('#nav-outfits-btn'); await p.waitForTimeout(900);
-    await p.click('#filters-fab'); await p.waitForTimeout(600);
 
     const placed = await p.evaluate(()=>{
       const f = document.getElementById('filters-fab').getBoundingClientRect();
@@ -129,16 +129,15 @@ const foldedCount = p => p.evaluate(()=>
     check('it is a pill, not a bar', placed.w < 200, `${placed.w}x${placed.h}`);
     check('and a thumb-sized one', placed.h >= 40, `${placed.h}px`);
 
-    // The pill no longer leaves when the panel arrives — it is the way out
-    // as well as the way in, so what is watched here is the panel growing
-    // out of it while it stays put.
+    // The sheet covers the floating row and the nav, so the row eases down
+    // and out as the sheet rises, and back as it goes.
     const flight = async (go) => {
       await p.evaluate(go);
       const frames = [];
       for(let i = 0; i < 3; i++){
         await p.waitForTimeout(70);
         frames.push(await p.evaluate(()=>({
-          o: Number(parseFloat(getComputedStyle(document.getElementById('filters-fab')).opacity).toFixed(2)),
+          o: Number(parseFloat(getComputedStyle(document.getElementById('float-row')).opacity).toFixed(2)),
           y: Math.round(new DOMMatrix(getComputedStyle(
                document.getElementById('filter-sheet')).transform).m42),
         })));
@@ -146,18 +145,28 @@ const foldedCount = p => p.evaluate(()=>
       await p.waitForTimeout(500);
       return frames;
     };
+    const rowAway = () => p.evaluate(()=>({
+      cls: document.getElementById('float-row').classList.contains('away'),
+      o: parseFloat(getComputedStyle(document.getElementById('float-row')).opacity),
+      v: getComputedStyle(document.getElementById('float-row')).visibility,
+    }));
 
     const opening = await flight(()=>openFilterSheet());
-    check('opening, the panel travels rather than appearing',
+    check('opening, the sheet travels rather than appearing',
       opening.some(f => f.y > 0), JSON.stringify(opening));
-    check('and the pill stays lit the whole way, because it is the way back',
-      opening.every(f => f.o === 1), JSON.stringify(opening.map(f=>f.o)));
+    check('and the pill row eases away rather than cutting out',
+      opening.some(f => f.o > 0 && f.o < 1), JSON.stringify(opening.map(f=>f.o)));
+    const up = await rowAway();
+    check('and is gone once the sheet is up', up.cls && up.o === 0 && up.v === 'hidden', JSON.stringify(up));
 
     const closing = await flight(()=>closeFilterSheet());
-    check('closing, it travels back the same way',
+    check('closing, the sheet travels back the same way',
       closing.some(f => f.y > 0), JSON.stringify(closing));
-    check('and the pill never flickers', closing.every(f => f.o === 1),
+    check('and the pill row comes back, fully lit',
+      closing.some(f => f.o > 0 && f.o < 1) || closing.every(f => f.o === 1),
       JSON.stringify(closing.map(f=>f.o)));
+    const down = await rowAway();
+    check('with nothing left of it hidden', !down.cls && down.o === 1 && down.v === 'visible', JSON.stringify(down));
 
     check('both halves share one curve and one duration', await p.evaluate(()=>{
       const root = getComputedStyle(document.documentElement);
@@ -171,7 +180,7 @@ const foldedCount = p => p.evaluate(()=>
              sheet.transitionTimingFunction.includes('cubic-bezier') &&
              Boolean(fab);
     }));
-    check('and stand still for anyone who asked for less movement', await (async()=>{
+    check('and everything stands still for anyone who asked for less movement', await (async()=>{
       const q = await b.newPage({viewport:{width:390,height:844}, reducedMotion:'reduce'});
       await q.route('**/vendor/supabase-js-*.js', r=>r.fulfill({contentType:'application/javascript',
         body:`window.__SEED_ITEMS=${seed};window.__WITH_TAGS=true;window.__SEED_TAGS=${JSON.stringify(TAGS)};\n${fake}`}));
@@ -191,7 +200,7 @@ const foldedCount = p => p.evaluate(()=>
     // A filter being on says so without the pill going black.
     await p.click('#filters-fab'); await p.waitForTimeout(500);
     await p.click('#sheet-tag-chips .tag-chip'); await p.waitForTimeout(700);
-    await p.click('#filters-fab'); await p.waitForTimeout(600);
+    await p.click('#filter-sheet-see'); await p.waitForTimeout(600);
     const on = await p.evaluate(()=>{
       const f = document.getElementById('filters-fab');
       const c = getComputedStyle(f);

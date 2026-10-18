@@ -35,6 +35,13 @@ async function open(b){
   return p;
 }
 
+// The sheet never opens itself: the pill raises it.
+async function openSheet(p){
+  if(!(await p.evaluate(()=>filterSheetOpen()))){
+    await p.click('#filters-fab'); await p.waitForTimeout(500);
+  }
+}
+
 // One chip, read the way you read it on screen: is it filled, does it carry
 // a number, is its label crossed out.
 const chip = (p, label) => p.evaluate(l => {
@@ -166,6 +173,7 @@ async function clearSlot(p, key){
     await p.waitForTimeout(400);
     check('two chips are on', await p.evaluate(()=>
       document.querySelectorAll('#sheet-filter-grid .filter-chip.active').length)===2);
+    await openSheet(p);
     await p.click('#filter-sheet-clear'); await p.waitForTimeout(700);
     check('and Clear all leaves nothing filled or badged',
       await p.evaluate(()=>Array.from(
@@ -183,6 +191,7 @@ async function clearSlot(p, key){
       renderFilterControls();
     });
     await p.waitForTimeout(400);
+    await openSheet(p);
     const sizes = await p.evaluate(()=>{
       const h = el => el ? Math.round(el.getBoundingClientRect().height) : null;
       return {
@@ -373,6 +382,7 @@ async function clearSlot(p, key){
         return label.left >= sheet.left && label.right <= sheet.right;
       }));
 
+    await openSheet(p);
     await p.click('#filter-sheet-clear'); await p.waitForTimeout(700);
     const after = await labels();
     check('Clear all takes both counts away',

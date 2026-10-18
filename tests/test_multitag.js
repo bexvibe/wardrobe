@@ -50,6 +50,10 @@ const on = p => p.evaluate(()=>Array.from(
   {
     const p=await open(b);
     await p.click('#nav-outfits-btn'); await p.waitForTimeout(1400);
+    check('the filter sheet is closed on arrival',
+      !(await p.evaluate(()=>filterSheetOpen())));
+    await p.click('#filters-fab'); await p.waitForTimeout(450);
+    check('the Filters pill raises it', await p.evaluate(()=>filterSheetOpen()));
     check('nothing is on to begin with', (await on(p)).length === 0);
 
     await tap(p, 'summer');
@@ -109,21 +113,27 @@ const on = p => p.evaluate(()=>Array.from(
   {
     const p=await open(b);
     await p.click('#nav-outfits-btn'); await p.waitForTimeout(1400);
+    // The pill is covered while the sheet is up, so read it with the sheet
+    // down, the way a person would.
+    const badge = () => p.textContent('#filters-fab').then(t => t.replace(/\s+/g,' ').trim());
+    await p.click('#filters-fab'); await p.waitForTimeout(450);
     await tap(p, 'summer');
-    const one = (await p.textContent('#filters-fab')).replace(/\s+/g,' ').trim();
+    await p.click('#filter-sheet-see'); await p.waitForTimeout(500);
+    const one = await badge();
+    await p.click('#filters-fab'); await p.waitForTimeout(450);
     await tap(p, 'winter');
-    const two = (await p.textContent('#filters-fab')).replace(/\s+/g,' ').trim();
+    await p.click('#filter-sheet-see'); await p.waitForTimeout(500);
+    const two = await badge();
     // Under OR a second tag widens the results, so counting it as a second
     // filter would be saying the page is more narrowed than it is.
+    check('the pill always reads Filters', /^Filters\b/.test(one) && /^Filters\b/.test(two), one);
     check('one tag reads as one filter', /\b1\b/.test(one), one);
     check('and two tags still read as one', /\b1\b/.test(two) && !/\b2\b/.test(two), two);
 
     await p.evaluate(()=>{ outfitFilters['Jackets'] = {type:'none', ids:[]};
                            renderFilterControls(); renderFiltersFab(); });
     await p.waitForTimeout(400);
-    check('a piece filter beside them is a second',
-      /\b2\b/.test((await p.textContent('#filters-fab')).replace(/\s+/g,' ')),
-      (await p.textContent('#filters-fab')).replace(/\s+/g,' ').trim());
+    check('a piece filter beside them is a second', /\b2\b/.test(await badge()), await badge());
     await p.close();
   }
 
@@ -134,16 +144,17 @@ const on = p => p.evaluate(()=>Array.from(
     await p.click('#nav-outfits-btn');
     await p.waitForSelector('.outfit-gallery .outfit-fav-btn');
     await p.waitForTimeout(900);
-    await p.evaluate(()=>closeFilterSheet()); await p.waitForTimeout(500);
+    check('the sheet is not up over the page on arrival', !(await p.evaluate(()=>filterSheetOpen())));
     await p.click('.outfit-gallery .outfit-fav-btn');
     await p.waitForFunction(()=>favoriteOutfits.length === 1);
 
     await toFaves(p, 1100);
+    await p.click('#filters-fab'); await p.waitForTimeout(450);
     await tap(p, 'summer');
     await tap(p, 'winter');
     check('Faves keeps two as well',
       JSON.stringify(await on(p))===JSON.stringify(['summer','winter']));
-    // The empty state no longer names the tags — the panel above it is
+    // The empty state no longer names the tags — the filter sheet is
     // showing them, and the line says what happened rather than repeating
     // what you chose.
     await p.evaluate(()=>{ outfitTags = ['wool']; renderSavedOutfits(); });
@@ -154,8 +165,12 @@ const on = p => p.evaluate(()=>Array.from(
       (await p.textContent('#saved-empty-title')).trim() === 'No outfits match',
       (await p.textContent('#saved-empty-title')).trim());
 
-    // One panel over both halves: the tag is still on when you switch.
+    // One set of filters over both halves: the tag is still on when you
+    // switch. The sheet covers the nav, so leave it first, and open it again
+    // on the other half to look.
+    await p.click('#filter-sheet-see'); await p.waitForTimeout(500);
     await p.click('#nav-outfits-btn'); await p.waitForTimeout(1200);
+    await p.click('#filters-fab'); await p.waitForTimeout(450);
     check('the tag carries across the switch',
       JSON.stringify(await on(p)) === JSON.stringify(['wool']),
       (await on(p)).join(', '));
@@ -166,6 +181,7 @@ const on = p => p.evaluate(()=>Array.from(
   {
     const p=await open(b);
     await p.click('#nav-outfits-btn'); await p.waitForTimeout(1400);
+    await p.click('#filters-fab'); await p.waitForTimeout(450);
     await tap(p, 'summer'); await tap(p, 'winter');
     await p.click('#filter-sheet-clear'); await p.waitForTimeout(800);
     check('Clear all takes both off', (await on(p)).length === 0);
@@ -194,6 +210,7 @@ const on = p => p.evaluate(()=>Array.from(
     const p=await open(b);
     await p.click('#nav-outfits-btn'); await p.waitForTimeout(1400);
     const sig = await p.evaluate(()=>heroSignature());
+    await p.click('#filters-fab'); await p.waitForTimeout(450);
     await tap(p, 'summer');
     check('the hero knows the pool changed',
       (await p.evaluate(()=>heroSignature())) !== sig);
