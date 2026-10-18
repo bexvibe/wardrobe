@@ -59,14 +59,15 @@
 <script>
 const heart=(f,c)=>`<svg class="hrt" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21c-.5 0-9-5.6-9-11.2C3 6.6 5.2 4.5 7.9 4.5c1.7 0 3.1.8 4.1 2.3 1-1.5 2.4-2.3 4.1-2.3C18.8 4.5 21 6.6 21 9.8 21 15.4 12.5 21 12 21z" fill="${f?c:'none'}" stroke="${f?c:'#A6A6A6'}" stroke-width="2" stroke-linejoin="round"/></svg>`;
 const cards=(n,faves)=>Array.from({length:n},()=>`<div class="card"><i></i>${heart(faves,'#E4607F')}</div>`).join('');
-function nav(faves,v){
+function nav(faves,v,mode){
+  const b=mode==='text'?'Faves':mode==='both'?heart(faves,'#E4607F')+'&nbsp;Faves':heart(faves,'#E4607F');
   return `<div class="nav ${v}"><div class="nb">Wardrobe</div>
-   <div class="nb act" style="padding:4px;gap:2px"><div class="seg ${faves?'':'on'}">All</div><div class="seg ${faves?'on':''}">${heart(faves,'#E4607F')}</div></div>
+   <div class="nb act" style="padding:4px;gap:2px"><div class="seg ${faves?'':'on'}">All</div><div class="seg ${faves?'on':''}">${b}</div></div>
    <div class="nb">Capsules</div></div>`;
 }
 const float=f=>`<div class="float"><span class="sh">✦ Shuffle</span><span>Filters</span></div>`;
-function phone(faves,{head,extra,wash,v}){
-  return `<div class="phone ${wash&&faves?'wash':''}"><div class="top">${head(faves)}</div>${extra?extra(faves):''}<div class="grid">${cards(faves?4:6,faves)}</div>${float()}${nav(faves,v)}</div>`;
+function phone(faves,{head,extra,wash,v,navMode}){
+  return `<div class="phone ${wash&&faves?'wash':''}"><div class="top">${head(faves)}</div>${extra?extra(faves):''}<div class="grid">${cards(faves?4:6,faves)}</div>${float()}${nav(faves,v,navMode)}</div>`;
 }
 const opts=[
  {t:'A. Title changes',d:'The page title says where you are, with a count on Faves. Quietest change; closest to today.',
@@ -76,6 +77,18 @@ const opts=[
  {t:'C. Pink wash + heart',d:'Faves gets a soft pink wash behind the header and a heart by the title, so it feels like a different room without a new layout.',
   cfg:{head:f=>f?`<h3>Outfits ${heart(true,'#E4607F')}</h3><div class="sub">Your faves</div>`:`<h3>Outfits</h3><div class="sub">All combinations</div>`,wash:true}},
 ];
+opts.push(
+ {t:'D. Words in the nav pill',d:'Nav pill reads All | Faves in plain text, no heart. Page title stays Outfits. The clearest label, but the pill gets wider.',
+  cfg:{head:f=>`<h3>Outfits</h3>`,navMode:'text'}},
+ {t:'E. Heart + word in the nav pill',d:'Nav pill reads All | ♥ Faves, so the word and the cuter heart sit together. Page unchanged.',
+  cfg:{head:f=>`<h3>Outfits</h3>`,navMode:'both'}},
+ {t:'F. Small label above the title',d:'A small uppercase eyebrow above the title says ALL OUTFITS or FAVES; the title stays Outfits.',
+  cfg:{head:f=>`<div class="sub" style="letter-spacing:.1em;font-weight:600;margin-bottom:2px">${f?'FAVES':'ALL OUTFITS'}</div><h3>Outfits</h3>`,navMode:'text'}},
+ {t:'G. Text tabs under the title',d:'Two plain text tabs, All and Faves, with an underline on the one you are on. Lighter than the grey switch in B.',
+  cfg:{head:f=>`<h3>Outfits</h3>`,extra:f=>`<div style="display:flex;gap:18px;padding:4px 16px 6px;font-size:13px;font-weight:600"><span style="color:${f?'var(--ink-soft)':'var(--ink)'};border-bottom:2px solid ${f?'transparent':'var(--ink)'};padding-bottom:3px">All</span><span style="color:${f?'var(--ink)':'var(--ink-soft)'};border-bottom:2px solid ${f?'var(--ink)':'transparent'};padding-bottom:3px">Faves</span></div>`,navMode:'text'}},
+ {t:'H. Title is the word',d:'The title itself changes: All outfits on one page, Faves on the other, with the count in grey.',
+  cfg:{head:f=>f?`<h3>Faves</h3><div class="sub">12 outfits</div>`:`<h3>All outfits</h3><div class="sub">Dealt fresh each visit</div>`,navMode:'text'}}
+);
 const navs=[['v-grey','Grey wash (today)'],['v-dot','Dot under label'],['v-tint','Brand tint'],['v-brand','Solid brand'],['v-ul','Underline']];
 document.getElementById('out').innerHTML=opts.map(o=>`<section><h2>${o.t}</h2><p class="note">${o.d}</p>
  <div class="pair"><figure><figcaption>All</figcaption>${phone(false,{...o.cfg,v:''})}</figure><figure><figcaption>Faves</figcaption>${phone(true,{...o.cfg,v:''})}</figure></div></section>`).join('')
