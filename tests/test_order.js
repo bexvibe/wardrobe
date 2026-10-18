@@ -2,7 +2,8 @@
 // own tabs, the filter row on Outfits, the filter row on Faves. A category
 // you own nothing in falls to the end — ahead of No Image, which is a state
 // a piece is in rather than a kind of thing. And a category with nothing in
-// it says so, and has nothing to choose from.
+// it gets no chip and no page in the filter sheet, so it cannot narrow
+// anything.
 const { chromium } = require('playwright');
 const { toFaves, leaveSheet } = require('./nav');
 const fs=require('fs'), path=require('path');
@@ -131,30 +132,26 @@ function wellOrdered(list, owned){
     await p.close();
   }
 
-  // ---- 4. A category with nothing in it says so ----
+  // ---- 4. A category with nothing in it is not offered a page ----
   {
     const p=await open(b);
     await p.click('#nav-outfits-btn'); await p.waitForTimeout(1400);
-    await p.evaluate(()=>(filterSheetOpen()||openFilterSheet(),openFilterPage('Skirts'))); await p.waitForTimeout(500);
-    const empty = await p.evaluate(()=>{
-      const note = document.getElementById('picker-empty');
-      const cs = getComputedStyle(note);
-      return {
-        text: note.textContent.trim(),
-        shown: note.offsetParent !== null,
-        size: parseFloat(cs.fontSize),
-        muted: cs.color !== getComputedStyle(document.body).color,
-        clearShown: getComputedStyle(document.getElementById('filter-sheet-clear')).visibility !== 'hidden',
-        title: document.getElementById('filter-sheet-title').textContent.trim(),
-        tiles: document.querySelectorAll('#picker-gallery .picker-tile:not(.picker-none)').length,
-      };
-    });
-    check('it says so, in the category\'s own words', empty.text==='No skirts', empty.text);
-    check('small and light rather than a heading',
-      empty.shown && empty.size <= 13 && empty.muted, `${empty.size}px`);
-    check('there is nothing to choose from', empty.tiles===0);
-    check('the page is titled for the category, and its Clear is hidden as everywhere',
-      empty.title==='Skirts' && !empty.clearShown, `${empty.title}, clear shown ${empty.clearShown}`);
+    await p.click('#filters-fab'); await p.waitForTimeout(500);
+    check('there is no chip for it',
+      !(await filterChips(p)).includes('Skirts'), (await filterChips(p)).join(', '));
+    // Asked for anyway, the sheet stays on its main page rather than
+    // stranding you on a page with nothing on it.
+    await p.evaluate(()=>openFilterPage('Skirts')); await p.waitForTimeout(500);
+    const empty = await p.evaluate(()=>({
+      page: filterPage,
+      title: document.getElementById('filter-sheet-title').textContent.trim(),
+      gallery: !!document.getElementById('picker-gallery'),
+      chips: document.querySelectorAll('#sheet-filter-grid .filter-chip').length,
+      back: !!document.getElementById('filter-sheet-back'),
+    }));
+    check('and asking for its page anyway leaves the sheet on the main page',
+      empty.page===null && empty.title==='Filters' && !empty.gallery && empty.chips>0 && !empty.back,
+      JSON.stringify(empty));
     await p.close();
   }
 
@@ -193,18 +190,14 @@ function wellOrdered(list, owned){
     await p.click('#nav-outfits-btn'); await p.waitForTimeout(1500);
     const before = await p.evaluate(()=>totalComboCount());
 
-    // With None gone, the only way to narrow a category is to pick a piece
-    // from it — and a category you own none of has none to pick. So it is
-    // offered, and it simply cannot do anything.
-    await p.evaluate(()=>(filterSheetOpen()||openFilterSheet(),openFilterPage('Skirts'))); await p.waitForTimeout(500);
-    check('the page opens on nothing to choose',
-      await p.evaluate(()=>document.querySelectorAll('#picker-gallery .picker-tile:not(.picker-none)').length===0));
-    check('with Any already on, so Clear has nothing to do and is hidden',
-      await p.evaluate(()=>{
-        const c = document.getElementById('filter-sheet-clear');
-        return getComputedStyle(c).visibility === 'hidden' &&
-               outfitFilters['Skirts'].type === 'any';
-      }));
+    // The only way to narrow a category is to pick a piece from it, and a
+    // category you own none of has none to pick (and no chip). So it can
+    // never do anything, whatever the sheet is asked.
+    await p.click('#filters-fab'); await p.waitForTimeout(500);
+    await p.evaluate(()=>openFilterPage('Skirts')); await p.waitForTimeout(500);
+    check('with Any already on, Clear has nothing to do and is hidden',
+      await p.evaluate(()=>getComputedStyle(document.getElementById('filter-sheet-clear')).visibility === 'hidden' &&
+        outfitFilters['Skirts'].type === 'any'));
     check('and the foot still counts every outfit',
       await p.evaluate(b=>document.getElementById('filter-sheet-see').textContent.replace(/[^\d]/g,'') === String(b), before));
     await leaveSheet(p, {settle:800});

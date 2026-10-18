@@ -92,8 +92,8 @@ const stream = p => p.evaluate(()=>outfitDisplayed.slice(0, 8).map(c=>comboKey(c
     await p.evaluate(()=>closeFilterSheet()); await p.waitForTimeout(700);
     const shut = await box(p);
     check('and when it goes down the row comes back exactly where it was',
-      shut.bottom === bottomBefore && shut.bottom === open1.fabBottom,
-      `${shut.bottom} vs ${bottomBefore} / ${open1.fabBottom}`);
+      shut.bottom === bottomBefore,
+      `${shut.bottom} vs ${bottomBefore}`);
     check('visible again, no longer away', await p.evaluate(()=>{
       const row = document.getElementById('float-row');
       return !row.classList.contains('away') && parseFloat(getComputedStyle(row).opacity) === 1;

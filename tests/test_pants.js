@@ -116,21 +116,28 @@ const tiles = p => p.evaluate(()=>document.querySelectorAll('#gallery .tile').le
     await p.click('#nav-outfits-btn'); await p.waitForTimeout(1100);
     const shortsId = await p.evaluate(()=>ITEMS.find(i=>i.category==='Shorts').id);
     await p.evaluate(()=>(filterSheetOpen()||openFilterSheet(),openFilterPage('Shorts'))); await p.waitForTimeout(500);
-    check('the Shorts picker offers the shorts and only the shorts',
+    check('the Shorts page offers the shorts and only the shorts',
       await p.evaluate(id=>{
         const tiles = Array.from(document.querySelectorAll('#picker-gallery .picker-tile:not(.picker-none)'));
         return tiles.length === itemsInTab('Shorts').length &&
                tiles.some(t=>(t.getAttribute('onclick')||'').includes(id));
       }, shortsId));
-    check('and the Pants picker does not', await (async()=>{
+    check('and the Pants page does not', await (async()=>{
       await leaveSheet(p, {settle:400});
       await p.evaluate(()=>(filterSheetOpen()||openFilterSheet(),openFilterPage('Pants'))); await p.waitForTimeout(400);
       return p.evaluate(id=>!Array.from(document.querySelectorAll('#picker-gallery .picker-tile:not(.picker-none)'))
         .some(t=>(t.getAttribute('onclick')||'').includes(id)), shortsId);
     })());
 
-    await p.evaluate(id=>{ outfitFilters['Shorts'] = {type:'items', ids:[id]}; }, shortsId);
-    await leaveSheet(p, {settle:900});
+    // Tap the pair on the Shorts page. It applies behind the sheet at once —
+    // there is nothing to close to make it take.
+    await p.click('#filter-sheet-back'); await p.waitForTimeout(500);
+    await p.evaluate(()=>openFilterPage('Shorts')); await p.waitForTimeout(500);
+    await p.click(`#picker-gallery .picker-tile[onclick*="${shortsId}"]`); await p.waitForTimeout(900);
+    check('pinning them narrows the outfits behind the sheet before it is closed',
+      await p.evaluate(id=>filterSheetOpen() && outfitDisplayed.length > 0 &&
+        outfitDisplayed.every(c=>c.bottom && c.bottom.id === id), shortsId));
+    await leaveSheet(p, {settle:600});
     // Pants is still on Any, but asking for a particular pair of shorts is
     // asking for those shorts — the other bottoms step aside rather than
     // coming along as alternatives.

@@ -279,14 +279,31 @@ const confirmText = p => p.evaluate(()=>({
       !bar.backArrow);
     await p.evaluate(()=>discardCapsulePicker()); await p.waitForTimeout(400);
 
-    // A sheet with nothing to commit has nothing to cancel, so its bar is
-    // one word wide — the filter picker changes the page behind it as you
-    // tap, and clearing a filter is a tap of its own.
-    await p.evaluate(()=>(filterSheetOpen()||openFilterSheet(),openFilterPage('Tops'))); await p.waitForTimeout(500);
-    const live = await p.evaluate(()=>
-      Array.from(document.querySelectorAll('#modal .sheet-footer .btn')).map(x=>x.textContent.trim()));
-    check('a sheet that applies live says Done, and only Done',
-      live.length === 1 && live[0] === 'Done', live.join(' / '));
+    // A sheet with nothing to commit has nothing to cancel. The filter sheet
+    // changes the page behind it as you tap, so its foot is one button that
+    // says what you now have and puts the sheet away; a category page adds
+    // a quiet Filters on the left to go back a page. Neither says Done, and
+    // neither leaves an arrow in the top corner.
+    await p.click('#nav-outfits-btn'); await p.waitForTimeout(1200);
+    await p.click('#filters-fab'); await p.waitForTimeout(500);
+    const foot = () => p.evaluate(()=>({
+      labels: Array.from(document.querySelectorAll('#filter-sheet-foot .btn')).map(x=>x.textContent.trim()),
+      quietFirst: document.querySelector('#filter-sheet-foot .btn').classList.contains('secondary'),
+      arrow: Boolean(document.querySelector('#filter-sheet .sheet-back')),
+      headFirst: document.querySelector('.filter-sheet-head').firstElementChild.className,
+    }));
+    let f = await foot();
+    check('the filter sheet\'s foot is one button, See N outfits, and not Done',
+      f.labels.length === 1 && /^See [\d,]+ outfits?$/.test(f.labels[0]), f.labels.join(' / '));
+    check('with nothing in the top corner to reach for instead', !f.arrow && f.headFirst === 'filter-sheet-heading',
+      JSON.stringify(f));
+    await p.evaluate(()=>openFilterPage('Tops')); await p.waitForTimeout(500);
+    f = await foot();
+    check('a category page adds Filters, quiet and on the left, beside See',
+      f.labels.length === 2 && f.labels[0] === 'Filters' && f.quietFirst && /^See /.test(f.labels[1]),
+      f.labels.join(' / '));
+    check('and still no arrow at the top', !f.arrow && f.headFirst === 'filter-sheet-heading', JSON.stringify(f));
+    await p.evaluate(()=>closeFilterSheet()); await p.waitForTimeout(400);
     await p.close();
   }
 
@@ -304,7 +321,7 @@ const confirmText = p => p.evaluate(()=>({
     check('and it belongs to select mode, not to a sheet',
       arrows[0] && arrows[0].includes('edit-back-btn'), arrows[0]);
 
-    // And the editors leave the way the pickers do.
+    // And the editors leave the way the other sheets do.
     await p.click('#add-item-btn'); await p.waitForTimeout(500);
     const bar = await p.evaluate(()=>
       Array.from(document.querySelectorAll('#form-backdrop .sheet-footer .btn'))
