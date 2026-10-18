@@ -319,7 +319,7 @@ const confirmText = p => p.evaluate(()=>({
 
   // ---- 10. A sheet cannot inherit a gesture it never asked for ----
   {
-    // Drag-down belongs to sheets with nothing to lose. A sheet holding a
+    // Drag-down belongs to sheets with nothing to lose (a draft only until it is edited). A sheet holding a
     // draft says so as it draws — but one drawn without a trail behind it
     // says nothing at all, and used to be handed whatever the last sheet
     // meant by closing. A half-typed rename flicked away is the kind of
@@ -332,8 +332,20 @@ const confirmText = p => p.evaluate(()=>({
     check('and putting it away takes the gesture with it',
       await p.evaluate(()=>!sheetIsUp()));
 
+    await p.evaluate(()=>closeModal()); await p.waitForTimeout(400);
+    await p.evaluate(()=>openItemForm(null)); await p.waitForTimeout(600);
+    check('a new piece form, untouched, answers it',
+      await p.evaluate(()=>formSheetIsUp()));
+    await p.evaluate(()=>{ document.getElementById('form-name').value = 'Scarf'; });
+    check('but not once a field has been filled',
+      await p.evaluate(()=>!formSheetIsUp()));
+    await p.evaluate(()=>{ itemFormBaseline = null; closeModal(); }); await p.waitForTimeout(400);
+
     await p.evaluate(()=>openTagEditor('winter')); await p.waitForTimeout(600);
-    check('so the tag editor, which holds a draft, does not answer it',
+    check('so the tag editor, untouched, answers it',
+      await p.evaluate(()=>sheetIsUp()));
+    await p.evaluate(()=>{ document.getElementById('tag-edit-input').value = 'winter2'; });
+    check('but once the name has been changed it does not',
       await p.evaluate(()=>!sheetIsUp()));
     check('and leaves by its bar instead',
       await p.evaluate(()=>Array.from(

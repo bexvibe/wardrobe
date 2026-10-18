@@ -1764,6 +1764,7 @@
 
 <div class="modal-backdrop" id="form-backdrop">
   <div class="modal">
+    <div class="sheet-grip"></div>
     <div class="modal-body has-footer">
       <div class="modal-name" id="form-title">New piece</div>
       <!-- The photo is the piece, so it leads: what it looks like now, and
@@ -2706,7 +2707,8 @@ function toggleFilterSheet(){
 // drag that starts off horizontal belongs to the row it started on.
 //
 // Only what has nothing to lose can be flicked away. A sheet holding a
-// draft is dismissed on purpose, through its own bar.
+// draft can be, until it has been edited; after that it is dismissed on
+// purpose, through its own bar.
 //
 // Two ways to mean it. Far enough: 100px, or a quarter of the thing if a
 // quarter is less, so a small panel is not asked to travel most of its own
@@ -2865,14 +2867,28 @@ function wireDragToClose(el, isOpen, onClose){
 // drawn, and hands over what closing means for it: the picker has filters
 // to re-apply on the way out, a piece sheet only has a trail to retrace.
 let sheetDragClose = null;
+let sheetDragDirty = null;
 
-function allowSheetDrag(onClose){
+// A sheet holding a draft passes how to tell it has been edited. Untouched,
+// it has nothing to lose and answers the gesture like any other; the moment
+// something has been changed it stops, and the bar is the way out.
+function allowSheetDrag(onClose, isDirty){
   sheetDragClose = onClose || null;
+  sheetDragDirty = isDirty || null;
+}
+
+function sheetCanBeDragged(){
+  return Boolean(sheetDragClose) && !(sheetDragDirty && sheetDragDirty());
 }
 
 function sheetIsUp(){
-  return Boolean(sheetDragClose) &&
+  return sheetCanBeDragged() &&
          document.getElementById('modal-backdrop').classList.contains('open');
+}
+
+function formSheetIsUp(){
+  return sheetCanBeDragged() &&
+         document.getElementById('form-backdrop').classList.contains('open');
 }
 
 function wireSheetDrag(){
@@ -2880,6 +2896,8 @@ function wireSheetDrag(){
                   filterSheetOpen, closeFilterSheet);
   wireDragToClose(document.getElementById('modal'),
                   sheetIsUp, () => { if(sheetDragClose) sheetDragClose(); });
+  wireDragToClose(document.querySelector('#form-backdrop .modal'),
+                  formSheetIsUp, () => { if(sheetDragClose) sheetDragClose(); });
 }
 
 // An open panel is a thing you are doing; going back to the page is
@@ -3148,6 +3166,7 @@ function openOutfitBuilder(){
   pushSheet({ sheet: 'builder', id: null });
 
   document.getElementById('modal').innerHTML = `
+    <div class="sheet-grip"></div>
     <div class="modal-body has-footer">
       <div class="modal-name">Build an outfit</div>
       <div id="builder-preview-slot"></div>
@@ -3164,6 +3183,7 @@ function openOutfitBuilder(){
   renderBuilderTabs();
   renderBuilderGallery();
   renderBuilderState();
+  allowSheetDrag(closeOutfitBuilder, outfitDraftIsDirty);
   showSheetBackdrop('modal-backdrop');
   // Once it is up and there is a height to measure.
   stickBuilderTabs();
@@ -4251,6 +4271,7 @@ function openOutfitExtrasPicker(key){
   extrasDraft.baseline = extrasDraftSnapshot();
 
   document.getElementById('modal').innerHTML = `
+    <div class="sheet-grip"></div>
     <div class="modal-body has-footer">
       <div class="modal-name" style="margin-bottom:14px;">Add accessories</div>
       <div class="tabs" id="extras-tabs"></div>
@@ -4264,7 +4285,7 @@ function openOutfitExtrasPicker(key){
     </div>
   `;
   renderExtrasPicker(key);
-  allowSheetDrag(null);   // there is a draft on it; the bar is the way out
+  allowSheetDrag(closeExtrasPicker, extrasDraftIsDirty);
   document.getElementById('modal-backdrop').classList.add('open');
   // Once it is up and there is a height to measure.
   stickSheetTabs('extras-tabs');
@@ -4606,6 +4627,7 @@ function openCapsuleEditor(id, seedItemIds){
 
   const modal = document.getElementById('modal');
   modal.innerHTML = `
+    <div class="sheet-grip"></div>
     <div class="modal-body has-footer">
       <div class="modal-name">${capsule ? 'Edit capsule' : 'New capsule'}</div>
       <div class="form-grid">
@@ -4627,6 +4649,7 @@ function openCapsuleEditor(id, seedItemIds){
   `;
   renderCapsuleEditorTabs();
   renderCapsuleEditorGallery();
+  allowSheetDrag(closeCapsuleEditor, capsuleDraftIsDirty);
   document.getElementById('modal-backdrop').classList.add('open');
   // Once it is up and there is a height to measure.
   stickCapsuleEditorTabs();
@@ -5130,6 +5153,7 @@ function drawItemCapsulePicker(itemId){
 
   const modal = document.getElementById('modal');
   modal.innerHTML = `
+    <div class="sheet-grip"></div>
     <div class="modal-body has-footer">
       <div class="modal-name" style="margin-bottom:14px;">Capsules</div>
       <div class="capsule-picks" id="capsule-picks"></div>
@@ -5148,7 +5172,7 @@ function drawItemCapsulePicker(itemId){
     </div>
   `;
   renderItemCapsulePicks(itemId);
-  allowSheetDrag(null);   // a draft is on it; the bar is the way out
+  allowSheetDrag(closeCapsulePicker, capsulePicksDirty);
   document.getElementById('modal-backdrop').classList.add('open');
 }
 
@@ -6037,6 +6061,7 @@ async function undoRetag(changes, filters){
 function openTagEditor(tag){
   const modal = document.getElementById('modal');
   modal.innerHTML = `
+    <div class="sheet-grip"></div>
     <div class="modal-body has-footer">
       <div class="modal-name" style="margin-bottom:14px;">Edit tag</div>
       <div class="form-grid">
@@ -6057,9 +6082,10 @@ function openTagEditor(tag){
       </div>
     </div>
   `;
-  // Drawn without a trail behind it, so it says for itself that there is
-  // a draft on it and the bar is the way out.
-  allowSheetDrag(null);
+  // Drawn without a trail behind it, so it is only a draft once the name
+  // has been changed.
+  allowSheetDrag(closeModal, () =>
+    document.getElementById('tag-edit-input').value !== tag);
   document.getElementById('modal-backdrop').classList.add('open');
 }
 
@@ -6298,6 +6324,7 @@ function drawItemForm(id){
   renderCategoryOptions();
 
   itemFormBaseline = itemFormSnapshot();
+  allowSheetDrag(closeItemForm, itemFormIsDirty);
   // The form and the detail sheet are two backdrops; only one of them is
   // ever up, and which one is the trail's business now.
   showSheetBackdrop('form-backdrop');
