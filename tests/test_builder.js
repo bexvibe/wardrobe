@@ -34,8 +34,14 @@ async function open(b){
   await p.waitForSelector('#app-root',{state:'visible'}); await p.waitForTimeout(800);
   await toFaves(p, 900);
   await p.evaluate(()=>closeFilterSheet()); await p.waitForTimeout(400);
-  await p.click('#build-outfit-btn'); await p.waitForTimeout(800);
+  await plus(p);
   return p;
+}
+
+// An empty Faves page has its + in the middle rather than the header.
+async function plus(p){
+  await p.click(await p.isVisible('#build-outfit-btn') ? '#build-outfit-btn' : '#saved-empty-action');
+  await p.waitForTimeout(800);
 }
 
 // Tap the nth tile on a category's tab, the way a thumb would.
@@ -68,11 +74,11 @@ const ticked = p => p.evaluate(()=>Array.from(document.querySelectorAll('#builde
     await toFaves(p, 900);
     await p.evaluate(()=>closeFilterSheet()); await p.waitForTimeout(400);
 
-    check('Faves offers a way to build one', await p.isVisible('#build-outfit-btn'));
-    check('and its empty state offers the same thing, where you would look',
-      await p.isVisible('#saved-empty-action'));
+    // An empty page puts its + in the middle and takes the header's away.
+    check('Faves offers a way to build one, in the middle of its empty state',
+      await p.isVisible('#saved-empty-action') && !(await p.isVisible('#build-outfit-btn')));
 
-    await p.click('#build-outfit-btn'); await p.waitForTimeout(800);
+    await p.click('#saved-empty-action'); await p.waitForTimeout(800);
     check('it opens over Faves rather than taking you elsewhere',
       await p.evaluate(()=>appMode === 'saved' &&
         document.getElementById('modal-backdrop').classList.contains('open')));
@@ -217,7 +223,7 @@ const ticked = p => p.evaluate(()=>Array.from(document.querySelectorAll('#builde
     await p.waitForTimeout(700);
 
     // Build the identical one again.
-    await p.click('#build-outfit-btn'); await p.waitForTimeout(800);
+    await plus(p);
     await pick(p, 'Tops', 0);
     await pick(p, 'Pants', 0);
     check('an outfit you already kept cannot be kept again', !(await saveOn(p)));
@@ -238,7 +244,7 @@ const ticked = p => p.evaluate(()=>Array.from(document.querySelectorAll('#builde
       await p.evaluate(()=>!document.getElementById('confirm-backdrop').classList.contains('open') &&
         !document.getElementById('modal-backdrop').classList.contains('open')));
 
-    await p.click('#build-outfit-btn'); await p.waitForTimeout(800);
+    await plus(p);
     await pick(p, 'Tops', 0);
     await p.click('#modal .sheet-footer .btn.secondary'); await p.waitForTimeout(600);
     check('one with a piece in it stops to ask',
