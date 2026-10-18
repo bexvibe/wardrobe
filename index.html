@@ -1089,6 +1089,14 @@
     display:flex;align-items:center;gap:8px;
     /* The row is only a ruler; taps belong to the pills in it. */
     pointer-events:none;
+    transition:transform var(--sheet-ease-ms) var(--sheet-ease),
+               opacity var(--sheet-ease-ms) var(--sheet-ease),
+               visibility var(--sheet-ease-ms);
+  }
+  /* The filters are up and cover this row. It eases down as they rise. */
+  .float-row.away{
+    transform:translateX(-50%) translateY(10px) scale(0.96);
+    opacity:0;visibility:hidden;
   }
   .float-row > *{pointer-events:auto;}
 
@@ -1168,86 +1176,110 @@
        happen to be behind it. */
     box-shadow:0 0 0 2px var(--surface);
   }
-  /* The panel's own chevron, pointing the other way. */
-  .filters-fab-chevron{
-    flex:none;width:15px;height:15px;display:block;
+  .filters-fab-icon{
+    flex:none;width:16px;height:16px;display:block;
     color:var(--ink-soft);
   }
 
-  /* The filters open as a panel above the buttons that raise them, rather
-     than as a sheet docked to the bottom edge. It is the same bargain
-     either way — no backdrop, the page behind still scrolls, and the
-     results narrow under your thumb as you tap — but a panel that grows
-     out of its own button says where it came from, and leaves the button
-     where it was so the way out is where the way in was.
-     On Outfits and Faves it is already up when you arrive, because on
-     those two pages narrowing is the whole activity.
+  /* The filters open as a bottom sheet, like every other sheet in the app:
+     a grip, a dimmed page, rounded top corners, and the way out at the foot
+     where a thumb already is. It is as tall as its filters need and grows
+     up to the top of the screen when they need more; it covers the floating
+     pair and the nav, which ease down behind it.
 
-     It sits over everything the page draws — a panel covering a card is
-     the panel doing its job, and the page never moves aside for it. Only
-     the two bars that must stay reachable are above it: the nav, and the
-     floating row holding the button that put it there. */
-  .filter-sheet{
-    position:fixed;
-    left:16px;right:16px;
-    /* Clear of the floating row it belongs to: the row's own band, plus a
-       pill, plus the air between them. */
-    bottom:calc(env(safe-area-inset-bottom, 0px) + var(--above-nav) + 44px + 10px);
-    z-index:88;
-    max-width:928px;margin:0 auto;
-    /* White, so the panel is an object resting on the page. The chips
-       inside sit at page grey, which is what gives them their edge. */
-    background:var(--surface);
-    border:1px solid var(--line);
-    border-radius:18px;
-    padding:14px 16px 16px;
-    /* As tall as its filters need. It only scrolls once it has run out of
-       screen: the room between its own bottom edge and the top of the page. */
-    max-height:calc(100vh - var(--above-nav) - 54px - 24px);
-    max-height:calc(100svh - var(--above-nav) - env(safe-area-inset-bottom, 0px) - 54px - 24px);
-    overflow-y:auto;
-    overscroll-behavior:contain;
-    /* Grows out of the pill below it, so the two read as one motion. */
-    transform-origin:50% 100%;
-    transform:translateY(10px) scale(0.97);
-    opacity:0;
+     Choosing pieces is a second page inside this same sheet rather than a
+     sheet on top of it — see openFilterPage. Everything applies as you tap,
+     so there is nothing to confirm: the foot holds one button that says how
+     many outfits you now have, and is the way to put the filters away.
+
+     The sheet is the scroller, as it is for the other sheets, so the head
+     (grip, title, Clear) is sticky inside it and the foot is sticky below. */
+  .filter-backdrop{
+    position:fixed;inset:0;
+    /* Under the other sheets (130): a tag opened by a long press on a chip
+       here has to come out over this one. Over the floating row and nav. */
+    z-index:110;
+    background:rgba(0,0,0,0);
     visibility:hidden;
     pointer-events:none;
-    transition:transform var(--sheet-ease-ms) var(--sheet-ease),
-               opacity var(--sheet-ease-ms) var(--sheet-ease),
+    transition:background-color var(--sheet-ease-ms) var(--sheet-ease),
                visibility var(--sheet-ease-ms);
-    box-shadow:0 10px 34px rgba(0,0,0,0.16);
   }
-  .filter-sheet.open{
-    transform:translateY(0) scale(1);
-    opacity:1;
+  .filter-backdrop.open{
     visibility:visible;
     pointer-events:auto;
+    background:rgba(0,0,0,calc(0.28 * var(--dim, 1)));
+  }
+  .filter-backdrop.sheet-dragging{transition:none;}
+  .filter-sheet{
+    position:absolute;
+    left:0;right:0;bottom:0;
+    max-width:640px;margin:0 auto;
+    max-height:92%;
+    background:var(--page);
+    border-radius:18px 18px 0 0;
+    display:flex;flex-direction:column;
+    overflow-y:auto;
+    overscroll-behavior:none;
+    box-shadow:0 -10px 34px rgba(0,0,0,0.18);
+    transform:translateY(100%);
+    transition:transform var(--sheet-ease-ms) var(--sheet-ease);
+  }
+  .filter-sheet.open{transform:translateY(0);}
+  /* Changing page changes how tall the sheet needs to be, and it gets
+     there by growing or shrinking rather than jumping. */
+  .filter-sheet.morphing{
+    transition:transform var(--sheet-ease-ms) var(--sheet-ease),
+               height 380ms var(--sheet-ease);
   }
   /* Following a thumb down. No easing while it is being dragged — it is
      under your finger, not travelling on its own. */
   .filter-sheet.dragging{transition:none;}
-  /* No title and no chevron of its own: the panel is plainly a panel of
-     filters, and the button that opened it is still on screen to close it.
-     What is left is the one thing the head was for. */
+  /* Grip, title and Clear stay put while the sheet scrolls under them.
+     Clear is up here, top right, and stays within reach of the one place
+     that is easy to find; the way out is the button at the foot. */
+  .filter-sheet-top{
+    position:sticky;top:0;z-index:5;
+    flex:none;
+    background:var(--page);
+    padding:0 18px 4px;
+  }
   .filter-sheet-head{
     display:flex;align-items:center;justify-content:space-between;
     gap:12px;
-    margin-bottom:10px;
+    min-height:44px;
   }
-  /* A full thumb's worth of target. The negative margin keeps the head the
-     height the title gives it, so the bigger target costs the panel no
-     room — it just reaches further than it is drawn. */
+  .filter-sheet-heading{display:flex;flex-direction:column;min-width:0;}
+  .filter-sheet-crumb{
+    font-family:'IBM Plex Mono',monospace;font-size:10px;
+    letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-soft);
+    margin-bottom:1px;
+  }
   .filter-sheet-title{
-    font-family:'Fraunces', serif;font-size:22px;font-weight:500;
+    font-family:'Fraunces', serif;font-size:22px;font-weight:500;line-height:1.2;
   }
+  /* A full thumb's worth of target. */
   .filter-sheet-clear{
     align-items:center;
-    min-height:44px;margin:-11px 0;
+    min-height:44px;
     font-family:'IBM Plex Mono',monospace;
     font-size:11px;letter-spacing:0.06em;
     background:none;border:none;color:var(--ink);
-    cursor:pointer;padding:0 6px;
+    cursor:pointer;padding:0 6px;margin-right:-6px;
+  }
+  .filter-sheet-body{padding:6px 18px 24px;flex:1 0 auto;}
+  /* Choosing pieces: a page inside the sheet. Three across, so a category
+     of a dozen is a few rows rather than a long scroll. */
+  .filter-page-gallery{grid-template-columns:repeat(auto-fill, minmax(104px, 1fr));}
+  .filter-slide-fwd{animation:filter-slide-fwd 340ms var(--sheet-ease);}
+  .filter-slide-back{animation:filter-slide-back 340ms var(--sheet-ease);}
+  @keyframes filter-slide-fwd{from{opacity:0;transform:translateX(36px);}to{opacity:1;transform:none;}}
+  @keyframes filter-slide-back{from{opacity:0;transform:translateX(-36px);}to{opacity:1;transform:none;}}
+  /* The count turning over as you tap. */
+  .filter-count-roll{display:inline-block;animation:filter-count-roll 320ms var(--sheet-ease);}
+  @keyframes filter-count-roll{from{opacity:0;transform:translateY(7px);}to{opacity:1;transform:none;}}
+  @media (prefers-reduced-motion: reduce){
+    .filter-slide-fwd,.filter-slide-back,.filter-count-roll{animation:none;}
   }
   .filter-sheet-label{
     display:block;
@@ -1340,12 +1372,6 @@
     font-family:'Work Sans',sans-serif;font-size:12px;
     color:var(--ink-soft);margin:14px 0 0;
   }
-  /* Title left, Clear right, on one line. Clear is the panel's own button, and
-     is out of sight while there is nothing to clear. */
-  .picker-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;}
-  .quick-picks{display:flex;}
-  .quick-picks .filter-sheet-clear{display:inline-flex;}
-  .quick-picks .filter-sheet-clear:disabled{visibility:hidden;}
   .picker-tile{border:1px solid var(--line);position:relative;}
   .picker-tile.picker-selected{border:2px solid var(--accent);}
   .picker-check{
@@ -1728,12 +1754,24 @@
   </div>
 </div>
 
-<div class="filter-sheet" id="filter-sheet" inert>
-  <div class="filter-sheet-head">
-    <span class="filter-sheet-title">Filters</span>
-    <button class="filter-sheet-clear" id="filter-sheet-clear" onclick="clearFilters()">Clear all</button>
+<div class="filter-backdrop" id="filter-backdrop"
+     onclick="if(event.target.id==='filter-backdrop') closeFilterSheet()">
+  <div class="filter-sheet" id="filter-sheet" role="dialog" aria-label="Filters" inert>
+    <div class="filter-sheet-top" data-drag-handle>
+      <div class="sheet-grip"></div>
+      <div class="filter-sheet-head">
+        <div class="filter-sheet-heading">
+          <span class="filter-sheet-crumb" id="filter-sheet-crumb" style="display:none;"></span>
+          <span class="filter-sheet-title" id="filter-sheet-title">Filters</span>
+        </div>
+        <button class="filter-sheet-clear" id="filter-sheet-clear" type="button" onclick="clearFromSheetHead()">Clear all</button>
+      </div>
+    </div>
+    <div class="filter-sheet-body" id="filter-sheet-body" data-filter-ns="sheet"></div>
+    <div class="sheet-footer split">
+      <div class="sheet-footer-inner" id="filter-sheet-foot"></div>
+    </div>
   </div>
-  <div class="filter-sheet-body" id="filter-sheet-body" data-filter-ns="sheet"></div>
 </div>
 
 <!-- The two things floating over the page, in the order you reach for
@@ -1749,7 +1787,7 @@
     </svg>
     Shuffle
   </button>
-  <button class="filters-fab" id="filters-fab" type="button"
+  <button class="filters-fab" id="filters-fab" type="button" aria-haspopup="dialog"
           onclick="toggleFilterSheet()"></button>
 </div>
 
@@ -2201,7 +2239,6 @@ function restoreScroll(mode){
     window.scrollTo({ top: y });
     // Being put back where you left off is not you scrolling away from the
     // panel, so it does not count as a reason to close it.
-    watchForSheetDismiss();
   });
 }
 
@@ -2286,16 +2323,8 @@ function setMode(mode){
     resetOutfitResults();
   }
 
-  // Outfits and Faves arrive with the filters already down — on those two
-  // pages narrowing is the activity, not an afterthought. Everywhere else
-  // the panel goes away, because it would be filtering a page you left.
-  if(FILTERS_OPEN_BY_DEFAULT.includes(mode) && !filtersShown[mode]){
-    // Marked only if it really opened, so a page with nothing to show yet
-    // does not spend its one automatic appearance.
-    if(openFilterSheet()) markFiltersShown(mode);
-  } else {
-    closeFilterSheet();
-  }
+  // A page you have moved to is not the page the filters were raised on.
+  closeFilterSheet();
 
   restoreScroll(mode);
 }
@@ -2423,7 +2452,6 @@ function landBackOnPage(){
   if(from.mode !== appMode){ setMode(from.mode); return; }
   requestAnimationFrame(() => {
     if(Math.abs(window.scrollY - from.y) > 2) window.scrollTo({ top: from.y });
-    watchForSheetDismiss();
   });
 }
 
@@ -2450,24 +2478,6 @@ function openPieceSheet(itemId){
   openModal(itemId);
 }
 
-// Filters live in a panel docked to the bottom of the screen. A control at
-// the bottom whose panel opened at the top would make the content jump away
-// from where you tapped, so the two stay together.
-//
-// On these two pages the panel comes down by itself — but only the first
-// time you arrive in a visit. Having it open on every single trip back was
-// a panel you had to put away again each time.
-// Closed. The test harness can name pages to open on arrival instead.
-const FILTERS_OPEN_BY_DEFAULT = window.__FILTERS_OPEN_BY_DEFAULT || [];
-const FILTERS_SHOWN_KEY = 'wardrobe-filters-shown';
-let filtersShown = (() => {
-  try{ return JSON.parse(sessionStorage.getItem(FILTERS_SHOWN_KEY) || '{}'); }catch(e){ return {}; }
-})();
-function markFiltersShown(mode){
-  filtersShown[mode] = true;
-  try{ sessionStorage.setItem(FILTERS_SHOWN_KEY, JSON.stringify(filtersShown)); }catch(e){ }
-}
-
 function countNarrowedSlots(filters){
   return Object.keys(filters).filter(k => filters[k].type !== 'any').length;
 }
@@ -2479,16 +2489,13 @@ function activeFilterCount(){
     + (capsuleAllowedIds() ? 1 : 0);
 }
 
-// The pill is what the panel collapses into: it appears once the panel is
-// down and out of the way, wherever there is something to filter, and it
-// carries the count so an active filter is never hidden by a shut panel.
+// The pill is what raises the sheet: it appears wherever there is something
+// to filter, and carries the count so an active filter is never hidden by a
+// shut sheet. While the sheet is up it covers the pill, which eases down
+// behind it — "See N outfits" at the foot of the sheet is the way back.
 function renderFiltersFab(){
   const fab = document.getElementById('filters-fab');
   if(!fab) return;
-  // A page with nothing to filter has no pill at all. The pill stays put
-  // while the panel is up, because it is the way out as well as the way
-  // in — a control that leaves the moment you use it makes you hunt for a
-  // second one to undo it.
   const relevant = filterSheetHasContent();
   fab.style.display = relevant ? 'flex' : 'none';
 
@@ -2496,15 +2503,16 @@ function renderFiltersFab(){
   const n = activeFilterCount();
   fab.classList.toggle('active', n > 0);
   fab.setAttribute('aria-expanded', String(up));
-  // The pill is unchanged but for its arrow, which points the way the
-  // panel will go — and that is the other way each time you press it.
   fab.innerHTML = `
-    <span class="filters-fab-label">${up ? 'Hide filters' : 'Show filters'}</span>
-    <svg class="filters-fab-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-         stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-      <path d="${up ? 'M6 10l6 6 6-6' : 'M6 14l6-6 6 6'}"/>
+    <svg class="filters-fab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         stroke-width="2" stroke-linecap="round" aria-hidden="true">
+      <path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/>
     </svg>
+    <span class="filters-fab-label">Filters</span>
     ${n ? `<span class="filters-fab-count">${n}</span>` : ''}`;
+
+  const row = document.getElementById('float-row');
+  if(row) row.classList.toggle('away', up);
 
   // The other thing floating in this band, refreshed with it.
   renderShuffleFab();
@@ -2545,6 +2553,12 @@ function setLabelCount(id, n){
 }
 
 function renderFilterControls(){
+  renderFilterControlsBody();
+  renderFilterHead();
+  renderFilterFooter();
+}
+
+function renderFilterControlsBody(){
   FILTER_MOUNTS.forEach(({ ns, mode }) => {
     const host = document.querySelector(`[data-filter-ns="${ns}"]`);
     if(!host) return;
@@ -2553,6 +2567,13 @@ function renderFilterControls(){
     // The panel only exists on the two pages that have filters.
     if(m !== 'outfits' && m !== 'saved'){ host.innerHTML = ''; return; }
 
+    // A piece category is a page of its own inside the sheet.
+    if(filterPage && !filterTabs().includes(filterPage)) filterPage = null;
+    if(filterPage){
+      host.innerHTML = filterPageHtml(filterPage);
+      renderPickerGallery(filterPage);
+      return;
+    }
     host.innerHTML = filterControlsHtml(ns);
 
     capsuleAllowedIds();   // drops a capsule that has since gone
@@ -2577,20 +2598,7 @@ function renderFilterControls(){
     setLabelCount(`${ns}-piece-count`, countNarrowedSlots(slots));
   });
 
-  // Clear all is the only thing left in the head, so the head goes with
-  // it rather than leaving a band of air above the first row.
-  const clear = document.getElementById('filter-sheet-clear');
-  const head = document.querySelector('#filter-sheet .filter-sheet-head');
-  const anything = activeFilterCount() > 0;
-  // The head always stays, for its title; Clear all is only out of sight.
-  if(clear){ clear.style.display = 'inline-flex'; clear.style.visibility = anything ? 'visible' : 'hidden'; }
-  if(head) head.style.display = 'flex';
-
   renderFaveChips();
-
-  // Tagging a piece can give the panel a row it did not have, which changes
-  // how much room the page has to leave under it.
-  syncSheetInset();
 }
 
 // Outfits always has its Pieces row. The other pages offer tags alone, and
@@ -2604,29 +2612,6 @@ function filterSheetHasContent(){
 function filterSheetOpen(){
   const sheet = document.getElementById('filter-sheet');
   return Boolean(sheet && sheet.classList.contains('open'));
-}
-
-// The panel is docked, so it covers the foot of the page. The page is given
-// that much extra padding while it is down, otherwise the last row of a grid
-// could not be scrolled out from under it.
-function syncSheetInset(){
-  const sheet = document.getElementById('filter-sheet');
-  if(!sheet) return;
-  // How much of the page's foot the panel is standing over, beyond what
-  // the page already leaves for the floating row and the nav. It floats
-  // clear of the bottom edge now, so its height alone is not how far up
-  // the screen it reaches — how far up it sits has to be added.
-  //
-  // Taken from its own box rather than from getBoundingClientRect, which
-  // includes the transform it opens and is dragged by: measuring mid-
-  // flight reserved a few pixels too few, and the last row of the grid
-  // could not quite be scrolled clear.
-  const BASE_FOOT = 120;   // matches .wrap's own padding-bottom
-  const lift = parseFloat(getComputedStyle(sheet).bottom) || 0;
-  const inset = filterSheetOpen()
-    ? Math.max(0, Math.round(lift + sheet.offsetHeight - BASE_FOOT))
-    : 0;
-  document.documentElement.style.setProperty('--sheet-inset', inset + 'px');
 }
 
 // A panel that has gone down is out of the conversation. It slides rather
@@ -2665,31 +2650,168 @@ function syncSheetReach(){
   if(handOver) focusTheFiltersPill();
 }
 
+// The piece category whose page is showing inside the sheet, or null for the
+// main page of filters.
+let filterPage = null;
+let filterMainScroll = 0;
+
+function filterSheetEls(){
+  return {
+    backdrop: document.getElementById('filter-backdrop'),
+    sheet: document.getElementById('filter-sheet'),
+  };
+}
+
 function openFilterSheet(){
   if(!filterSheetHasContent()){ closeFilterSheet(); return false; }
+  const { backdrop, sheet } = filterSheetEls();
+  filterPage = null;
+  sheet.style.height = '';
   renderFilterControls();
-  document.getElementById('filter-sheet').classList.add('open');
-  syncSheetInset();
+  sheet.scrollTop = 0;
+  backdrop.classList.add('open');
+  sheet.classList.add('open');
   syncSheetReach();
   renderFiltersFab();
-  watchForSheetDismiss();
   return true;
 }
 
 function closeFilterSheet(){
-  document.getElementById('filter-sheet').classList.remove('open');
-  syncSheetInset();
+  const { backdrop, sheet } = filterSheetEls();
+  backdrop.classList.remove('open');
+  sheet.classList.remove('open');
+  // It reopens on its main page. The page it was on stays drawn until it has
+  // gone, so it does not change under the sheet as it leaves.
+  filterPage = null;
   renderFiltersFab();
   // After the pill, so there is somewhere for focus to land.
   syncSheetReach();
 }
 
-// One button, both directions. The pill stays on screen while the panel is
-// up, so the way out is where the way in was rather than a second control
-// somewhere inside what just opened.
+// One button, both directions.
 function toggleFilterSheet(){
   if(filterSheetOpen()) closeFilterSheet();
   else openFilterSheet();
+}
+
+// Growing or shrinking to the height of the page it is changing to, rather
+// than jumping. `change` redraws; `dir` says which way the new page arrives.
+let filterMorphTimer = null;
+function morphFilterSheet(change, dir){
+  const { sheet } = filterSheetEls();
+  const body = document.getElementById('filter-sheet-body');
+  const still = !filterSheetOpen()
+    || (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+  if(still){ change(); return; }
+  clearTimeout(filterMorphTimer);
+  sheet.classList.remove('morphing');
+  const h0 = sheet.offsetHeight;
+  sheet.style.height = 'auto';
+  change();
+  const h1 = sheet.offsetHeight;
+  body.classList.remove('filter-slide-fwd', 'filter-slide-back');
+  void body.offsetWidth;
+  body.classList.add(dir === 'back' ? 'filter-slide-back' : 'filter-slide-fwd');
+  if(h0 === h1){ sheet.style.height = ''; return; }
+  sheet.style.height = h0 + 'px';
+  void sheet.offsetHeight;
+  sheet.classList.add('morphing');
+  sheet.style.height = h1 + 'px';
+  filterMorphTimer = setTimeout(() => {
+    sheet.classList.remove('morphing');
+    sheet.style.height = '';
+  }, 400);
+}
+
+// Choosing pieces from one category: a second page inside this sheet, not a
+// sheet on top of it. Back is at the foot, beside the count.
+function openFilterPage(slotKey){
+  const { sheet } = filterSheetEls();
+  filterMainScroll = sheet.scrollTop;
+  morphFilterSheet(() => {
+    filterPage = slotKey;
+    renderFilterControls();
+    sheet.scrollTop = 0;
+  }, 'fwd');
+}
+
+function closeFilterPage(){
+  const { sheet } = filterSheetEls();
+  morphFilterSheet(() => {
+    filterPage = null;
+    renderFilterControls();
+    sheet.scrollTop = filterMainScroll;
+  }, 'back');
+}
+
+// Clear is in the head, top right, and clears what the page it is on holds.
+function clearFromSheetHead(){
+  if(filterPage) setSlotAny(filterPage);
+  else clearFilters();
+}
+
+function renderFilterHead(){
+  const title = document.getElementById('filter-sheet-title');
+  const crumb = document.getElementById('filter-sheet-crumb');
+  const clear = document.getElementById('filter-sheet-clear');
+  if(!title || !clear) return;
+  if(filterPage){
+    crumb.textContent = 'Filters';
+    crumb.style.display = '';
+    title.textContent = filterPage;
+    clear.textContent = 'Clear';
+    clear.setAttribute('aria-label', 'Clear ' + filterPage.toLowerCase());
+    clear.style.visibility = activeSlotFilters()[filterPage].type === 'any' ? 'hidden' : 'visible';
+  } else {
+    crumb.style.display = 'none';
+    title.textContent = 'Filters';
+    clear.textContent = 'Clear all';
+    clear.removeAttribute('aria-label');
+    // The head always stays, for its title; Clear all is only out of sight.
+    clear.style.visibility = activeFilterCount() > 0 ? 'visible' : 'hidden';
+  }
+  clear.style.display = 'inline-flex';
+}
+
+// What the filters leave. The Outfits page counts the combinations the
+// generator would walk; Faves counts the ones you kept.
+function filterResultCount(){
+  if(appMode !== 'saved') return totalComboCount();
+  const want = faveFilter.saved;
+  const pool = favoriteOutfits.concat(
+    [...faveLingering.values()].filter(r => !favoriteOutfits.some(f => f.key === r.key)));
+  return pool.filter(rec => (favePinned.has(rec.key) || faveMatches(rec.level, want))
+                            && savedOutfitMatches(rec)).length;
+}
+
+// The foot: the way back from a category page (left, quiet) and the one
+// button that says what you now have and puts the filters away.
+let lastFilterCount = null;
+function renderFilterFooter(){
+  const el = document.getElementById('filter-sheet-foot');
+  if(!el) return;
+  if(!filterSheetHasContent()){ el.innerHTML = ''; return; }
+  const n = filterResultCount();
+  const label = n === 0
+    ? 'No outfits match'
+    : `See <span class="filter-count" id="filter-sheet-count">${n.toLocaleString('en-US')}</span> ${n === 1 ? 'outfit' : 'outfits'}`;
+  const back = filterPage
+    ? `<button class="btn secondary" id="filter-sheet-back" type="button" onclick="closeFilterPage()">
+         <svg class="back-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>Filters</button>`
+    : '';
+  el.innerHTML = `${back}<button class="btn" id="filter-sheet-see" type="button" onclick="closeFilterSheet()"><span>${label}</span></button>`;
+  if(lastFilterCount !== null && lastFilterCount !== n && filterSheetOpen()){
+    const num = document.getElementById('filter-sheet-count');
+    if(num) num.classList.add('filter-count-roll');
+  }
+  lastFilterCount = n;
+}
+
+function filterPageHtml(slotKey){
+  return `<p class="picker-empty" id="picker-empty" style="display:none;"></p>
+    <div class="gallery filter-page-gallery" id="picker-gallery" role="group"
+         aria-label="${esc(slotKey)}"></div>`;
 }
 
 // ---- Putting a panel away with your thumb ------------------
@@ -2729,7 +2851,7 @@ function sheetCloseDistance(el){
 // floats over the page with nothing behind it.
 function sheetBackdrop(el){
   const b = el.parentElement;
-  return b && b.classList.contains('modal-backdrop') ? b : null;
+  return b && (b.classList.contains('modal-backdrop') || b.classList.contains('filter-backdrop')) ? b : null;
 }
 
 let sheetDrag = null;
@@ -2744,7 +2866,7 @@ function dragStart(el, isOpen, e){
     trail: [{t: e.timeStamp, y: e.clientY}],   // recent moves, for the speed
     // Only something already at its top can be pulled down; anywhere else
     // the gesture is its own scrolling.
-    eligible: el.scrollTop <= 0,
+    eligible: el.scrollTop <= 0 || Boolean(e.target.closest && e.target.closest('[data-drag-handle]')),
     decided: false,
     pulling: false,
   };
@@ -2900,35 +3022,6 @@ function wireSheetDrag(){
                   formSheetIsUp, () => { if(sheetDragClose) sheetDragClose(); });
 }
 
-// An open panel is a thing you are doing; going back to the page is
-// finishing it. A tap on the clothes or a scroll puts the panel away by
-// itself, on the same curve it arrived by, rather than making you find the
-// chevron first.
-//
-// Only a real scroll counts: opening the panel changes how much room the
-// page leaves under it, which shifts the page by a few pixels on its own.
-const SHEET_DISMISS_SCROLL = 24;
-let sheetScrollOrigin = 0;
-
-function watchForSheetDismiss(){
-  sheetScrollOrigin = window.scrollY;
-}
-
-// The page moves for reasons that are not you. Narrowing it makes it
-// shorter and the browser clamps the scroll to the new bottom; changing
-// what is above the viewport makes the browser compensate to keep your
-// place — Chrome calls that scroll anchoring. Both arrive at the scroll
-// handler looking exactly like a scroll, and both were putting the panel
-// away mid-tap, which is what "sometimes it collapses when I pick a tag"
-// was.
-//
-// Trying to tell them apart from the numbers does not hold: a clamp has a
-// signature, anchoring does not. So the question is asked directly — did a
-// finger, a wheel or a key do this — because that is what the behaviour is
-// about. Scrolling away closes the panel; the page shifting under it is
-// not you going anywhere.
-let lastScrollGesture = 0;
-const SCROLL_GESTURE_GRACE = 700;
 const SCROLL_KEYS = ['ArrowUp','ArrowDown','PageUp','PageDown','Home','End',' ','Spacebar'];
 
 // While the panel is up the page behind it stays put. Wheel, touch and keys
@@ -2974,22 +3067,6 @@ window.addEventListener('keydown', e => {
   e.preventDefault();
 });
 
-function noteScrollGesture(){ lastScrollGesture = Date.now(); }
-['wheel', 'touchmove'].forEach(type =>
-  window.addEventListener(type, noteScrollGesture, {passive:true, capture:true}));
-window.addEventListener('keydown', e => {
-  if(SCROLL_KEYS.includes(e.key)) noteScrollGesture();
-}, {capture:true});
-
-function scrolledByHand(){
-  return Date.now() - lastScrollGesture < SCROLL_GESTURE_GRACE;
-}
-
-function tappedInsideSheet(target){
-  return Boolean(target.closest && (target.closest('#filter-sheet') ||
-                                    target.closest('#filters-fab')));
-}
-
 // A sheet over the top owns the screen, so nothing that happens while one
 // is open is a tap on the page behind it. Checking the sheet rather than
 // the target also covers a long press that opened one mid-gesture: the
@@ -2999,24 +3076,11 @@ function sheetOverTheTop(){
   return Boolean(document.querySelector('.modal-backdrop.open'));
 }
 
-// On click rather than pointerdown: putting the panel away gives the page
-// its full height back, and doing that between finger-down and finger-up
-// moves whatever you were aiming at out from under you. By click the tap
-// has already been aimed, so it lands where you meant it to and the panel
-// closes behind it.
-document.addEventListener('click', e => {
-  if(!filterSheetOpen() || sheetOverTheTop()) return;
-  if(tappedInsideSheet(e.target)) return;
+// Escape puts the filters away, as it does for the other sheets.
+document.addEventListener('keydown', e => {
+  if(e.key !== 'Escape' || !filterSheetOpen() || sheetOverTheTop()) return;
   closeFilterSheet();
-}, true);
-
-window.addEventListener('scroll', () => {
-  if(!filterSheetOpen() || sheetOverTheTop()) return;
-  // Only a scroll you made counts. See noteScrollGesture above.
-  if(!scrolledByHand()){ watchForSheetDismiss(); return; }
-  if(Math.abs(window.scrollY - sheetScrollOrigin) < SHEET_DISMISS_SCROLL) return;
-  closeFilterSheet();
-}, {passive:true});
+});
 
 function clearFilters(){
   if(appMode === 'outfits' || appMode === 'saved'){
@@ -3126,8 +3190,8 @@ function renderSlotChips(gridId){
     const said = f.type === 'items' ? `${f.ids.length} selected`
                : f.type === 'none' ? 'none' : 'any';
 
-    return `<button class="${cls}" data-state="${f.type}" aria-haspopup="dialog"`
-      + ` aria-label="${esc(key)}: ${said}" onclick="openSlotPicker('${key}')">`
+    return `<button class="${cls}" data-state="${f.type}"`
+      + ` aria-label="${esc(key)}: ${said}" onclick="openFilterPage('${key}')">`
       + `<span class="chip-label">${key}</span>${badge}</button>`;
   }).join('');
 }
@@ -3333,49 +3397,11 @@ async function saveBuiltOutfit(){
   renderSavedOutfits();
 }
 
-// Live, because a filter is a temporary state you can clear in a tap —
-// there is nothing here to commit, so the bar holds one word: Done. No
-// arrow at the top: it would have done the same thing from the hardest
-// corner of the screen to reach.
-function openSlotPicker(slotKey){
-  const modal = document.getElementById('modal');
-  modal.innerHTML = `
-    <div class="sheet-grip"></div>
-    <div class="modal-body has-footer">
-      <div class="picker-head">
-        <div class="modal-name">Choose ${esc(slotKey.toLowerCase())}</div>
-        <div class="quick-picks" id="picker-quick-picks"></div>
-      </div>
-      <p class="picker-empty" id="picker-empty" style="display:none;"></p>
-      <div class="gallery" id="picker-gallery"></div>
-    </div>
-    <div class="sheet-footer">
-      <div class="sheet-footer-inner">
-        <button class="btn" type="button" onclick="closePickerAndApply()">Done</button>
-      </div>
-    </div>
-  `;
-  renderQuickPicks(slotKey);
-  renderPickerGallery(slotKey);
-  allowSheetDrag(closePickerAndApply);
-  document.getElementById('modal-backdrop').classList.add('open');
-}
-
 // One garment, not a category: "No jacket", not "None" or "No jackets".
 const SINGULAR_TAB = {Dresses:'dress', Shorts:'shorts', Pants:'pants'};
 function noneLabel(tab){
   const one = SINGULAR_TAB[tab] || tab.toLowerCase().replace(/s$/, '');
   return 'No ' + one;
-}
-
-// Clear is the way back from a pinned selection, or from None, to the whole
-// category. It only has something to do while the category is narrowed.
-function renderQuickPicks(slotKey){
-  const f = activeSlotFilters()[slotKey];
-  const el = document.getElementById('picker-quick-picks');
-  if(!el) return;
-  el.innerHTML =
-    `<button class="filter-sheet-clear" ${f.type === 'any' ? 'disabled' : ''} onclick="setSlotAny('${slotKey}')">Clear</button>`;
 }
 
 function renderPickerGallery(slotKey){
@@ -3406,18 +3432,32 @@ function renderPickerGallery(slotKey){
   }).join('');
 }
 
+// A tap here is a tap on the results: the pieces, the footer's count, the
+// head's Clear, the pill's badge and the outfits behind the sheet all follow
+// at once. There is nothing to apply when you leave.
+function slotFilterChanged(slotKey){
+  renderPickerGallery(slotKey);
+  renderFilterHead();
+  renderFilterFooter();
+  renderFiltersFab();
+  if(appMode === 'saved'){
+    expandedSavedKey = null;
+    renderSavedOutfits();
+  } else {
+    resetOutfitResults();
+  }
+}
+
 function setSlotAny(slotKey){
   activeSlotFilters()[slotKey] = anyFilter();
-  renderQuickPicks(slotKey);
-  renderPickerGallery(slotKey);
+  slotFilterChanged(slotKey);
 }
 
 // None and pinned pieces are one field, so choosing one drops the other.
 function toggleSlotNone(slotKey){
   const f = activeSlotFilters();
   f[slotKey] = f[slotKey].type === 'none' ? anyFilter() : {type:'none', ids:[]};
-  renderQuickPicks(slotKey);
-  renderPickerGallery(slotKey);
+  slotFilterChanged(slotKey);
 }
 
 function toggleSlotItem(slotKey, itemId){
@@ -3425,19 +3465,9 @@ function toggleSlotItem(slotKey, itemId){
   const ids = (f.type === 'items') ? f.ids.slice() : [];
   const idx = ids.indexOf(itemId);
   if(idx >= 0) ids.splice(idx, 1); else ids.push(itemId);
-  // Clearing the last item drops the slot back to 'any', so the quick
-  // picks have to refresh alongside the gallery.
+  // Clearing the last item drops the slot back to 'any'.
   activeSlotFilters()[slotKey] = ids.length ? {type:'items', ids} : {type:'any', ids:[]};
-  renderQuickPicks(slotKey);
-  renderPickerGallery(slotKey);
-}
-
-function closePickerAndApply(){
-  closeModal();
-  renderFilterControls();
-  renderFiltersFab();
-  if(appMode === 'saved') renderSavedOutfits();
-  else resetOutfitResults();
+  slotFilterChanged(slotKey);
 }
 
 // What one category leaves for the slot it fills.
@@ -5742,19 +5772,8 @@ async function boot(){
   // Delegated, so it keeps working across every re-render of the grid.
   wireLongPress(document.getElementById('gallery'));
   wireLongPress(document.getElementById('name-list'));
-  // The docked panel's height decides how much room the page leaves under
-  // itself, and that changes with the screen.
   wireTagLongPress(document.getElementById('filter-sheet'));
   wireSheetDrag();
-  window.addEventListener('resize', syncSheetInset);
-  // The panel's height decides how much room the page leaves under it, and
-  // it changes for reasons that do not go through any one function: a tag
-  // added, a row wrapping, Clear all arriving and taking the head with it.
-  // Measuring on each of those meant measuring before the layout settled
-  // and reserving a few pixels too few — so the panel is watched instead.
-  if(window.ResizeObserver){
-    new ResizeObserver(syncSheetInset).observe(document.getElementById('filter-sheet'));
-  }
   // Kept up to date as you scroll as well as when you leave a page, so a
   // reload inside the same visit lands where you were too.
   let scrollTick = null;

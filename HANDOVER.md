@@ -42,7 +42,7 @@ So the exit joins the commit at the foot of the sheet.
 
 | Sheet | Applies | Bottom bar | Drag to close | Done? |
 |---|---|---|---|---|
-| Filter picker (tap a piece chip) | **live** | `Done` | yes | ✅ pass one |
+| Filters (the Filters pill) | **live** | `See N outfits` (+ `‹ Filters` on a category page) | yes | ✅ pass three |
 | Add accessories | **staged** (changed) | `Cancel` · `Save` | no | ✅ pass one |
 | Piece → capsules | **staged** (changed) | `Cancel` · `Save` | no | ✅ pass one |
 | Piece detail | read-only | none | yes | ✅ pass one |
@@ -197,6 +197,46 @@ ever dragged with a mouse, which has no such rival, so they never saw it.
   (was `contain`, which still let iOS rubber-band the contents).
 - Unchanged: draft sheets ignore the gesture, a sideways swipe belongs to
   its row, dragging up scrolls.
+
+---
+
+## Pass three — the filters are a bottom sheet
+
+Written 18 Oct 2026. Replaces the docked filter panel and the separate
+piece picker.
+
+- The pill says **Filters** (no more Show/Hide). It raises `#filter-sheet`,
+  a bottom sheet like the others: grip, dimmed page (`#filter-backdrop`,
+  z-index 110 — under the 130 sheets so a long-pressed tag editor still
+  opens over it), rounded top, as tall as its content up to 92% of the
+  screen. It covers the floating pair and the nav; `#float-row.away` eases
+  them down behind it.
+- **No sheet on a sheet.** Tapping a piece chip (Tops, Pants…) slides the
+  sheet to a second page for that category (`openFilterPage`), inside the
+  same sheet. `openSlotPicker` and its modal are gone. The sheet grows or
+  shrinks to the new page's height (`morphFilterSheet`).
+- **Clear is at the top right** of the head, always: *Clear all* on the
+  main page, *Clear* (that category) on a category page. Hidden while there
+  is nothing to clear.
+- **Everything applies as you tap.** Piece taps now re-run the results
+  straight away (`slotFilterChanged`) instead of on close.
+- **The foot is the way out.** One button, `See 1,284 outfits`, which
+  closes the sheet and turns over as you tap. On a category page `‹ Filters`
+  sits on its left, quiet, as the way back (no top-left Back). Both halves
+  of the Outfits switch say "outfits". At zero the button reads "No outfits
+  match" and still closes — a way out that disappears is worse than an odd
+  label. Count comes from `filterResultCount()` (`totalComboCount` on
+  Outfits, the kept pool on Faves).
+- **Close:** pull down (anywhere at the top of the sheet, or on the sticky
+  head even when scrolled — `data-drag-handle`), tap the dimmed page, Escape,
+  or the foot button.
+- **Gone:** the panel opening itself on arrival (`FILTERS_OPEN_BY_DEFAULT`),
+  closing on a tap or scroll of the page behind (the backdrop covers the
+  page now), and `--sheet-inset` / `syncSheetInset` (the page is no longer
+  covered by a docked panel).
+- The mockup that was signed off is `mockups/filters-sheet.html` (it also
+  shows the two options that were not built: expanding rows, and chips as
+  tabs).
 
 ---
 
