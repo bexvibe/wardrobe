@@ -154,16 +154,25 @@ const said = (p, sel) => p.evaluate(s => {
     await p.close();
   }
 
-  // ---- 3. The two inside sheets ----
+  // ---- 3. Inside the sheets ----
   {
     const p=await boot(b, seed);
-    // A category you own nothing in, in the piece picker: still its own
-    // name, one quiet line, unchanged.
+    // Filters that rule everything out: the sheet's foot says so in one
+    // line, and is still the way out — a way out that disappears is worse
+    // than an odd label.
     await p.click('#nav-outfits-btn'); await p.waitForTimeout(1300);
-    await p.evaluate(()=>(filterSheetOpen()||openFilterSheet(),openFilterPage('Skirts'))); await p.waitForTimeout(600);
-    check('the piece picker still names the category it has none of',
-      (await said(p, '#picker-empty')) === 'No skirts', await said(p, '#picker-empty'));
-    await p.evaluate(()=>closeModal()); await p.waitForTimeout(500);
+    await p.click('#filters-fab'); await p.waitForTimeout(500);
+    await p.evaluate(()=>{ outfitTags = ['__nothing_has_this_tag__'];
+                           renderFilterControls(); resetOutfitResults(); });
+    await p.waitForTimeout(500);
+    check('a filter that matches nothing says so in the sheet\'s foot',
+      (await said(p, '#filter-sheet-see')) === 'No outfits match', await said(p, '#filter-sheet-see'));
+    check('and the foot still puts the sheet away', await (async()=>{
+      await p.click('#filter-sheet-see'); await p.waitForTimeout(500);
+      return p.evaluate(()=>!filterSheetOpen());
+    })());
+    await p.evaluate(()=>{ outfitTags = []; renderFilterControls(); resetOutfitResults(); });
+    await p.waitForTimeout(300);
 
     // A capsule with nothing in it.
     await p.evaluate(async()=>{ await saveCapsule({ id:null, name:'Winter', itemIds:[] }); });
