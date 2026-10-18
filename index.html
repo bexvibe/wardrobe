@@ -6809,7 +6809,7 @@ function render(){
   // A wardrobe with nothing in it gets the welcome; one where the search or
   // a tab rules everything out just says so, and keeps its + up top.
   const firstVisit = ITEMS.length === 0;
-  document.getElementById('add-item-btn').style.display = firstVisit ? 'none' : '';
+  document.getElementById('add-item-btn').style.display = (firstVisit || editMode) ? 'none' : '';
   document.getElementById('empty-emoji').style.display = firstVisit ? '' : 'none';
   document.getElementById('empty-title').textContent = firstVisit ? 'See all your clothes' : 'No pieces match';
   document.getElementById('empty-sub').textContent = firstVisit ? 'Add pieces here' : '';
