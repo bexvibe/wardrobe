@@ -1,5 +1,6 @@
-// The filter panel is shut when you arrive on Outfits or Faves. The pill says
-// Show filters; opening it says Hide filters; the panel is titled Filters.
+// The filter sheet is down when you arrive on Outfits or Faves. The pill
+// always says Filters; opening the sheet does not change it; the sheet is
+// titled Filters.
 const { chromium } = require('playwright');
 const { toFaves } = require('./nav');
 const fs=require('fs'), path=require('path');
@@ -23,13 +24,13 @@ const isOpen = p => p.evaluate(()=>filterSheetOpen());
 
   await p.click('#nav-outfits-btn'); await p.waitForTimeout(1200);
   check('closed on Outfits', !(await isOpen(p)));
-  check('pill says Show filters', (await fabText(p)).startsWith('Show filters'), await fabText(p));
+  check('pill says Filters', (await fabText(p)).startsWith('Filters'), await fabText(p));
   await toFaves(p, 900);
   check('closed on Faves', !(await isOpen(p)));
 
   await p.click('#filters-fab'); await p.waitForTimeout(600);
   check('pill opens it', await isOpen(p));
-  check('pill now says Hide filters', (await fabText(p)).startsWith('Hide filters'), await fabText(p));
+  check('pill still says Filters, never Hide filters', (await fabText(p)).startsWith('Filters'), await fabText(p));
   const head = await p.evaluate(()=>{
     const t=document.querySelector('.filter-sheet-title').getBoundingClientRect();
     const c=document.getElementById('filter-sheet-clear').getBoundingClientRect();

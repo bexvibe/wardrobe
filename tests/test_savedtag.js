@@ -1,7 +1,8 @@
 const { chromium } = require('playwright');
 const { toFaves } = require('./nav');
-// The filters dock at the bottom of the screen and open themselves on
-// Outfits and Faves. Everywhere else the pill raises them.
+// The filters are a bottom sheet. It never raises itself: the Filters pill
+// does, and the sheet dims the page, so open it before touching a chip and
+// close it before touching the page.
 async function openFilters(page){
   const open = await page.evaluate(() => filterSheetOpen());
   if(!open){ await page.click('#filters-fab'); await page.waitForTimeout(400); }
@@ -53,11 +54,12 @@ const TAGS={seed_22:['summer'], seed_11:['summer'], seed_23:['winter']};
 
   check('saved tab shows all outfits unfiltered',
     (await p.evaluate(()=>document.querySelectorAll('#saved-gallery .outfit-card').length))===3);
-  // The pill stays whether the panel is up or down — it is the way out as
-  // well as the way in — so what says the panel is up is the panel.
-  check('the filters are already up, not waiting behind a button',
-    (await p.evaluate(()=>filterSheetOpen())) && (await p.isVisible('#filters-fab')));
-  check('and they offer the saved tags', await p.isVisible('#sheet-tag-chips .tag-chip'));
+  // The sheet is down on arrival and the Filters pill raises it.
+  check('the filter sheet is closed on arrival, behind the pill',
+    !(await p.evaluate(()=>filterSheetOpen())) && (await p.isVisible('#filters-fab')));
+  await openFilters(p);
+  check('the pill raises the sheet', await p.evaluate(()=>filterSheetOpen()));
+  check('and it offers the saved tags', await p.isVisible('#sheet-tag-chips .tag-chip'));
   const cards=()=>p.evaluate(()=>document.querySelectorAll('#saved-gallery .outfit-card').length);
   check('3 cards rendered', await cards()===3);
 
@@ -92,7 +94,7 @@ const TAGS={seed_22:['summer'], seed_11:['summer'], seed_23:['winter']};
     await p.evaluate(()=>outfitTags.length===0));
 
   // The wardrobe has no filters of its own and is not touched by these.
-  // The two halves of Outfits share one panel, so the tag follows you
+  // The two halves of Outfits share one sheet, so the tag follows you
   // across the switch rather than being asked for twice.
   await p.click('#sheet-tag-chips .tag-chip:has-text("summer")'); await p.waitForTimeout(300);
   await closeFilters(p);

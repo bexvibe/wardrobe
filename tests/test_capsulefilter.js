@@ -44,10 +44,13 @@ const dealt = p => p.evaluate(() => outfitDisplayed.map(c => comboPieces(c).map(
   const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium'});
   const p=await open(b);
   await toAll(p);
-  await p.evaluate(() => openFilterSheet()); await p.waitForTimeout(400);
+  // The sheet never raises itself: it is down on arrival, the pill raises it.
+  check('the filter sheet is closed on arrival', !(await p.evaluate(() => filterSheetOpen())));
+  await p.click('#filters-fab'); await p.waitForTimeout(400);
+  check('the Filters pill raises it', await p.evaluate(() => filterSheetOpen()));
 
   const first = await p.evaluate(() => document.querySelector('#filter-sheet-body .filter-section .filter-sheet-label').textContent);
-  check('Capsules is the first row of the panel', first.startsWith('Capsules'), first);
+  check('Capsules is the first row of the sheet', first.startsWith('Capsules'), first);
   check('one chip per capsule', JSON.stringify((await chips(p)).map(c=>c.t))==='["Alpha","Beta"]');
 
   await tap(p,'Alpha');
@@ -61,8 +64,10 @@ const dealt = p => p.evaluate(() => outfitDisplayed.map(c => comboPieces(c).map(
   check('Alpha + Beta: pieces mix across both', ids.length>0 && ids.every(c=>c.every(x=>all3.includes(x)))
     && ids.some(c=>c.includes('seed_12')), JSON.stringify(ids.slice(0,4)));
 
+  // The sheet dims the page and covers the nav, so leave it before switching.
+  await p.click('#filter-sheet-see'); await p.waitForTimeout(500);
   await toFaves(p);
-  await p.evaluate(() => openFilterSheet()); await p.waitForTimeout(400);
+  await p.click('#filters-fab'); await p.waitForTimeout(400);
   check('Faves keeps the capsules on', (await chips(p)).every(c=>c.on));
   let n = await p.evaluate(() => document.querySelectorAll('#saved-gallery .outfit-card').length);
   check('Faves: both capsules → outfits 1 and 2', n===2, String(n));

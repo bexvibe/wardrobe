@@ -1,9 +1,10 @@
-// An open filter panel is a thing you are doing; going back to the clothes
-// is finishing it. A tap on the page or a scroll puts it away by itself, on
-// the same curve it arrived by — but a tap inside it, or a scroll of a row
-// inside it, is still you using it.
+// The filter sheet is a modal thing you are doing. It never raises itself,
+// and using it (tags, pieces, a row scrolled sideways, a long press) is not
+// leaving it. The ways out are the foot button, the dimmed page, Escape and
+// pulling it down. The page behind is covered, so it neither dismisses the
+// sheet nor scrolls under it.
 const { chromium } = require('playwright');
-const { toFaves, leaveSheet } = require('./nav');
+const { toFaves } = require('./nav');
 const fs=require('fs'), path=require('path');
 const REPO = require('path').join(__dirname, '..');
 const SHOTS = require('path').join(__dirname, 'shots');
@@ -40,23 +41,34 @@ async function scrollBy(p, dy){
 async function reopen(p){
   if(!(await isOpen(p))){ await p.click('#filters-fab'); await p.waitForTimeout(700); }
 }
+async function pullDown(p, dy){
+  const r = await p.evaluate(()=>{ const b=document.querySelector('.filter-sheet-top').getBoundingClientRect();
+    return {x:Math.round(b.left+b.width/2), y:Math.round(b.top+14)}; });
+  await p.mouse.move(r.x, r.y); await p.mouse.down();
+  for(let i=1;i<=10;i++){ await p.mouse.move(r.x, r.y+dy*i/10); await p.waitForTimeout(16); }
+  await p.mouse.up(); await p.waitForTimeout(700);
+}
 
 (async()=>{
   const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium'});
 
-  // ---- 1. Using the panel is not leaving it ----
+  // ---- 1. Using the sheet is not leaving it ----
   {
     const p=await open(b);
-    check('the panel is up on arrival', await isOpen(p));
+    check('it does not raise itself on arrival', !(await isOpen(p)));
+    await reopen(p);
+    check('the pill raises it', await isOpen(p));
 
     await p.click('#sheet-tag-chips .tag-chip'); await p.waitForTimeout(500);
     check('tapping a tag inside it keeps it up', await isOpen(p));
     check('and the tag really went on', await p.evaluate(()=>outfitTags.length > 0));
 
-    await p.click('#sheet-filter-grid .filter-chip'); await p.waitForTimeout(500);
-    check('opening a picker from inside it keeps it up', await isOpen(p));
-    await leaveSheet(p, {settle:700});
-    check('and so does coming back out of the picker', await isOpen(p));
+    await p.click('#sheet-filter-grid .filter-chip'); await p.waitForTimeout(700);
+    check('tapping a piece chip keeps it up, on that category\'s page',
+      (await isOpen(p)) && await p.evaluate(()=>filterPage !== null));
+    await p.click('#filter-sheet-back'); await p.waitForTimeout(700);
+    check('and coming back from the page keeps it up, on the main page',
+      (await isOpen(p)) && await p.evaluate(()=>filterPage === null));
 
     // The row inside scrolls sideways; that is not scrolling the page.
     await p.evaluate(()=>document.getElementById('sheet-tag-chips').scrollBy({left:120}));
@@ -64,8 +76,7 @@ async function reopen(p){
     check('scrolling a row inside it keeps it up', await isOpen(p));
 
     // A long press opens a sheet part-way through the gesture, so the click
-    // that follows lands on neither the chip nor the sheet. That is still
-    // not a tap on the page.
+    // that follows lands on neither the chip nor the sheet.
     await p.evaluate(()=>document.getElementById('sheet-tag-chips').scrollTo({left:0}));
     await p.waitForTimeout(300);
     const box = await p.locator('#sheet-tag-chips .tag-chip').first().boundingBox();
@@ -74,61 +85,89 @@ async function reopen(p){
     await p.waitForTimeout(500);
     check('a long press on a tag opens its editor', await p.evaluate(()=>
       Boolean(document.getElementById('tag-edit-input'))));
-    check('and leaves the panel where it was', await isOpen(p));
+    check('and leaves the sheet where it was', await isOpen(p));
     await p.close();
   }
 
-  // ---- 2. Going back to the page puts it away ----
+  // ---- 2. The four ways out ----
   {
     const p=await open(b);
-    await p.click('#outfit-gallery .outfit-card', {position:{x:20,y:20}});
-    await p.waitForTimeout(800);
-    check('a tap on the clothes closes it', !(await isOpen(p)));
+    await reopen(p);
+    check('the pill eases away while the sheet is up',
+      await p.evaluate(()=>document.getElementById('float-row').classList.contains('away')));
+
+    // the dimmed page
+    await p.mouse.click(195, 40); await p.waitForTimeout(700);
+    check('a tap on the dimmed page closes it', !(await isOpen(p)));
     check('and it slid rather than vanished', await p.evaluate(()=>{
       const cs = getComputedStyle(document.getElementById('filter-sheet'));
       return cs.transitionProperty.includes('transform') &&
              parseFloat(cs.transitionDuration) > 0;
     }));
-    check('the page has its full height back',
-      await p.evaluate(()=>getComputedStyle(document.documentElement)
-        .getPropertyValue('--sheet-inset').trim() === '0px'));
-    check('and the pill is standing by to bring it back',
-      await p.evaluate(()=>getComputedStyle(
-        document.getElementById('filters-fab')).display !== 'none'));
+    check('and the pill is back, standing by',
+      await p.evaluate(()=>!document.getElementById('float-row').classList.contains('away') &&
+        getComputedStyle(document.getElementById('filters-fab')).display !== 'none'));
 
+    // a tap inside the sheet is not a tap on the page
     await reopen(p);
-    check('the pill brings it back', await isOpen(p));
+    await p.click('#filter-sheet-title'); await p.waitForTimeout(400);
+    check('a tap on the sheet itself does not close it', await isOpen(p));
+
+    // Escape
+    await p.keyboard.press('Escape'); await p.waitForTimeout(700);
+    check('Escape closes it', !(await isOpen(p)));
+
+    // the foot button
+    await reopen(p);
+    await p.click('#filter-sheet-see'); await p.waitForTimeout(700);
+    check('See N outfits closes it', !(await isOpen(p)));
+
+    // pulling down
+    await reopen(p);
+    await pullDown(p, 300);
+    check('pulling it down closes it', !(await isOpen(p)));
+
+    // a short pull springs back
+    await reopen(p);
+    await pullDown(p, 20);
+    check('a short pull springs back and leaves it up', await isOpen(p));
+
+    await p.click('#filter-sheet-see'); await p.waitForTimeout(700);
+    await reopen(p);
+    check('the pill brings it back each time', await isOpen(p));
+    check('always on its main page when it comes back',
+      await p.evaluate(()=>filterPage === null));
     await p.close();
   }
 
-  // ---- 3. The page behind the panel does not scroll ----
+  // ---- 3. The page behind the sheet does not scroll, or close it ----
   {
     const p=await open(b);
+    await reopen(p);
     const y0 = await p.evaluate(()=>Math.round(scrollY));
     await scrollBy(p, 300); await p.waitForTimeout(500);
     check('a wheel over the page does not move it',
       (await p.evaluate(()=>Math.round(scrollY))) === y0, String(await p.evaluate(()=>Math.round(scrollY))));
-    check('and the panel stays up', await isOpen(p));
+    check('and does not close the sheet', await isOpen(p));
     await p.keyboard.press('PageDown'); await p.waitForTimeout(300);
     check('nor does a key',
       (await p.evaluate(()=>Math.round(scrollY))) === y0);
+    check('nor does that close it', await isOpen(p));
     await p.close();
   }
 
   // ---- 4. Arriving somewhere is not scrolling away ----
   {
     const p=await open(b);
-    // Leave Outfits partway down, so coming back restores a position.
-    await p.evaluate(()=>closeFilterSheet());
     await scrollBy(p, 600); await p.waitForTimeout(700);
     await p.click('#nav-inventory-btn'); await p.waitForTimeout(800);
     await p.click('#nav-outfits-btn'); await p.waitForTimeout(1200);
     check('coming back puts you where you were',
       (await p.evaluate(()=>Math.round(scrollY))) > 300,
       String(await p.evaluate(()=>Math.round(scrollY))));
+    check('and the sheet is still down', !(await isOpen(p)));
     await reopen(p);
-    check('and the panel opened there stays open',
-      await isOpen(p), String(await p.evaluate(()=>Math.round(scrollY))));
+    check('and it opens there', await isOpen(p), String(await p.evaluate(()=>Math.round(scrollY))));
     await p.close();
   }
 
@@ -136,8 +175,9 @@ async function reopen(p){
   {
     const p=await open(b);
     await toFaves(p, 1000);
+    check('Faves does not raise it by itself either', !(await isOpen(p)));
     await reopen(p);
-    check('the panel opens on Faves too', await isOpen(p));
+    check('the sheet opens on Faves too', await isOpen(p));
     const fy = await p.evaluate(()=>Math.round(scrollY));
     await scrollBy(p, 200); await p.waitForTimeout(700);
     check('and holds the page the same way',
@@ -145,15 +185,14 @@ async function reopen(p){
     await p.close();
   }
 
-  // ---- A filter that shortens the page is not you scrolling away ----
+  // ---- A filter that shortens the page does not close the sheet ----
   {
     const p=await open(b);
     // Down the page far enough that narrowing it will make the browser
-    // clamp the scroll position — which used to arrive as a scroll nobody
-    // made and put the panel away mid-tap.
+    // clamp the scroll position.
     await p.evaluate(()=>window.scrollTo({top:1200})); await p.waitForTimeout(700);
     await reopen(p);
-    check('the panel is up, well down the page',
+    check('the sheet is up, well down the page',
       (await isOpen(p)) && (await p.evaluate(()=>scrollY)) > 600,
       String(await p.evaluate(()=>Math.round(scrollY))));
 
@@ -169,7 +208,7 @@ async function reopen(p){
     }));
     check('the filter really did shorten the page', after.h < before,
       `${before} -> ${after.h}`);
-    check('and the panel stayed up through it', after.open, JSON.stringify(after));
+    check('and the sheet stayed up through it', after.open, JSON.stringify(after));
     check('with the tag actually on', after.on.join() === 'summer', after.on.join());
 
     await p.close();

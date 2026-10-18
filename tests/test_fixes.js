@@ -52,7 +52,8 @@ const dbTags = (p, id) => p.evaluate(i =>
   {
     const p=await open(b);
     await p.click('#nav-outfits-btn'); await p.waitForTimeout(900);
-    check('the typo is sitting there in the panel',
+    await p.click('#filters-fab'); await p.waitForTimeout(450);   // the sheet never raises itself
+    check('the typo is sitting there in the filter sheet',
       await p.evaluate(()=>allTags().includes('wnter')), (await p.evaluate(()=>allTags())).join(', '));
     check('with no instruction printed beside it',
       !/hold one to edit/i.test(await p.textContent('.filter-section')),
@@ -99,6 +100,7 @@ const dbTags = (p, id) => p.evaluate(i =>
   {
     const p=await open(b);
     await p.click('#nav-outfits-btn'); await p.waitForTimeout(900);
+    await p.click('#filters-fab'); await p.waitForTimeout(450);   // the sheet never raises itself
     await hold(p, '#sheet-tag-chips .tag-chip[data-tag="wnter"]');
     await p.click('#modal button:has-text("Delete tag")'); await p.waitForTimeout(800);
     check('deleting takes it off every piece',
@@ -120,6 +122,7 @@ const dbTags = (p, id) => p.evaluate(i =>
   {
     const p=await open(b);
     await p.click('#nav-outfits-btn'); await p.waitForTimeout(900);
+    await p.click('#filters-fab'); await p.waitForTimeout(450);   // the sheet never raises itself
     await p.click('#sheet-tag-chips .tag-chip[data-tag="wnter"]'); await p.waitForTimeout(700);
     check('the typo is the active filter', (await p.evaluate(()=>outfitTags)).join()==='wnter');
 
