@@ -69,7 +69,7 @@ const foot=p=>p.evaluate(()=>({
   await p.click('#filter-sheet .filter-chip:has-text("Jumper")'); await p.waitForTimeout(500);
   h=await head(p);
   check('a category page is titled for the category, with a Filters crumb and a plain Clear',
-    h.title==='Jumpers' || h.title==='Jumper' ? h.crumb==='Filters' && h.label==='Clear' : false, JSON.stringify(h));
+    /^Jumpers?$/.test(h.title) && h.crumb==='Filters' && h.label==='Clear', JSON.stringify(h));
   check('Clear is hidden, not disabled, while nothing is narrowed',
     !h.visible && !h.disabled, JSON.stringify(h));
   check('and None is the first tile',

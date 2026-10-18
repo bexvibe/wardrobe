@@ -2,8 +2,8 @@
 // words. Off is an outline. On with pieces pinned is filled and carries the
 // count in a badge. On with a category ruled out is filled with its label
 // Nowhere does the row print "Any" or "2 selected".
-// And every one of them — chips, tags, Clear all, the arrow, the picker's
-// own buttons — is a full thumb's worth of target.
+// And every one of them — chips, tags, Clear all, the pill, the category
+// page's Clear and the foot's buttons — is a full thumb's worth of target.
 const { chromium } = require('playwright');
 const { toFaves, leaveSheet } = require('./nav');
 const fs=require('fs'), path=require('path');
@@ -14,7 +14,7 @@ const seed=fs.readFileSync(REPO + '/supabase/seed-items.json','utf8');
 const results=[]; const check=(n,p,d)=>{results.push(p);console.log(`${p?'PASS':'FAIL'}  ${n}${d?'  — '+d:''}`);};
 
 const TAGS = {seed_1:['summer','linen'], seed_2:['summer'], seed_3:['winter']};
-// Enough tags that the row is wider than the panel, which is the whole
+// Enough tags that the row is wider than the sheet, which is the whole
 // point of the two checks about edges and scrolling below.
 ['evening','work','holiday','wool','smart','casual','denim','knit']
   .forEach((t,i)=>{ TAGS['seed_'+(10+i)] = [t]; });
@@ -49,8 +49,9 @@ const chip = (p, label) => p.evaluate(l => {
     filled: !/rgba\(0, 0, 0, 0\)|transparent/.test(cs.backgroundColor),
     ringed: !/rgba\(0, 0, 0, 0\)|transparent/.test(cs.borderTopColor),
     badge: badge ? badge.textContent.trim() : null,
-    // Not aria-pressed: this chip opens a picker, it does not toggle.
-    opens: el.getAttribute('aria-haspopup'),
+    // Not aria-pressed: this chip takes you to a page of pieces, it does
+    // not toggle. The state travels in its aria-label.
+    haspopup: el.getAttribute('aria-haspopup'),
     pressed: el.getAttribute('aria-pressed'),
     caret: Boolean(el.querySelector('.chip-caret')),
     said: el.getAttribute('aria-label'),
@@ -59,13 +60,16 @@ const chip = (p, label) => p.evaluate(l => {
   };
 }, label);
 
-// Through the picker, the way she would.
-async function setSlot(p, key, choice){
+// Through the category page, the way she would: open it, Clear in the head,
+// and the foot's Filters back to the main page, which is redrawn on the way.
+// The sheet is left open on its main page.
+async function clearSlot(p, key){
   await p.evaluate(k => (filterSheetOpen()||openFilterSheet(),openFilterPage(k)), key);
   await p.waitForTimeout(350);
   await p.click(`#filter-sheet-clear`);
   await p.waitForTimeout(250);
-  await leaveSheet(p, {settle:600});
+  await p.click('#filter-sheet-back');
+  await p.waitForTimeout(500);
 }
 
 (async()=>{
@@ -88,7 +92,7 @@ async function setSlot(p, key, choice){
     check('a chip at rest is its label and nothing else',
       all.every(c=>!/any|selected/i.test(c.text)),
       all.map(c=>c.text).join(' | '));
-    check('the word "Any" is nowhere in the filter panel',
+    check('the word "Any" is nowhere in the filter sheet',
       !(await p.evaluate(()=>/\bAny\b/.test(
         document.getElementById('filter-sheet').innerText))));
     check('nor "selected"',
@@ -120,10 +124,10 @@ async function setSlot(p, key, choice){
       return (await chip(p,'Tops')).badge === '1';
     })());
     check('a chip that is on says so to a screen reader too',
-      c.opens === 'dialog' && /3 selected/.test(c.said), c.said);
+      /Tops/.test(c.said) && /3 selected/.test(c.said) && c.pressed === null, c.said);
     check('and one that is off says that', await (async()=>{
       const off = await chip(p, 'Dresses');
-      return off.opens === 'dialog' && /any/i.test(off.said);
+      return /Dresses/.test(off.said) && /any/i.test(off.said) && off.pressed === null;
     })());
     await p.close();
   }
@@ -144,7 +148,7 @@ async function setSlot(p, key, choice){
       await p.evaluate(()=>outfitDisplayed.length > 0 &&
         outfitDisplayed.every(o => o.base === 'dress')));
 
-    await setSlot(p, 'Dresses', 'Any');
+    await clearSlot(p, 'Dresses');
     const off = await chip(p, 'Dresses');
     check('Any returns it to a plain outline with no count',
       !off.filled && off.badge === null && off.state === 'any', JSON.stringify(off));
@@ -170,7 +174,7 @@ async function setSlot(p, key, choice){
     await p.close();
   }
 
-  // ---- 5. Every target in the panel is 44px ----
+  // ---- 5. Every target in the sheet is 44px ----
   {
     const p=await open(b);
     // Clear all only exists once there is something to clear.
@@ -195,29 +199,28 @@ async function setSlot(p, key, choice){
     check('every tag chip too',
       sizes.tag.length > 0 && sizes.tag.every(n=>n>=44), JSON.stringify(sizes.tag));
     check('Clear all is not a 21px sliver any more', sizes.clear>=44, String(sizes.clear));
-    // The way down is the pill that was the way up — it stays on screen
-    // while the panel is open rather than handing the job to a second
-    // control inside it.
-    check('and the way down is the same full target as the way up',
+    check('and the pill that raises the sheet is a full target',
       sizes.fab>=44 && sizes.fabW>=44, `${sizes.fabW}x${sizes.fab}`);
     await p.evaluate(()=>closeFilterSheet()); await p.waitForTimeout(600);
     const fab = await p.evaluate(()=>
       Math.round(document.getElementById('filters-fab').getBoundingClientRect().height));
-    check('the pill that raises the panel already was', fab>=44, String(fab));
+    check('and it still is with the sheet down', fab>=44, String(fab));
     await p.click('#filters-fab'); await p.waitForTimeout(500);
 
-    // Bigger targets, same panel. The head reaches further than it is drawn
+    // Bigger targets, same sheet. The head reaches further than it is drawn
     // rather than pushing the chips down the screen.
     const head = await p.evaluate(()=>
       Math.round(document.querySelector('.filter-sheet-head').getBoundingClientRect().height));
-    check('and the bigger targets cost the panel no height', head <= 30, `${head}px`);
+    check('and the bigger targets cost the sheet no height', head <= 30, `${head}px`);
 
     await p.evaluate(()=>(filterSheetOpen()||openFilterSheet(),openFilterPage('Tops'))); await p.waitForTimeout(500);
-    const quick = await p.evaluate(()=>Array.from(
-      document.querySelectorAll('#picker-quick-picks button'))
-        .map(e=>Math.round(e.getBoundingClientRect().height)));
-    check('the picker\'s own Any is 44px as well',
-      quick.length===1 && quick.every(n=>n>=44), JSON.stringify(quick));
+    const page = await p.evaluate(()=>{
+      const h = id => Math.round(document.getElementById(id).getBoundingClientRect().height);
+      return {clear:h('filter-sheet-clear'), back:h('filter-sheet-back'), see:h('filter-sheet-see'),
+              head:Math.round(document.querySelector('.filter-sheet-head').getBoundingClientRect().height)};
+    });
+    check('on a category page Clear, Filters and See are 44px as well',
+      page.clear>=44 && page.back>=44 && page.see>=44, JSON.stringify(page));
     await p.close();
   }
 
@@ -262,18 +265,18 @@ async function setSlot(p, key, choice){
     await p.close();
   }
 
-  // ---- 8. A panel that is down is out of reach ----
+  // ---- 8. A sheet that is down is out of reach ----
   {
     const p=await open(b);
-    // Arriving on Outfits opens it, so put it away first.
-    await p.evaluate(()=>closeFilterSheet()); await p.waitForTimeout(600);
+    // It never opens itself, so it is already down on arrival.
+    check('the sheet does not open itself on arrival', !(await p.evaluate(()=>filterSheetOpen())));
 
-    check('the closed panel is inert',
+    check('the closed sheet is inert',
       await p.evaluate(()=>document.getElementById('filter-sheet').hasAttribute('inert')));
     check('and inert is a thing this browser honours',
       await p.evaluate(()=>'inert' in HTMLElement.prototype));
 
-    // Tab all the way round the page: nothing inside the panel is a stop.
+    // Tab all the way round the page: nothing inside the sheet is a stop.
     const landed = [];
     for(let i=0;i<25;i++){
       await p.keyboard.press('Tab');
@@ -281,13 +284,13 @@ async function setSlot(p, key, choice){
         const a = document.activeElement;
         if(!a || a === document.body) return 'body';
         return document.getElementById('filter-sheet').contains(a)
-          ? 'IN THE PANEL: ' + (a.id || a.className) : (a.id || a.tagName);
+          ? 'IN THE SHEET: ' + (a.id || a.className) : (a.id || a.tagName);
       }));
     }
-    check('no tab stop lands inside it', !landed.some(l=>l.startsWith('IN THE PANEL')),
-      landed.filter(l=>l.startsWith('IN THE PANEL')).join(', ') || landed.slice(0,6).join(', '));
+    check('no tab stop lands inside it', !landed.some(l=>l.startsWith('IN THE SHEET')),
+      landed.filter(l=>l.startsWith('IN THE SHEET')).join(', ') || landed.slice(0,6).join(', '));
     // Tabbing past 83 tiles would take all day, so ask the pill directly:
-    // it is the one control near the panel that must stay reachable.
+    // it is the one control near the sheet that must stay reachable.
     check('the pill that opens it is still reachable',
       await p.evaluate(()=>{
         const fab = document.getElementById('filters-fab');
@@ -295,7 +298,7 @@ async function setSlot(p, key, choice){
         return document.activeElement === fab && !fab.hasAttribute('inert');
       }));
 
-    // Open it and the whole panel is back in reach.
+    // Open it and the whole sheet is back in reach.
     await p.click('#filters-fab'); await p.waitForTimeout(600);
     check('opening it hands it back',
       !(await p.evaluate(()=>document.getElementById('filter-sheet').hasAttribute('inert'))));
