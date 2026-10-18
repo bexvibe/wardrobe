@@ -293,5 +293,4 @@ piece picker.
   `wand_stars`) deals again on demand.
 - The heart is drawn SVG, not a font glyph — `♥`/`♡` are in neither Work
   Sans nor Fraunces and were being substituted differently per device.
-- Filters open as a popover above their own button; the button stays put
-  and its arrow turns over.
+- Filters open as a bottom sheet over the page (see Pass three).

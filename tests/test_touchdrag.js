@@ -10,7 +10,7 @@
 //
 // How it behaves once it has the finger: the sheet goes exactly where the
 // finger goes and stays solid, the dimming behind it gives way instead,
-// and it closes when pulled 100px (a quarter of a smaller panel) or
+// and it closes when pulled 100px (a quarter of a smaller sheet) or
 // flicked down at 0.5px/ms or faster.
 const { chromium } = require('playwright');
 const fs=require('fs'), path=require('path');
@@ -187,21 +187,34 @@ const sheetOpen = p => p.evaluate(()=>
     await p.context().close();
   }
 
-  // ---- 5. The live picker: its Done bar travels with it ----
+  // ---- 5. The piece page inside the filter sheet: it all travels together ----
   {
     const p=await open(b);
     await p.tap('#nav-outfits-btn');
     await p.waitForFunction(()=>outfitDisplayed.length > 0);
-    await p.evaluate(()=>{ closeFilterSheet(); (filterSheetOpen()||openFilterSheet(),openFilterPage('Tops')); }); await p.waitForTimeout(600);
-    const rest = await where(p, '#modal');
-    const {seen, cancels} = await touchDrag(p, '#modal', await pointIn(p, '#modal', 10), 0, 170);
-    check('the picker comes down under a finger too', cancels === 0 &&
+    await p.evaluate(()=>{ closeFilterSheet(); openFilterSheet(); openFilterPage('Tops'); });
+    await p.waitForTimeout(700);
+    const rest = await where(p, '#filter-sheet');
+    const {seen, cancels} = await touchDrag(p, '#filter-sheet', await pointIn(p, '#filter-sheet', 10), 0, 170);
+    check('the piece page comes down under a finger too', cancels === 0 &&
       seen[seen.length-1].top - rest.top > 80, `${rest.top} → ${seen[seen.length-1].top}`);
-    check('its bar coming down with it, not left behind',
+    check('its foot (See N outfits, and Filters) coming down with it, not left behind',
       rest.foot !== null && seen.every(s => s.foot === rest.foot),
       [...new Set(seen.map(s=>s.foot))].join(','));
     check('and its grip too', seen.every(s => s.grip === rest.grip));
-    check('and it closes', !(await sheetOpen(p)));
+    check('and it closes the whole sheet, not just the page',
+      await p.evaluate(()=>!filterSheetOpen() && filterPage === null));
+
+    // Scrolled down the gallery, the head is still a handle: it is sticky,
+    // so it is always under the finger.
+    await p.evaluate(()=>{ openFilterSheet(); openFilterPage('Tops'); }); await p.waitForTimeout(700);
+    await p.evaluate(()=>{ document.getElementById('filter-sheet').scrollTop = 400; });
+    await p.waitForTimeout(200);
+    const scrolled = await where(p, '#filter-sheet');
+    await touchDrag(p, '#filter-sheet', await pointIn(p, '#filter-sheet', 30), 0, 170);
+    check('scrolled down the page, pulling on the head still closes it',
+      scrolled.scroll > 0 && !(await p.evaluate(()=>filterSheetOpen())),
+      `scrollTop ${scrolled.scroll}`);
     await p.context().close();
   }
 
@@ -261,7 +274,7 @@ const sheetOpen = p => p.evaluate(()=>
     await p.context().close();
   }
 
-  // ---- 7. The filter panel shares the gesture ----
+  // ---- 7. The filter sheet shares the gesture ----
   {
     const p=await open(b);
     await p.tap('#nav-outfits-btn'); await p.waitForTimeout(1200);
@@ -271,7 +284,7 @@ const sheetOpen = p => p.evaluate(()=>
       return {x: Math.round(r.left + 150), y: Math.round(r.top + r.height/2)};
     });
     await touchDrag(p, '#filter-sheet', across, -90, 16);
-    check('a sideways swipe on the chips leaves the panel up',
+    check('a sideways swipe on the chips leaves the sheet up',
       await p.evaluate(()=>filterSheetOpen()));
     const {cancels} = await touchDrag(p, '#filter-sheet', await pointIn(p, '#filter-sheet', 30), 0, 150);
     check('a finger pulling it down puts it away', cancels === 0 &&
