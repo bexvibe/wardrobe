@@ -73,7 +73,7 @@
     // Full | Empty: a two-way switch between the demos; the one you are on is filled in.
     var seg = 'font:inherit;color:inherit;text-decoration:none;padding:2px 10px;';
     var on = 'background:#fff;color:#2b2b2b;';
-    bar.innerHTML = '<span>Demo — changes stay on this device only</span>' +
+    bar.innerHTML = '<span style="white-space:nowrap">Demo · saved on this device</span>' +
       '<span style="display:inline-flex;flex:none;white-space:nowrap;border:1px solid #fff8;border-radius:6px;overflow:hidden">' +
         '<a href="/demo" style="' + seg + (kind === 'empty' ? '' : on) + '"' + (kind === 'empty' ? '' : ' aria-current="page"') + '>Full</a>' +
         '<a href="/demo-empty" style="' + seg + (kind === 'empty' ? on : '') + '"' + (kind === 'empty' ? ' aria-current="page"' : '') + '>Empty</a>' +
