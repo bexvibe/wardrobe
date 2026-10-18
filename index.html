@@ -4646,8 +4646,9 @@ function renderCapsuleEditorTabs(){
   // itself is not shown, here or on the wardrobe's own tabs.
   const counts = {};
   ITEMS.forEach(i => { const t = tabForItem(i); counts[t] = (counts[t] || 0) + 1; });
+  // With nothing to pick from, All would be a lone tab over nothing.
   el.innerHTML = TAB_ORDER
-    .filter(t => t === 'All' || counts[t])
+    .filter(t => (t === 'All' && ITEMS.length) || counts[t])
     .map(t => `<button class="tab ${capsuleDraft.tab === t ? 'active' : ''}" onclick="setCapsuleEditorTab('${t}')">
       ${t}
     </button>`).join('');
@@ -4677,6 +4678,11 @@ function renderCapsuleEditorGallery(){
 
   // No count and no instruction: the tiles tick where you tap them, and
   // that is the same news said once instead of twice.
+
+  if(ITEMS.length === 0){
+    gallery.innerHTML = '<p class="picker-empty" style="grid-column:1/-1;">No pieces to add yet</p>';
+    return;
+  }
 
   gallery.innerHTML = pool.map(i => {
     const selected = capsuleDraft.itemIds.has(i.id);

@@ -80,6 +80,12 @@ const said = (p, sel) => p.evaluate(s => {
       return up;
     })());
 
+    await p.evaluate(()=>openCapsuleEditor()); await p.waitForTimeout(500);
+    check('the capsule editor has no All tab and says there is nothing to add',
+      (await said(p, '#capsule-tabs')) === '' && (await said(p, '#capsule-editor-gallery')) === 'No pieces to add yet',
+      await said(p, '#capsule-editor-gallery'));
+    await p.evaluate(()=>discardCapsuleEditor()); await p.waitForTimeout(500);
+
     await p.click('#nav-capsules-btn'); await p.waitForTimeout(900);
     check('Capsules asks you to build one',
       (await said(p, '#capsule-empty h3')) === 'Build a capsule',
