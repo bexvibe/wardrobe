@@ -1107,13 +1107,16 @@
     font-size:13px;font-weight:600;
     /* A fixed height rather than padding alone: the count badge is taller
        than the label, so the pill was 37px at rest and 42px with a filter
-       on — under a thumb either way, and never the same twice. */
-    min-height:44px;
+       on — under a thumb either way, and never the same twice. 48px is
+       Material's minimum touch target; the row is anchored by its bottom
+       edge, so the extra height grows upward and the gap to the nav holds. */
+    min-height:48px;
     padding:0 18px;border-radius:999px;
     border:1px solid var(--line);
     background:var(--surface);
     color:var(--ink);
     cursor:pointer;white-space:nowrap;
+    touch-action:manipulation;
     box-shadow:0 4px 16px rgba(0,0,0,0.12);
     /* Sized by transform, so growing out of and shrinking back into the
        panel is one continuous motion rather than a swap. */
@@ -1129,7 +1132,7 @@
      guessed at, and "what does the sparkle do" is a bad first question. */
   .shuffle-fab{
     display:flex;align-items:center;gap:7px;
-    min-height:44px;
+    min-height:48px;
     padding:0 16px 0 14px;
     border-radius:999px;
     border:1px solid var(--brand-deep);
@@ -1138,6 +1141,11 @@
     font-family:'Work Sans',sans-serif;
     font-size:13px;font-weight:600;
     white-space:nowrap;cursor:pointer;
+    /* Tapped in quick succession, two taps read as double-tap-to-zoom and
+       the page lurched in. `manipulation` turns that gesture off for this
+       button only — pinch-zoom elsewhere is untouched — and drops the
+       double-tap wait, so the tap lands at once. */
+    touch-action:manipulation;
     box-shadow:0 4px 16px rgba(0,0,0,0.12);
     transition:background 0.12s ease, transform 0.12s ease;
   }
