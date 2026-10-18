@@ -192,7 +192,7 @@ const sheetOpen = p => p.evaluate(()=>
     const p=await open(b);
     await p.tap('#nav-outfits-btn');
     await p.waitForFunction(()=>outfitDisplayed.length > 0);
-    await p.evaluate(()=>{ closeFilterSheet(); openSlotPicker('Tops'); }); await p.waitForTimeout(600);
+    await p.evaluate(()=>{ closeFilterSheet(); (filterSheetOpen()||openFilterSheet(),openFilterPage('Tops')); }); await p.waitForTimeout(600);
     const rest = await where(p, '#modal');
     const {seen, cancels} = await touchDrag(p, '#modal', await pointIn(p, '#modal', 10), 0, 170);
     check('the picker comes down under a finger too', cancels === 0 &&

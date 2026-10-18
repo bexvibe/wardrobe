@@ -115,7 +115,7 @@ const tiles = p => p.evaluate(()=>document.querySelectorAll('#gallery .tile').le
     const p=await open(b);
     await p.click('#nav-outfits-btn'); await p.waitForTimeout(1100);
     const shortsId = await p.evaluate(()=>ITEMS.find(i=>i.category==='Shorts').id);
-    await p.evaluate(()=>openSlotPicker('Shorts')); await p.waitForTimeout(500);
+    await p.evaluate(()=>(filterSheetOpen()||openFilterSheet(),openFilterPage('Shorts'))); await p.waitForTimeout(500);
     check('the Shorts picker offers the shorts and only the shorts',
       await p.evaluate(id=>{
         const tiles = Array.from(document.querySelectorAll('#picker-gallery .picker-tile:not(.picker-none)'));
@@ -124,7 +124,7 @@ const tiles = p => p.evaluate(()=>document.querySelectorAll('#gallery .tile').le
       }, shortsId));
     check('and the Pants picker does not', await (async()=>{
       await leaveSheet(p, {settle:400});
-      await p.evaluate(()=>openSlotPicker('Pants')); await p.waitForTimeout(400);
+      await p.evaluate(()=>(filterSheetOpen()||openFilterSheet(),openFilterPage('Pants'))); await p.waitForTimeout(400);
       return p.evaluate(id=>!Array.from(document.querySelectorAll('#picker-gallery .picker-tile:not(.picker-none)'))
         .some(t=>(t.getAttribute('onclick')||'').includes(id)), shortsId);
     })());

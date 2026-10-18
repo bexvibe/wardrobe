@@ -61,9 +61,9 @@ const chip = (p, label) => p.evaluate(l => {
 
 // Through the picker, the way she would.
 async function setSlot(p, key, choice){
-  await p.evaluate(k => openSlotPicker(k), key);
+  await p.evaluate(k => (filterSheetOpen()||openFilterSheet(),openFilterPage(k)), key);
   await p.waitForTimeout(350);
-  await p.click(`#picker-quick-picks button:has-text("Clear")`);
+  await p.click(`#filter-sheet-clear`);
   await p.waitForTimeout(250);
   await leaveSheet(p, {settle:600});
 }
@@ -212,7 +212,7 @@ async function setSlot(p, key, choice){
       Math.round(document.querySelector('.filter-sheet-head').getBoundingClientRect().height));
     check('and the bigger targets cost the panel no height', head <= 30, `${head}px`);
 
-    await p.evaluate(()=>openSlotPicker('Tops')); await p.waitForTimeout(500);
+    await p.evaluate(()=>(filterSheetOpen()||openFilterSheet(),openFilterPage('Tops'))); await p.waitForTimeout(500);
     const quick = await p.evaluate(()=>Array.from(
       document.querySelectorAll('#picker-quick-picks button'))
         .map(e=>Math.round(e.getBoundingClientRect().height)));

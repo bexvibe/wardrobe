@@ -14,7 +14,7 @@ const isOpen = p => p.evaluate(()=>filterSheetOpen());
   const p=await b.newPage({viewport:{width:390,height:900}});
   p.on('pageerror',e=>console.log('  PAGEERROR:',e.message));
   await p.route('**/vendor/supabase-js-*.js', r=>r.fulfill({contentType:'application/javascript',
-    body:`window.__FILTERS_OPEN_BY_DEFAULT=[];window.__SEED_ITEMS=${seed};window.__WITH_TAGS=true;\n${fake}`}));
+    body:`window.__SEED_ITEMS=${seed};window.__WITH_TAGS=true;\n${fake}`}));
   await p.route('**/config.js', r=>r.fulfill({contentType:'application/javascript',
     body:`window.WARDROBE_CONFIG={supabaseUrl:'https://fake.supabase.co',supabaseAnonKey:'anon',authEmail:'x@y.z'};`}));
   await p.goto('http://localhost:8933/index.html'); await p.waitForTimeout(400);

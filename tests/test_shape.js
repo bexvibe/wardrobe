@@ -37,7 +37,7 @@ const bases = p => p.evaluate(()=>outfitDisplayed.map(c=>c.base));
 // Through the real picker, the way she would: open the category, tap the
 // first piece in it, come back. Pinning is the only narrowing there is.
 async function pin(p, cat){
-  await p.evaluate(k=>openSlotPicker(k), cat);
+  await p.evaluate(k=>(filterSheetOpen()||openFilterSheet(),openFilterPage(k)), cat);
   await p.waitForTimeout(400);
   await p.click('#picker-gallery .picker-tile:not(.picker-none)');
   await p.waitForTimeout(250);
@@ -46,9 +46,9 @@ async function pin(p, cat){
 
 // And Any is the way back from it.
 async function unpin(p, cat){
-  await p.evaluate(k=>openSlotPicker(k), cat);
+  await p.evaluate(k=>(filterSheetOpen()||openFilterSheet(),openFilterPage(k)), cat);
   await p.waitForTimeout(400);
-  await p.click('#picker-quick-picks button:has-text("Clear")');
+  await p.click('#filter-sheet-clear');
   await p.waitForTimeout(250);
   await leaveSheet(p, {settle:700});
 }

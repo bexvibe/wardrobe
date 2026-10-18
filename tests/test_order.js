@@ -135,7 +135,7 @@ function wellOrdered(list, owned){
   {
     const p=await open(b);
     await p.click('#nav-outfits-btn'); await p.waitForTimeout(1400);
-    await p.evaluate(()=>openSlotPicker('Skirts')); await p.waitForTimeout(500);
+    await p.evaluate(()=>(filterSheetOpen()||openFilterSheet(),openFilterPage('Skirts'))); await p.waitForTimeout(500);
     const empty = await p.evaluate(()=>{
       const note = document.getElementById('picker-empty');
       const cs = getComputedStyle(note);
@@ -162,7 +162,7 @@ function wellOrdered(list, owned){
   {
     const p=await open(b);
     await p.click('#nav-outfits-btn'); await p.waitForTimeout(1400);
-    await p.evaluate(()=>openSlotPicker('Tops')); await p.waitForTimeout(500);
+    await p.evaluate(()=>(filterSheetOpen()||openFilterSheet(),openFilterPage('Tops'))); await p.waitForTimeout(500);
     const full = await p.evaluate(()=>({
       note: document.getElementById('picker-empty').offsetParent !== null,
       quick: Array.from(document.querySelectorAll('#picker-quick-picks button'))
@@ -179,7 +179,7 @@ function wellOrdered(list, owned){
     check('picking a piece narrows the category',
       await p.evaluate(()=>outfitFilters['Tops'].type==='items' &&
                            outfitFilters['Tops'].ids.length===1));
-    await p.click('#picker-quick-picks button:has-text("Clear")');
+    await p.click('#filter-sheet-clear');
     await p.waitForTimeout(300);
     check('and Any is the way back to the whole of it',
       await p.evaluate(()=>outfitFilters['Tops'].type==='any'));
@@ -195,7 +195,7 @@ function wellOrdered(list, owned){
     // With None gone, the only way to narrow a category is to pick a piece
     // from it — and a category you own none of has none to pick. So it is
     // offered, and it simply cannot do anything.
-    await p.evaluate(()=>openSlotPicker('Skirts')); await p.waitForTimeout(500);
+    await p.evaluate(()=>(filterSheetOpen()||openFilterSheet(),openFilterPage('Skirts'))); await p.waitForTimeout(500);
     check('the picker opens on nothing to choose',
       await p.evaluate(()=>document.querySelectorAll('#picker-gallery .picker-tile:not(.picker-none)').length===0));
     check('with Any already on, and no other way to change it',

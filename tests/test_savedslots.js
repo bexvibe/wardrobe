@@ -53,9 +53,9 @@ const chipLabels = p => p.evaluate(()=>
 
 // Any is the only quick pick — the way back from a pinned selection.
 async function setAny(p, key){
-  await p.evaluate(k=>openSlotPicker(k), key);
+  await p.evaluate(k=>(filterSheetOpen()||openFilterSheet(),openFilterPage(k)), key);
   await p.waitForTimeout(350);
-  await p.click('#picker-quick-picks button:has-text("Clear")');
+  await p.click('#filter-sheet-clear');
   await p.waitForTimeout(250);
   await leaveSheet(p, {settle:600});
 }
@@ -70,7 +70,7 @@ async function pin(p, key, id){
 }
 
 async function pinFirst(p, key){
-  await p.evaluate(k=>openSlotPicker(k), key);
+  await p.evaluate(k=>(filterSheetOpen()||openFilterSheet(),openFilterPage(k)), key);
   await p.waitForTimeout(350);
   const id = await p.evaluate(()=>document.querySelector('#picker-gallery .picker-tile:not(.picker-none)').getAttribute('onclick'));
   await p.click('#picker-gallery .picker-tile:not(.picker-none)'); await p.waitForTimeout(250);

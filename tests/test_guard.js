@@ -282,7 +282,7 @@ const confirmText = p => p.evaluate(()=>({
     // A sheet with nothing to commit has nothing to cancel, so its bar is
     // one word wide — the filter picker changes the page behind it as you
     // tap, and clearing a filter is a tap of its own.
-    await p.evaluate(()=>openSlotPicker('Tops')); await p.waitForTimeout(500);
+    await p.evaluate(()=>(filterSheetOpen()||openFilterSheet(),openFilterPage('Tops'))); await p.waitForTimeout(500);
     const live = await p.evaluate(()=>
       Array.from(document.querySelectorAll('#modal .sheet-footer .btn')).map(x=>x.textContent.trim()));
     check('a sheet that applies live says Done, and only Done',

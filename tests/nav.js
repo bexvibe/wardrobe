@@ -37,7 +37,10 @@ module.exports = {
     const save = !opts || opts.save !== false;
     const side = save ? ':not(.secondary)' : '.secondary';
 
-    if(await page.$('#form-backdrop.open .sheet-footer .btn')){
+    if(await page.evaluate(() => typeof filterSheetOpen === 'function' && filterSheetOpen()
+        && !document.querySelector('.modal-backdrop.open, #form-backdrop.open'))){
+      await page.click('#filter-sheet-see');           // the filters: See N outfits
+    } else if(await page.$('#form-backdrop.open .sheet-footer .btn')){
       await page.click('#form-backdrop .sheet-footer .btn' + side);
     } else if(await page.$('#modal .sheet-footer.split .btn')){
       await page.click('#modal .sheet-footer .btn' + side);

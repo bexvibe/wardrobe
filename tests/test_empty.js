@@ -160,7 +160,7 @@ const said = (p, sel) => p.evaluate(s => {
     // A category you own nothing in, in the piece picker: still its own
     // name, one quiet line, unchanged.
     await p.click('#nav-outfits-btn'); await p.waitForTimeout(1300);
-    await p.evaluate(()=>openSlotPicker('Skirts')); await p.waitForTimeout(600);
+    await p.evaluate(()=>(filterSheetOpen()||openFilterSheet(),openFilterPage('Skirts'))); await p.waitForTimeout(600);
     check('the piece picker still names the category it has none of',
       (await said(p, '#picker-empty')) === 'No skirts', await said(p, '#picker-empty'));
     await p.evaluate(()=>closeModal()); await p.waitForTimeout(500);
