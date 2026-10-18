@@ -346,6 +346,12 @@
     cursor:pointer;padding:0;
   }
   .empty-action:hover{background:var(--accent);}
+  /* A first visit: what the page is for, in a picture and a line. */
+  .empty-emoji{display:block;font-size:26px;line-height:1;letter-spacing:4px;margin-bottom:12px;}
+  .empty-sub{margin:8px 0 0;font-size:15px;line-height:1.45;}
+  .empty-sub:empty{display:none;}
+  .empty-tags{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin-top:14px;}
+  .empty-tags span{padding:4px 10px;border-radius:6px;background:#e4e4e4;color:#555;font-size:13px;}
   .empty-action svg{width:22px;height:22px;display:block;}
 
   /* Name list view */
@@ -1568,7 +1574,9 @@
     <div class="gallery" id="gallery"></div>
     <div class="name-list" id="name-list" style="display:none;"></div>
     <div class="empty" id="empty" style="display:none;">
-      <h3>Add pieces</h3>
+      <span class="empty-emoji" id="empty-emoji" aria-hidden="true">👗</span>
+      <h3 id="empty-title">See all your clothes</h3>
+      <p class="empty-sub" id="empty-sub">Add pieces here</p>
       <button class="empty-action" onclick="openItemForm()" aria-label="Add a piece" title="Add a piece">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
       </button>
@@ -1604,7 +1612,9 @@
 
     <div class="outfit-gallery" id="outfit-gallery"></div>
     <div class="empty" id="outfit-empty" style="display:none;">
+      <span class="empty-emoji" id="outfit-empty-emoji" aria-hidden="true" style="display:none;">👚👖👟</span>
       <h3 id="outfit-empty-title">No outfits match</h3>
+      <p class="empty-sub" id="outfit-empty-sub"></p>
       <p class="empty-hint" id="outfit-empty-hint"></p>
       <button class="empty-action" id="outfit-empty-action" style="display:none;"
               onclick="openItemForm()" aria-label="Add a piece" title="Add a piece">
@@ -1658,7 +1668,11 @@
     </header>
     <div class="capsule-gallery" id="capsule-gallery"></div>
     <div class="empty" id="capsule-empty" style="display:none;">
-      <h3>Build a capsule</h3>
+      <span class="empty-emoji" aria-hidden="true">🧳</span>
+      <h3>Make mini wardrobes</h3>
+      <div class="empty-tags" aria-label="For example">
+        <span>Summer</span><span>Office</span><span>Workout</span><span>Fiji</span><span>Em’s wedding</span>
+      </div>
       <button class="empty-action" onclick="openCapsuleEditor()" aria-label="New capsule" title="New capsule">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
       </button>
@@ -4496,6 +4510,8 @@ function renderCapsules(){
 
   renderLoosePieces();
 
+  // While empty, the + sits in the middle of the page instead.
+  document.getElementById('new-capsule-btn').style.display = capsules.length ? '' : 'none';
   if(capsules.length === 0){
     gallery.innerHTML = '';
     emptyState.style.display = 'block';
@@ -4805,17 +4821,26 @@ function renderOutfits(){
       const title = document.getElementById('outfit-empty-title');
       const action = document.getElementById('outfit-empty-action');
       const faveMsg = !bare && onPage ? faveEmptyMessage('outfits') : null;
-      if(title) title.textContent = bare ? 'Add pieces to see outfits'
+      if(title) title.textContent = bare ? 'Find outfits'
         : faveMsg ? faveMsg[0] : 'No outfits match';
       const hint = document.getElementById('outfit-empty-hint');
       if(hint) hint.textContent = faveMsg ? faveMsg[1] : '';
       if(action) action.style.display = bare ? 'inline-flex' : 'none';
+      const emoji = document.getElementById('outfit-empty-emoji');
+      if(emoji) emoji.style.display = bare ? 'block' : 'none';
+      const sub = document.getElementById('outfit-empty-sub');
+      if(sub) sub.textContent = bare ? 'Add pieces to see all combos' : '';
+      // While empty, the + sits in the middle of the page instead.
+      const buildBtn = document.getElementById('build-outfit-btn-all');
+      if(buildBtn) buildBtn.style.display = bare ? 'none' : '';
       emptyState.style.display = 'block';
     }
     if(loadMoreBtn) loadMoreBtn.style.display = 'none';
     return;
   }
   if(emptyState) emptyState.style.display = 'none';
+  const buildBtnAll = document.getElementById('build-outfit-btn-all');
+  if(buildBtnAll) buildBtnAll.style.display = '';
   if(loadMoreBtn) loadMoreBtn.style.display = total > outfitDisplayed.length ? 'inline-block' : 'none';
 
   gallery.innerHTML = shown.map(combo => {
@@ -6764,6 +6789,14 @@ function render(){
     `;
   }
 
+  // A wardrobe with nothing in it gets the welcome; one where the search or
+  // a tab rules everything out just says so, and keeps its + up top.
+  const firstVisit = ITEMS.length === 0;
+  document.getElementById('add-item-btn').style.display = firstVisit ? 'none' : '';
+  document.getElementById('empty-emoji').style.display = firstVisit ? '' : 'none';
+  document.getElementById('empty-title').textContent = firstVisit ? 'See all your clothes' : 'No pieces match';
+  document.getElementById('empty-sub').textContent = firstVisit ? 'Add pieces here' : '';
+  emptyState.querySelector('.empty-action').style.display = firstVisit ? '' : 'none';
   if(filtered.length === 0){
     gallery.innerHTML = '';
     nameList.innerHTML = '';
