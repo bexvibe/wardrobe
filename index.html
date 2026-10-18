@@ -1801,9 +1801,8 @@
 </div>
 
 <!-- The two things floating over the page, in the order you reach for
-     them: deal again, then narrow. Shuffle only appears on the half that
-     deals — what you kept is a list you made, and shuffling your own
-     decisions is not a feature. -->
+     them: deal again, then narrow. Shuffle appears on both halves of
+     Outfits; on faves it only changes the order they are shown in. -->
 <div class="float-row" id="float-row">
   <button class="shuffle-fab" id="shuffle-fab" type="button" style="display:none;"
           onclick="shuffleOutfits()" title="Deal a new set of outfits">
@@ -2212,7 +2211,9 @@ function shuffleOutfits(){
 
   // An outfit you had open is not the one that will be there afterwards.
   expandedComboKey = null;
+  expandedSavedKey = null;
   resetOutfitResults();     // re-picks the lead card from the new order
+  if(appMode === 'saved') renderSavedOutfits();
 
   // Back to the top: the point of it is the outfits you have not seen, and
   // they are up there.
@@ -2227,12 +2228,13 @@ function shuffleOutfits(){
   }
 }
 
-// Only where there is something to deal: what you kept is a list you made,
-// and the wardrobe and capsules are not dealt at all.
+// Only where there is something to deal: the two halves of Outfits, once
+// they have a card on them. The wardrobe and capsules are not dealt at all.
 function renderShuffleFab(){
   const fab = document.getElementById('shuffle-fab');
   if(!fab) return;
-  const dealt = appMode === 'outfits' && outfitDisplayed.length > 0;
+  const dealt = (appMode === 'outfits' && outfitDisplayed.length > 0)
+    || (appMode === 'saved' && savedShownCount > 0);
   fab.style.display = dealt ? 'flex' : 'none';
 }
 
@@ -4506,6 +4508,8 @@ function savedOutfitMatches(rec){
   return savedOutfitMatchesTag(rec) && savedOutfitMatchesSlots(rec) && savedOutfitInCapsules(rec);
 }
 
+let savedShownCount = 0;
+
 function renderSavedOutfits(){
   const gallery = document.getElementById('saved-gallery');
   const emptyState = document.getElementById('saved-empty');
@@ -4551,10 +4555,13 @@ function renderSavedOutfits(){
     document.getElementById('build-outfit-btn').style.display = firstVisit ? 'none' : '';
     document.getElementById('saved-empty-action').style.display = firstVisit ? '' : 'none';
     emptyState.style.display = 'block';
+    savedShownCount = 0;
+    renderShuffleFab();
     return;
   }
   emptyState.style.display = 'none';
   document.getElementById('build-outfit-btn').style.display = '';
+  savedShownCount = shown.length;
 
   gallery.innerHTML = shown.map(rec => {
     const combo = favoriteRecordToCombo(rec);
@@ -4574,6 +4581,7 @@ function renderSavedOutfits(){
       ${expandedPanel}
     </div>`;
   }).join('');
+  renderShuffleFab();
 }
 
 // ---- Capsules ----------------------------------------------

@@ -123,7 +123,15 @@ const stream = p => p.evaluate(()=>outfitDisplayed.slice(0, 8).map(c=>comboKey(c
     }));
 
     await toFaves(p, 1100);
-    check('no wand over what you kept', !(await shown(p)));
+    const keptCards = await p.evaluate(()=>document.querySelectorAll('#saved-gallery .outfit-card').length);
+    check('the wand is over what you kept, when there is any',
+      (await shown(p)) === (keptCards > 0), `${keptCards} cards`);
+    if(keptCards > 0){
+      const seed = await p.evaluate(()=>sessionSeed);
+      await p.click('#shuffle-fab'); await p.waitForTimeout(800);
+      check('and deals the faves from a new seed',
+        (await p.evaluate(()=>sessionSeed)) !== seed);
+    }
     await p.click('#nav-capsules-btn'); await p.waitForTimeout(900);
     check('nor over capsules', !(await shown(p)));
     await p.close();
