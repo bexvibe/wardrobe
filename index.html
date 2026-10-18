@@ -1107,8 +1107,10 @@
     font-size:13px;font-weight:600;
     /* A fixed height rather than padding alone: the count badge is taller
        than the label, so the pill was 37px at rest and 42px with a filter
-       on — under a thumb either way, and never the same twice. */
-    min-height:44px;
+       on — under a thumb either way, and never the same twice. 48px is
+       Material's minimum touch target; the row is anchored by its bottom
+       edge, so the extra height grows upward and the gap to the nav holds. */
+    min-height:48px;
     padding:0 18px;border-radius:999px;
     border:1px solid var(--line);
     background:var(--surface);
@@ -1130,7 +1132,7 @@
      guessed at, and "what does the sparkle do" is a bad first question. */
   .shuffle-fab{
     display:flex;align-items:center;gap:7px;
-    min-height:44px;
+    min-height:48px;
     padding:0 16px 0 14px;
     border-radius:999px;
     border:1px solid var(--brand-deep);
