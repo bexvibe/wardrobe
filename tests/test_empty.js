@@ -1,6 +1,7 @@
-// Every empty state in the app: one line saying what is missing, and where
-// you can do something about it, a button that does it. No second line —
-// explaining the first was the app talking to itself.
+// Every empty state in the app. A first visit gets an emoji, a title saying
+// what the page is for, one short sub line and a centred + that does it.
+// Anything else — a filter that rules everything out — is a single line
+// with no sub, and the + stays up in the header.
 const { chromium } = require('playwright');
 const { toFaves } = require('./nav');
 const fs=require('fs'), path=require('path');
@@ -35,7 +36,7 @@ const said = (p, sel) => p.evaluate(s => {
   {
     const p=await boot(b, '[]');
     check('the wardrobe asks for pieces',
-      (await said(p, '#empty h3')) === 'Add pieces', await said(p, '#empty h3'));
+      (await said(p, '#empty h3')) === 'See all your clothes', await said(p, '#empty h3'));
     check('and offers the button that adds one',
       await p.evaluate(()=>{
         const btn = document.querySelector('#empty .empty-action');
@@ -52,7 +53,7 @@ const said = (p, sel) => p.evaluate(s => {
     await p.click('#nav-outfits-btn'); await p.waitForTimeout(1200);
     await p.evaluate(()=>closeFilterSheet()); await p.waitForTimeout(500);
     check('Outfits says there is nothing to build from',
-      (await said(p, '#outfit-empty-title')) === 'Add pieces to see outfits',
+      (await said(p, '#outfit-empty-title')) === 'Find outfits',
       await said(p, '#outfit-empty-title'));
     check('and offers the same button',
       await p.evaluate(()=>document.getElementById('outfit-empty-action')
@@ -88,7 +89,7 @@ const said = (p, sel) => p.evaluate(s => {
 
     await p.click('#nav-capsules-btn'); await p.waitForTimeout(900);
     check('Capsules asks you to build one',
-      (await said(p, '#capsule-empty h3')) === 'Build a capsule',
+      (await said(p, '#capsule-empty h3')) === 'Make mini wardrobes',
       await said(p, '#capsule-empty h3'));
     check('and the button opens the editor', await (async()=>{
       await p.click('#capsule-empty .empty-action'); await p.waitForTimeout(700);
@@ -103,9 +104,10 @@ const said = (p, sel) => p.evaluate(s => {
       await said(p, '#archive-empty h3'));
 
     // The rule, once, over all of them.
-    check('and not one of them has a second line',
-      await p.evaluate(()=>[...document.querySelectorAll('.empty p')].every(e=>e.classList.contains('empty-hint') && !e.textContent)),
-      'only the fave-filter hint exists, and it is blank here');
+    check('and the only paragraphs are the sub line and the blank fave hint',
+      await p.evaluate(()=>[...document.querySelectorAll('.empty p')].every(e=>
+        e.classList.contains('empty-sub') || (e.classList.contains('empty-hint') && !e.textContent))),
+      'a sub line is for a first visit; the fave-filter hint is blank here');
     await p.close();
   }
 
@@ -196,13 +198,13 @@ const said = (p, sel) => p.evaluate(s => {
     await p.close();
   }
 
-  // ---- 5. Nothing in the source keeps a second line ----
+  // ---- 5. Nothing in the source adds paragraphs beyond the pattern ----
   {
     const src = fs.readFileSync(REPO + '/index.html', 'utf8');
     const blocks = [...src.matchAll(/class="empty"[^>]*>([\s\S]*?)<\/div>/g)].map(m => m[1]);
-    // The fave-filter hint is the one deliberate exception: empty unless a fave filter is on.
-    const withNotes = blocks.filter(b => /<p(?![^>]*empty-hint)[\s>]/.test(b));
-    check('no empty state in the markup carries a paragraph',
+    // The sub line is the pattern; the fave-filter hint is empty unless a fave filter is on.
+    const withNotes = blocks.filter(b => /<p(?![^>]*empty-(?:hint|sub))[\s>]/.test(b));
+    check('no empty state in the markup carries a stray paragraph',
       withNotes.length === 0, `${withNotes.length} of ${blocks.length}`);
     check('and there were empty states to check', blocks.length >= 4, String(blocks.length));
   }
