@@ -95,6 +95,15 @@
     letter-spacing:-0.02em;
   }
 
+  /* Which half of Outfits this is, said in words beside the title: grey for
+     everything, pink for what you kept. */
+  .title-wrap{display:flex;align-items:baseline;gap:10px;min-width:0;}
+  .view-tag{
+    font-family:'Work Sans',sans-serif;font-size:14px;font-weight:600;
+    color:var(--ink-soft);
+  }
+  .view-tag.faves{color:#E4607F;}
+
   /* Tabs */
   .tabs{
     display:flex;
@@ -722,7 +731,7 @@
      size, so it is the same shape at both sizes it is used at. */
   .heart-glyph{display:block;width:22px;height:22px;}
   .nav-heart .heart-glyph{width:17px;height:17px;}
-  .nav-heart .fave-chip-heart{width:20px;height:20px;}
+  .bottom-btn.active .nav-seg.on#nav-saved-btn{color:#E4607F;}
 
   /* The fave heart: one shape that grows richer over three levels. The
      button is the 44px target; the glyph inside it is smaller. */
@@ -1642,7 +1651,7 @@
 
   <div id="outfits-view" style="display:none;">
     <header class="page-head">
-      <h1>Outfits</h1>
+      <div class="title-wrap"><h1>Outfits</h1><span class="view-tag">All</span></div>
       <!-- The same way in as on the other half of the switch. Building one
            by hand is a thing you do to the wardrobe, not to a page. -->
       <div class="icon-row">
@@ -1682,7 +1691,7 @@
            saying it a thumb's width below; a title that changed as well
            made one destination look like two, which is the thing this
            page stopped being. -->
-      <h1>Outfits</h1>
+      <div class="title-wrap"><h1>Outfits</h1><span class="view-tag faves">Faves</span></div>
       <div class="icon-row">
         <button class="icon-btn primary" id="build-outfit-btn" onclick="openOutfitBuilder()"
                 aria-label="Build an outfit" title="Build an outfit">
@@ -2297,7 +2306,7 @@ function renderBottomBar(){
   const outfitsPill = onOutfits
     ? `${seg('nav-outfits-btn', !kept, 'All', `onclick="setMode('outfits')"`)}
        ${seg('nav-saved-btn', kept,
-             `<span class="nav-heart">${faveChipHeart(kept ? 2 : 0)}</span>`,
+             'Faves',
              `onclick="setMode('saved')" aria-label="Faves"`)}`
     : `<button class="nav-seg" id="nav-outfits-btn" type="button"
                onclick="setMode('outfits')">Outfits</button>`;

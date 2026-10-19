@@ -90,12 +90,15 @@ const cards = p => p.evaluate(()=>
         return Boolean(dest) && dest.classList.contains('active') &&
                dest.querySelectorAll('.nav-seg').length === 2;
       }));
-    // The heart is the cards' love heart: level 2 when on, level 0 when off.
-    const heartLevel = () => p.evaluate(()=>
-      document.querySelector('#nav-saved-btn .fave-chip-heart').getAttribute('data-level'));
-    check('the heart is hollow while you are on All', (await heartLevel()) === '0', await heartLevel());
+    const word = () => p.textContent('#nav-saved-btn');
+    check('the second half says Faves in words', (await word()).trim() === 'Faves', await word());
     await p.click('#nav-saved-btn'); await p.waitForTimeout(1100);
-    check('and the love heart when it is', (await heartLevel()) === '2', await heartLevel());
+    check('and goes pink when you are on it', await p.evaluate(()=>
+      getComputedStyle(document.getElementById('nav-saved-btn')).color === 'rgb(228, 96, 127)'));
+    check('with the page tagged Faves in pink', await p.evaluate(()=>{
+      const t = document.querySelector('#saved-view .view-tag');
+      return t.textContent.trim() === 'Faves' && getComputedStyle(t).color === 'rgb(228, 96, 127)';
+    }));
     await p.click('#nav-outfits-btn'); await p.waitForTimeout(1300);
 
     // It has to fit next to two other labels on a small phone, and it is
