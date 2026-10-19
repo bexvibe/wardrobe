@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Transition Options Mockup</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{--page:#F2F2F2;--surface:#fff;--line:#DCDCDC;--soft:#E7E7E7;--ink:#121212;--ink-soft:#6E6E6E;--accent:#1A1A1A;--accent-soft:#E7E7E7;
+    --bg:#FAFAF9;--fg:#171717;--muted:#66666A;--rule:#E2E2E0;}
+  @media (prefers-color-scheme:dark){:root{--bg:#121213;--fg:#EDEDEB;--muted:#9A9AA0;--rule:#2C2C2F;}}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 'Work Sans',system-ui,sans-serif;padding:32px 16px 64px}
+  .wrap{max-width:1180px;margin:0 auto}
+  h1,h2{font-family:'Fraunces',Georgia,serif;font-weight:400;margin:0}
+  h1{font-size:34px}h2{font-size:22px;margin-bottom:4px}
+  .lead,.note{color:var(--muted);max-width:64ch}
+  .lead{margin:8px 0 36px}.note{font-size:14px;margin:0 0 18px}
+  section{margin-bottom:48px;padding-top:20px;border-top:1px solid var(--rule)}
+  .row{display:flex;flex-wrap:wrap;gap:24px}
+  figure{margin:0}
+  figcaption{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px;max-width:270px}
+  figcaption b{color:var(--fg)}
+  .phone{width:270px;height:520px;background:var(--page);border-radius:28px;border:1px solid var(--line);position:relative;overflow:hidden;
+    box-shadow:0 8px 28px rgba(0,0,0,.10);color:var(--ink)}
+  .scroll{position:absolute;inset:0;overflow-y:auto;padding:18px 12px 24px}
+  .scroll h3{font-family:'Fraunces',serif;font-weight:400;font-size:22px;margin:0 0 10px}
+  .sticky{position:sticky;top:-18px;margin:-18px -12px 10px;padding:14px 12px 8px;background:var(--page);z-index:5;
+    font-family:'Fraunces',serif;font-size:18px;box-shadow:0 6px 16px -12px rgba(0,0,0,.5)}
+
+  /* ---- pickers ---- */
+  .pgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .tile{aspect-ratio:1/1;border-radius:8px;background:var(--surface);overflow:hidden;cursor:pointer;position:relative}
+  .tile img{width:100%;height:100%;object-fit:contain;display:block;padding:4px}
+  .tile.cur{border:1px solid var(--line)}
+  .tile.cur.sel{border:2px solid var(--accent)}
+  .tile.new{border:1px solid var(--line);box-shadow:inset 0 0 0 0 var(--accent);transition:border-color .18s ease,box-shadow .18s ease}
+  .tile.new.sel{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+  .chk{position:absolute;top:5px;right:5px;width:18px;height:18px;border-radius:50%;background:var(--accent);color:#fff;
+    font-size:11px;display:flex;align-items:center;justify-content:center}
+  .tile.new .chk{animation:chk .16s ease-out}
+  @keyframes chk{from{opacity:0;transform:scale(.7)}to{opacity:1;transform:none}}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+  .chip{font:600 12px 'Work Sans',sans-serif;padding:8px 13px;border-radius:999px;border:1px solid var(--line);background:var(--surface);
+    color:var(--ink);cursor:pointer}
+  .chip.sel{border-color:transparent;background:var(--accent-soft)}
+  .chip.anim{transition:background .15s ease,border-color .15s ease}
+  .tile.nox{border:1px solid var(--line)}
+  .tile.nox.sel{border:1px solid var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+
+  /* ---- outfit grid ---- */
+  .ogrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .ocard{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px;cursor:pointer;position:relative}
+  .ocard.expanded{grid-column:1/-1;cursor:default}
+  .thumbs{display:grid;grid-template-columns:1fr 1fr;gap:3px}
+  .thumbs img{width:100%;aspect-ratio:1/1;object-fit:contain;background:#fafafa;border-radius:6px}
+  .thumbs img:last-child{grid-column:1/-1;aspect-ratio:2/1}
+  .ocard.expanded .thumbs{grid-template-columns:1fr 1fr 1fr}
+  .ocard.expanded .thumbs img:last-child{grid-column:1/-1;aspect-ratio:3/1}
+  .panel{margin-top:10px;padding-top:10px;border-top:1px solid var(--line);font-size:13px}
+  .panel .pc{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line)}
+  .panel .btns{display:flex;gap:8px;margin-top:10px}
+  .btn{font:600 12px 'Work Sans',sans-serif;padding:9px 12px;border-radius:8px;border:1px solid var(--line);background:var(--surface);cursor:pointer}
+  .btn.p{background:var(--ink);color:#fff;border-color:var(--ink)}
+  /* current: the same snap as the app today */
+  .panel.cur{animation:pin .22s cubic-bezier(.2,.8,.2,1)}
+  @keyframes pin{from{opacity:0;transform:translateY(-8px) scaleY(.96)}to{opacity:1;transform:none}}
+  /* option 3: panel opens below the card, card keeps its place */
+  .ocard.o3 .wrapper{display:grid;grid-template-rows:0fr;transition:grid-template-rows .28s cubic-bezier(.2,.8,.2,1)}
+  .ocard.o3.open .wrapper{grid-template-rows:1fr}
+  .ocard.o3 .wrapper>div{overflow:hidden}
+  /* option 2: sheet */
+  .backdrop{position:absolute;inset:0;background:rgba(0,0,0,.35);opacity:0;pointer-events:none;transition:opacity .25s ease;z-index:20}
+  .backdrop.open{opacity:1;pointer-events:auto}
+  .sheet{position:absolute;left:0;right:0;bottom:0;background:var(--page);border-radius:18px 18px 0 0;padding:16px 14px 20px;
+    transform:translateY(100%);transition:transform .32s cubic-bezier(.2,.8,.2,1);z-index:21;max-height:85%;overflow:auto}
+  .sheet.open{transform:none}
+  .sheet .handle{width:36px;height:4px;border-radius:2px;background:var(--line);margin:0 auto 12px}
+  .sheet .thumbs{grid-template-columns:1fr 1fr 1fr}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style></head><body>
+<div class="wrap">
+  <h1>Transition options</h1>
+  <p class="lead">Everything here is live: tap it. Open it on your phone for the real feel. Photos are the demo ones, so a rebuild reloads real images, as the app does. “Current” reproduces how the app behaves today, so you can compare each option against it.</p>
+
+  <section>
+    <h2>1 · Selecting a piece</h2>
+    <p class="note">Tap tiles and chips. Current rebuilds every tile on each tap with a 1px→2px border, so the selected state snaps and photos reload. Option A updates the existing tiles in place so the border fades. Option B swaps instantly, with no flash but also no animation.</p>
+    <div class="row" id="pickers"></div>
+  </section>
+
+  <section>
+    <h2>2 · Opening an outfit</h2>
+    <p class="note">Tap any card. Scroll the phone first to see how each one behaves from mid-list. The header at the top is a sticky filter row.</p>
+    <div class="row" id="expands"></div>
+  </section>
+</div>
+
+<script>
+const P='../demo/photos/';
+const PH=['itm_88ba9e07-1fec-4a5a-b420-c378832120ac.png','itm_aa416119-d11f-45a0-b5e1-d716186978aa.png','itm_dfacbac9-0db5-447f-9086-381c8914422b.png','itm_edc6966f-ca09-4d8e-ac11-dad8a633a00a.png','itm_9f043800-0b00-4b5c-9a12-507db78210a6.webp'];
+const $=(h)=>{const t=document.createElement('template');t.innerHTML=h.trim();return t.content.firstChild};
+const fig=(cap,inner)=>{const f=$(`<figure><figcaption>${cap}</figcaption><div class="phone"><div class="scroll">${inner}</div></div></figure>`);return f};
+
+/* ================= 1. pickers ================= */
+const tiles=[...PH,...PH,...PH].slice(0,12).map((p,i)=>({id:i,p:PH[i%5]}));
+const CHIPS=['Capsule one','Weekend','Work','Travel'];
+function pickerFig(cap,mode){
+  const f=fig(cap,`<h3>Pick tops</h3><div class="chips"></div><div class="pgrid"></div>`);
+  const grid=f.querySelector('.pgrid'),chips=f.querySelector('.chips');
+  const sel=new Set(),csel=new Set();
+  const tileHtml=(t)=>`<div class="tile ${mode==='cur'?'cur':mode==='A'?'new':'nox'} ${sel.has(t.id)?'sel':''}" data-id="${t.id}"><img src="${P+t.p}" alt="">${sel.has(t.id)?'<span class="chk">✓</span>':''}</div>`;
+  const chipHtml=(c,i)=>`<button class="chip ${mode==='A'?'anim':''} ${csel.has(i)?'sel':''}" data-i="${i}">${c}</button>`;
+  const full=()=>{grid.innerHTML=tiles.map(tileHtml).join('');chips.innerHTML=CHIPS.map(chipHtml).join('')};
+  full();
+  grid.onclick=e=>{
+    const el=e.target.closest('.tile');if(!el)return;const id=+el.dataset.id;
+    sel.has(id)?sel.delete(id):sel.add(id);
+    if(mode==='A'){ // in place
+      el.classList.toggle('sel',sel.has(id));
+      const c=el.querySelector('.chk');
+      if(sel.has(id)&&!c)el.insertAdjacentHTML('beforeend','<span class="chk">✓</span>');
+      else if(!sel.has(id)&&c)c.remove();
+    } else full();      // current + B rebuild
+  };
+  chips.onclick=e=>{
+    const el=e.target.closest('.chip');if(!el)return;const i=+el.dataset.i;
+    csel.has(i)?csel.delete(i):csel.add(i);
+    if(mode==='A')el.classList.toggle('sel',csel.has(i));
+    else chips.innerHTML=CHIPS.map(chipHtml).join('');
+  };
+  return f;
+}
+const pk=document.getElementById('pickers');
+pk.append(
+  pickerFig('<b>Current</b> · rebuilds, 1px → 2px border','cur'),
+  pickerFig('<b>Option A</b> · update in place, border + ✓ fade','A'),
+  pickerFig('<b>Option B</b> · instant swap, constant border','B')
+);
+
+/* ================= 2. expand ================= */
+const OUTFITS=Array.from({length:10},(_,i)=>[PH[i%5],PH[(i+1)%5],PH[(i+3)%5]]);
+const thumbs=o=>`<div class="thumbs">${o.map(p=>`<img src="${P+p}" alt="">`).join('')}</div>`;
+const panelHtml=(cls='')=>`<div class="panel ${cls}"><div class="pc"><span>Cream knit</span><span>›</span></div><div class="pc"><span>Wide jeans</span><span>›</span></div><div class="pc"><span>White trainers</span><span>›</span></div><div class="btns"><button class="btn">+ Add accessories</button><button class="btn p">Collapse</button></div></div>`;
+const head='<div class="sticky">Outfits · filters</div>';
+
+function expandFig(cap,kind){
+  const f=fig(cap,`${head}<div class="ogrid"></div>`);
+  const phone=f.querySelector('.phone'),sc=f.querySelector('.scroll'),grid=f.querySelector('.ogrid');
+  let open=null;
+  const cardHtml=(o,i)=>{
+    const ex=open===i;
+    if(kind==='o3')return `<div class="ocard o3 ${ex?'open':''}" data-i="${i}">${thumbs(o)}<div class="wrapper"><div>${panelHtml()}</div></div></div>`;
+    return `<div class="ocard ${ex?'expanded':''}" data-i="${i}">${thumbs(o)}${ex?panelHtml(kind==='cur'?'cur':''):''}</div>`;
+  };
+  const build=()=>{grid.innerHTML=OUTFITS.map(cardHtml).join('')};
+  build();
+
+  const floatTop=(el)=>{
+    const off=sc.querySelector('.sticky').offsetHeight-10;
+    const top=el.getBoundingClientRect().top-sc.getBoundingClientRect().top-off;
+    sc.scrollBy({top,behavior:'smooth'});
+  };
+
+  // option 2: sheet
+  let backdrop,sheet;
+  if(kind==='o2'){
+    backdrop=$('<div class="backdrop"></div>');sheet=$('<div class="sheet"><div class="handle"></div><div class="body"></div></div>');
+    phone.append(backdrop,sheet);
+    backdrop.onclick=()=>{backdrop.classList.remove('open');sheet.classList.remove('open')};
+  }
+
+  grid.onclick=e=>{
+    const card=e.target.closest('.ocard');
+    if(e.target.closest('.btn.p')){ toggle(+card.dataset.i);return }
+    if(!card||e.target.closest('.btn'))return;
+    const i=+card.dataset.i;
+    if(kind==='o2'){
+      sheet.querySelector('.body').innerHTML=thumbs(OUTFITS[i])+panelHtml();
+      sheet.querySelector('.btn.p').onclick=()=>backdrop.click();
+      backdrop.classList.add('open');sheet.classList.add('open');return;
+    }
+    if(open===i)return;
+    toggle(i);
+  };
+
+  function toggle(i){
+    if(kind==='cur'){            // today: rebuild whole grid
+      open=open===i?null:i;build();return;
+    }
+    if(kind==='o1'){             // FLIP, in place
+      const cards=[...grid.children];
+      const first=new Map(cards.map(c=>[c,c.getBoundingClientRect()]));
+      const was=open;
+      open=open===i?null:i;
+      if(was!==null){const c=cards[was];c.classList.remove('expanded');c.querySelector('.panel')?.remove()}
+      if(open!==null){const c=cards[open];c.classList.add('expanded');c.insertAdjacentHTML('beforeend',panelHtml());}
+      cards.forEach(c=>{
+        const a=first.get(c),b=c.getBoundingClientRect();
+        const dx=a.left-b.left,dy=a.top-b.top,sx=a.width/b.width;
+        if(!dx&&!dy&&sx===1)return;
+        c.animate([{transform:`translate(${dx}px,${dy}px) scaleX(${sx})`,transformOrigin:'top left'},{transform:'none',transformOrigin:'top left'}],
+          {duration:340,easing:'cubic-bezier(.2,.8,.2,1)'});
+      });
+      const pan=grid.querySelector('.expanded .panel');
+      pan?.animate([{opacity:0},{opacity:1}],{duration:260,delay:120,easing:'ease-out',fill:'backwards'});
+      if(open!==null)setTimeout(()=>floatTop(cards[open]),30);
+      return;
+    }
+    if(kind==='o3'){             // panel opens below, card stays
+      const cards=[...grid.children];
+      if(open!==null)cards[open].classList.remove('open');
+      open=open===i?null:i;
+      if(open!==null)cards[open].classList.add('open');
+      return;
+    }
+  }
+  return f;
+}
+const ex=document.getElementById('expands');
+ex.append(
+  expandFig('<b>Current</b> · full rebuild, card snaps to full width','cur'),
+  expandFig('<b>Option 1</b> · in place + FLIP glide, floats to top','o1'),
+  expandFig('<b>Option 2</b> · bottom sheet, grid never moves','o2'),
+  expandFig('<b>Option 3</b> · panel slides open below, card stays put','o3')
+);
+</script>
+</body></html>
