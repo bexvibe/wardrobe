@@ -733,6 +733,7 @@
      size, so it is the same shape at both sizes it is used at. */
   .heart-glyph{display:block;width:22px;height:22px;}
   .nav-heart .heart-glyph{width:17px;height:17px;}
+  .nav-heart .fave-chip-heart{width:14px;height:14px;margin-right:5px;}
 
   /* The fave heart: one shape that grows richer over three levels. The
      button is the 44px target; the glyph inside it is smaller. */
@@ -2307,7 +2308,7 @@ function renderBottomBar(){
   const outfitsPill = onOutfits
     ? `${seg('nav-outfits-btn', !kept, 'All', `onclick="setMode('outfits')"`)}
        ${seg('nav-saved-btn', kept,
-             'Faves',
+             `<span class="nav-heart">${faveChipHeart(kept ? 2 : 0)}</span>Faves`,
              `onclick="setMode('saved')" aria-label="Faves"`)}`
     : `<button class="nav-seg" id="nav-outfits-btn" type="button"
                onclick="setMode('outfits')">Outfits</button>`;
