@@ -93,9 +93,10 @@ const cards = p => p.evaluate(()=>
     const word = () => p.textContent('#nav-saved-btn');
     check('the second half says Faves in words', (await word()).trim() === 'Faves', await word());
     await p.click('#nav-saved-btn'); await p.waitForTimeout(1100);
-    check('with the page tagged Faves on a chip', await p.evaluate(()=>{
-      const t = document.querySelector('#saved-view .view-tag');
-      return t.textContent.trim() === 'Faves' && getComputedStyle(t).backgroundColor !== 'rgba(0, 0, 0, 0)';
+    check('and the same switch sits under the page title', await p.evaluate(()=>{
+      const sw = document.querySelector('#saved-view .view-switch');
+      const on = sw && sw.querySelector('button.on');
+      return Boolean(on) && on.textContent.trim() === 'Faves';
     }));
     await p.click('#nav-outfits-btn'); await p.waitForTimeout(1300);
 

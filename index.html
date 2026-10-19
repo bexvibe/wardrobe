@@ -95,16 +95,20 @@
     letter-spacing:-0.02em;
   }
 
-  /* Which half of Outfits this is, said in words beside the title: grey for
-     everything, pink for what you kept. */
-  .title-wrap{display:flex;align-items:baseline;gap:10px;min-width:0;}
-  .view-tag{
-    font-family:'Work Sans',sans-serif;font-size:12px;font-weight:600;
-    color:var(--ink-soft);
-    background:var(--accent-soft);
-    padding:3px 10px;border-radius:999px;
+  /* The same All / Faves switch as the nav, under the title, so the choice
+     is at the top of the page as well as at the bottom. */
+  .view-switch{
+    display:inline-flex;gap:2px;padding:3px;margin:-6px 0 14px;
+    background:var(--accent-soft);border-radius:999px;
   }
-  .view-tag.faves{color:#B3124A;background:#FBE4EB;}
+  .view-switch button{
+    min-height:36px;padding:0 16px;border:none;background:none;border-radius:999px;
+    display:flex;align-items:center;
+    font-family:'Work Sans',sans-serif;font-size:13px;font-weight:600;
+    color:var(--ink-soft);cursor:pointer;
+  }
+  .view-switch button.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,0.14);}
+  .view-switch .fave-chip-heart{width:14px;height:14px;margin-right:5px;}
 
   /* Tabs */
   .tabs{
@@ -1653,7 +1657,7 @@
 
   <div id="outfits-view" style="display:none;">
     <header class="page-head">
-      <div class="title-wrap"><h1>Outfits</h1><span class="view-tag">All</span></div>
+      <h1>Outfits</h1>
       <!-- The same way in as on the other half of the switch. Building one
            by hand is a thing you do to the wardrobe, not to a page. -->
       <div class="icon-row">
@@ -1665,6 +1669,10 @@
         </button>
       </div>
     </header>
+    <div class="view-switch" role="group" aria-label="Outfits">
+      <button type="button" class="on" aria-pressed="true" onclick="setMode('outfits')">All</button>
+      <button type="button" class="" aria-pressed="false" onclick="setMode('saved')"><span class="fave-chip-heart" data-level="2"><svg class="fave-svg" viewBox="0 0 24 24" aria-hidden="true"><path class="fh-body" d="M12 21c-.5 0-9-5.6-9-11.2C3 6.6 5.2 4.5 7.9 4.5c1.7 0 3.1.8 4.1 2.3 1-1.5 2.4-2.3 4.1-2.3C18.8 4.5 21 6.6 21 9.8 21 15.4 12.5 21 12 21z"/><path class="fh-shine" d="M5.8 9.4c.2-1.5 1.1-2.5 2.6-2.8"/></svg></span>Faves</button>
+    </div>
 
     <!-- One outfit, picked afresh each time you arrive: something to react to
          before you start narrowing anything down. -->
@@ -1693,7 +1701,7 @@
            saying it a thumb's width below; a title that changed as well
            made one destination look like two, which is the thing this
            page stopped being. -->
-      <div class="title-wrap"><h1>Outfits</h1><span class="view-tag faves">Faves</span></div>
+      <h1>Outfits</h1>
       <div class="icon-row">
         <button class="icon-btn primary" id="build-outfit-btn" onclick="openOutfitBuilder()"
                 aria-label="Build an outfit" title="Build an outfit">
@@ -1703,6 +1711,10 @@
         </button>
       </div>
     </header>
+    <div class="view-switch" role="group" aria-label="Outfits">
+      <button type="button" class="" aria-pressed="false" onclick="setMode('outfits')">All</button>
+      <button type="button" class="on" aria-pressed="true" onclick="setMode('saved')"><span class="fave-chip-heart" data-level="2"><svg class="fave-svg" viewBox="0 0 24 24" aria-hidden="true"><path class="fh-body" d="M12 21c-.5 0-9-5.6-9-11.2C3 6.6 5.2 4.5 7.9 4.5c1.7 0 3.1.8 4.1 2.3 1-1.5 2.4-2.3 4.1-2.3C18.8 4.5 21 6.6 21 9.8 21 15.4 12.5 21 12 21z"/><path class="fh-shine" d="M5.8 9.4c.2-1.5 1.1-2.5 2.6-2.8"/></svg></span>Faves</button>
+    </div>
     <div class="outfit-gallery" id="saved-gallery"></div>
     <div class="empty" id="saved-empty" style="display:none;">
       <span class="empty-emoji" id="saved-empty-emoji" aria-hidden="true">💗</span>
