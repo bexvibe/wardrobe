@@ -2308,7 +2308,7 @@ function renderBottomBar(){
   const outfitsPill = onOutfits
     ? `${seg('nav-outfits-btn', !kept, 'All', `onclick="setMode('outfits')"`)}
        ${seg('nav-saved-btn', kept,
-             `<span class="nav-heart">${faveChipHeart(kept ? 2 : 0)}</span>Faves`,
+             `<span class="nav-heart">${faveChipHeart(2)}</span>Faves`,
              `onclick="setMode('saved')" aria-label="Faves"`)}`
     : `<button class="nav-seg" id="nav-outfits-btn" type="button"
                onclick="setMode('outfits')">Outfits</button>`;
