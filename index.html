@@ -99,10 +99,12 @@
      everything, pink for what you kept. */
   .title-wrap{display:flex;align-items:baseline;gap:10px;min-width:0;}
   .view-tag{
-    font-family:'Work Sans',sans-serif;font-size:14px;font-weight:600;
+    font-family:'Work Sans',sans-serif;font-size:12px;font-weight:600;
     color:var(--ink-soft);
+    background:var(--accent-soft);
+    padding:3px 10px;border-radius:999px;
   }
-  .view-tag.faves{color:#E4607F;}
+  .view-tag.faves{color:#B3124A;background:#FBE4EB;}
 
   /* Tabs */
   .tabs{
@@ -731,7 +733,6 @@
      size, so it is the same shape at both sizes it is used at. */
   .heart-glyph{display:block;width:22px;height:22px;}
   .nav-heart .heart-glyph{width:17px;height:17px;}
-  .bottom-btn.active .nav-seg.on#nav-saved-btn{color:#E4607F;}
 
   /* The fave heart: one shape that grows richer over three levels. The
      button is the 44px target; the glyph inside it is smaller. */

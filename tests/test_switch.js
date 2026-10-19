@@ -93,11 +93,9 @@ const cards = p => p.evaluate(()=>
     const word = () => p.textContent('#nav-saved-btn');
     check('the second half says Faves in words', (await word()).trim() === 'Faves', await word());
     await p.click('#nav-saved-btn'); await p.waitForTimeout(1100);
-    check('and goes pink when you are on it', await p.evaluate(()=>
-      getComputedStyle(document.getElementById('nav-saved-btn')).color === 'rgb(228, 96, 127)'));
-    check('with the page tagged Faves in pink', await p.evaluate(()=>{
+    check('with the page tagged Faves on a chip', await p.evaluate(()=>{
       const t = document.querySelector('#saved-view .view-tag');
-      return t.textContent.trim() === 'Faves' && getComputedStyle(t).color === 'rgb(228, 96, 127)';
+      return t.textContent.trim() === 'Faves' && getComputedStyle(t).backgroundColor !== 'rgba(0, 0, 0, 0)';
     }));
     await p.click('#nav-outfits-btn'); await p.waitForTimeout(1300);
 
