@@ -2640,11 +2640,11 @@ function renderFilterControlsBody(){
     capsuleAllowedIds();   // drops a capsule that has since gone
     const capHost = document.getElementById(`${ns}-capsule-chips`);
     if(capHost){
-      capHost.innerHTML = capsules.map(c => {
+      morphHtml(capHost, capsules.map(c => {
         const on = capsuleFilter.includes(c.id);
-        return `<button class="filter-chip ${on ? 'active' : ''}" type="button" aria-pressed="${on}"
+        return `<button class="filter-chip ${on ? 'active' : ''}" data-key="${esc(c.id)}" type="button" aria-pressed="${on}"
           onclick='toggleCapsuleFilter(${JSON.stringify(c.id)})'><span class="chip-label">${esc(c.name)}</span></button>`;
-      }).join('');
+      }).join(''));
     }
     setLabelCount(`${ns}-capsule-count`, capsuleFilter.length);
     renderTagChips(`${ns}-tag-chips`, outfitTags, 'setOutfitTag');
@@ -3322,14 +3322,14 @@ function builderTabs(){
 function renderBuilderTabs(){
   const el = document.getElementById('builder-tabs');
   if(!el) return;
-  el.innerHTML = builderTabs().map(t => {
+  morphHtml(el, builderTabs().map(t => {
     // A tick on the tab, so what you picked two categories ago is still
     // visible from here.
     const filled = Boolean(outfitDraft.picks[TAB_SLOT[t]]);
-    return `<button class="tab ${outfitDraft.tab === t ? 'active' : ''}" onclick="setBuilderTab('${t}')">
+    return `<button class="tab ${outfitDraft.tab === t ? 'active' : ''}" data-key="${t}" onclick="setBuilderTab('${t}')">
       ${t}${filled ? ' <span class="tab-tick">&check;</span>' : ''}
     </button>`;
-  }).join('');
+  }).join(''));
   stickBuilderTabs();
 }
 
@@ -3348,13 +3348,13 @@ function renderBuilderGallery(){
   const items = tab ? itemsInTab(tab) : [];
   const chosen = tab ? outfitDraft.picks[TAB_SLOT[tab]] : null;
 
-  gallery.innerHTML = items.map(i => {
+  morphHtml(gallery, items.map(i => {
     const selected = chosen === i.id;
-    return `<div class="tile picker-tile ${selected ? 'picker-selected' : ''}" onclick="toggleBuilderItem('${i.id}')">
+    return `<div class="tile picker-tile ${selected ? 'picker-selected' : ''}" data-key="${i.id}" onclick="toggleBuilderItem('${i.id}')">
       ${i.photo ? `<img src="${esc(i.photo)}" alt="" referrerpolicy="no-referrer" loading="lazy" decoding="async">` : `<span class="no-photo">No photo</span>`}
       ${selected ? `<span class="picker-check">&check;</span>` : ''}
     </div>`;
-  }).join('');
+  }).join(''));
 }
 
 function toggleBuilderItem(itemId){
@@ -3921,12 +3921,12 @@ function renderHero(){
 
   const key = comboKey(heroCombo);
   const isExpanded = expandedComboKey === key;
-  host.innerHTML = `
-    <div class="outfit-card hero-card ${isExpanded ? 'expanded' : ''}" onclick='toggleExpandCombo(${JSON.stringify(key)})'>
+  morphHtml(host, `
+    <div class="outfit-card hero-card ${isExpanded ? 'expanded' : ''}" data-key="hero" onclick='toggleExpandCombo(${JSON.stringify(key)})'>
       ${faveHeartHtml(key)}
       <div class="outfit-thumbs">${outfitThumbsHtml(heroCombo)}</div>
       ${isExpanded ? outfitExpandedPanelHtml(heroCombo, key, {canHide:true}) : ''}
-    </div>`;
+    </div>`);
 }
 
 // How far to walk looking for a page of outfits before giving up.
@@ -4295,7 +4295,7 @@ function renderFaveChips(){
         onclick="setFaveFilter('${c.v}')">${c.level !== undefined ? faveChipHeart(c.level) : ''}`
       + `<span class="chip-label">${c.label}</span></button>`;
   }).join('');
-  hosts.forEach(h => { h.innerHTML = html; });
+  hosts.forEach(h => morphHtml(h, html));
   document.querySelectorAll('[id$="-fave-count"]').forEach(el => {
     el.textContent = active.length ? ` (${active.length})` : '';
   });
@@ -4307,6 +4307,98 @@ function faveEmptyMessage(mode){
   const v = faveFilter[mode];
   if(!v.length || outfitTags.length || capsuleFilter.length || countNarrowedSlots(outfitFilters) > 0) return null;
   return v.length === 1 ? FAVE_EMPTY[v[0]] : ['No faves at those levels yet', 'Tap a heart to cycle an outfit up through them.'];
+}
+
+// ---- Redrawing without throwing the page away ---------------------------
+//
+// Assigning innerHTML destroys every element and builds new ones, so a
+// photo reloads, a transition has nothing to run on (the new element
+// simply appears in its final state), and a card that has changed size
+// snaps. morphHtml() turns the same HTML into changes to what is already
+// there: an element with a data-key is matched by key wherever it has
+// moved to, anything else by position and tag, attributes and text are
+// updated only where they differ, and what is left over is removed. So a
+// class that flips fades, an <img> whose src is unchanged is never touched,
+// and an untouched card keeps its place.
+//
+// opts.flip: animate the keyed children of the host from where they were
+// to where they now sit, for layout changes (a card opening to full width)
+// that CSS cannot transition by itself.
+function morphHtml(host, html, opts){
+  const flip = opts && opts.flip && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let before = null;
+  if(flip){
+    const origin = host.getBoundingClientRect();
+    before = new Map();
+    for(const c of host.children){
+      const k = c.getAttribute('data-key');
+      if(k == null) continue;
+      const r = c.getBoundingClientRect();
+      before.set(k, { x:r.left - origin.left, y:r.top - origin.top, w:r.width });
+    }
+  }
+  const tpl = document.createElement('template');
+  tpl.innerHTML = html;
+  morphChildren(host, tpl.content);
+  if(!flip) return;
+  const origin = host.getBoundingClientRect();
+  for(const c of host.children){
+    const k = c.getAttribute('data-key');
+    const a = k == null ? null : before.get(k);
+    if(!a) continue;
+    const r = c.getBoundingClientRect();
+    const dx = a.x - (r.left - origin.left), dy = a.y - (r.top - origin.top), sx = a.w / r.width;
+    if(Math.abs(dx) < 1 && Math.abs(dy) < 1 && Math.abs(sx - 1) < 0.01) continue;
+    c.animate(
+      [{ transform:`translate(${dx}px,${dy}px) scaleX(${sx})`, transformOrigin:'top left' },
+       { transform:'none', transformOrigin:'top left' }],
+      { duration:320, easing:'cubic-bezier(.2,.8,.2,1)' });
+  }
+}
+
+function morphChildren(parent, src){
+  const incoming = Array.from(src.childNodes);
+  const keyed = new Map();
+  for(const c of parent.childNodes){
+    if(c.nodeType === 1 && c.hasAttribute('data-key')) keyed.set(c.getAttribute('data-key'), c);
+  }
+  const used = new Set();
+  let cur = parent.firstChild;
+  for(const n of incoming){
+    let m = null;
+    const k = n.nodeType === 1 ? n.getAttribute('data-key') : null;
+    if(k != null){
+      m = keyed.get(k) || null;
+      if(m && used.has(m)) m = null;
+    } else {
+      while(cur && (used.has(cur) || (cur.nodeType === 1 && cur.hasAttribute('data-key')))) cur = cur.nextSibling;
+      if(cur && cur.nodeType === n.nodeType && cur.nodeName === n.nodeName) m = cur;
+    }
+    if(m){
+      used.add(m);
+      morphNode(m, n);
+      if(m === cur) cur = cur.nextSibling;
+      else parent.insertBefore(m, cur);
+    } else {
+      used.add(n);
+      parent.insertBefore(n, cur);
+    }
+  }
+  for(const c of Array.from(parent.childNodes)) if(!used.has(c)) parent.removeChild(c);
+}
+
+function morphNode(el, next){
+  if(el.nodeType !== 1){
+    if(el.nodeValue !== next.nodeValue) el.nodeValue = next.nodeValue;
+    return;
+  }
+  for(const a of Array.from(el.attributes)){
+    if(!next.hasAttribute(a.name)) el.removeAttribute(a.name);
+  }
+  for(const a of Array.from(next.attributes)){
+    if(el.getAttribute(a.name) !== a.value) el.setAttribute(a.name, a.value);
+  }
+  morphChildren(el, next);
 }
 
 // Expanding or collapsing redraws the card at full width, which used to snap.
@@ -4332,7 +4424,11 @@ function floatExpandedCardToTop(){
     offset += parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--stuck-top')) || 0;
     const modal = card.closest('.modal');
     const scroller = modal || window;
-    const top = card.getBoundingClientRect().top - (modal ? modal.getBoundingClientRect().top : 0) - offset;
+    // Layout position, not getBoundingClientRect: the card is usually
+    // mid-glide here and a rect would include that animation's transform.
+    let y = 0;
+    for(let n = card; n && n !== modal; n = n.offsetParent) y += n.offsetTop;
+    const top = modal ? y - modal.scrollTop - offset : y - window.scrollY - offset;
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     scroller.scrollBy({ top, behavior: reduce ? 'auto' : 'smooth' });
   });
@@ -4487,16 +4583,16 @@ function renderExtrasPicker(key){
   const tabs = extraTabs();
   const on = extrasDraft ? extrasDraft.ids : new Set(extrasFor(key));
 
-  tabsEl.innerHTML = tabs.map(t => `
-    <button class="tab ${extrasPickerTab === t ? 'active' : ''}"
+  morphHtml(tabsEl, tabs.map(t => `
+    <button class="tab ${extrasPickerTab === t ? 'active' : ''}" data-key="${esc(t)}"
             onclick='setExtrasPickerTab(${JSON.stringify(key)}, ${JSON.stringify(t)})'>${t}</button>
-  `).join('');
+  `).join(''));
 
   stickSheetTabs('extras-tabs');
 
   const items = extrasPickerTab ? itemsOnShelf(extrasPickerTab) : [];
-  galleryEl.innerHTML = items.length ? items.map(i => `
-    <div class="tile picker-tile ${on.has(i.id) ? 'picker-selected' : ''}"
+  morphHtml(galleryEl, items.length ? items.map(i => `
+    <div class="tile picker-tile ${on.has(i.id) ? 'picker-selected' : ''}" data-key="${esc(i.id)}"
          onclick='toggleOutfitExtra(${JSON.stringify(key)}, ${JSON.stringify(i.id)})'>
       ${i.photo
         ? `<img src="${esc(i.photo)}" alt="${esc(i.name)}" referrerpolicy="no-referrer" loading="lazy" decoding="async">`
@@ -4507,7 +4603,7 @@ function renderExtrasPicker(key){
     <div class="empty">
       <h3>No accessories</h3>
     </div>
-  `;
+  `);
 }
 
 // An outfit matches when at least one of its pieces carries the tag, so
@@ -4612,7 +4708,7 @@ function renderSavedOutfits(){
   document.getElementById('build-outfit-btn').style.display = '';
   savedShownCount = shown.length;
 
-  gallery.innerHTML = shown.map(rec => {
+  morphHtml(gallery, shown.map(rec => {
     const combo = favoriteRecordToCombo(rec);
     const isExpanded = expandedSavedKey === rec.key;
     const thumbs = outfitThumbsHtml(combo);
@@ -4624,12 +4720,12 @@ function renderSavedOutfits(){
           { collapse: `toggleExpandSaved(${JSON.stringify(rec.key)})` })
       : '';
 
-    return `<div class="outfit-card ${isExpanded ? 'expanded' : ''}" onclick='toggleExpandSaved(${JSON.stringify(rec.key)})'>
+    return `<div class="outfit-card ${isExpanded ? 'expanded' : ''}" data-key="${esc(rec.key)}" onclick='toggleExpandSaved(${JSON.stringify(rec.key)})'>
       ${faveHeartHtml(rec.key)}
       <div class="outfit-thumbs">${thumbs}</div>
       ${expandedPanel}
     </div>`;
-  }).join('');
+  }).join(''), { flip:true });
   renderShuffleFab();
 }
 
@@ -4707,7 +4803,7 @@ function renderCapsules(){
   }
   emptyState.style.display = 'none';
 
-  gallery.innerHTML = capsules.map(capsule => {
+  morphHtml(gallery, capsules.map(capsule => {
     const pieces = capsuleItems(capsule);
     const isExpanded = expandedCapsuleId === capsule.id;
 
@@ -4743,14 +4839,14 @@ function renderCapsules(){
       </div>
     ` : '';
 
-    return `<div class="outfit-card ${isExpanded ? 'expanded' : ''}" onclick='toggleExpandCapsule(${JSON.stringify(capsule.id)})'>
+    return `<div class="outfit-card ${isExpanded ? 'expanded' : ''}" data-key="${esc(capsule.id)}" onclick='toggleExpandCapsule(${JSON.stringify(capsule.id)})'>
       <div class="capsule-head">
         <span class="capsule-name">${esc(capsule.name)}</span>
       </div>
       ${thumbs}
       ${expandedPanel}
     </div>`;
-  }).join('');
+  }).join(''), { flip:true });
 }
 
 function toggleExpandCapsule(id){
@@ -4829,11 +4925,11 @@ function renderCapsuleEditorTabs(){
   const counts = {};
   ITEMS.forEach(i => { const t = tabForItem(i); counts[t] = (counts[t] || 0) + 1; });
   // With nothing to pick from, All would be a lone tab over nothing.
-  el.innerHTML = TAB_ORDER
+  morphHtml(el, TAB_ORDER
     .filter(t => (t === 'All' && ITEMS.length) || counts[t])
-    .map(t => `<button class="tab ${capsuleDraft.tab === t ? 'active' : ''}" onclick="setCapsuleEditorTab('${t}')">
+    .map(t => `<button class="tab ${capsuleDraft.tab === t ? 'active' : ''}" data-key="${t}" onclick="setCapsuleEditorTab('${t}')">
       ${t}
-    </button>`).join('');
+    </button>`).join(''));
 
   stickCapsuleEditorTabs();
 }
@@ -4866,13 +4962,13 @@ function renderCapsuleEditorGallery(){
     return;
   }
 
-  gallery.innerHTML = pool.map(i => {
+  morphHtml(gallery, pool.map(i => {
     const selected = capsuleDraft.itemIds.has(i.id);
-    return `<div class="tile picker-tile ${selected ? 'picker-selected' : ''}" onclick="toggleCapsuleItem('${i.id}')">
+    return `<div class="tile picker-tile ${selected ? 'picker-selected' : ''}" data-key="${i.id}" onclick="toggleCapsuleItem('${i.id}')">
       ${i.photo ? `<img src="${esc(i.photo)}" alt="" referrerpolicy="no-referrer" loading="lazy" decoding="async">` : `<span class="no-photo">No photo</span>`}
       ${selected ? `<span class="picker-check">✓</span>` : ''}
     </div>`;
-  }).join('');
+  }).join(''));
 }
 
 function toggleCapsuleItem(itemId){
@@ -5039,18 +5135,18 @@ function renderOutfits(){
   if(buildBtnAll) buildBtnAll.style.display = '';
   if(loadMoreBtn) loadMoreBtn.style.display = total > outfitDisplayed.length ? 'inline-block' : 'none';
 
-  gallery.innerHTML = shown.map(combo => {
+  morphHtml(gallery, shown.map(combo => {
     const key = comboKey(combo);
     const isExpanded = expandedComboKey === key;
     const thumbs = outfitThumbsHtml(combo);
     const expandedPanel = isExpanded ? outfitExpandedPanelHtml(combo, key, {canHide:true}) : '';
 
-    return `<div class="outfit-card ${isExpanded ? 'expanded' : ''}" onclick='toggleExpandCombo(${JSON.stringify(key)})'>
+    return `<div class="outfit-card ${isExpanded ? 'expanded' : ''}" data-key="${esc(key)}" onclick='toggleExpandCombo(${JSON.stringify(key)})'>
       ${faveHeartHtml(key)}
       <div class="outfit-thumbs">${thumbs}</div>
       ${expandedPanel}
     </div>`;
-  }).join('');
+  }).join(''), { flip:true });
 
   // Whether there is anything to deal again has just changed.
   renderShuffleFab();
@@ -6331,10 +6427,10 @@ function renderTagChips(elementId, selected, handler){
     return;
   }
   el.style.display = 'flex';
-  el.innerHTML = tags.map(t => `
-    <button class="tag-chip ${selected.includes(t) ? 'active' : ''}" data-tag="${esc(t)}"
+  morphHtml(el, tags.map(t => `
+    <button class="tag-chip ${selected.includes(t) ? 'active' : ''}" data-key="${esc(t)}" data-tag="${esc(t)}"
             onclick='${handler}(${JSON.stringify(t)})'>${esc(t)}</button>
-  `).join('');
+  `).join(''));
 }
 
 // Each tap adds or removes one, rather than replacing whatever was there.
@@ -7003,15 +7099,15 @@ function render(){
   if(viewMode === 'photos'){
     gallery.style.display = 'grid';
     nameList.style.display = 'none';
-    gallery.innerHTML = filtered.map(i => {
+    morphHtml(gallery, filtered.map(i => {
       const selected = selectedIds.has(i.id);
       return `
-      <div class="tile ${editMode ? 'select-mode' : ''} ${selected ? 'item-selected' : ''}" data-id="${i.id}" onclick="${clickHandler(i.id)}">
+      <div class="tile ${editMode ? 'select-mode' : ''} ${selected ? 'item-selected' : ''}" data-id="${i.id}" data-key="${i.id}" onclick="${clickHandler(i.id)}">
         ${editMode ? `<span class="select-check ${selected ? 'checked' : ''}">✓</span>` : ''}
         ${i.photo ? `<img src="${esc(i.photo)}" alt="${esc(i.name)}" referrerpolicy="no-referrer" loading="lazy" decoding="async">` : `<span class="no-photo">No photo</span>`}
       </div>
     `;
-    }).join('');
+    }).join(''));
   } else {
     gallery.style.display = 'none';
     nameList.style.display = 'flex';
