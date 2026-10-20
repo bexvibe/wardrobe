@@ -1274,7 +1274,7 @@
      there by growing or shrinking rather than jumping. */
   .filter-sheet.morphing{
     transition:transform var(--sheet-ease-ms) var(--sheet-ease),
-               height 420ms var(--sheet-ease);
+               height 200ms var(--sheet-ease);
     /* No scrollbar flicker while the height is in between. */
     overflow-y:hidden;
   }
@@ -1312,10 +1312,10 @@
   /* Choosing pieces: a page inside the sheet. Three across, so a category
      of a dozen is a few rows rather than a long scroll. */
   .filter-page-gallery{grid-template-columns:repeat(auto-fill, minmax(104px, 1fr));}
-  .filter-slide-fwd{animation:filter-slide-fwd 340ms var(--sheet-ease);}
-  .filter-slide-back{animation:filter-slide-back 340ms var(--sheet-ease);}
-  @keyframes filter-slide-fwd{from{opacity:0;transform:translateX(36px);}to{opacity:1;transform:none;}}
-  @keyframes filter-slide-back{from{opacity:0;transform:translateX(-36px);}to{opacity:1;transform:none;}}
+  .filter-slide-fwd{animation:filter-slide-fwd 180ms var(--sheet-ease);}
+  .filter-slide-back{animation:filter-slide-back 180ms var(--sheet-ease);}
+  @keyframes filter-slide-fwd{from{opacity:0;transform:translateX(20px);}to{opacity:1;transform:none;}}
+  @keyframes filter-slide-back{from{opacity:0;transform:translateX(-20px);}to{opacity:1;transform:none;}}
   /* The count turning over as you tap. */
   .filter-count-roll{display:inline-block;animation:filter-count-roll 320ms var(--sheet-ease);}
   @keyframes filter-count-roll{from{opacity:0;transform:translateY(7px);}to{opacity:1;transform:none;}}
@@ -2793,7 +2793,7 @@ function morphFilterSheet(change, dir){
   filterMorphTimer = setTimeout(() => {
     sheet.classList.remove('morphing');
     sheet.style.height = '';
-  }, 460);
+  }, 240);
 }
 
 // Choosing pieces from one category: a second page inside this sheet, not a
