@@ -527,6 +527,7 @@
     max-width:640px;
     margin:0 auto;
     height:85%;
+    transition:transform var(--sheet-ease-ms) var(--sheet-ease), height .25s ease;
     background:var(--page);
     border-radius:18px 18px 0 0;
     /* A column so a short sheet still puts its bar at the foot: the body
@@ -541,9 +542,11 @@
     box-shadow:0 -10px 34px rgba(0,0,0,0.18);
     /* Off the bottom rather than hidden, so it arrives by travelling. */
     transform:translateY(100%);
-    transition:transform var(--sheet-ease-ms) var(--sheet-ease);
   }
   .modal-backdrop.open .modal{transform:translateY(0);}
+  /* A tall sheet that has been scrolled earns the rest of the screen, less a
+     sliver of page at the top to pull on. */
+  .modal.sheet-full{height:calc(100% - max(12px, env(safe-area-inset-top, 0px)));}
   /* Following a thumb: no easing while it is under your finger. */
   .modal.dragging{transition:none;}
 
@@ -1531,6 +1534,7 @@
     gap:10px;margin-bottom:8px;
   }
   .capsule-name{font-family:'Fraunces',serif;font-weight:500;font-size:19px;}
+  .capsule-desc{display:block;margin-top:2px;font-size:13px;line-height:1.35;color:var(--ink-soft);}
   /* The leftovers, at the end of the page rather than mixed in with the
      capsules — it is a different kind of thing from a capsule. */
   /* Capsules as rows to tick, for the one piece you are looking at. */
@@ -4881,7 +4885,10 @@ function renderCapsules(){
 
     return `<div class="outfit-card ${isExpanded ? 'expanded' : ''}" data-key="${esc(capsule.id)}" onclick='toggleExpandCapsule(${JSON.stringify(capsule.id)})'>
       <div class="capsule-head">
-        <span class="capsule-name">${esc(capsule.name)}</span>
+        <div>
+          <span class="capsule-name">${esc(capsule.name)}</span>
+          ${capsule.description ? `<span class="capsule-desc">${esc(capsule.description)}</span>` : ''}
+        </div>
       </div>
       ${thumbs}
       ${expandedPanel}
@@ -4902,7 +4909,7 @@ function toggleExpandCapsule(id){
 // slot picker: a header that gets you out, then the wardrobe as tiles you
 // tap to select. Nothing is written until Save, so backing out of a new
 // capsule leaves no empty row behind.
-let capsuleDraft = null;   // { id, name, itemIds:Set, tab }
+let capsuleDraft = null;   // { id, name, description, itemIds:Set, tab }
 
 function openCapsuleEditor(id, seedItemIds){
   pushSheet({ sheet: 'capsule', id: id || null });
@@ -4910,6 +4917,7 @@ function openCapsuleEditor(id, seedItemIds){
   capsuleDraft = {
     id: capsule ? capsule.id : null,
     name: capsule ? capsule.name : '',
+    description: capsule ? (capsule.description || '') : '',
     // seedItemIds lets "new capsule with this piece" start from the piece
     // you were looking at rather than from nothing.
     itemIds: new Set(capsule ? capsule.itemIds : (seedItemIds || [])),
@@ -4930,6 +4938,11 @@ function openCapsuleEditor(id, seedItemIds){
           <input type="text" id="capsule-name-input"
                  value="${esc(capsuleDraft.name)}" oninput="onCapsuleNameInput()">
         </label>
+        <label>Description
+          <input type="text" id="capsule-desc-input" maxlength="120"
+                 placeholder="A few words (optional)"
+                 value="${esc(capsuleDraft.description)}" oninput="onCapsuleDescInput()">
+        </label>
       </div>
       <div class="form-error" id="capsule-error"></div>
       <div class="tabs" id="capsule-tabs"></div>
@@ -4945,10 +4958,17 @@ function openCapsuleEditor(id, seedItemIds){
   renderCapsuleEditorTabs();
   renderCapsuleEditorGallery();
   allowSheetDrag(closeCapsuleEditor, capsuleDraftIsDirty);
+  // Scrolling the picker is a sign you want room: let the sheet go full height.
+  modal.classList.remove('sheet-full');
+  modal.onscroll = () => modal.classList.toggle('sheet-full', modal.scrollTop > 0 || modal.classList.contains('sheet-full'));
   document.getElementById('modal-backdrop').classList.add('open');
   // Once it is up and there is a height to measure.
   stickCapsuleEditorTabs();
   if(!capsule) document.getElementById('capsule-name-input').focus();
+}
+
+function onCapsuleDescInput(){
+  capsuleDraft.description = document.getElementById('capsule-desc-input').value;
 }
 
 function onCapsuleNameInput(){
@@ -5019,7 +5039,7 @@ function toggleCapsuleItem(itemId){
 
 function capsuleDraftSnapshot(){
   if(!capsuleDraft) return null;
-  return JSON.stringify([capsuleDraft.name,
+  return JSON.stringify([capsuleDraft.name, capsuleDraft.description,
                          Array.from(capsuleDraft.itemIds).sort()]);
 }
 
@@ -5039,6 +5059,9 @@ function closeCapsuleEditor(){
 
 function discardCapsuleEditor(){
   capsuleDraft = null;
+  const modal = document.getElementById('modal');
+  modal.onscroll = null;
+  modal.classList.remove('sheet-full');
   // Reached from a piece's "New capsule" as often as from the Capsules
   // page, so back is whichever of those it was.
   goBackFromSheet();
@@ -5057,7 +5080,7 @@ async function submitCapsuleEditor(){
   // leaves a capsule — so this is where the undo has to be.
   const previous = capsuleDraft.id ? (() => {
     const c = capsules.find(x => x.id === capsuleDraft.id);
-    return c ? { id: c.id, name: c.name, itemIds: c.itemIds.slice() } : null;
+    return c ? { id: c.id, name: c.name, description: c.description || '', itemIds: c.itemIds.slice() } : null;
   })() : null;
 
   const btn = document.getElementById('capsule-save-btn');
@@ -5065,6 +5088,7 @@ async function submitCapsuleEditor(){
   const saved = await saveCapsule({
     id: capsuleDraft.id,
     name,
+    description: (capsuleDraft.description || '').trim(),
     itemIds: Array.from(capsuleDraft.itemIds)
   });
   btn.disabled = false;
@@ -5635,6 +5659,7 @@ async function loadAll(){
     capsules = capsulesRes.data.map(r => ({
       id: r.id,
       name: r.name,
+      description: r.description || '',
       itemIds: byCapsule.get(r.id) || []
     }));
   } else {
@@ -5719,15 +5744,15 @@ function newCapsuleId(){
 // One call saves the name and the whole membership: the editor hands over
 // the list it ended up with rather than a diff, so a half-applied save
 // cannot leave a capsule holding pieces you removed.
-async function saveCapsule({ id, name, itemIds }){
+async function saveCapsule({ id, name, description = '', itemIds }){
   const db = client();
   const capsuleId = id || newCapsuleId();
 
   if(id){
-    const { error } = await db.from('capsules').update({ name }).eq('id', id);
+    const { error } = await db.from('capsules').update({ name, description: description || null }).eq('id', id);
     if(error) return dbFail(error, 'Could not save — check connection');
   } else {
-    const { error } = await db.from('capsules').insert({ id: capsuleId, name });
+    const { error } = await db.from('capsules').insert({ id: capsuleId, name, description: description || null });
     if(error) return dbFail(error, 'Could not create — check connection');
   }
 
@@ -5747,7 +5772,7 @@ async function saveCapsule({ id, name, itemIds }){
     if(error) return dbFail(error, 'Could not remove pieces — check connection');
   }
 
-  const record = { id: capsuleId, name, itemIds: itemIds.slice() };
+  const record = { id: capsuleId, name, description, itemIds: itemIds.slice() };
   const idx = capsules.findIndex(c => c.id === capsuleId);
   if(idx > -1) capsules[idx] = record; else capsules.push(record);
   return record;

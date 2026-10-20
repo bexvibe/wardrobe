@@ -88,6 +88,7 @@ create table if not exists public.hidden_combos (
 create table if not exists public.capsules (
   id          text primary key,
   name        text        not null,
+  description text,                  -- one short line shown under the name
   archived_at timestamptz,           -- soft delete: null = active
   created_at  timestamptz not null default now(),
   updated_at  timestamptz not null default now()
