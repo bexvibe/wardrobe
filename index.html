@@ -1191,7 +1191,7 @@
      from the icon font: a font can be missing the glyph and substitute
      something else, which is exactly how the hearts used to go wrong. */
   .shuffle-fab .wand{width:19px;height:19px;display:block;flex:none;}
-  .shuffle-fab.casting .wand{animation:wand-flick 560ms var(--sheet-ease);}
+  .shuffle-fab.casting .wand{animation:wand-flick 320ms var(--sheet-ease);}
   @keyframes wand-flick{
     0%{transform:rotate(0deg) scale(1);}
     30%{transform:rotate(-20deg) scale(1.14);}
@@ -2252,7 +2252,10 @@ function shuffleOutfits(){
 
   // Back to the top: the point of it is the outfits you have not seen, and
   // they are up there.
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  // A smooth scroll takes as long as the distance, and from deep in the list
+  // that is the whole wait. Close to the top it glides; further, it just goes.
+  const far = window.scrollY > window.innerHeight * 1.5;
+  window.scrollTo({ top: 0, behavior: far ? 'instant' : 'smooth' });
 
   const fab = document.getElementById('shuffle-fab');
   if(fab){
