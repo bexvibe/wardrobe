@@ -4418,6 +4418,25 @@ function withPanelCollapse(isClosing, scope, redraw){
   setTimeout(redraw, 150);
 }
 
+// Opening one card closes another, and when the one that closes is above
+// the one you tapped the page gets shorter under your finger. Chrome
+// compensates; Safari does not, so the tapped card used to slide away — or
+// the page jumped to the top. This puts the card back where it was before
+// the redraw, instantly, so only the glide that follows is seen.
+function holdCardInPlace(scope, key, redraw){
+  const find = () => Array.from(document.querySelectorAll(`${scope} .outfit-card[data-key]`))
+    .find(c => c.getAttribute('data-key') === key);
+  const was = find();
+  const top0 = was ? was.getBoundingClientRect().top : null;
+  redraw();
+  const now = find();
+  if(top0 === null || !now) return;
+  const delta = now.getBoundingClientRect().top - top0;
+  if(Math.abs(delta) < 1) return;
+  const modal = now.closest('.modal');
+  (modal || window).scrollBy({ top: delta, behavior: 'instant' });
+}
+
 // An opened card jumps from one grid cell to a full-width row, so whatever
 // was under the finger moves. Floating the card's top to the top of the page
 // (below any sticky bar) turns that jump into one smooth glide.
@@ -4445,7 +4464,7 @@ function floatExpandedCardToTop(scope){
 function toggleExpandSaved(key){
   withPanelCollapse(expandedSavedKey !== null, '#saved-gallery', () => {
     expandedSavedKey = (expandedSavedKey === key) ? null : key;
-    renderSavedOutfits();
+    holdCardInPlace('#saved-gallery', key, renderSavedOutfits);
     if(expandedSavedKey) floatExpandedCardToTop('#saved-gallery');
   });
 }
@@ -4860,7 +4879,7 @@ function renderCapsules(){
 function toggleExpandCapsule(id){
   withPanelCollapse(expandedCapsuleId !== null, '#capsule-gallery', () => {
     expandedCapsuleId = (expandedCapsuleId === id) ? null : id;
-    renderCapsules();
+    holdCardInPlace('#capsule-gallery', id, renderCapsules);
     if(expandedCapsuleId) floatExpandedCardToTop('#capsule-gallery');
   });
 }
@@ -5083,8 +5102,10 @@ function toggleExpandCombo(key){
     expandedComboKey = opening ? key : null;
     // Either the lead card or the grid may be holding this outfit, so both are
     // redrawn — the hero is not in the grid's list.
-    renderOutfits();
-    if(outfitRenderContext !== 'modal') renderHero();
+    holdCardInPlace(scope, key, () => {
+      renderOutfits();
+      if(outfitRenderContext !== 'modal') renderHero();
+    });
 
     // Float the opened card to the top, which also clears the docked filter
     // panel, the one thing on the page that does not scroll with it.
