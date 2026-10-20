@@ -4406,8 +4406,13 @@ function morphNode(el, next){
 
 // Expanding or collapsing redraws the card at full width, which used to snap.
 // An open panel fades out first, then the redraw lets the new one animate in.
-function withPanelCollapse(isClosing, redraw){
-  const panel = isClosing ? document.querySelector('.outfit-card.expanded .outfit-expanded-panel') : null;
+//
+// `scope` is a selector for the list being opened or closed. An outfit opened
+// inside a piece's sheet sits over a capsule or outfit card that is itself
+// open, and an unscoped lookup finds that one — fading and scrolling the
+// page behind the sheet instead of the card you tapped.
+function withPanelCollapse(isClosing, scope, redraw){
+  const panel = isClosing ? document.querySelector(`${scope} .outfit-card.expanded .outfit-expanded-panel`) : null;
   if(!panel || window.matchMedia('(prefers-reduced-motion: reduce)').matches){ redraw(); return; }
   panel.classList.add('closing');
   setTimeout(redraw, 150);
@@ -4416,9 +4421,9 @@ function withPanelCollapse(isClosing, redraw){
 // An opened card jumps from one grid cell to a full-width row, so whatever
 // was under the finger moves. Floating the card's top to the top of the page
 // (below any sticky bar) turns that jump into one smooth glide.
-function floatExpandedCardToTop(){
+function floatExpandedCardToTop(scope){
   requestAnimationFrame(() => {
-    const card = document.querySelector('.outfit-card.expanded');
+    const card = document.querySelector(`${scope} .outfit-card.expanded`);
     if(!card) return;
     let offset = 8;
     document.querySelectorAll('.stuck-row').forEach(el => {
@@ -4438,10 +4443,10 @@ function floatExpandedCardToTop(){
 }
 
 function toggleExpandSaved(key){
-  withPanelCollapse(expandedSavedKey !== null, () => {
+  withPanelCollapse(expandedSavedKey !== null, '#saved-gallery', () => {
     expandedSavedKey = (expandedSavedKey === key) ? null : key;
     renderSavedOutfits();
-    if(expandedSavedKey) floatExpandedCardToTop();
+    if(expandedSavedKey) floatExpandedCardToTop('#saved-gallery');
   });
 }
 
@@ -4853,10 +4858,10 @@ function renderCapsules(){
 }
 
 function toggleExpandCapsule(id){
-  withPanelCollapse(expandedCapsuleId !== null, () => {
+  withPanelCollapse(expandedCapsuleId !== null, '#capsule-gallery', () => {
     expandedCapsuleId = (expandedCapsuleId === id) ? null : id;
     renderCapsules();
-    if(expandedCapsuleId) floatExpandedCardToTop();
+    if(expandedCapsuleId) floatExpandedCardToTop('#capsule-gallery');
   });
 }
 
@@ -5072,7 +5077,8 @@ async function unhideCombo(key){
 }
 
 function toggleExpandCombo(key){
-  withPanelCollapse(expandedComboKey !== null, () => {
+  const scope = outfitRenderContext === 'modal' ? '#m-outfit-gallery' : '#outfits-view';
+  withPanelCollapse(expandedComboKey !== null, scope, () => {
     const opening = expandedComboKey !== key;
     expandedComboKey = opening ? key : null;
     // Either the lead card or the grid may be holding this outfit, so both are
@@ -5082,7 +5088,7 @@ function toggleExpandCombo(key){
 
     // Float the opened card to the top, which also clears the docked filter
     // panel, the one thing on the page that does not scroll with it.
-    if(opening) floatExpandedCardToTop();
+    if(opening) floatExpandedCardToTop(scope);
   });
 }
 
