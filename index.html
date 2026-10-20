@@ -527,6 +527,7 @@
     max-width:640px;
     margin:0 auto;
     height:85%;
+    transition:transform var(--sheet-ease-ms) var(--sheet-ease), height .25s ease;
     background:var(--page);
     border-radius:18px 18px 0 0;
     /* A column so a short sheet still puts its bar at the foot: the body
@@ -541,9 +542,11 @@
     box-shadow:0 -10px 34px rgba(0,0,0,0.18);
     /* Off the bottom rather than hidden, so it arrives by travelling. */
     transform:translateY(100%);
-    transition:transform var(--sheet-ease-ms) var(--sheet-ease);
   }
   .modal-backdrop.open .modal{transform:translateY(0);}
+  /* A tall sheet that has been scrolled earns the rest of the screen, less a
+     sliver of page at the top to pull on. */
+  .modal.sheet-full{height:calc(100% - max(12px, env(safe-area-inset-top, 0px)));}
   /* Following a thumb: no easing while it is under your finger. */
   .modal.dragging{transition:none;}
 
@@ -4872,8 +4875,10 @@ function renderCapsules(){
 
     return `<div class="outfit-card ${isExpanded ? 'expanded' : ''}" data-key="${esc(capsule.id)}" onclick='toggleExpandCapsule(${JSON.stringify(capsule.id)})'>
       <div class="capsule-head">
-        <span class="capsule-name">${esc(capsule.name)}</span>
-        ${capsule.description ? `<span class="capsule-desc">${esc(capsule.description)}</span>` : ''}
+        <div>
+          <span class="capsule-name">${esc(capsule.name)}</span>
+          ${capsule.description ? `<span class="capsule-desc">${esc(capsule.description)}</span>` : ''}
+        </div>
       </div>
       ${thumbs}
       ${expandedPanel}
@@ -4943,6 +4948,9 @@ function openCapsuleEditor(id, seedItemIds){
   renderCapsuleEditorTabs();
   renderCapsuleEditorGallery();
   allowSheetDrag(closeCapsuleEditor, capsuleDraftIsDirty);
+  // Scrolling the picker is a sign you want room: let the sheet go full height.
+  modal.classList.remove('sheet-full');
+  modal.onscroll = () => modal.classList.toggle('sheet-full', modal.scrollTop > 0 || modal.classList.contains('sheet-full'));
   document.getElementById('modal-backdrop').classList.add('open');
   // Once it is up and there is a height to measure.
   stickCapsuleEditorTabs();
@@ -5041,6 +5049,9 @@ function closeCapsuleEditor(){
 
 function discardCapsuleEditor(){
   capsuleDraft = null;
+  const modal = document.getElementById('modal');
+  modal.onscroll = null;
+  modal.classList.remove('sheet-full');
   // Reached from a piece's "New capsule" as often as from the Capsules
   // page, so back is whichever of those it was.
   goBackFromSheet();
