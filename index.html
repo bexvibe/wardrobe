@@ -1376,6 +1376,10 @@
     background:var(--accent-soft);
     color:var(--ink);
   }
+  /* A chip that opens a page rather than applying a filter. Quieter than the
+     label, and tucked in close so it reads as part of the word. */
+  .chip-caret{width:12px;height:12px;flex:none;margin:0 -4px 0 -2px;opacity:.55;}
+  .filter-chip.active .chip-caret{opacity:.8;}
   /* How many pieces are pinned, as a number in a badge — the count every
      other interface puts on a filter — instead of the words "2 selected".
      Only a chip that is on ever carries one, so the badge never has to say
@@ -3231,6 +3235,12 @@ function shoeSlotList(){
   return INCLUDE_SHOES_IN_OUTFITS ? slotList(generatorFilters(), 'shoes') : [null];
 }
 
+// The other chips in the sheet apply the moment you tap them. A piece chip
+// opens a page, so it ends in a chevron — the one thing that tells the two
+// apart before you tap.
+const CHIP_CARET = `<svg class="chip-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+  stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>`;
+
 function renderSlotChips(gridId){
   const grid = document.getElementById(gridId);
   if(!grid) return;
@@ -3257,7 +3267,7 @@ function renderSlotChips(gridId){
 
     return `<button class="${cls}" data-state="${f.type}"`
       + ` aria-label="${esc(key)}: ${said}" onclick="openFilterPage('${key}')">`
-      + `<span class="chip-label">${key}</span>${badge}</button>`;
+      + `<span class="chip-label">${key}</span>${CHIP_CARET}${badge}</button>`;
   }).join('');
 }
 
