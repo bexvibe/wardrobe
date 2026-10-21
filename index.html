@@ -947,7 +947,16 @@
     font-family:'IBM Plex Mono',monospace;font-size:12px;
     background:var(--accent-soft);padding:1px 5px;border-radius:4px;
   }
-  .gate-card input[type="password"]{width:100%;margin-bottom:10px;}
+  .gate-card input[type="password"],
+  .gate-card input.pw-shown{width:100%;margin-bottom:10px;}
+  .gate-pw{position:relative;}
+  .gate-pw input{padding-right:42px;}
+  .gate-pw-toggle{
+    position:absolute;right:4px;top:0;height:calc(100% - 10px);width:38px;
+    display:flex;align-items:center;justify-content:center;
+    background:none;border:0;padding:0;cursor:pointer;color:var(--ink-soft);
+  }
+  .gate-pw-toggle:hover{color:var(--ink);}
   .gate-card .btn{width:100%;justify-content:center;}
   .gate-error{
     font-size:12px;color:var(--ink);
@@ -1611,8 +1620,15 @@
 
     <div id="gate-login" style="display:none;">
       <h2 class="gate-title">Welcome back</h2>
-      <input type="password" id="gate-password" placeholder="Password" autocomplete="current-password"
-             onkeydown="if(event.key==='Enter') signIn()">
+      <div class="gate-pw">
+        <input type="password" id="gate-password" placeholder="Password" autocomplete="current-password"
+               onkeydown="if(event.key==='Enter') signIn()">
+        <button type="button" class="gate-pw-toggle" id="gate-pw-toggle" aria-label="Show password" aria-pressed="false"
+                onclick="togglePasswordVisibility()">
+          <svg class="eye-on" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
+          <svg class="eye-off" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:none;"><path d="M17.94 17.94A10.9 10.9 0 0 1 12 19c-7 0-11-7-11-7a19.8 19.8 0 0 1 5.06-5.94M9.9 4.24A10.9 10.9 0 0 1 12 5c7 0 11 7 11 7a19.7 19.7 0 0 1-3.17 4.19M14.12 14.12a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+        </button>
+      </div>
       <div class="gate-error" id="gate-login-error"></div>
       <button class="btn" id="gate-submit" onclick="signIn()">Unlock</button>
     </div>
@@ -5995,6 +6011,19 @@ function showGate(state, message){
   document.getElementById('gate-error').style.display = state === 'error' ? 'block' : 'none';
   if(message) document.getElementById('gate-error-message').textContent = message;
   if(state === 'login') setTimeout(() => document.getElementById('gate-password')?.focus(), 50);
+}
+
+function togglePasswordVisibility(){
+  const input = document.getElementById('gate-password');
+  const toggle = document.getElementById('gate-pw-toggle');
+  const show = input.type === 'password';
+  input.type = show ? 'text' : 'password';
+  input.classList.toggle('pw-shown', show);
+  toggle.setAttribute('aria-pressed', String(show));
+  toggle.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+  toggle.querySelector('.eye-on').style.display = show ? 'none' : '';
+  toggle.querySelector('.eye-off').style.display = show ? '' : 'none';
+  input.focus();
 }
 
 function hideGate(){
