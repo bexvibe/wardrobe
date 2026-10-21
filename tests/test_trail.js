@@ -70,6 +70,9 @@ async function keepOne(p){
     // Expanding the card lengthens the page, so where you are standing is
     // read after that, immediately before stepping into the sheet.
     await p.evaluate(()=>window.scrollTo({top:120})); await p.waitForTimeout(400);
+    // The row may sit below the fold; bring it in first so the click does
+    // not scroll the page after where you were standing is read.
+    await p.evaluate(()=>window.scrollBy(0, document.querySelector('#saved-gallery .outfit-piece-row').getBoundingClientRect().top - 200)); await p.waitForTimeout(300);
     const wasAt = await p.evaluate(()=>Math.round(window.scrollY));
     await p.locator('#saved-gallery .outfit-piece-row').first().click();
     await p.waitForTimeout(700);

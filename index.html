@@ -716,6 +716,7 @@
   @media (prefers-reduced-motion: reduce){
     .outfit-expanded-panel,.outfit-expanded-panel.closing{animation:none;}
   }
+  .panel-actions{margin:0 0 10px;}
   .outfit-collapse-btn{
     font-family:'Work Sans',sans-serif;
     font-size:12px;font-weight:600;
@@ -1537,7 +1538,6 @@
     display:flex;align-items:flex-start;justify-content:space-between;
     gap:10px;margin-bottom:8px;
   }
-  .capsule-edit-btn{flex:none;}
   .sheet-title-row{display:flex;align-items:center;justify-content:space-between;gap:10px;}
   .capsule-name{font-family:'Fraunces',serif;font-weight:500;font-size:19px;}
   .capsule-desc{display:block;margin-top:2px;font-size:13px;line-height:1.35;color:var(--ink-soft);}
@@ -3926,6 +3926,10 @@ function outfitExpandedPanelHtml(combo, key, opts){
   const worn = extrasFor(key).length;
   return `
       <div class="outfit-expanded-panel">
+        <div class="modal-actions panel-actions">
+          ${extrasAvailable ? `<button class="btn small secondary" onclick='event.stopPropagation();openOutfitExtrasPicker(${JSON.stringify(key)})'>${worn ? 'Edit accessories' : '+ Add accessories'}</button>` : ''}
+          ${o.canHide ? `<button class="btn small secondary" onclick='event.stopPropagation();hideCombo(${JSON.stringify(key)})'>Hide this combo</button>` : ''}
+        </div>
         <button class="outfit-collapse-btn" onclick='event.stopPropagation();${collapse}'>Collapse ↑</button>
         ${comboPieces(combo).map(p => `
           <div class="outfit-piece-row tappable"
@@ -3937,10 +3941,6 @@ function outfitExpandedPanelHtml(combo, key, opts){
             <span class="piece-go" aria-hidden="true">›</span>
           </div>
         `).join('')}
-        <div class="modal-actions">
-          ${extrasAvailable ? `<button class="btn small secondary" onclick='event.stopPropagation();openOutfitExtrasPicker(${JSON.stringify(key)})'>${worn ? 'Edit accessories' : '+ Add accessories'}</button>` : ''}
-          ${o.canHide ? `<button class="btn small secondary" onclick='event.stopPropagation();hideCombo(${JSON.stringify(key)})'>Hide this combo</button>` : ''}
-        </div>
       </div>`;
 }
 
@@ -4875,6 +4875,9 @@ function renderCapsules(){
 
     const expandedPanel = isExpanded ? `
       <div class="outfit-expanded-panel">
+        <div class="modal-actions panel-actions">
+          <button class="btn small secondary" onclick='event.stopPropagation();openCapsuleEditor(${JSON.stringify(capsule.id)})'>Edit capsule</button>
+        </div>
         <button class="outfit-collapse-btn" onclick='event.stopPropagation();toggleExpandCapsule(${JSON.stringify(capsule.id)})'>Collapse ↑</button>
         ${pieces.map(p => `
           <div class="outfit-piece-row tappable"
@@ -4896,7 +4899,6 @@ function renderCapsules(){
           <span class="capsule-name">${esc(capsule.name)}</span>
           ${capsule.description ? `<span class="capsule-desc">${esc(capsule.description)}</span>` : ''}
         </div>
-        <button class="btn small secondary capsule-edit-btn" onclick='event.stopPropagation();openCapsuleEditor(${JSON.stringify(capsule.id)})'>Edit capsule</button>
       </div>
       ${thumbs}
       ${expandedPanel}
