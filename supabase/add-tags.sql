@@ -1,5 +1,5 @@
 -- ============================================================
---  The Archive — add tags to items
+--  Wardrobe — add tags to items
 --
 --  Paste this into the Supabase SQL editor and press Run.
 --  It is two statements and takes a second.

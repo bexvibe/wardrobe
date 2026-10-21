@@ -1,5 +1,5 @@
 -- ============================================================
---  The Archive — accessories belong to a combination
+--  Wardrobe — accessories belong to a combination
 --
 --  Paste this into the Supabase SQL editor and press Run.
 --  It is three statements and takes a second.

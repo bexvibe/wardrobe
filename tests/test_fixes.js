@@ -248,7 +248,8 @@ const dbTags = (p, id) => p.evaluate(i =>
     // A capsule.
     await p.click('#nav-capsules-btn'); await p.waitForTimeout(700);
     await p.click('#capsule-gallery .outfit-card'); await p.waitForTimeout(400);
-    await p.click('#capsule-gallery button:has-text("Delete")'); await p.waitForTimeout(700);
+    await p.click('#capsule-gallery button:has-text("Edit capsule")'); await p.waitForTimeout(450);
+    await p.click('#capsule-delete-btn'); await p.waitForTimeout(700);
     check('deleting a capsule does not ask', !(await asked(p)));
     check('it goes, and is offered back whole',
       await p.evaluate(()=>capsules.length) === 0 && await hasUndo(p));

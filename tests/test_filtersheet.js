@@ -285,7 +285,7 @@ const onSheet = (p, down) => p.evaluate(d=>{
       (await text(p, '#filter-sheet-clear')) === 'Clear' && !(await clearVisible(p)));
     check('the foot has the way back to the left of the See button', await p.evaluate(()=>{
       const back = document.getElementById('filter-sheet-back'), see = document.getElementById('filter-sheet-see');
-      return Boolean(back) && back.textContent.trim() === 'Filters' &&
+      return Boolean(back) && back.textContent.trim() === 'Back' &&
         back.getBoundingClientRect().right <= see.getBoundingClientRect().left + 1;
     }));
     check('and no quick-picks row, no empty note', await p.evaluate(()=>

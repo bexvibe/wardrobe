@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="color-scheme" content="light">
-<title>The Archive — Wardrobe Inventory</title>
+<title>Wardrobe Inventory</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Work+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -933,11 +933,6 @@
     border-radius:12px;
     padding:28px 24px;
   }
-  .gate-eyebrow{
-    font-family:'IBM Plex Mono', monospace;
-    font-size:11px;letter-spacing:0.14em;text-transform:uppercase;
-    color:var(--ink-soft);margin-bottom:14px;
-  }
   .gate-title{
     font-family:'Fraunces', serif;font-weight:500;font-size:22px;
     margin:0 0 8px;
@@ -1309,7 +1304,7 @@
   }
   .filter-sheet-heading{display:flex;flex-direction:column;min-width:0;}
   .filter-sheet-title{
-    font-family:'Fraunces', serif;font-size:22px;font-weight:500;line-height:1.2;
+    font-family:'Fraunces', serif;font-size:17px;font-weight:500;line-height:1.2;
   }
   /* A full thumb's worth of target. */
   .filter-sheet-clear{
@@ -1539,9 +1534,11 @@
     .capsule-gallery{grid-template-columns:repeat(2, 1fr);}
   }
   .capsule-head{
-    display:flex;align-items:baseline;justify-content:space-between;
+    display:flex;align-items:flex-start;justify-content:space-between;
     gap:10px;margin-bottom:8px;
   }
+  .capsule-edit-btn{flex:none;}
+  .sheet-title-row{display:flex;align-items:center;justify-content:space-between;gap:10px;}
   .capsule-name{font-family:'Fraunces',serif;font-weight:500;font-size:19px;}
   .capsule-desc{display:block;margin-top:2px;font-size:13px;line-height:1.35;color:var(--ink-soft);}
   /* The leftovers, at the end of the page rather than mixed in with the
@@ -1616,8 +1613,6 @@
 
 <div class="gate" id="gate">
   <div class="gate-card">
-    <div class="gate-eyebrow">The Archive</div>
-
     <div id="gate-login" style="display:none;">
       <h2 class="gate-title">Welcome back</h2>
       <div class="gate-pw">
@@ -2887,7 +2882,7 @@ function renderFilterFooter(){
   const back = filterPage
     ? `<button class="btn secondary" id="filter-sheet-back" type="button" onclick="closeFilterPage()">
          <svg class="back-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>Filters</button>`
+              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>Back</button>`
     : '';
   el.innerHTML = `${back}<button class="btn" id="filter-sheet-see" type="button" onclick="closeFilterSheet()"><span>${label}</span></button>`;
   if(lastFilterCount !== null && lastFilterCount !== n && filterSheetOpen()){
@@ -4892,10 +4887,6 @@ function renderCapsules(){
             <span class="piece-go" aria-hidden="true">›</span>
           </div>
         `).join('')}
-        <div class="modal-actions">
-          <button class="btn small secondary" onclick='event.stopPropagation();openCapsuleEditor(${JSON.stringify(capsule.id)})'>Edit capsule</button>
-          <button class="btn small secondary" onclick='event.stopPropagation();archiveCapsule(${JSON.stringify(capsule.id)})'>Delete</button>
-        </div>
       </div>
     ` : '';
 
@@ -4905,6 +4896,7 @@ function renderCapsules(){
           <span class="capsule-name">${esc(capsule.name)}</span>
           ${capsule.description ? `<span class="capsule-desc">${esc(capsule.description)}</span>` : ''}
         </div>
+        <button class="btn small secondary capsule-edit-btn" onclick='event.stopPropagation();openCapsuleEditor(${JSON.stringify(capsule.id)})'>Edit capsule</button>
       </div>
       ${thumbs}
       ${expandedPanel}
@@ -4948,7 +4940,10 @@ function openCapsuleEditor(id, seedItemIds){
   modal.innerHTML = `
     <div class="sheet-grip"></div>
     <div class="modal-body has-footer">
-      <div class="modal-name">${capsule ? 'Edit capsule' : 'New capsule'}</div>
+      <div class="sheet-title-row">
+        <div class="modal-name">${capsule ? 'Edit capsule' : 'New capsule'}</div>
+        ${capsule ? `<button class="btn small secondary" id="capsule-delete-btn" type="button" onclick="deleteCapsuleFromEditor()">Delete capsule</button>` : ''}
+      </div>
       <div class="form-grid">
         <label>Name
           <input type="text" id="capsule-name-input"
@@ -5071,6 +5066,13 @@ function closeCapsuleEditor(){
     return;
   }
   discardCapsuleEditor();
+}
+
+// Delete is in the editor's head, top right. The toast's Undo is the way back,
+// so it does not ask first, and the draft is not worth stopping over.
+async function deleteCapsuleFromEditor(){
+  if(!capsuleDraft || !capsuleDraft.id) return;
+  if(await archiveCapsule(capsuleDraft.id)) discardCapsuleEditor();
 }
 
 function discardCapsuleEditor(){

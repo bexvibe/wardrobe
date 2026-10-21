@@ -1,5 +1,5 @@
 -- ============================================================
---  The Archive — one-shot setup
+--  Wardrobe — one-shot setup
 --
 --  GENERATED FILE — do not edit by hand.
 --  Regenerate with: node scripts/generate-setup-sql.js
@@ -15,7 +15,7 @@
 -- ============================================================
 
 -- ============================================================
---  The Archive — wardrobe database schema
+--  Wardrobe — wardrobe database schema
 --  Run this once in the Supabase SQL editor (see SETUP.md).
 --  Safe to re-run: every statement is idempotent.
 -- ============================================================
@@ -248,7 +248,7 @@ update public.saved_outfits
 
 
 -- ============================================================
---  The Archive — initial inventory
+--  Wardrobe — initial inventory
 --
 --  GENERATED FILE — do not edit by hand.
 --  Regenerate with: node scripts/generate-seed.js

@@ -291,7 +291,8 @@ const db = p => p.evaluate(()=>({
     });
     await p.click('#nav-capsules-btn'); await p.waitForTimeout(500);
     await expandCard(p);
-    await p.click('#capsule-gallery button:has-text("Delete")'); await p.waitForTimeout(700);
+    await p.click('#capsule-gallery button:has-text("Edit capsule")'); await p.waitForTimeout(450);
+    await p.click('#capsule-delete-btn'); await p.waitForTimeout(700);
     check('deleting does not ask first',
       await p.evaluate(()=>!Array.from(document.querySelectorAll('button'))
         .some(x=>/Yes, delete/.test(x.textContent))));

@@ -300,8 +300,8 @@ const confirmText = p => p.evaluate(()=>({
       JSON.stringify(f));
     await p.evaluate(()=>openFilterPage('Tops')); await p.waitForTimeout(500);
     f = await foot();
-    check('a category page adds Filters, quiet and on the left, beside See',
-      f.labels.length === 2 && f.labels[0] === 'Filters' && f.quietFirst && /^See /.test(f.labels[1]),
+    check('a category page adds Back, quiet and on the left, beside See',
+      f.labels.length === 2 && f.labels[0] === 'Back' && f.quietFirst && /^See /.test(f.labels[1]),
       f.labels.join(' / '));
     check('and still no arrow at the top', !f.arrow && f.headFirst === 'filter-sheet-heading', JSON.stringify(f));
     await p.evaluate(()=>closeFilterSheet()); await p.waitForTimeout(400);

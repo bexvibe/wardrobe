@@ -1,5 +1,5 @@
 -- ============================================================
---  The Archive — initial inventory
+--  Wardrobe — initial inventory
 --
 --  GENERATED FILE — do not edit by hand.
 --  Regenerate with: node scripts/generate-seed.js

@@ -1,5 +1,5 @@
 -- ============================================================
---  The Archive — accessories on a saved outfit
+--  Wardrobe — accessories on a saved outfit
 --
 --  Paste this into the Supabase SQL editor and press Run.
 --  It is two statements and takes a second.

@@ -1,5 +1,5 @@
 -- ============================================================
---  The Archive — wardrobe database schema
+--  Wardrobe — wardrobe database schema
 --  Run this once in the Supabase SQL editor (see SETUP.md).
 --  Safe to re-run: every statement is idempotent.
 -- ============================================================

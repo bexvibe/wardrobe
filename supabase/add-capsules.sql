@@ -1,5 +1,5 @@
 -- ============================================================
---  The Archive — add capsules
+--  Wardrobe — add capsules
 --
 --  Already applied to the live database. This file exists so a
 --  rebuilt database gets the same thing, and so the change is

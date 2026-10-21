@@ -219,7 +219,8 @@ async function holdFirstTile(p){
 
     // The whole capsule. There is no archive page for capsules, so the
     // toast is the only way back.
-    await p.click('#capsule-gallery button:has-text("Delete")'); await p.waitForTimeout(700);
+    await p.click('#capsule-gallery button:has-text("Edit capsule")'); await p.waitForTimeout(450);
+    await p.click('#capsule-delete-btn'); await p.waitForTimeout(700);
     check('deleting a capsule offers it back', (await toast(p)).undo);
     check('it is gone meanwhile', (await p.evaluate(()=>capsules.length)) === 0);
 

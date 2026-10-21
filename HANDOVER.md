@@ -1,4 +1,4 @@
-# The Archive — handover
+# Wardrobe — handover
 
 Written 27 Sep 2026. The thumb-reach work is done, green and pushed —
 both passes. What is left is listed under "Still open".

@@ -1,5 +1,5 @@
 // ============================================================
-//  The Archive — connection settings
+//  Wardrobe — connection settings
 //
 //  Fill these two values in after creating your Supabase project.
 //  Step-by-step instructions are in SETUP.md.

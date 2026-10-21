@@ -1,5 +1,5 @@
 -- ============================================================
---  The Archive — add a short description to capsules
+--  Wardrobe — add a short description to capsules
 --
 --  Safe to run more than once.
 -- ============================================================

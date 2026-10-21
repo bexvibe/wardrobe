@@ -13,7 +13,7 @@ const ROOT = path.join(__dirname, '..');
 const read = (f) => fs.readFileSync(path.join(ROOT, 'supabase', f), 'utf8');
 
 const header = `-- ============================================================
---  The Archive — one-shot setup
+--  Wardrobe — one-shot setup
 --
 --  GENERATED FILE — do not edit by hand.
 --  Regenerate with: node scripts/generate-setup-sql.js
