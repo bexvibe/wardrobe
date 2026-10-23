@@ -45,7 +45,6 @@ async function newPage(browser, { legacy } = {}) {
     await page.addInitScript((state) => {
       localStorage.setItem('wardrobe-deleted-ids', JSON.stringify(state.deleted));
       localStorage.setItem('wardrobe-favorite-outfits', JSON.stringify(state.favorites));
-      localStorage.setItem('wardrobe-hidden-combos', JSON.stringify(state.hidden));
     }, legacy);
   }
   return page;
@@ -197,7 +196,6 @@ async function login(page) {
       deleted: ['seed_3', 'seed_4'],
       favorites: [{ key: 'tb|seed_22|seed_11|none|none|none', base: 'topbottom',
                     top: 'seed_22', bottom: 'seed_11', dress: null, jumper: null, jacket: null, shoe: null }],
-      hidden: ['tb|seed_0|seed_1|none|none|none'],
     };
     const page = await newPage(browser, { legacy });
     await page.goto(BASE + '/index.html');
@@ -208,14 +206,12 @@ async function login(page) {
     const migrated = await page.evaluate(() => ({
       archived: window.__WARDROBE_STATE.items.filter((r) => r.archived_at).map((r) => r.id),
       outfits: window.__WARDROBE_STATE.saved_outfits.length,
-      hidden: window.__WARDROBE_STATE.hidden_combos.length,
       flag: Boolean(localStorage.getItem('wardrobe-migrated-to-supabase')),
       legacyKept: Boolean(localStorage.getItem('wardrobe-deleted-ids')),
     }));
     check('legacy deletes become archived items',
       migrated.archived.length === 2 && migrated.archived.includes('seed_3'), migrated.archived.join(','));
     check('legacy favourites migrate', migrated.outfits === 1);
-    check('legacy hidden combos migrate', migrated.hidden === 1);
     check('migration flag is set', migrated.flag);
     check('old localStorage kept as a backup', migrated.legacyKept);
     check('saved tab shows the migrated outfit',

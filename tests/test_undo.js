@@ -164,25 +164,6 @@ async function holdFirstTile(p){
     await p.close();
   }
 
-  // ---- 5. Hiding a combination — the one with no other way back ----
-  {
-    const p=await open(b);
-    await p.click('#nav-outfits-btn'); await p.waitForTimeout(900);
-    await p.click('.outfit-gallery .outfit-card'); await p.waitForTimeout(400);
-    const key = await p.evaluate(()=>expandedComboKey);
-    await p.click('button:has-text("Hide this combo")'); await p.waitForTimeout(600);
-    check('hiding offers the combination back', (await toast(p)).undo);
-    check('it is hidden meanwhile', await p.evaluate(k=>hiddenCombos.includes(k), key));
-
-    await tapUndo(p);
-    check('undo unhides it', await p.evaluate(k=>!hiddenCombos.includes(k), key));
-    check('and the row is gone from hidden_combos',
-      await p.evaluate(k=>!window.__WARDROBE_STATE.hidden_combos.some(r=>r.combo_key===k), key));
-    check('the combination is generated again',
-      await p.evaluate(k=>outfitDisplayed.some(c=>comboKey(c)===k), key));
-    await p.close();
-  }
-
   // ---- 6. Capsules: a piece out, and a whole capsule out ----
   {
     const p=await open(b);
@@ -200,7 +181,7 @@ async function holdFirstTile(p){
     // The per-row Remove button is gone; a piece leaves a capsule by being
     // deselected in the editor, so that save is what has to be undoable.
     await p.click('#capsule-gallery .outfit-card'); await p.waitForTimeout(400);
-    await p.click('#capsule-gallery button:has-text("Edit capsule")'); await p.waitForTimeout(450);
+    await p.click('#capsule-gallery button[aria-label="Edit capsule"]'); await p.waitForTimeout(450);
     await p.locator('#capsule-editor-gallery .picker-tile.picker-selected').first().click();
     await p.waitForTimeout(200);
     await p.click('#capsule-save-btn'); await p.waitForTimeout(700);
@@ -219,7 +200,7 @@ async function holdFirstTile(p){
 
     // The whole capsule. There is no archive page for capsules, so the
     // toast is the only way back.
-    await p.click('#capsule-gallery button:has-text("Edit capsule")'); await p.waitForTimeout(450);
+    await p.click('#capsule-gallery button[aria-label="Edit capsule"]'); await p.waitForTimeout(450);
     await p.click('#capsule-delete-btn'); await p.waitForTimeout(700);
     check('deleting a capsule offers it back', (await toast(p)).undo);
     check('it is gone meanwhile', (await p.evaluate(()=>capsules.length)) === 0);

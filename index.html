@@ -716,7 +716,18 @@
   @media (prefers-reduced-motion: reduce){
     .outfit-expanded-panel,.outfit-expanded-panel.closing{animation:none;}
   }
-  .panel-actions{margin:0 0 10px;}
+  .panel-actions{margin:0 0 4px;}
+  /* A 48px target round a 24px glyph. The negative margins put the glyph, not
+     the target, on the edge of the content it lines up with. */
+  .icon-btn{
+    flex:none;width:48px;height:48px;
+    display:inline-flex;align-items:center;justify-content:center;
+    background:none;border:none;border-radius:50%;padding:0;
+    color:var(--ink);cursor:pointer;
+  }
+  .icon-btn:hover{background:var(--accent-soft);}
+  .panel-actions .icon-btn{margin:-6px 0 -6px -12px;}
+  .sheet-title-row .icon-btn{margin:-8px -12px -8px 0;}
   .outfit-collapse-btn{
     font-family:'Work Sans',sans-serif;
     font-size:12px;font-weight:600;
@@ -1967,7 +1978,6 @@ let ITEMS = [];
 let activeTab = 'All';
 let pendingPhotoItemId = null;
 let appMode = 'inventory';
-let hiddenCombos = [];
 let favoriteOutfits = [];
 let expandedSavedKey = null;
 let capsules = [];
@@ -2437,6 +2447,7 @@ const SHEETS = {
   // Only ever left, never returned to: their drafts do not survive the trip.
   capsule:   { backdrop: 'modal-backdrop', draw: null },
   builder:   { backdrop: 'modal-backdrop', draw: null },
+  extras:    { backdrop: 'modal-backdrop', draw: null },
 };
 
 let sheetTrail = [];
@@ -2457,6 +2468,13 @@ function showSheetBackdrop(which){
 function hideAllSheets(){
   SHEET_BACKDROPS.forEach(id =>
     document.getElementById(id)?.classList.remove('open'));
+  // A piece's sheet draws its own list of outfits, into the same generator
+  // and list the page uses. With no sheet left the page has to take them
+  // back: otherwise tapping an outfit on it expands one that is not in the
+  // list it redraws from, and nothing happens.
+  const sheetHadOutfits = outfitRenderContext === 'modal';
+  outfitRenderContext = 'tab';
+  if(sheetHadOutfits && appMode === 'outfits') resetOutfitResults();
   // Whatever the last sheet meant by closing goes with it, so the next one
   // cannot inherit a gesture it never asked for.
   allowSheetDrag(null);
@@ -3928,7 +3946,6 @@ function outfitExpandedPanelHtml(combo, key, opts){
       <div class="outfit-expanded-panel">
         <div class="modal-actions panel-actions">
           ${extrasAvailable ? `<button class="btn small secondary" onclick='event.stopPropagation();openOutfitExtrasPicker(${JSON.stringify(key)})'>${worn ? 'Edit accessories' : '+ Add accessories'}</button>` : ''}
-          ${o.canHide ? `<button class="btn small secondary" onclick='event.stopPropagation();hideCombo(${JSON.stringify(key)})'>Hide this combo</button>` : ''}
         </div>
         <button class="outfit-collapse-btn" onclick='event.stopPropagation();${collapse}'>Collapse ↑</button>
         ${comboPieces(combo).map(p => `
@@ -3956,7 +3973,7 @@ function renderHero(){
     <div class="outfit-card hero-card ${isExpanded ? 'expanded' : ''}" data-key="hero" onclick='toggleExpandCombo(${JSON.stringify(key)})'>
       ${faveHeartHtml(key)}
       <div class="outfit-thumbs">${outfitThumbsHtml(heroCombo)}</div>
-      ${isExpanded ? outfitExpandedPanelHtml(heroCombo, key, {canHide:true}) : ''}
+      ${isExpanded ? outfitExpandedPanelHtml(heroCombo, key) : ''}
     </div>`);
 }
 
@@ -3984,7 +4001,6 @@ function loadMoreOutfits(){
     guard++;
     if(next.done) break;
     const key = comboKey(next.value);
-    if(hiddenCombos.includes(key)) continue;
     if(!comboMatchesTag(next.value)) continue;
     if(levels && !faveMatches(levels.get(key) || 0, wantFave)) continue;
     outfitDisplayed.push(next.value);
@@ -4468,9 +4484,9 @@ function holdCardInPlace(scope, key, redraw){
 // An opened card jumps from one grid cell to a full-width row, so whatever
 // was under the finger moves. Floating the card's top to the top of the page
 // (below any sticky bar) turns that jump into one smooth glide.
-function floatExpandedCardToTop(scope){
+function floatExpandedCardToTop(scope, within){
   requestAnimationFrame(() => {
-    const card = document.querySelector(`${scope} .outfit-card.expanded`);
+    const card = document.querySelector(`${scope} .outfit-card.expanded${within ? ' ' + within : ''}`);
     if(!card) return;
     let offset = 8;
     document.querySelectorAll('.stuck-row').forEach(el => {
@@ -4504,9 +4520,8 @@ function toggleExpandSaved(key){
 // hand, here.
 //
 // They belong to the combination rather than to a kept outfit. There are
-// three things you can do to a combination: keep it, hide it, and dress
-// it, and all three are now a mark against a combo_key in a table of their
-// own. So dressing something decides nothing about keeping it, and the
+// two things you can do to a combination, keep it and dress it, and each is
+// a mark against a combo_key in a table of its own. So dressing something decides nothing about keeping it, and the
 // same outfit wears the same hat wherever you meet it.
 //
 // Nothing here touches combo_key, which stays the identity of the clothing
@@ -4525,8 +4540,7 @@ function extraTabs(){
 let extrasPickerTab = null;
 
 // combo_key -> the ids put on it. A combination with nothing on it has no
-// row at all rather than a row holding an empty list, the same bargain
-// hidden_combos makes.
+// row at all rather than a row holding an empty list.
 let outfitExtras = {};
 
 function extrasFor(key){ return outfitExtras[key] || []; }
@@ -4566,6 +4580,7 @@ function toggleOutfitExtra(key, itemId){
 let extrasDraft = null;   // { key, ids:Set, baseline }
 
 function openOutfitExtrasPicker(key){
+  pushSheet({ sheet: 'extras', id: null });
   const tabs = extraTabs();
   extrasPickerTab = tabs.includes(extrasPickerTab) ? extrasPickerTab : (tabs[0] || null);
   extrasDraft = { key, ids: new Set(extrasFor(key)) };
@@ -4701,10 +4716,6 @@ function savedOutfitInCapsules(rec){
 }
 
 function savedOutfitMatches(rec){
-  // Hidden means hidden. It used to mean hidden from the generator only,
-  // so a combination you had dismissed went on sitting on the other half
-  // of the switch — the one place you were sure to look.
-  if(hiddenCombos.includes(rec.key)) return false;
   return savedOutfitMatchesTag(rec) && savedOutfitMatchesSlots(rec) && savedOutfitInCapsules(rec);
 }
 
@@ -4876,7 +4887,7 @@ function renderCapsules(){
     const expandedPanel = isExpanded ? `
       <div class="outfit-expanded-panel">
         <div class="modal-actions panel-actions">
-          <button class="btn small secondary" onclick='event.stopPropagation();openCapsuleEditor(${JSON.stringify(capsule.id)})'>Edit capsule</button>
+          <button class="icon-btn" aria-label="Edit capsule" onclick='event.stopPropagation();openCapsuleEditor(${JSON.stringify(capsule.id)})'><svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor" aria-hidden="true"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></button>
         </div>
         <button class="outfit-collapse-btn" onclick='event.stopPropagation();toggleExpandCapsule(${JSON.stringify(capsule.id)})'>Collapse ↑</button>
         ${pieces.map(p => `
@@ -4910,7 +4921,9 @@ function toggleExpandCapsule(id){
   withPanelCollapse(expandedCapsuleId !== null, '#capsule-gallery', () => {
     expandedCapsuleId = (expandedCapsuleId === id) ? null : id;
     holdCardInPlace('#capsule-gallery', id, renderCapsules);
-    if(expandedCapsuleId) floatExpandedCardToTop('#capsule-gallery');
+    // A capsule's pieces are what you opened it to read, so the list goes to
+    // the top of the page and the thumbnails above it scroll away.
+    if(expandedCapsuleId) floatExpandedCardToTop('#capsule-gallery', '.outfit-expanded-panel');
   });
 }
 
@@ -4944,7 +4957,7 @@ function openCapsuleEditor(id, seedItemIds){
     <div class="modal-body has-footer">
       <div class="sheet-title-row">
         <div class="modal-name">${capsule ? 'Edit capsule' : 'New capsule'}</div>
-        ${capsule ? `<button class="btn small secondary" id="capsule-delete-btn" type="button" onclick="deleteCapsuleFromEditor()">Delete capsule</button>` : ''}
+        ${capsule ? `<button class="icon-btn" id="capsule-delete-btn" type="button" aria-label="Delete capsule" onclick="deleteCapsuleFromEditor()"><svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor" aria-hidden="true"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>` : ''}
       </div>
       <div class="form-grid">
         <label>Name
@@ -5125,33 +5138,6 @@ async function submitCapsuleEditor(){
 
 let expandedComboKey = null;
 
-async function hideCombo(key){
-  const { error } = await client()
-    .from('hidden_combos')
-    .upsert({ combo_key: key }, { onConflict: 'combo_key' });
-  if(error){ dbFail(error, 'Could not hide — check connection'); return; }
-
-  if(!hiddenCombos.includes(key)) hiddenCombos.push(key);
-  outfitDisplayed = outfitDisplayed.filter(c => comboKey(c) !== key);
-  if(expandedComboKey === key) expandedComboKey = null;
-  renderOutfits();
-  showToast('Combo hidden', () => unhideCombo(key));
-}
-
-// Hiding is the one action with nothing on screen to reverse it afterwards —
-// a hidden combination is gone from every list — so Undo is the way back.
-async function unhideCombo(key){
-  const { error } = await client()
-    .from('hidden_combos')
-    .delete().eq('combo_key', key);
-  if(error){ dbFail(error, 'Could not unhide — check connection'); return; }
-
-  hiddenCombos = hiddenCombos.filter(k => k !== key);
-  // The combination has to be generated again to come back into the list.
-  resetOutfitResults();
-  showToast('Combo back');
-}
-
 function toggleExpandCombo(key){
   const scope = outfitRenderContext === 'modal' ? '#m-outfit-gallery' : '#outfits-view';
   withPanelCollapse(expandedComboKey !== null, scope, () => {
@@ -5226,7 +5212,7 @@ function renderOutfits(){
     const key = comboKey(combo);
     const isExpanded = expandedComboKey === key;
     const thumbs = outfitThumbsHtml(combo);
-    const expandedPanel = isExpanded ? outfitExpandedPanelHtml(combo, key, {canHide:true}) : '';
+    const expandedPanel = isExpanded ? outfitExpandedPanelHtml(combo, key) : '';
 
     return `<div class="outfit-card ${isExpanded ? 'expanded' : ''}" data-key="${esc(key)}" onclick='toggleExpandCombo(${JSON.stringify(key)})'>
       ${faveHeartHtml(key)}
@@ -5635,10 +5621,9 @@ async function hydratePhotoUrls(items){
 
 async function loadAll(){
   const db = client();
-  const [itemsRes, outfitsRes, hiddenRes, extrasRes, capsulesRes, membersRes] = await Promise.all([
+  const [itemsRes, outfitsRes, extrasRes, capsulesRes, membersRes] = await Promise.all([
     db.from('items').select('*').order('created_at', { ascending: true }),
     db.from('saved_outfits').select('*').is('archived_at', null).order('created_at', { ascending: true }),
-    db.from('hidden_combos').select('combo_key'),
     db.from('outfit_extras').select('combo_key, extra_ids'),
     db.from('capsules').select('*').is('archived_at', null).order('created_at', { ascending: true }),
     db.from('capsule_items').select('*').order('created_at', { ascending: true })
@@ -5646,7 +5631,6 @@ async function loadAll(){
 
   if(itemsRes.error) throw itemsRes.error;
   if(outfitsRes.error) throw outfitsRes.error;
-  if(hiddenRes.error) throw hiddenRes.error;
 
   tagsAvailable = itemsRes.data.length > 0 &&
     Object.prototype.hasOwnProperty.call(itemsRes.data[0], 'tags');
@@ -5668,7 +5652,6 @@ async function loadAll(){
   ITEMS = all.filter(i => !i.archivedAt);
   ARCHIVED = all.filter(i => i.archivedAt);
   favoriteOutfits = outfitsRes.data.map(rowToFavorite);
-  hiddenCombos = hiddenRes.data.map(r => r.combo_key);
 
   // The two capsule queries are allowed to fail together: everything else
   // on this page still works without them.
@@ -5917,12 +5900,11 @@ function readLegacyState(){
     catch(e){ return JSON.parse(fallback); }
   };
   const deleted = read('wardrobe-deleted-ids', '[]');
-  const hidden = read('wardrobe-hidden-combos', '[]');
   const favorites = read('wardrobe-favorite-outfits', '[]');
   const photos = read('wardrobe-photo-overrides', '{}');
   return {
-    deleted, hidden, favorites, photos,
-    any: deleted.length || hidden.length || favorites.length || Object.keys(photos).length
+    deleted, favorites, photos,
+    any: deleted.length || favorites.length || Object.keys(photos).length
   };
 }
 
@@ -5954,12 +5936,6 @@ async function runLegacyMigration(){
       .update({ archived_at: new Date().toISOString() })
       .in('id', toArchive);
     if(!error) done.push(`${toArchive.length} archived`);
-  }
-
-  if(legacy.hidden.length){
-    const { error } = await db.from('hidden_combos')
-      .upsert(legacy.hidden.map(k => ({ combo_key: k })), { onConflict: 'combo_key' });
-    if(!error) done.push(`${legacy.hidden.length} hidden`);
   }
 
   const validFavorites = legacy.favorites.filter(f => f && f.key && f.base);

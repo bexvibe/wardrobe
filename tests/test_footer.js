@@ -178,7 +178,7 @@ async function assertPattern(p, scope, label, name){
       await p.evaluate(()=>capsules.some(c=>c.name==='Footer Capsule')));
 
     await p.click('#capsule-gallery .outfit-card'); await p.waitForTimeout(400);
-    await p.click('#capsule-gallery button:has-text("Edit capsule")'); await p.waitForTimeout(600);
+    await p.click('#capsule-gallery button[aria-label="Edit capsule"]'); await p.waitForTimeout(600);
     await assertPattern(p, '#modal', 'Save capsule', 'edit capsule');
     await p.close();
   }

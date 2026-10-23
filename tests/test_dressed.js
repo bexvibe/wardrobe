@@ -1,8 +1,7 @@
 // Accessories belong to a combination, not to a kept outfit.
 //
-// There are three things you can do to a combination: keep it, hide it,
-// and dress it. The first two were always marks against a combo_key in a
-// table of their own; the third used to be a column on the kept outfit,
+// There are two things you can do to a combination: keep it and dress it.
+// The first was always a mark against a combo_key in a table of its own; the other used to be a column on the kept outfit,
 // which meant you could only dress something you had already decided to
 // keep — and meant the same outfit looked different depending on which
 // page you met it on.
@@ -135,6 +134,42 @@ const rows = p => p.evaluate(()=>window.__WARDROBE_STATE.outfit_extras.slice());
     await p.close();
   }
 
+  // ---- 4b. Dressing an outfit does not stop the page expanding outfits ----
+  {
+    const p=await open(b);
+    const first = await dressFirst(p);
+    await p.locator('#outfit-gallery .outfit-card').nth(1).click(); await p.waitForTimeout(700);
+    check('another outfit still expands after dressing one',
+      await p.evaluate(k=>Boolean(expandedComboKey) && expandedComboKey !== k, first), await p.evaluate(()=>expandedComboKey));
+    await p.close();
+  }
+  {
+    // From inside a piece's sheet: saving goes back to the sheet, and
+    // leaving the sheet leaves the page drawing its own outfits.
+    const p=await open(b);
+    const pieceId = await p.evaluate(()=>comboPieces(outfitDisplayed[0])[0].id);
+    await p.evaluate(id=>openModal(id), pieceId); await p.waitForTimeout(1500);
+    await p.click('#m-outfit-gallery .outfit-card'); await p.waitForTimeout(700);
+    await p.click('#m-outfit-gallery .outfit-card.expanded .modal-actions button:has-text("accessories")');
+    await p.waitForTimeout(700);
+    await p.click('#extras-gallery .picker-tile'); await p.waitForTimeout(400);
+    await p.click('#extras-save'); await p.waitForTimeout(900);
+    check('saving accessories returns to the piece sheet',
+      await p.evaluate(()=>Boolean(document.getElementById('m-outfit-gallery')) &&
+        document.getElementById('modal-backdrop').classList.contains('open')));
+    await leaveSheet(p, {settle:700});
+    check('the page draws its own outfits again once the sheet is gone',
+      await p.evaluate(()=>outfitRenderContext === 'tab'), await p.evaluate(()=>outfitRenderContext));
+    // Not the one that was open in the sheet: that key is still held, and
+    // tapping it would be a collapse.
+    const stale = await p.evaluate(()=>expandedComboKey);
+    await p.locator(`#outfit-gallery .outfit-card:not([data-key="${stale}"])`).first().click(); await p.waitForTimeout(700);
+    check('and an outfit on the page expands',
+      await p.evaluate(()=>document.querySelectorAll('#outfit-gallery .outfit-card.expanded').length === 1),
+      await p.evaluate(()=>document.querySelectorAll('#outfit-gallery .outfit-card.expanded').length));
+    await p.close();
+  }
+
   // ---- 5. A database without the table says nothing about accessories ----
   {
     const p=await open(b, 'window.__NO_EXTRAS=true;');
@@ -144,7 +179,7 @@ const rows = p => p.evaluate(()=>window.__WARDROBE_STATE.outfit_extras.slice());
     check('so no accessories button is offered',
       !(await p.isVisible('.outfit-card.expanded .modal-actions button:has-text("accessories")')));
     check('while the rest of the card is untouched',
-      await p.isVisible('.outfit-card.expanded .modal-actions button:has-text("Hide this combo")'));
+      await p.isVisible('.outfit-card.expanded .outfit-collapse-btn'));
     await p.close();
   }
 

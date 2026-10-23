@@ -73,7 +73,7 @@ async function open(b){
                                       await toFaves(p); }],
     ['capsules',           async()=>{ await p.click('#nav-capsules-btn'); }],
     ['a capsule open',     async()=>{ await p.click('#capsule-gallery .outfit-card'); }],
-    ['the capsule editor', async()=>{ await p.click('#capsule-gallery button:has-text("Edit capsule")'); }],
+    ['the capsule editor', async()=>{ await p.click('#capsule-gallery button[aria-label="Edit capsule"]'); }],
     ['the archive',        async()=>{ await leaveSheet(p);
                                       await p.evaluate(async()=>{ await archiveItems([ITEMS[0].id]);
                                                                   setMode('archive'); }); }],

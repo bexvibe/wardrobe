@@ -161,15 +161,14 @@ const dbTags = (p, id) => p.evaluate(i =>
         panel: Boolean(card.querySelector('.outfit-expanded-panel')),
         rows: card.querySelectorAll('.outfit-piece-row.tappable').length,
         pieces: comboPieces(heroCombo).length,
-        canHide: Boolean(Array.from(card.querySelectorAll('button'))
-          .find(x=>/Hide this combo/.test(x.textContent))),
         canCollapse: Boolean(card.querySelector('.outfit-collapse-btn')),
       };
     });
     check('tapping the lead card opens it', hero.expanded && hero.panel);
     check('it lists every piece in it, each a way to that piece',
       hero.rows === hero.pieces && hero.rows > 0, `${hero.rows} of ${hero.pieces}`);
-    check('Hide this combo is reachable from it at last', hero.canHide);
+    check('there is no Hide this combo any more',
+      await p.evaluate(()=>!Array.from(document.querySelectorAll('button')).some(x=>/Hide this combo/.test(x.textContent))));
     check('and so is the way to close it', hero.canCollapse);
 
     check('the same outfit is not also drawn in the grid below',
@@ -248,7 +247,7 @@ const dbTags = (p, id) => p.evaluate(i =>
     // A capsule.
     await p.click('#nav-capsules-btn'); await p.waitForTimeout(700);
     await p.click('#capsule-gallery .outfit-card'); await p.waitForTimeout(400);
-    await p.click('#capsule-gallery button:has-text("Edit capsule")'); await p.waitForTimeout(450);
+    await p.click('#capsule-gallery button[aria-label="Edit capsule"]'); await p.waitForTimeout(450);
     await p.click('#capsule-delete-btn'); await p.waitForTimeout(700);
     check('deleting a capsule does not ask', !(await asked(p)));
     check('it goes, and is offered back whole',
@@ -257,13 +256,6 @@ const dbTags = (p, id) => p.evaluate(i =>
     check('undo brings it back with its pieces',
       await p.evaluate(()=>capsules.length === 1 && capsules[0].itemIds.length === 2),
       String(await p.evaluate(()=>capsules.length ? capsules[0].itemIds.length : -1)));
-
-    // Hiding a combination.
-    await p.click('#nav-outfits-btn'); await p.waitForTimeout(900);
-    await p.click('#outfit-gallery .outfit-card'); await p.waitForTimeout(450);
-    await p.click('button:has-text("Hide this combo")'); await p.waitForTimeout(700);
-    check('hiding a combination does not ask', !(await asked(p)));
-    check('and offers it back', await hasUndo(p));
 
     check('nothing anywhere in the app still says "Yes, delete"',
       await p.evaluate(()=>typeof confirmArchiveCapsule === 'undefined' &&

@@ -172,30 +172,6 @@ const cards = p => p.evaluate(()=>
     await p.close();
   }
 
-  // ---- 4. Hidden means hidden ----
-  {
-    const p=await open(b);
-    await p.click('#nav-outfits-btn'); await p.waitForTimeout(1400);
-    // Hide one of the kept ones, from the generated side.
-    const key = FAVS[0].combo_key;
-    await p.evaluate(k=>hideCombo(k), key);
-    await p.waitForTimeout(800);
-    check('it is gone from the stream',
-      await p.evaluate(k=>!outfitDisplayed.some(c=>comboKey(c)===k), key));
-
-    await p.click('#nav-saved-btn'); await p.waitForTimeout(1200);
-    await p.evaluate(()=>closeFilterSheet()); await p.waitForTimeout(400);
-    check('and gone from the kept ones too', (await cards(p)) === 2, String(await cards(p)));
-    check('though it is still kept, so undoing the hiding brings it back',
-      await p.evaluate(k=>isFavorited(k), key));
-
-    await p.evaluate(k=>unhideCombo(k), key);
-    await p.waitForTimeout(900);
-    await p.evaluate(()=>renderSavedOutfits()); await p.waitForTimeout(400);
-    check('which it does', (await cards(p)) === 3, String(await cards(p)));
-    await p.close();
-  }
-
   // ---- 5. Building one is reachable from either half ----
   {
     const p=await open(b);
