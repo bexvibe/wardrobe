@@ -222,13 +222,13 @@ const db = p => p.evaluate(()=>({
       await p.evaluate(()=>Array.from(document.querySelectorAll('#capsule-gallery .outfit-piece-row'))
         .every(r=>r.classList.contains('tappable'))));
 
-    check('Edit capsule is an outlined icon-and-text button like Add accessories, above Collapse',
+    check('Edit capsule is an outlined icon-and-text button like Add accessories, just below Collapse',
       await p.evaluate(()=>{
         const e = document.querySelector('#capsule-gallery button[aria-label="Edit capsule"]');
         const c = document.querySelector('#capsule-gallery .outfit-collapse-btn');
         return e.classList.contains('secondary') && e.classList.contains('small') &&
           e.textContent.trim() === 'Edit capsule' && Boolean(e.querySelector('svg')) &&
-          e.getBoundingClientRect().bottom <= c.getBoundingClientRect().top + 1;
+          e.getBoundingClientRect().top >= c.getBoundingClientRect().bottom - 1;
       }));
     check('the items list is near the top of the page after opening, the card above it',
       await p.evaluate(()=>{
