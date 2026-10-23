@@ -138,3 +138,24 @@ survive. If the single-call route holds up, it is eight times cheaper and
 one call instead of five. If it does not, the question is whether chained
 fidelity is worth 5x the calls and a 576x864 ceiling.
 
+
+## Capsules and outfits as pages, sheets for tasks only
+
+Decided direction (from the mockup round in `mockups/capsule-outfit-sheets.html`):
+content you browse is a **page** pushed onto a stack with a back control;
+**sheets** are only for short tasks that return you where you were (filters,
+Add to capsule, Accessories, capsule editor). A sheet never opens another
+sheet; a second step happens inside the same sheet. Browser history carries
+every page and sheet, so the phone's back gesture closes a sheet first, then
+pops a page. Tapping the active tab returns to its list. This reverses the
+85% content sheets recorded in HANDOVER.md for pieces, outfits and capsules.
+
+Captured ideas to fold in:
+
+- **Flip the outfit card** to show its pieces on the back, as a quick peek
+  from the list. Tap still opens the page; the flip gets its own small
+  control. Reduced motion gets a crossfade.
+- **Empty accessory slots on the outfit.** Dashed placeholders with a + for
+  each accessory type (bag, belt, jewellery, hat). Tapping one opens the
+  accessory picker sheet. Shown on the outfit page and saved outfits, not
+  on every generated card.
