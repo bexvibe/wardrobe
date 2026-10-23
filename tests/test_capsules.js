@@ -24,6 +24,7 @@ async function open(b, opts){
   const pre = [
     `window.__SEED_ITEMS=${seed};`,
     o.noCapsules ? 'window.__NO_CAPSULES=true;' : '',
+    o.failOnce ? `window.__FAIL_ONCE=${JSON.stringify(o.failOnce)};` : '',
     o.capsules ? `window.__SEED_CAPSULES=${JSON.stringify(o.capsules)};` : '',
     o.members ? `window.__SEED_CAPSULE_ITEMS=${JSON.stringify(o.members)};` : '',
   ].join('');
@@ -359,6 +360,15 @@ const db = p => p.evaluate(()=>({
       (await shown(p)) === 83);
     check('and Capsules stays out of the nav rather than leading nowhere',
       !(await p.isVisible('#nav-capsules-btn')));
+    await p.close();
+  }
+
+  {
+    // One dropped request on first load must not cost you the tab.
+    const p=await open(b, {failOnce:{capsules:1}});
+    await p.waitForTimeout(2500);
+    check('a failed capsule request on load is asked again, and Capsules is there',
+      await p.isVisible('#nav-capsules-btn'));
     await p.close();
   }
 

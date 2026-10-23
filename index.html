@@ -5619,15 +5619,40 @@ async function hydratePhotoUrls(items){
   });
 }
 
+// A missing table is a fact about the database; anything else is the network
+// having a bad moment. Only the second is worth asking again — and it matters,
+// because one failed request here used to take the Capsules tab away for the
+// whole visit, which looked like it sometimes just did not load.
+function capsuleTablesMissing(err){
+  if(!err) return false;
+  return ['42P01', 'PGRST205'].includes(err.code) ||
+    /does not exist|schema cache/i.test(err.message || '');
+}
+
+async function fetchCapsuleRows(db){
+  let result;
+  for(let attempt = 0; attempt < 3; attempt++){
+    if(attempt) await new Promise(r => setTimeout(r, 600 * attempt));
+    const [capsulesRes, membersRes] = await Promise.all([
+      db.from('capsules').select('*').is('archived_at', null).order('created_at', { ascending: true }),
+      db.from('capsule_items').select('*').order('created_at', { ascending: true })
+    ]);
+    result = { capsulesRes, membersRes };
+    const err = capsulesRes.error || membersRes.error;
+    if(!err || capsuleTablesMissing(err)) break;
+  }
+  return result;
+}
+
 async function loadAll(){
   const db = client();
-  const [itemsRes, outfitsRes, extrasRes, capsulesRes, membersRes] = await Promise.all([
+  const [itemsRes, outfitsRes, extrasRes, capsuleRows] = await Promise.all([
     db.from('items').select('*').order('created_at', { ascending: true }),
     db.from('saved_outfits').select('*').is('archived_at', null).order('created_at', { ascending: true }),
     db.from('outfit_extras').select('combo_key, extra_ids'),
-    db.from('capsules').select('*').is('archived_at', null).order('created_at', { ascending: true }),
-    db.from('capsule_items').select('*').order('created_at', { ascending: true })
+    fetchCapsuleRows(db)
   ]);
+  const { capsulesRes, membersRes } = capsuleRows;
 
   if(itemsRes.error) throw itemsRes.error;
   if(outfitsRes.error) throw outfitsRes.error;

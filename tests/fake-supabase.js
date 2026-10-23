@@ -95,6 +95,13 @@ if(window.__FILTERS_OPEN_BY_DEFAULT === undefined) window.__FILTERS_OPEN_BY_DEFA
 
       function execute() {
         try {
+          // __FAIL_ONCE = { table: n } makes the first n requests against a
+          // table fail the way a dropped connection does, then recover.
+          const fails = window.__FAIL_ONCE;
+          if (fails && fails[tableName] > 0) {
+            fails[tableName]--;
+            return { data: null, error: { message: 'TypeError: Failed to fetch' } };
+          }
           // A table that was never created rejects everything, the way a
           // real Postgres does before its migration has been run.
           if (!rows()) {
