@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Wear Tracking Mockup</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{--page:#F2F2F2;--surface:#fff;--line:#DCDCDC;--soft:#E7E7E7;--ink:#121212;--ink-soft:#6E6E6E;--brand:#756694;--tint:#F1ECF8;--ok:#2E7D5B;
+    --bg:#FAFAF9;--fg:#171717;--muted:#66666A;--rule:#E2E2E0;}
+  @media (prefers-color-scheme:dark){:root{--bg:#121213;--fg:#EDEDEB;--muted:#9A9AA0;--rule:#2C2C2F;}}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 'Work Sans',system-ui,sans-serif;padding:32px 16px 64px}
+  .wrap{max-width:1100px;margin:0 auto}
+  h1,h2{font-family:'Fraunces',Georgia,serif;font-weight:400;margin:0}
+  h1{font-size:34px}h2{font-size:22px;margin-bottom:4px}
+  .lead{color:var(--muted);max-width:62ch;margin:8px 0 36px}
+  section{margin-bottom:48px;padding-top:20px;border-top:1px solid var(--rule)}
+  .note{color:var(--muted);font-size:14px;max-width:64ch;margin:0 0 6px}
+  .pros{font-size:13px;color:var(--muted);max-width:64ch;margin:0 0 18px}
+  .pros b{color:var(--fg);font-weight:600}
+  .row{display:flex;flex-wrap:wrap;gap:24px}
+  figure{margin:0}figcaption{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px}
+  .rec{display:inline-block;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;padding:2px 9px;border-radius:999px;background:var(--brand);color:#fff;vertical-align:middle;margin-left:8px;font-family:'Work Sans',sans-serif}
+
+  .phone{width:260px;height:500px;background:var(--page);border-radius:28px;border:1px solid var(--line);position:relative;overflow:hidden;
+    box-shadow:0 8px 28px rgba(0,0,0,.10);color:var(--ink)}
+  .top{padding:22px 16px 6px}
+  .top h3{font-family:'Fraunces',serif;font-weight:400;font-size:24px;margin:0}
+  .sub{font-size:12px;color:var(--ink-soft);margin-top:2px}
+  .look{margin:8px 16px;height:170px;border-radius:14px;background:linear-gradient(160deg,#e9e4f2,#f8f5fb);border:1px solid var(--line);position:relative;display:flex;align-items:center;justify-content:center;gap:8px}
+  .look i{width:46px;height:110px;border-radius:10px;background:rgba(117,102,148,.28)}
+  .look i:nth-child(2){background:rgba(117,102,148,.45);height:96px}
+  .look i:nth-child(3){background:rgba(117,102,148,.2);height:60px;width:38px}
+  .stats{display:flex;gap:6px;padding:0 16px;flex-wrap:wrap}
+  .chip{font-size:11px;font-weight:600;padding:4px 10px;border-radius:999px;background:var(--surface);border:1px solid var(--line);color:var(--ink-soft);white-space:nowrap}
+  .chip.b{background:var(--tint);border-color:transparent;color:var(--brand)}
+  .foot{position:absolute;left:0;right:0;bottom:0;padding:12px 14px 18px;background:linear-gradient(transparent,var(--page) 30%);display:flex;gap:8px;align-items:center}
+  .btn{min-height:46px;padding:0 16px;border-radius:999px;display:flex;align-items:center;justify-content:center;gap:6px;font:600 13px 'Work Sans',sans-serif;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;user-select:none;transition:transform .08s}
+  .btn:active{transform:scale(.97)}
+  .btn.pri{background:var(--brand);border-color:var(--brand);color:#fff;flex:1}
+  .btn.done{background:var(--ok);border-color:var(--ok);color:#fff;flex:1}
+  .toast{position:absolute;left:14px;right:14px;bottom:74px;background:var(--ink);color:#fff;border-radius:14px;padding:10px 14px;font-size:12px;display:flex;justify-content:space-between;align-items:center;opacity:0;transform:translateY(8px);transition:.2s;pointer-events:none}
+  .toast.on{opacity:1;transform:none;pointer-events:auto}
+  .toast u{color:#CFC4EA;font-weight:600;cursor:pointer;text-decoration:none;padding:6px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:8px 16px}
+  .card{height:104px;border-radius:12px;background:var(--surface);border:1px solid var(--line);position:relative}
+  .card i{position:absolute;inset:12px 18px 24px;border-radius:8px;background:linear-gradient(#e9e4f2,#f6f3fa)}
+  .card .wc{position:absolute;left:8px;bottom:6px;font-size:10px;font-weight:600;color:var(--ink-soft)}
+  .card .wc.hot{color:var(--brand)}
+  .card .wc.cold{color:#B3124A}
+  .card .bdg{position:absolute;top:6px;right:6px;font-size:10px;font-weight:600;padding:2px 7px;border-radius:999px;background:var(--tint);color:var(--brand)}
+  .float{position:absolute;left:0;right:0;bottom:16px;display:flex;justify-content:center;gap:8px}
+  .float .btn{min-height:44px}
+  .seg-in{margin:4px 16px 4px;display:inline-flex;gap:2px;padding:3px;background:var(--soft);border-radius:999px;font-size:12px;font-weight:600}
+  .seg-in span{padding:6px 12px;border-radius:999px;color:var(--ink-soft)}
+  .seg-in span.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.14)}
+  /* calendar */
+  .cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;padding:6px 16px;text-align:center;font-size:11px}
+  .cal .h{color:var(--ink-soft);font-weight:600}
+  .cal .d{height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:var(--surface);border:1px solid var(--line);position:relative;cursor:pointer}
+  .cal .d.w{background:var(--tint);border-color:transparent;color:var(--brand);font-weight:600}
+  .cal .d.today{outline:2px solid var(--brand)}
+  .cal .d.sel{background:var(--brand);color:#fff}
+  .cal .d.x{visibility:hidden}
+  .sheet{position:absolute;left:0;right:0;bottom:0;background:var(--surface);border-radius:22px 22px 0 0;padding:10px 16px 18px;box-shadow:0 -8px 28px rgba(0,0,0,.12)}
+  .grip{width:36px;height:4px;border-radius:2px;background:var(--soft);margin:0 auto 10px}
+  .li{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--soft);font-size:13px}
+  .li:first-of-type{border-top:0}
+  .th{width:34px;height:34px;border-radius:8px;background:linear-gradient(#e9e4f2,#f6f3fa);flex:none}
+  .li b{font-weight:600}.li small{display:block;color:var(--ink-soft);font-size:11px}
+  .li .r{margin-left:auto}
+  .step{display:flex;align-items:center;gap:2px;background:var(--soft);border-radius:999px}
+  .step span{width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-weight:600;cursor:pointer;user-select:none}
+  .step em{font-style:normal;font-weight:600;min-width:20px;text-align:center}
+  .bar{height:6px;border-radius:3px;background:var(--soft);overflow:hidden;margin-top:4px}
+  .bar i{display:block;height:100%;background:var(--brand)}
+  .tag{margin:2px 16px 0;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft)}
+</style></head><body><div class="wrap">
+<h1>Tracking wears</h1>
+<p class="lead">Five ways to count how often an outfit or a piece gets worn, from one tap to a full diary. They mix: the sensible build is probably <b>1 + 4</b> (log an outfit in one tap, pieces count themselves), with <b>3</b> as the catch-up view. Options 1 and 2 are tappable.</p>
+<div id="out"></div>
+</div>
+<script>
+const heart='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
+const look='<div class="look"><i></i><i></i><i></i></div>';
+const sections=[];
+const S=(t,d,p,body,rec)=>sections.push(`<section><h2>${t}${rec?'<span class="rec">Suggested</span>':''}</h2><p class="note">${d}</p><p class="pros">${p}</p><div class="row">${body}</div></section>`);
+const fig=(c,h)=>`<figure><figcaption>${c}</figcaption>${h}</figure>`;
+
+/* 1. wore it button */
+const p1=(n,last,done)=>`<div class="phone" data-p1 data-n="${n}"><div class="top"><h3>Linen &amp; denim</h3><div class="sub">Saved outfit</div></div>${look}
+ <div class="stats"><span class="chip b" data-c>Worn ${n}×</span><span class="chip" data-l>Last worn ${last}</span></div>
+ <div class="toast" data-t><span>Logged for today</span><u data-undo>Undo</u></div>
+ <div class="foot"><div class="btn">Edit</div><div class="btn pri" data-b>${heart} Wore it today</div></div></div>`;
+S('1. “Wore it today” button on the outfit',
+ 'The outfit sheet gets a primary button in the thumb zone. One tap adds today to its history, a toast offers Undo, and the header chips show the new count and “last worn”.',
+ '<b>Fastest.</b> One tap, no typing, easy to undo. <b>Catch:</b> only logs today, so forgetting means a gap (see 3).',
+ fig('Before / after tap',p1(6,'12 days ago'))+fig('Tap it',p1(2,'3 weeks ago')),true);
+
+/* 2. wearing this from the deal */
+const p2=()=>`<div class="phone" data-p2><div class="top"><h3>Outfits</h3><div class="sub">Dealt fresh each visit</div></div>
+ <div class="grid">${[0,1,2,3,4,5].map(i=>`<div class="card"><i></i><span class="bdg" ${i==0?'data-bd':'hidden'}>${i==0?'':''}</span></div>`).join('')}</div>
+ <div class="toast" data-t><span>Added to today</span><u data-undo>Undo</u></div>
+ <div class="float"><div class="btn pri" style="flex:none">✦ Shuffle</div><div class="btn" data-b>${heart} Wearing this</div></div></div>`;
+S('2. “Wearing this” next to Shuffle',
+ 'You usually decide while shuffling, so the log sits beside Shuffle. Tap it on the outfit you picked; the card gets a small ✓ Today badge.',
+ '<b>Zero extra navigation</b> and it matches how you already use the app. <b>Catch:</b> a third floating control crowds the bottom.',
+ fig('Outfits page',p2()));
+
+/* 3. calendar diary */
+const p3=()=>{const days=[];for(let i=1;i<=30;i++){const w=[2,3,6,9,10,13,16,17,20].includes(i);days.push(`<div class="d ${w?'w':''} ${i==12?'sel':''} ${i==4?'today':''}" ${w?'':''}>${i}</div>`)}
+ return `<div class="phone"><div class="top"><h3>Wear diary</h3><div class="sub">November · 9 days logged</div></div>
+ <div class="cal">${'MTWTFSS'.split('').map(x=>`<div class="h">${x}</div>`).join('')}<div class="d x"></div><div class="d x"></div>${days.join('')}</div>
+ <div class="sheet"><div class="grip"></div><div style="font-weight:600;font-size:13px;margin-bottom:4px">Wed 12 Nov</div>
+ <div class="li"><div class="th"></div><div><b>Linen &amp; denim</b><small>Outfit · 4 pieces</small></div><div class="r chip b">Logged</div></div>
+ <div class="li"><div class="th"></div><div><b>Add another</b><small>Outfit or single piece</small></div><div class="r btn" style="min-height:34px;padding:0 12px">+ Add</div></div></div></div>`};
+S('3. Wear diary (calendar)',
+ 'A month view where days you logged get a tint. Tap any day to add or remove what you wore, including days in the past. Reachable from a small icon on Outfits or the piece sheet.',
+ '<b>Backfills</b> forgotten days and gives you a nice history. <b>Catch:</b> a whole new screen, slower than a button, so best as the companion to 1.',
+ fig('Diary + day sheet',p3()));
+
+/* 4. pieces counts */
+const wc=[['Worn 14×','hot'],['Worn 6×',''],['Worn 0×','cold'],['Worn 3×',''],['Worn 9×','hot'],['Not worn in 90d','cold']];
+const p4=()=>`<div class="phone"><div class="top"><h3>Wardrobe</h3><div class="sub">Counts update when you log an outfit</div></div>
+ <div class="seg-in"><span>Recent</span><span class="on">Most worn</span><span>Least worn</span></div>
+ <div class="grid">${wc.slice(0,4).map(([t,c])=>`<div class="card"><i></i><span class="wc ${c}">${t}</span></div>`).join('')}</div>
+ <div class="float"><div class="btn pri" style="flex:none">✦ Shuffle</div><div class="btn">Filters</div></div></div>`;
+const p4b=()=>`<div class="phone"><div class="top"><h3>White linen shirt</h3><div class="sub">Piece</div></div>
+ <div class="look" style="height:130px"><i></i></div>
+ <div class="stats"><span class="chip b">Worn 14×</span><span class="chip">Last: 2 days ago</span></div>
+ <div style="padding:14px 16px 0;font-size:12px"><div style="display:flex;justify-content:space-between"><b>In 3 outfits</b><span class="sub" style="margin:0">wears per month</span></div>
+ ${[['Linen & denim',8],['Beach day',4],['Brunch',2]].map(([n,v])=>`<div style="margin-top:8px;display:flex;justify-content:space-between;font-size:12px"><span>${n}</span><span class="sub" style="margin:0">${v}×</span></div><div class="bar"><i style="width:${v/8*100}%"></i></div>`).join('')}</div>
+ <div class="foot"><div class="btn">Edit</div><div class="btn pri">+1 just this piece</div></div></div>`;
+S('4. Pieces count themselves',
+ 'Logging an outfit adds a wear to every piece in it. Piece cards show the count, with sort (Most / Least worn) and a “Not worn in 90 days” filter. The piece sheet shows which outfits drive the number and has a manual +1 for a piece worn on its own.',
+ '<b>Answers “what am I never wearing?”</b> without extra effort. <b>Catch:</b> counts depend on you logging outfits; manual +1 covers the rest.',
+ fig('Wardrobe grid',p4())+fig('Piece sheet',p4b()),true);
+
+/* 5. stepper */
+const p5=()=>`<div class="phone" data-p5><div class="top"><h3>Linen &amp; denim</h3><div class="sub">Saved outfit</div></div>${look}
+ <div style="margin:4px 16px;padding:12px 14px;background:var(--surface);border:1px solid var(--line);border-radius:14px;display:flex;align-items:center;justify-content:space-between">
+ <div><b style="font-size:13px">Times worn</b><div class="sub">Set it yourself</div></div>
+ <div class="step"><span data-m>−</span><em data-v>6</em><span data-pl>+</span></div></div>
+ <div class="foot"><div class="btn">Cancel</div><div class="btn pri">Save outfit</div></div></div>`;
+S('5. Plain counter (+ / −)',
+ 'No dates, just a number on the outfit or piece you can nudge. It follows the staged-edit rule: change it, then Save.',
+ '<b>Simplest to build</b> and good for importing a rough history. <b>Catch:</b> no “last worn”, no diary, no per-piece rollup.',
+ fig('Edit sheet (tappable)',p5()));
+
+document.getElementById('out').innerHTML=sections.join('');
+
+/* behaviour */
+document.querySelectorAll('[data-p1]').forEach(ph=>{
+  let n=+ph.dataset.n,on=false;const b=ph.querySelector('[data-b]'),t=ph.querySelector('[data-t]'),c=ph.querySelector('[data-c]'),l=ph.querySelector('[data-l]');const lastTxt=l.textContent;let to;
+  const set=()=>{c.textContent='Worn '+(n+(on?1:0))+'×';l.textContent=on?'Last worn today':lastTxt;b.className='btn '+(on?'done':'pri');b.innerHTML=on?heart+' Logged today':heart+' Wore it today'};
+  b.onclick=()=>{if(on)return;on=true;set();t.classList.add('on');clearTimeout(to);to=setTimeout(()=>t.classList.remove('on'),3000)};
+  ph.querySelector('[data-undo]').onclick=()=>{on=false;set();t.classList.remove('on')};
+});
+document.querySelectorAll('[data-p2]').forEach(ph=>{
+  const b=ph.querySelector('[data-b]'),bd=ph.querySelector('[data-bd]'),t=ph.querySelector('[data-t]');let to;
+  const off=()=>{bd.hidden=true;b.className='btn';b.innerHTML=heart+' Wearing this'};
+  bd.hidden=true;
+  b.onclick=()=>{bd.hidden=false;bd.textContent='✓ Today';b.className='btn done';b.innerHTML=heart+' Added';t.classList.add('on');clearTimeout(to);to=setTimeout(()=>t.classList.remove('on'),3000)};
+  ph.querySelector('[data-undo]').onclick=()=>{off();t.classList.remove('on')};
+});
+document.querySelectorAll('[data-p5]').forEach(ph=>{
+  const v=ph.querySelector('[data-v]');
+  ph.querySelector('[data-m]').onclick=()=>v.textContent=Math.max(0,+v.textContent-1);
+  ph.querySelector('[data-pl]').onclick=()=>v.textContent=+v.textContent+1;
+});
+</script></body></html>
