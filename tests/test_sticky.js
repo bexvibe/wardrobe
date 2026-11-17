@@ -94,23 +94,20 @@ const rowTop = (p, sel) => p.evaluate(s =>
     await p.close();
   }
 
-  // ---- 2. In select mode it stops under the head, not behind it ----
+  // ---- 2. In select mode the head stands down and the categories stick at the top ----
   {
     const p=await open(b);
     await p.evaluate(()=>{ editMode = true; render(); }); await p.waitForTimeout(500);
     await p.evaluate(()=>window.scrollTo({top:1400})); await p.waitForTimeout(600);
     const both = await p.evaluate(()=>{
-      const head = document.getElementById('wardrobe-head').getBoundingClientRect();
       const tabs = document.getElementById('tabs').getBoundingClientRect();
-      return {headTop: Math.round(head.top), headBottom: Math.round(head.bottom),
+      return {head: document.getElementById('wardrobe-head').offsetParent !== null,
               tabsTop: Math.round(tabs.top), tabsBottom: Math.round(tabs.bottom)};
     });
-    check('the head with the way out is still at the top',
-      both.headTop <= 1, JSON.stringify(both));
-    check('and the categories stop directly under it, not behind it',
-      both.tabsTop >= both.headBottom - 1, JSON.stringify(both));
-    check('both are on screen at once',
-      both.headBottom > 0 && both.tabsBottom <= 844, JSON.stringify(both));
+    check('the head has stepped aside, its work done by the bar at the foot',
+      both.head === false, JSON.stringify(both));
+    check('and the categories stick at the very top',
+      both.tabsTop >= -1 && both.tabsTop <= 1, JSON.stringify(both));
     check('and the way out is still tappable where it sits',
       await p.evaluate(()=>{
         const b = document.getElementById('edit-back-btn').getBoundingClientRect();
@@ -118,11 +115,6 @@ const rowTop = (p, sel) => p.evaluate(s =>
         return document.getElementById('edit-back-btn').contains(hit);
       }));
 
-    // Leaving the mode puts it back to the top of the screen.
-    await p.evaluate(()=>{ editMode = false; render(); }); await p.waitForTimeout(500);
-    await p.evaluate(()=>window.scrollTo({top:1400})); await p.waitForTimeout(600);
-    check('out of the mode it goes back to the top of the screen',
-      (await rowTop(p, '#tabs')) <= 2, String(await rowTop(p, '#tabs')));
     await p.close();
   }
 

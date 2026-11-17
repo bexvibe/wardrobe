@@ -102,28 +102,28 @@ const ticked = p => p.evaluate(()=>Array.from(document.querySelectorAll('#builde
     await p.close();
   }
 
-  // ---- 2. One from each place, and only one ----
+  // ---- 2. Any pieces make an outfit; tops take two ----
   {
     const p=await open(b);
     await pick(p, 'Tops', 0);
-    check('one piece does not make an outfit', !(await saveOn(p)));
-    check('but it is already drawn, so you can see what you have',
+    check('one piece is already an outfit worth keeping', await saveOn(p));
+    check('and it is drawn, so you can see what you have',
       await p.evaluate(()=>Boolean(document.querySelector('.builder-preview img'))));
     const first = (await picks(p)).top;
 
     await pick(p, 'Tops', 1);
-    const second = (await picks(p)).top;
-    check('a second top replaces the first rather than joining it',
-      second && second !== first, `${first} -> ${second}`);
-    check('and only one tile is ticked',
+    const now = await picks(p);
+    check('a second top goes over the first, so a shirt can be worn open',
+      now.top === first && now.overtop && now.overtop !== first, JSON.stringify(now));
+    check('and both tiles are ticked',
       await p.evaluate(()=>document.querySelectorAll(
-        '#builder-gallery .picker-selected').length === 1));
+        '#builder-gallery .picker-selected').length === 2));
 
-    await p.click('#builder-gallery .picker-tile >> nth=1'); await p.waitForTimeout(500);
-    check('tapping the ticked one takes it off, as in the other pickers',
-      !(await picks(p)).top);
+    await p.click('#builder-gallery .picker-tile >> nth=0'); await p.waitForTimeout(500);
+    const after = await picks(p);
+    check('tapping the worn one takes it off, and the shirt becomes the top',
+      after.top && after.top !== first && !after.overtop, JSON.stringify(after));
 
-    await pick(p, 'Tops', 0);
     await pick(p, 'Pants', 0);
     check('a top and a bottom is an outfit', await saveOn(p));
     await pick(p, 'Jackets', 0);
@@ -131,14 +131,15 @@ const ticked = p => p.evaluate(()=>Array.from(document.querySelectorAll('#builde
     check('the draft holds all three',
       await p.evaluate(()=>['top','bottom','jacket'].every(s=>outfitDraft.picks[s])));
 
-    // What you picked two tabs ago is still visible from here.
-    check('every category you have taken from is ticked on its tab',
-      JSON.stringify(await ticked(p)) === JSON.stringify(['Tops','Pants','Jackets']),
+    // The tabs are only categories: nothing is ticked on them.
+    check('no ticks on the tabs at the top',
+      (await ticked(p)).length === 0 &&
+      await p.evaluate(()=>!document.querySelector('#builder-tabs .tab-tick')),
       (await ticked(p)).join(', '));
     await p.close();
   }
 
-  // ---- 3. It cannot make a shape the generator cannot ----
+  // ---- 3. Free to build anything, except a dress beside a top ----
   {
     const p=await open(b);
     await pick(p, 'Tops', 0);
@@ -150,27 +151,35 @@ const ticked = p => p.evaluate(()=>Array.from(document.querySelectorAll('#builde
     check('picking a dress puts the top and the bottom back',
       !after.top && !after.bottom && after.dress, JSON.stringify(after));
     check('but keeps what goes over either', Boolean(after.jacket));
-    check('the tabs say so too',
-      JSON.stringify(await ticked(p)) === JSON.stringify(['Dresses','Jackets']),
-      (await ticked(p)).join(', '));
     check('and it is a dress outfit now',
       await p.evaluate(()=>draftCombo().base === 'dress'));
 
     await pick(p, 'Tops', 0);
     const back = await picks(p);
     check('picking a top puts the dress back', !back.dress && back.top, JSON.stringify(back));
-    check('which is not an outfit again until it has a bottom', !(await saveOn(p)));
+    check('and a top alone can be saved', await saveOn(p));
 
     // Stated once, over the shapes themselves.
-    check('so every shape it can build is one the generator knows',
+    check('any set of pieces is an outfit, and nothing at all is not',
       await p.evaluate(()=>{
         const id = tab => itemsInTab(tab)[0].id;
         const [t, b, d, j] = ['Tops','Pants','Dresses','Jackets'].map(id);
-        const shape = picks => { outfitDraft.picks = picks; const c = draftCombo(); return c && c.base; };
-        return shape({top:t, bottom:b, dress:null, jumper:null, jacket:null}) === 'topbottom'
-            && shape({top:null, bottom:null, dress:d, jumper:null, jacket:null}) === 'dress'
-            && shape({top:t, bottom:null, dress:null, jumper:null, jacket:null}) === null
-            && shape({top:null, bottom:b, dress:null, jumper:null, jacket:j}) === null;
+        const empty = {top:null, overtop:null, bottom:null, dress:null, jumper:null, jacket:null};
+        const shape = picks => { outfitDraft.picks = Object.assign({}, empty, picks); const c = draftCombo(); return c && c.base; };
+        return shape({top:t, bottom:b}) === 'topbottom'
+            && shape({dress:d}) === 'dress'
+            && shape({top:t}) === 'topbottom'
+            && shape({bottom:b, jacket:j}) === 'topbottom'
+            && shape({jacket:j}) === 'topbottom'
+            && shape({}) === null;
+      }));
+    check('a shirt over a top is kept in the outfit\'s key',
+      await p.evaluate(()=>{
+        const tops = itemsInTab('Tops');
+        outfitDraft.picks = {top:tops[0].id, overtop:tops[1].id, bottom:null, dress:null, jumper:null, jacket:null};
+        const k1 = comboKey(draftCombo());
+        outfitDraft.picks.overtop = null;
+        return k1 !== comboKey(draftCombo()) && k1.endsWith('|' + tops[1].id);
       }));
     await p.close();
   }
@@ -233,7 +242,7 @@ const ticked = p => p.evaluate(()=>Array.from(document.querySelectorAll('#builde
     await pick(p, 'Pants', 0);
     check('an outfit you already kept cannot be kept again', !(await saveOn(p)));
     check('and the button says why, rather than failing at the end',
-      (await p.textContent('#builder-save-btn')).trim() === 'Already kept',
+      (await p.textContent('#builder-save-btn')).trim() === 'Already faved',
       (await p.textContent('#builder-save-btn')).trim());
 
     await pick(p, 'Pants', 1);

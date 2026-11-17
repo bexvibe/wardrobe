@@ -93,7 +93,7 @@ const straysInTheBody = (p, scope) => p.evaluate(sel =>
                  /^(cancel|back|discard)$/i.test(x.textContent.trim()))
     .map(x => x.textContent.trim()), scope);
 
-async function assertPattern(p, scope, label, name){
+async function assertPattern(p, scope, label, name, outWord){
   const f = await footer(p, scope);
   check(`${name}: the bar rides at the foot of the sheet`, f && f.stick === 'sticky', f && f.stick);
   check(`${name}: and sits at the very bottom of the screen`,
@@ -104,7 +104,7 @@ async function assertPattern(p, scope, label, name){
     f.split && f.buttons === 2, `${f.buttons}: ${f.outLabel} / ${f.saveLabel}`);
   check(`${name}: the save is named after what it saves`,
     f.saveLabel === label, f.saveLabel);
-  check(`${name}: and the way out is Cancel`, f.outLabel === 'Cancel', f.outLabel);
+  check(`${name}: and the way out is ${outWord || 'Cancel'}`, f.outLabel === (outWord || 'Cancel'), f.outLabel);
   check(`${name}: Cancel on the left, so a right thumb falls on the save`, f.order);
   check(`${name}: Cancel keeps to the width of its word`,
     Math.abs(f.outW - f.outNatural) <= 1, `${f.outW}px, ${f.outNatural}px on its own`);
@@ -190,7 +190,7 @@ async function assertPattern(p, scope, label, name){
     await p.waitForFunction(()=>outfitDisplayed.length > 0);
     await p.evaluate(()=>closeFilterSheet()); await p.waitForTimeout(400);
     await p.evaluate(()=>openOutfitBuilder()); await p.waitForTimeout(700);
-    await assertPattern(p, '#modal', 'Save outfit', 'outfit builder');
+    await assertPattern(p, '#modal', 'Save as fave', 'outfit builder', 'Back');
     // The save waits for an outfit to exist, which is not the same as the
     // bar being half-drawn: Cancel is live from the first frame.
     check('the save waits until there is an outfit to save',

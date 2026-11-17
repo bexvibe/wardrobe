@@ -1419,8 +1419,6 @@
   .builder-preview .outfit-lower > *{max-height:86px;}
   /* A category you have already taken something from, marked on the tab, so
      what you picked two categories ago is visible from wherever you are. */
-  .tab-tick{color:var(--accent);font-size:11px;margin-left:5px;}
-  .tab.active .tab-tick{color:inherit;}
 
   /* Nothing in this category yet. Small and quiet: it is an answer, not a
      problem to solve. */
@@ -1698,7 +1696,7 @@
            by hand is a thing you do to the wardrobe, not to a page. -->
       <div class="icon-row">
         <button class="icon-btn primary" id="build-outfit-btn-all" onclick="openOutfitBuilder()"
-                aria-label="Build an outfit" title="Build an outfit">
+                aria-label="Fave an outfit" title="Fave an outfit">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
             <path d="M12 5v14M5 12h14"/>
           </svg>
@@ -1740,7 +1738,7 @@
       <h1>Outfits</h1>
       <div class="icon-row">
         <button class="icon-btn primary" id="build-outfit-btn" onclick="openOutfitBuilder()"
-                aria-label="Build an outfit" title="Build an outfit">
+                aria-label="Fave an outfit" title="Fave an outfit">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
             <path d="M12 5v14M5 12h14"/>
           </svg>
@@ -1758,7 +1756,7 @@
       <p class="empty-sub" id="saved-empty-sub">Tap a heart to save it here</p>
       <p class="empty-hint" id="saved-empty-hint"></p>
       <button class="empty-action" id="saved-empty-action" onclick="openOutfitBuilder()"
-              aria-label="Build an outfit" title="Build an outfit">
+              aria-label="Fave an outfit" title="Fave an outfit">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
       </button>
     </div>
@@ -3350,9 +3348,9 @@ function renderSlotChips(gridId){
 // rather than a mode you set first.
 // Picking one of these empties the others: an outfit is a dress or it is a
 // top and a bottom, never both.
-const BUILDER_EXCLUDES = {dress: ['top','bottom'], top: ['dress'], bottom: ['dress']};
+const BUILDER_EXCLUDES = {dress: ['top','overtop','bottom'], top: ['dress'], overtop: ['dress'], bottom: ['dress']};
 
-let outfitDraft = null;   // { picks:{top,bottom,dress,jumper,jacket}, tab }
+let outfitDraft = null;   // { picks:{top,overtop,bottom,dress,jumper,jacket}, tab }
 
 // The same sheet as the capsule editor: the wardrobe's own category row
 // across the top, the pieces under it as tiles, and you tap the ones you
@@ -3360,30 +3358,35 @@ let outfitDraft = null;   // { picks:{top,bottom,dress,jumper,jacket}, tab }
 // one from each place, so a second tap in the same category moves the tick
 // rather than adding to it.
 function openOutfitBuilder(){
-  outfitDraft = { picks: {top:null, bottom:null, dress:null, jumper:null, jacket:null},
+  outfitDraft = { picks: {top:null, overtop:null, bottom:null, dress:null, jumper:null, jacket:null},
                   tab: builderTabs()[0] || null };
   pushSheet({ sheet: 'builder', id: null });
 
   document.getElementById('modal').innerHTML = `
-    <div class="sheet-grip"></div>
     <div class="modal-body has-footer">
-      <div class="modal-name">Build an outfit</div>
+      <div class="modal-name">Fave an outfit</div>
+      <p class="detail-sub">Select items to save as a fave outfit</p>
       <div id="builder-preview-slot"></div>
       <div class="tabs" id="builder-tabs"></div>
       <div class="gallery" id="builder-gallery"></div>
     </div>
     <div class="sheet-footer split">
       <div class="sheet-footer-inner">
-        <button class="btn secondary" type="button" onclick="closeOutfitBuilder()">Cancel</button>
-        <button class="btn" id="builder-save-btn" onclick="saveBuiltOutfit()" disabled>Save outfit</button>
+        <button class="btn secondary" type="button" onclick="closeOutfitBuilder()">
+          <svg class="back-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>Back</button>
+        <button class="btn" id="builder-save-btn" onclick="saveBuiltOutfit()" disabled>Save as fave</button>
       </div>
     </div>
   `;
   renderBuilderTabs();
   renderBuilderGallery();
   renderBuilderState();
-  allowSheetDrag(closeOutfitBuilder, outfitDraftIsDirty);
+  // A page of its own, like an outfit: Back on the bar is the way out, so
+  // there is nothing to push down.
+  allowSheetDrag(null);
   showSheetBackdrop('modal-backdrop');
+  document.getElementById('modal-backdrop').classList.add('as-page');
   // Once it is up and there is a height to measure.
   stickBuilderTabs();
 }
@@ -3399,12 +3402,7 @@ function renderBuilderTabs(){
   const el = document.getElementById('builder-tabs');
   if(!el) return;
   morphHtml(el, builderTabs().map(t => {
-    // A tick on the tab, so what you picked two categories ago is still
-    // visible from here.
-    const filled = Boolean(outfitDraft.picks[TAB_SLOT[t]]);
-    return `<button class="tab ${outfitDraft.tab === t ? 'active' : ''}" data-key="${t}" onclick="setBuilderTab('${t}')">
-      ${t}${filled ? ' <span class="tab-tick">&check;</span>' : ''}
-    </button>`;
+    return `<button class="tab ${outfitDraft.tab === t ? 'active' : ''}" data-key="${t}" onclick="setBuilderTab('${t}')">${t}</button>`;
   }).join(''));
   stickBuilderTabs();
 }
@@ -3422,10 +3420,11 @@ function renderBuilderGallery(){
   if(!gallery) return;
   const tab = outfitDraft.tab;
   const items = tab ? itemsInTab(tab) : [];
-  const chosen = tab ? outfitDraft.picks[TAB_SLOT[tab]] : null;
+  // Tops take two: the one you wear, and a shirt open over it.
+  const chosen = tab ? builderChosenIn(tab) : [];
 
   morphHtml(gallery, items.map(i => {
-    const selected = chosen === i.id;
+    const selected = chosen.includes(i.id);
     return `<div class="tile picker-tile ${selected ? 'picker-selected' : ''}" data-key="${i.id}" onclick="toggleBuilderItem('${i.id}')">
       ${i.photo ? `<img src="${esc(i.photo)}" alt="" referrerpolicy="no-referrer" loading="lazy" decoding="async">` : `<span class="no-photo">No photo</span>`}
       ${selected ? `<span class="picker-check">&check;</span>` : ''}
@@ -3433,41 +3432,55 @@ function renderBuilderGallery(){
   }).join(''));
 }
 
+function builderChosenIn(tab){
+  const picks = outfitDraft.picks;
+  const slot = TAB_SLOT[tab];
+  return (slot === 'top' ? [picks.top, picks.overtop] : [picks[slot]]).filter(Boolean);
+}
+
 function toggleBuilderItem(itemId){
   const slot = TAB_SLOT[outfitDraft.tab];
   const picks = outfitDraft.picks;
-  // Tapping the one already ticked takes it off, the way both other
-  // pickers work. Tapping a different one moves the tick: one top.
-  picks[slot] = picks[slot] === itemId ? null : itemId;
-  if(picks[slot]){
-    (BUILDER_EXCLUDES[slot] || []).forEach(other => { picks[other] = null; });
+  if(slot === 'top'){
+    // Two places a top can go, and no order to learn: the first you tap is
+    // worn, the second goes over it. Tapping one that is ticked takes it
+    // off, and a shirt left alone becomes the top.
+    if(picks.top === itemId){ picks.top = picks.overtop; picks.overtop = null; }
+    else if(picks.overtop === itemId){ picks.overtop = null; }
+    else if(!picks.top) picks.top = itemId;
+    else picks.overtop = itemId;
+    if(picks.top || picks.overtop) (BUILDER_EXCLUDES.top || []).forEach(other => { picks[other] = null; });
+  } else {
+    // Tapping the one already ticked takes it off, the way both other
+    // pickers work. Tapping a different one moves the tick.
+    picks[slot] = picks[slot] === itemId ? null : itemId;
+    if(picks[slot]){
+      (BUILDER_EXCLUDES[slot] || []).forEach(other => { picks[other] = null; });
+    }
   }
   renderBuilderTabs();
   renderBuilderGallery();
   renderBuilderState();
 }
 
-// What the draft would be saved as, or null while it is not an outfit yet.
+// What the draft would be saved as, or null while nothing is picked. Any
+// pieces are an outfit worth keeping: one top, a top and the shirt over it,
+// a jacket and nothing else. Only the dress is exclusive, because the key it
+// is saved under has no place for a top or a bottom beside it.
 function draftCombo(){
   if(!outfitDraft) return null;
   const pick = slot => outfitDraft.picks[slot] ? itemById(outfitDraft.picks[slot]) : null;
-  const dress = pick('dress'), top = pick('top'), bottom = pick('bottom');
-  if(dress) return {base:'dress', dress, top:null, bottom:null,
+  if(!Object.values(outfitDraft.picks).some(Boolean)) return null;
+  const dress = pick('dress');
+  if(dress) return {base:'dress', dress, top:null, overtop:null, bottom:null,
                     jumper:pick('jumper'), jacket:pick('jacket'), shoe:null};
-  if(top && bottom) return {base:'topbottom', top, bottom, dress:null,
-                            jumper:pick('jumper'), jacket:pick('jacket'), shoe:null};
-  return null;
+  return {base:'topbottom', dress:null, top:pick('top'), overtop:pick('overtop'), bottom:pick('bottom'),
+          jumper:pick('jumper'), jacket:pick('jacket'), shoe:null};
 }
 
-// The same shape, but drawn from whatever is picked so far — a half-built
-// outfit is not something the generator would ever hand you, so it is only
-// ever shown, never saved.
+// What the preview draws: the same thing the save would write.
 function draftPreviewCombo(){
-  const pick = slot => outfitDraft.picks[slot] ? itemById(outfitDraft.picks[slot]) : null;
-  const dress = pick('dress');
-  return {base: dress ? 'dress' : 'topbottom',
-          dress, top: pick('top'), bottom: pick('bottom'),
-          jumper: pick('jumper'), jacket: pick('jacket'), shoe:null};
+  return draftCombo();
 }
 
 // The preview and the button say the same thing twice on purpose: the
@@ -3475,7 +3488,7 @@ function draftPreviewCombo(){
 function renderBuilderState(){
   const combo = draftCombo();
   const already = combo && isFavorited(comboKey(combo));
-  const anything = Object.values(outfitDraft.picks).some(Boolean);
+  const anything = Boolean(combo);
 
   const slot = document.getElementById('builder-preview-slot');
   if(slot){
@@ -3490,7 +3503,7 @@ function renderBuilderState(){
   const btn = document.getElementById('builder-save-btn');
   if(btn){
     btn.disabled = !combo || already;
-    btn.textContent = already ? 'Already kept' : 'Save outfit';
+    btn.textContent = already ? 'Already faved' : 'Save as fave';
   }
 }
 
@@ -3521,7 +3534,7 @@ async function saveBuiltOutfit(){
   if(btn){ btn.disabled = true; btn.textContent = 'Saving...'; }
   const ok = await setFavorited(key, true, combo);
   if(!ok){
-    if(btn){ btn.disabled = false; btn.textContent = 'Save outfit'; }
+    if(btn){ btn.disabled = false; btn.textContent = 'Save as fave'; }
     return;
   }
   outfitDraft = null;
