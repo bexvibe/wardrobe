@@ -722,6 +722,10 @@
   .modal.outfit-page{height:100%;border-radius:0;box-shadow:none;}
   .outfit-page-body{padding-top:max(18px, env(safe-area-inset-top, 0px));}
   .outfit-page-flat{max-width:320px;margin:0 auto 18px;display:flex;flex-direction:column;}
+  /* Bigger than a card, so the cut-outs' own margins are bigger too: the
+     rows tuck together by a share of the width rather than a fixed 10px. */
+  .outfit-page-flat .outfit-lower{margin-top:-9%;min-height:0;}
+  .outfit-page-flat .outfit-extras{margin-top:-3%;}
   /* The heart lives on the bar here, not over a corner of the picture. */
   .outfit-page-bar .outfit-fav-btn{
     position:static;flex:none;width:48px;height:48px;background:none;
