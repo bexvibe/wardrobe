@@ -265,6 +265,14 @@
     color:var(--ink);
     border:1px solid var(--line);
   }
+  /* The act that is offered rather than the one you came to do: drawn as a
+     line round the word, so it reads as a button without being the loudest
+     thing on the bar. */
+  .btn.outlined{
+    background:transparent;
+    color:var(--ink);
+    border:1px solid var(--ink);
+  }
   .btn.small{padding:6px 10px;font-size:12px;}
   .btn:hover{opacity:0.85;}
 
@@ -691,31 +699,6 @@
     margin:22px 0 10px;
     padding-top:16px;
   }
-  .outfit-card.expanded{
-    grid-column: 1 / -1;
-    cursor:default;
-  }
-  .outfit-expanded-panel{
-    margin-top:10px;
-    padding-top:10px;
-    transform-origin:top center;
-    animation:outfit-panel-in .22s cubic-bezier(.2,.8,.2,1);
-  }
-  .outfit-expanded-panel.closing{
-    animation:outfit-panel-out .16s ease-in forwards;
-    pointer-events:none;
-  }
-  @keyframes outfit-panel-in{
-    from{opacity:0;transform:translateY(-8px) scaleY(.96);}
-    to{opacity:1;transform:none;}
-  }
-  @keyframes outfit-panel-out{
-    from{opacity:1;transform:none;}
-    to{opacity:0;transform:translateY(-6px) scaleY(.97);}
-  }
-  @media (prefers-reduced-motion: reduce){
-    .outfit-expanded-panel,.outfit-expanded-panel.closing{animation:none;}
-  }
   .panel-actions{margin:0 0 10px;}
   /* The outfit as worn, centred and capped so a wide sheet on a tablet does
      not blow the flat-lay up past the size its photographs were cut for. */
@@ -734,6 +717,16 @@
     visibility:visible;transform:none;
     transition:transform var(--sheet-ease-ms) var(--sheet-ease), visibility 0s;
   }
+  /* Growing out of the card it was opened from: no slide, the clip does the
+     travelling, and the content arrives a beat after the edges. */
+  .outfit-page-layer.from-card{
+    transform:none;
+    transition:clip-path var(--sheet-ease-ms) var(--sheet-ease), visibility 0s;
+  }
+  .outfit-page-layer.from-card .outfit-page-inner{
+    animation:outfit-page-in var(--sheet-ease-ms) ease-out both;
+  }
+  @keyframes outfit-page-in{ from{opacity:0;} 40%{opacity:0;} to{opacity:1;} }
   .outfit-page-inner{
     max-width:640px;width:100%;min-height:100%;margin:0 auto;
     display:flex;flex-direction:column;
@@ -759,13 +752,6 @@
   .icon-btn:hover{background:var(--accent-soft);}
   .btn-icon{display:inline-flex;align-items:center;gap:6px;}
   .sheet-title-row .icon-btn{margin:-8px -12px -8px 0;}
-  .outfit-collapse-btn{
-    font-family:'Work Sans',sans-serif;
-    font-size:12px;font-weight:600;
-    background:none;border:none;
-    color:var(--ink-soft);cursor:pointer;
-    padding:0 0 8px;
-  }
   /* Saving is the one thing you do most on this page, and it was a 26px
      target with a 15px glyph — small to hit and easy to miss when scanning
      for what you had already kept. */
@@ -2018,7 +2004,6 @@ let pendingPhotoItemId = null;
 let appMode = 'inventory';
 let favoriteOutfits = [];
 let capsules = [];
-let expandedCapsuleId = null;
 let viewMode = 'photos'; // 'photos' or 'names'
 let editMode = false;
 let selectedIds = new Set();
@@ -2480,6 +2465,7 @@ const SHEETS = {
   // Drawn into its own layer, not the sheet frame: nothing else is on a
   // backdrop while it is the sheet you are on.
   outfit:    { backdrop: null, draw: key => drawOutfitPage(key) },
+  capsulepage: { backdrop: null, draw: id => drawCapsulePage(id) },
   // Only ever left, never returned to: their drafts do not survive the trip.
   capsule:   { backdrop: 'modal-backdrop', draw: null },
   builder:   { backdrop: 'modal-backdrop', draw: null },
@@ -2502,15 +2488,22 @@ function outfitPageShowing(){
 // The outfit page stays up under whatever is opened from it, and is the one
 // beneath wherever the trail has an outfit lower down. Called as the trail
 // moves, so the layer always shows the nearest outfit at or below the top.
+// Pages are the sheets that fill the screen: an outfit, a capsule. They draw
+// into the one layer, and a sheet opened from one rises over it.
+const PAGE_DRAW = {
+  outfit:      key => drawOutfitPage(key),
+  capsulepage: id  => drawCapsulePage(id),
+};
+
 function syncOutfitPage(redraw){
   const layer = document.getElementById('outfit-page');
   if(!layer) return;
   let entry = null;
   for(let i = sheetTrail.length - 1; i >= 0; i--){
-    if(sheetTrail[i].sheet === 'outfit'){ entry = sheetTrail[i]; break; }
+    if(PAGE_DRAW[sheetTrail[i].sheet]){ entry = sheetTrail[i]; break; }
   }
   if(!entry){ layer.classList.remove('open'); return; }
-  if(redraw || layer.dataset.key !== entry.id) drawOutfitPage(entry.id);
+  if(redraw || layer.dataset.key !== entry.sheet + ':' + entry.id) PAGE_DRAW[entry.sheet](entry.id);
   layer.classList.add('open');
 }
 
@@ -2567,7 +2560,7 @@ function goBackFromSheet(){
     // The page beneath is drawn again whichever sheet is on top: what was
     // done in between (accessories on, a heart changed) shows when you return.
     syncOutfitPage(true);
-    if(back.sheet !== 'outfit') spec.draw(back.id);
+    if(!PAGE_DRAW[back.sheet]) spec.draw(back.id);
     restoreSheetScroll(back.y || 0);
     return;
   }
@@ -3998,12 +3991,43 @@ function pickHeroCombo(){
 // accessories, which are offered on every outfit, not just a kept one. They
 // hang off the combination, so putting a hat on something does not decide
 // anything about whether you are keeping it.
-function openOutfitPage(key){
+//
+// From a card, the page grows out of the card: it opens clipped to the card's
+// own rectangle and the clip eases out to the whole screen, so the card you
+// tapped is the thing that becomes the page. From anywhere else it rises like
+// the other sheets.
+function openOutfitPage(key, fromEl){
   if(!comboForKey(key)) return;
-  pushSheet({ sheet: 'outfit', id: key });
+  openPage('outfit', key, fromEl);
+}
+
+function openCapsulePage(id, fromEl){
+  if(!capsules.some(c => c.id === id)) return;
+  openPage('capsulepage', id, fromEl);
+}
+
+function openPage(sheet, id, fromEl){
+  const layer = document.getElementById('outfit-page');
+  const rect = fromEl && fromEl.getBoundingClientRect ? fromEl.getBoundingClientRect() : null;
+  const grows = rect && rect.width > 0 && !outfitPageShowing() &&
+    !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  pushSheet({ sheet, id });
   // Opened from a piece's sheet, that sheet gives way to the page.
   showSheetBackdrop(null);
-  syncOutfitPage(true);
+  if(!grows){ syncOutfitPage(true); return; }
+
+  const vw = window.innerWidth, vh = window.innerHeight;
+  const from = `inset(${Math.max(0, rect.top)}px ${Math.max(0, vw - rect.right)}px ${Math.max(0, vh - rect.bottom)}px ${Math.max(0, rect.left)}px round 10px)`;
+  layer.classList.add('from-card');
+  layer.style.clipPath = from;
+  syncOutfitPage(true);            // draws it and marks it open, in place
+  void layer.offsetWidth;          // the start state has to be seen to be left
+  layer.style.clipPath = 'inset(0px 0px 0px 0px round 0px)';
+  setTimeout(() => {
+    layer.classList.remove('from-card');
+    layer.style.clipPath = '';
+  }, 320);
 }
 
 // Drawing it is separate from arriving at it, as with the piece sheet: the
@@ -4013,7 +4037,7 @@ function drawOutfitPage(key){
   const layer = document.getElementById('outfit-page');
   if(!combo || !layer){ closeModal(); return; }
   const worn = extrasFor(key).length;
-  layer.dataset.key = key;
+  layer.dataset.key = 'outfit:' + key;
   layer.innerHTML = `
     <div class="outfit-page-inner">
       <div class="modal-body has-footer outfit-page-body">
@@ -4036,12 +4060,50 @@ function drawOutfitPage(key){
           <button class="btn secondary" type="button" id="outfit-page-back" onclick="goBackFromSheet()">
             <svg class="back-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>Back</button>
+          ${extrasAvailable ? `<button class="btn outlined" type="button" id="outfit-page-extras" onclick='openOutfitExtrasPicker(${JSON.stringify(key)})'>${worn ? 'Edit accessories' : '+ Add accessories'}</button>` : ''}
           ${faveHeartHtml(key)}
-          ${extrasAvailable ? `<button class="btn" type="button" id="outfit-page-extras" onclick='openOutfitExtrasPicker(${JSON.stringify(key)})'>${worn ? 'Edit accessories' : '+ Add accessories'}</button>` : ''}
         </div>
       </div>
     </div>`;
   // A page, not a sheet: nothing to push down. Back is the way out.
+  allowSheetDrag(null);
+}
+
+// A capsule as a page: its name and line, and its pieces as a list, each a
+// way to that piece. Edit lives on the bar with Back, the same as an outfit.
+function drawCapsulePage(id){
+  const capsule = capsules.find(c => c.id === id);
+  const layer = document.getElementById('outfit-page');
+  if(!capsule || !layer){ closeModal(); return; }
+  const pieces = capsuleItems(capsule);
+  layer.dataset.key = 'capsulepage:' + id;
+  layer.innerHTML = `
+    <div class="outfit-page-inner">
+      <div class="modal-body has-footer outfit-page-body">
+        <h2 class="modal-name">${esc(capsule.name)}</h2>
+        ${capsule.description ? `<p class="detail-sub">${esc(capsule.description)}</p>` : ''}
+        ${pieces.length ? pieces.map(p => `
+          <div class="outfit-piece-row tappable"
+               onclick='openPieceSheet(${JSON.stringify(p.id)})'>
+            ${p.photo ? `<img src="${esc(p.photo)}" alt="${esc(p.name)}" referrerpolicy="no-referrer" loading="lazy" decoding="async">` : `<div class="no-photo-mini">No photo</div>`}
+            <div class="outfit-piece-info" style="flex:1;min-width:0;">
+              <div class="p-name">${esc(p.name)}</div>
+              <div class="p-meta">${esc(p.brand || '')}</div>
+            </div>
+            <span class="piece-go" aria-hidden="true">›</span>
+          </div>
+        `).join('') : `<div class="capsule-empty-note">No pieces yet</div>`}
+      </div>
+      <div class="sheet-footer split outfit-page-bar">
+        <div class="sheet-footer-inner">
+          <button class="btn secondary" type="button" id="outfit-page-back" onclick="goBackFromSheet()">
+            <svg class="back-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>Back</button>
+          <button class="btn outlined btn-icon" type="button" id="capsule-page-edit" aria-label="Edit capsule"
+                  onclick='openCapsuleEditor(${JSON.stringify(id)})'><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM5.92 19H5v-.92l9.06-9.06.92.92L5.92 19zM20.71 5.63l-2.34-2.34a.9959.9959 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83a.9959.9959 0 0 0 0-1.41z"/></svg>Edit capsule</button>
+        </div>
+      </div>
+    </div>`;
   allowSheetDrag(null);
 }
 
@@ -4053,7 +4115,7 @@ function renderHero(){
 
   const key = comboKey(heroCombo);
   morphHtml(host, `
-    <div class="outfit-card hero-card" data-key="hero" onclick='openOutfitPage(${JSON.stringify(key)})'>
+    <div class="outfit-card hero-card" data-key="hero" onclick='openOutfitPage(${JSON.stringify(key)}, this)'>
       ${faveHeartHtml(key)}
       <div class="outfit-thumbs">${outfitThumbsHtml(heroCombo)}</div>
     </div>`);
@@ -4530,63 +4592,6 @@ function morphNode(el, next){
   morphChildren(el, next);
 }
 
-// Expanding or collapsing redraws the card at full width, which used to snap.
-// An open panel fades out first, then the redraw lets the new one animate in.
-//
-// `scope` is a selector for the list being opened or closed. An outfit opened
-// inside a piece's sheet sits over a capsule or outfit card that is itself
-// open, and an unscoped lookup finds that one — fading and scrolling the
-// page behind the sheet instead of the card you tapped.
-function withPanelCollapse(isClosing, scope, redraw){
-  const panel = isClosing ? document.querySelector(`${scope} .outfit-card.expanded .outfit-expanded-panel`) : null;
-  if(!panel || window.matchMedia('(prefers-reduced-motion: reduce)').matches){ redraw(); return; }
-  panel.classList.add('closing');
-  setTimeout(redraw, 150);
-}
-
-// Opening one card closes another, and when the one that closes is above
-// the one you tapped the page gets shorter under your finger. Chrome
-// compensates; Safari does not, so the tapped card used to slide away — or
-// the page jumped to the top. This puts the card back where it was before
-// the redraw, instantly, so only the glide that follows is seen.
-function holdCardInPlace(scope, key, redraw){
-  const find = () => Array.from(document.querySelectorAll(`${scope} .outfit-card[data-key]`))
-    .find(c => c.getAttribute('data-key') === key);
-  const was = find();
-  const top0 = was ? was.getBoundingClientRect().top : null;
-  redraw();
-  const now = find();
-  if(top0 === null || !now) return;
-  const delta = now.getBoundingClientRect().top - top0;
-  if(Math.abs(delta) < 1) return;
-  const modal = now.closest('.modal');
-  (modal || window).scrollBy({ top: delta, behavior: 'instant' });
-}
-
-// An opened card jumps from one grid cell to a full-width row, so whatever
-// was under the finger moves. Floating the card's top to the top of the page
-// (below any sticky bar) turns that jump into one smooth glide.
-function floatExpandedCardToTop(scope, within){
-  requestAnimationFrame(() => {
-    const card = document.querySelector(`${scope} .outfit-card.expanded${within ? ' ' + within : ''}`);
-    if(!card) return;
-    let offset = 8;
-    document.querySelectorAll('.stuck-row').forEach(el => {
-      if(el.offsetParent !== null) offset += el.getBoundingClientRect().height;
-    });
-    offset += parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--stuck-top')) || 0;
-    const modal = card.closest('.modal');
-    const scroller = modal || window;
-    // Layout position, not getBoundingClientRect: the card is usually
-    // mid-glide here and a rect would include that animation's transform.
-    let y = 0;
-    for(let n = card; n && n !== modal; n = n.offsetParent) y += n.offsetTop;
-    const top = modal ? y - modal.scrollTop - offset : y - window.scrollY - offset;
-    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    scroller.scrollBy({ top, behavior: reduce ? 'auto' : 'smooth' });
-  });
-}
-
 // ---- Accessories on an outfit ------------------------------
 //
 // Outfits generate from clothes alone — a jacket changes whether an outfit
@@ -4852,7 +4857,7 @@ function renderSavedOutfits(){
     const combo = favoriteRecordToCombo(rec);
     const thumbs = outfitThumbsHtml(combo);
 
-    return `<div class="outfit-card" data-key="${esc(rec.key)}" onclick='openOutfitPage(${JSON.stringify(rec.key)})'>
+    return `<div class="outfit-card" data-key="${esc(rec.key)}" onclick='openOutfitPage(${JSON.stringify(rec.key)}, this)'>
       ${faveHeartHtml(rec.key)}
       <div class="outfit-thumbs">${thumbs}</div>
     </div>`;
@@ -4936,8 +4941,6 @@ function renderCapsules(){
 
   morphHtml(gallery, capsules.map(capsule => {
     const pieces = capsuleItems(capsule);
-    const isExpanded = expandedCapsuleId === capsule.id;
-
     const cell = p => p.photo
       ? `<img src="${esc(p.photo)}" alt="${esc(p.name)}" referrerpolicy="no-referrer" loading="lazy" decoding="async">`
       : `<div class="no-photo-mini">No photo</div>`;
@@ -4949,27 +4952,7 @@ function renderCapsules(){
          </div>`
       : `<div class="capsule-empty-note">Tap to add pieces</div>`;
 
-    const expandedPanel = isExpanded ? `
-      <div class="outfit-expanded-panel">
-        <button class="outfit-collapse-btn" onclick='event.stopPropagation();toggleExpandCapsule(${JSON.stringify(capsule.id)})'>Collapse ↑</button>
-        <div class="modal-actions panel-actions">
-          <button class="btn small secondary btn-icon" aria-label="Edit capsule" onclick='event.stopPropagation();openCapsuleEditor(${JSON.stringify(capsule.id)})'><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM5.92 19H5v-.92l9.06-9.06.92.92L5.92 19zM20.71 5.63l-2.34-2.34a.9959.9959 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83a.9959.9959 0 0 0 0-1.41z"/></svg>Edit capsule</button>
-        </div>
-        ${pieces.map(p => `
-          <div class="outfit-piece-row tappable"
-               onclick='event.stopPropagation();openPieceSheet(${JSON.stringify(p.id)})'>
-            ${p.photo ? `<img src="${esc(p.photo)}" alt="${esc(p.name)}" referrerpolicy="no-referrer" loading="lazy" decoding="async">` : `<div class="no-photo-mini">No photo</div>`}
-            <div class="outfit-piece-info" style="flex:1;min-width:0;">
-              <div class="p-name">${esc(p.name)}</div>
-              <div class="p-meta">${esc(p.brand || '')}</div>
-            </div>
-            <span class="piece-go" aria-hidden="true">›</span>
-          </div>
-        `).join('')}
-      </div>
-    ` : '';
-
-    return `<div class="outfit-card ${isExpanded ? 'expanded' : ''}" data-key="${esc(capsule.id)}" onclick='toggleExpandCapsule(${JSON.stringify(capsule.id)})'>
+    return `<div class="outfit-card" data-key="${esc(capsule.id)}" onclick='openCapsulePage(${JSON.stringify(capsule.id)}, this)'>
       <div class="capsule-head">
         <div>
           <span class="capsule-name">${esc(capsule.name)}</span>
@@ -4977,19 +4960,8 @@ function renderCapsules(){
         </div>
       </div>
       ${thumbs}
-      ${expandedPanel}
     </div>`;
   }).join(''), { flip:true });
-}
-
-function toggleExpandCapsule(id){
-  withPanelCollapse(expandedCapsuleId !== null, '#capsule-gallery', () => {
-    expandedCapsuleId = (expandedCapsuleId === id) ? null : id;
-    holdCardInPlace('#capsule-gallery', id, renderCapsules);
-    // A capsule's pieces are what you opened it to read, so the list goes to
-    // the top of the page and the thumbnails above it scroll away.
-    if(expandedCapsuleId) floatExpandedCardToTop('#capsule-gallery', '.outfit-expanded-panel');
-  });
 }
 
 // ---- Capsule editor ----------------------------------------
@@ -5257,7 +5229,7 @@ function renderOutfits(){
     const key = comboKey(combo);
     const thumbs = outfitThumbsHtml(combo);
 
-    return `<div class="outfit-card" data-key="${esc(key)}" onclick='openOutfitPage(${JSON.stringify(key)})'>
+    return `<div class="outfit-card" data-key="${esc(key)}" onclick='openOutfitPage(${JSON.stringify(key)}, this)'>
       ${faveHeartHtml(key)}
       <div class="outfit-thumbs">${thumbs}</div>
     </div>`;
@@ -5859,7 +5831,6 @@ async function archiveCapsule(capsuleId){
   // Held whole, memberships included, so Undo does not have to rebuild it.
   const record = capsules.find(c => c.id === capsuleId);
   capsules = capsules.filter(c => c.id !== capsuleId);
-  if(expandedCapsuleId === capsuleId) expandedCapsuleId = null;
   renderCapsules();
   showToast('Capsule archived', record ? () => restoreCapsule(record) : null);
   return true;

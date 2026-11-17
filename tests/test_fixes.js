@@ -243,7 +243,7 @@ const dbTags = (p, id) => p.evaluate(i =>
     // A capsule.
     await p.click('#nav-capsules-btn'); await p.waitForTimeout(700);
     await p.click('#capsule-gallery .outfit-card'); await p.waitForTimeout(400);
-    await p.click('#capsule-gallery button[aria-label="Edit capsule"]'); await p.waitForTimeout(450);
+    await p.click('#capsule-page-edit'); await p.waitForTimeout(450);
     await p.click('#capsule-delete-btn'); await p.waitForTimeout(700);
     check('deleting a capsule does not ask', !(await asked(p)));
     check('it goes, and is offered back whole',

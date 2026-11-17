@@ -66,15 +66,17 @@ async function open(b){
     ['outfits',            async()=>{ await p.click('#form-backdrop .sheet-footer .btn.secondary');
                                       await p.click('#nav-outfits-btn'); }],
     ['an outfit open',     async()=>{ await p.click('.hero-card'); }],
-    ['the tag editor',     async()=>{ const c = await p.locator('#sheet-tag-chips .tag-chip').first().boundingBox();
+    ['the tag editor',     async()=>{ await p.evaluate(()=>closeModal());
+                                      const c = await p.locator('#sheet-tag-chips .tag-chip').first().boundingBox();
                                       await p.mouse.move(c.x+c.width/2, c.y+c.height/2);
                                       await p.mouse.down(); await p.waitForTimeout(650); await p.mouse.up(); }],
     ['faves',              async()=>{ await p.evaluate(()=>closeModal());
                                       await toFaves(p); }],
     ['capsules',           async()=>{ await p.click('#nav-capsules-btn'); }],
     ['a capsule open',     async()=>{ await p.click('#capsule-gallery .outfit-card'); }],
-    ['the capsule editor', async()=>{ await p.click('#capsule-gallery button[aria-label="Edit capsule"]'); }],
+    ['the capsule editor', async()=>{ await p.click('#capsule-page-edit'); }],
     ['the archive',        async()=>{ await leaveSheet(p);
+                                      await p.evaluate(()=>closeModal());
                                       await p.evaluate(async()=>{ await archiveItems([ITEMS[0].id]);
                                                                   setMode('archive'); }); }],
   ];

@@ -39,9 +39,9 @@ async function open(b, opts){
 }
 
 const cards = p => p.evaluate(()=>document.querySelectorAll('#capsule-gallery .outfit-card').length);
-// Tapping a card toggles it, so only tap when it is not already open.
+// A capsule opens as a page, so only tap the card when it is not already up.
 async function expandCard(p){
-  const open = await p.evaluate(()=>Boolean(document.querySelector('#capsule-gallery .outfit-card.expanded')));
+  const open = await p.evaluate(()=>outfitPageShowing());
   if(!open){
     await p.click('#capsule-gallery .outfit-card');
     await p.waitForTimeout(400);
@@ -209,35 +209,30 @@ const db = p => p.evaluate(()=>({
 
     // expand to see the pieces
     await expandCard(p);
-    check('expanding lists every piece by name',
-      await p.evaluate(()=>document.querySelectorAll('#capsule-gallery .outfit-piece-row').length)===2);
+    check('opening lists every piece by name',
+      await p.evaluate(()=>document.querySelectorAll('#outfit-page .outfit-piece-row').length)===2);
     await p.screenshot({path:shot('cap3-expanded.png')});
 
     // The per-row Remove button is gone: a piece leaves through the editor,
     // which is also the only place it can be added.
     check('no Remove button on a capsule row',
-      await p.evaluate(()=>!Array.from(document.querySelectorAll('#capsule-gallery button'))
+      await p.evaluate(()=>!Array.from(document.querySelectorAll('#outfit-page button'))
         .some(x=>x.textContent.trim()==='Remove')));
     check('the row is the way to the piece instead',
-      await p.evaluate(()=>Array.from(document.querySelectorAll('#capsule-gallery .outfit-piece-row'))
+      await p.evaluate(()=>Array.from(document.querySelectorAll('#outfit-page .outfit-piece-row'))
         .every(r=>r.classList.contains('tappable'))));
 
-    check('Edit capsule is an outlined icon-and-text button like Add accessories, just below Collapse',
+    check('Edit capsule is an outlined icon-and-text button on the bar, with Back beside it',
       await p.evaluate(()=>{
-        const e = document.querySelector('#capsule-gallery button[aria-label="Edit capsule"]');
-        const c = document.querySelector('#capsule-gallery .outfit-collapse-btn');
-        return e.classList.contains('secondary') && e.classList.contains('small') &&
+        const e = document.querySelector('#capsule-page-edit');
+        const back = document.getElementById('outfit-page-back');
+        const bar = document.querySelector('#outfit-page .sheet-footer').getBoundingClientRect();
+        return e.classList.contains('outlined') &&
           e.textContent.trim() === 'Edit capsule' && Boolean(e.querySelector('svg')) &&
-          e.getBoundingClientRect().top >= c.getBoundingClientRect().bottom - 1;
+          Boolean(back) && Math.round(bar.bottom) === window.innerHeight;
       }));
-    check('the items list is near the top of the page after opening, the card above it',
-      await p.evaluate(()=>{
-        const list = document.querySelector('#capsule-gallery .outfit-expanded-panel').getBoundingClientRect();
-        const card = document.querySelector('#capsule-gallery .outfit-card.expanded').getBoundingClientRect();
-        return list.top >= -1 && list.top < 120 && card.top < list.top;
-      }), await p.evaluate(()=>String(Math.round(document.querySelector('#capsule-gallery .outfit-expanded-panel').getBoundingClientRect().top))));
 
-    await p.click('#capsule-gallery button[aria-label="Edit capsule"]'); await p.waitForTimeout(400);
+    await p.click('#capsule-page-edit'); await p.waitForTimeout(400);
     check('Delete capsule is an icon too, 48px, top right of the sheet',
       await p.evaluate(()=>{
         const d = document.getElementById('capsule-delete-btn'), r = d.getBoundingClientRect();
@@ -256,7 +251,7 @@ const db = p => p.evaluate(()=>({
       await p.evaluate(()=>ITEMS.some(i=>i.id==='seed_0')));
 
     // add more through the editor
-    await p.click('#capsule-gallery button[aria-label="Edit capsule"]'); await p.waitForTimeout(400);
+    await p.click('#capsule-page-edit'); await p.waitForTimeout(400);
     check('the editor opens with the capsule\'s current pieces selected',
       await p.evaluate(()=>document.querySelectorAll('#capsule-editor-gallery .picker-selected').length)===1);
     await p.click('#capsule-editor-gallery .picker-tile:nth-child(5)');
@@ -270,7 +265,7 @@ const db = p => p.evaluate(()=>({
 
     // deselecting in the editor removes
     await expandCard(p);
-    await p.click('#capsule-gallery button[aria-label="Edit capsule"]'); await p.waitForTimeout(400);
+    await p.click('#capsule-page-edit'); await p.waitForTimeout(400);
     await p.locator('#capsule-editor-gallery .picker-tile.picker-selected').first().click(); await p.waitForTimeout(200);
     await p.click('#capsule-save-btn'); await p.waitForTimeout(600);
     check('deselecting in the editor removes the piece too',
@@ -288,7 +283,7 @@ const db = p => p.evaluate(()=>({
     });
     await p.click('#nav-capsules-btn'); await p.waitForTimeout(500);
     await expandCard(p);
-    await p.click('#capsule-gallery button[aria-label="Edit capsule"]'); await p.waitForTimeout(400);
+    await p.click('#capsule-page-edit'); await p.waitForTimeout(400);
     await p.fill('#capsule-name-input','evening');
     await p.click('#capsule-save-btn'); await p.waitForTimeout(600);
     check('renaming shows the new name', (await p.textContent('.capsule-name'))==='evening');
@@ -313,7 +308,7 @@ const db = p => p.evaluate(()=>({
     });
     await p.click('#nav-capsules-btn'); await p.waitForTimeout(500);
     await expandCard(p);
-    await p.click('#capsule-gallery button[aria-label="Edit capsule"]'); await p.waitForTimeout(450);
+    await p.click('#capsule-page-edit'); await p.waitForTimeout(450);
     await p.click('#capsule-delete-btn'); await p.waitForTimeout(700);
     check('deleting does not ask first',
       await p.evaluate(()=>!Array.from(document.querySelectorAll('button'))

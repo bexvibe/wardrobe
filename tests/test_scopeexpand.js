@@ -22,13 +22,15 @@ const results=[]; const check=(n,p,d)=>{results.push(p);console.log(`${p?'PASS':
   await p.waitForSelector('#app-root',{state:'visible'}); await p.waitForTimeout(500);
   await p.click('#nav-capsules-btn'); await p.waitForTimeout(500);
   await p.click('#capsule-gallery .outfit-card'); await p.waitForTimeout(700);
-  await p.click('#capsule-gallery .outfit-piece-row >> nth=2'); await p.waitForTimeout(1500);
+  await p.click('#outfit-page .outfit-piece-row >> nth=2'); await p.waitForTimeout(1500);
 
+  // The capsule is a page; a piece opens over it as a sheet, and an outfit
+  // opened from that sheet takes the layer for a while. Coming back has to
+  // put the capsule back as it was.
   const behind = () => p.evaluate(()=>({
     y:Math.round(scrollY),
-    closing:document.querySelectorAll('#capsule-gallery .outfit-expanded-panel.closing').length,
-    panelOpacity:getComputedStyle(document.querySelector('#capsule-gallery .outfit-expanded-panel')).opacity,
-    h:Math.round(document.querySelector('#capsule-gallery .outfit-card.expanded').getBoundingClientRect().height)}));
+    key:document.getElementById('outfit-page').dataset.key,
+    rows:document.querySelectorAll('#outfit-page .outfit-piece-row').length}));
   const before = await behind();
   const n = await p.evaluate(()=>document.querySelectorAll('#modal-outfits-container .outfit-card').length);
   check('the piece sheet lists outfits', n > 1, String(n));
@@ -46,8 +48,8 @@ const results=[]; const check=(n,p,d)=>{results.push(p);console.log(`${p?'PASS':
   await p.click('#outfit-page-back'); await p.waitForTimeout(900);
   const after = await behind();
   check('the capsule behind did not scroll', after.y === before.y, `${before.y} -> ${after.y}`);
-  check('the capsule behind kept its panel visible', after.closing === 0 && after.panelOpacity === '1', JSON.stringify(after));
-  check('the capsule behind kept its height', after.h === before.h, `${before.h} -> ${after.h}`);
+  check('the capsule behind is still the capsule', after.key === before.key, `${before.key} -> ${after.key}`);
+  check('and still lists its pieces', after.rows === before.rows && after.rows > 0, `${before.rows} -> ${after.rows}`);
 
   await b.close();
   const ok=results.filter(Boolean).length;
