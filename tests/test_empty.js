@@ -198,7 +198,7 @@ const said = (p, sel) => p.evaluate(s => {
     await toFaves(p, 900);
     await p.evaluate(()=>closeFilterSheet()); await p.waitForTimeout(400);
     await p.click('#saved-gallery .outfit-card'); await p.waitForTimeout(500);
-    await p.click('#saved-gallery .modal-actions button'); await p.waitForTimeout(700);
+    await p.click('#outfit-page-extras'); await p.waitForTimeout(700);
     check('a picker with no accessories to offer says so',
       (await said(p, '.modal .empty h3')) === 'No accessories',
       await said(p, '.modal .empty h3'));

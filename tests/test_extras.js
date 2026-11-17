@@ -28,14 +28,18 @@ const row=p=>p.evaluate(k=>
 const savedRow=p=>p.evaluate(k=>
   window.__WARDROBE_STATE.saved_outfits.find(r=>r.combo_key===k), KEY);
 const onCard=p=>p.evaluate(()=>document.querySelectorAll('#saved-gallery .outfit-extras > *').length);
-// The card stays expanded after a change, so only click when it is collapsed.
-async function ensureExpanded(p){
-  const open = await p.evaluate(()=>Boolean(document.querySelector('#saved-gallery .outfit-card.expanded')));
+// The outfit's page stays up after a change (Save returns to it), so only
+// open it when it is not.
+async function ensureOpen(p){
+  const open = await p.evaluate(()=>{
+    const t = sheetTrail[sheetTrail.length - 1];
+    return Boolean(t) && t.sheet === 'outfit';
+  });
   if(!open){ await p.click('#saved-gallery .outfit-card'); await p.waitForTimeout(400); }
 }
 async function openPicker(p){
-  await ensureExpanded(p);
-  await p.click('#saved-gallery .modal-actions button'); await p.waitForTimeout(450);
+  await ensureOpen(p);
+  await p.click('#outfit-page-extras'); await p.waitForTimeout(450);
 }
 
 (async()=>{
@@ -55,10 +59,10 @@ async function openPicker(p){
 
   // ---- 1. What the button says, and what it opens ----
   await p.click('#saved-gallery .outfit-card'); await p.waitForTimeout(450);
-  check('the expanded panel offers to add accessories',
-    await p.isVisible('#saved-gallery button:has-text("+ Add accessories")'));
-  check('and there is only the one button, not one per kind of thing',
-    await p.evaluate(()=>document.querySelectorAll('#saved-gallery .modal-actions button').length)===1);
+  check('the outfit\'s page offers to add accessories',
+    await p.isVisible('#outfit-page-extras:has-text("+ Add accessories")'));
+  check('and there is only the one button for it, not one per kind of thing',
+    await p.evaluate(()=>document.querySelectorAll('#modal .sheet-footer .btn:not(.secondary)').length)===1);
   await p.screenshot({path:shot('e-1-add.png')});
 
   await openPicker(p);
@@ -114,22 +118,22 @@ async function openPicker(p){
   check('both show on the card', (await onCard(p))===2, String(await onCard(p)));
   check('and both are listed among its pieces',
     await p.evaluate(()=>{
-      const names = Array.from(document.querySelectorAll('#saved-gallery .outfit-piece-row .p-name'))
+      const names = Array.from(document.querySelectorAll('#modal .outfit-piece-row .p-name'))
         .map(e=>e.textContent.trim());
       const want = extrasFor(favoriteOutfits[0].key).map(id=>itemById(id).name);
       return want.every(n=>names.includes(n));
     }));
   check('the button now reads as the way back in',
-    await p.isVisible('#saved-gallery button:has-text("Edit accessories")'));
+    await p.isVisible('#outfit-page-extras:has-text("Edit accessories")'));
   check('and it said "add" while there were none to edit',
     await p.evaluate(()=>{
       const key = favoriteOutfits[0].key;
       const was = extrasFor(key).slice();
       delete outfitExtras[key];
-      renderSavedOutfits();
-      const said = document.querySelector('#saved-gallery .modal-actions button').textContent.trim();
+      drawOutfitPage(key);
+      const said = document.querySelector('#outfit-page-extras').textContent.trim();
       outfitExtras[key] = was;
-      renderSavedOutfits();
+      drawOutfitPage(key);
       return said === '+ Add accessories';
     }));
   await p.screenshot({path:shot('e-3-attached.png')});

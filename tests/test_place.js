@@ -72,21 +72,20 @@ const scrollTo = async (p, top) => { await p.evaluate(t=>window.scrollTo({top:t}
     await p.waitForFunction(new Function(`return ${usable()}.length > 0`));
     await p.evaluate(new Function(`
       const many = ${usable()}[0];
-      expandedComboKey = comboKey(many);
-      renderOutfits();
+      openOutfitPage(comboKey(many));
     `));
     await p.waitForTimeout(500);
 
     const pieces = await p.evaluate(()=>
-      Array.from(document.querySelectorAll('#outfit-gallery .outfit-piece-row'))
+      Array.from(document.querySelectorAll('#modal .outfit-piece-row'))
         .map(r=>r.querySelector('.p-name').textContent.trim()));
-    check('the expanded outfit lists its pieces', pieces.length >= 2, pieces.join(', '));
+    check('the outfit\'s page lists its pieces', pieces.length >= 2, pieces.join(', '));
     check('and every row is offered as a way in',
-      await p.evaluate(()=>Array.from(document.querySelectorAll('#outfit-gallery .outfit-piece-row'))
+      await p.evaluate(()=>Array.from(document.querySelectorAll('#modal .outfit-piece-row'))
         .every(r=>r.classList.contains('tappable') && r.querySelector('.piece-go'))));
 
     const wanted = pieces[0];
-    await p.locator('#outfit-gallery .outfit-piece-row').first().click();
+    await p.locator('#modal .outfit-piece-row').first().click();
     await p.waitForTimeout(700);
 
     const landed = await p.evaluate(n=>{
@@ -110,11 +109,15 @@ const scrollTo = async (p, top) => { await p.evaluate(t=>window.scrollTo({top:t}
       `${landed.mode} / ${landed.title}`);
     check('the wardrobe is not moved to the piece\'s category behind your back',
       landed.tab !== landed.wantedTab || landed.tab === 'All', landed.tab);
-    check('one step on the trail, so back is the outfit you came from',
-      JSON.stringify(landed.trail)===JSON.stringify(['item']), landed.trail.join(' > '));
+    check('one step on from the outfit, so back is the outfit you came from',
+      JSON.stringify(landed.trail)===JSON.stringify(['outfit','item']), landed.trail.join(' > '));
 
     await leaveSheet(p, {settle:700});
-    check('and back puts you there', await p.evaluate(()=>appMode==='outfits' &&
+    check('back from the piece is the outfit\'s page', await p.evaluate(()=>
+      JSON.stringify(sheetTrail.map(e=>e.sheet))===JSON.stringify(['outfit']) &&
+      document.getElementById('modal-backdrop').classList.contains('open')));
+    await p.click('#outfit-page-back'); await p.waitForTimeout(600);
+    check('and back from that puts you on the page', await p.evaluate(()=>appMode==='outfits' &&
       !document.getElementById('modal-backdrop').classList.contains('open')));
 
     // The search no longer has to be cleared: nothing navigates to the
@@ -127,10 +130,8 @@ const scrollTo = async (p, top) => { await p.evaluate(t=>window.scrollTo({top:t}
     await p.click('#nav-outfits-btn');
     await p.waitForFunction(()=>outfitDisplayed.length > 0);
     await p.waitForTimeout(400);
-    await p.evaluate(()=>{ expandedComboKey = null; renderOutfits(); });
-    await p.waitForTimeout(300);
     await p.click('#outfit-gallery .outfit-card'); await p.waitForTimeout(500);
-    await p.locator('#outfit-gallery .outfit-piece-row').first().click();
+    await p.locator('#modal .outfit-piece-row').first().click();
     await p.waitForTimeout(700);
     check('and opening a piece does not reach over and change the wardrobe',
       await p.evaluate(()=>appMode === 'outfits'));
@@ -157,10 +158,10 @@ const scrollTo = async (p, top) => { await p.evaluate(t=>window.scrollTo({top:t}
     await p.click('#saved-gallery .outfit-card');
     // Waited for rather than slept through: under a parallel run the
     // expand can take longer than any number you would have picked.
-    await p.waitForSelector('#saved-gallery .outfit-piece-row.tappable');
+    await p.waitForSelector('#modal .outfit-piece-row.tappable');
     check('a kept outfit lists its pieces the same way',
-      await p.evaluate(()=>document.querySelectorAll('#saved-gallery .outfit-piece-row.tappable').length >= 2));
-    await p.locator('#saved-gallery .outfit-piece-row').first().click();
+      await p.evaluate(()=>document.querySelectorAll('#modal .outfit-piece-row.tappable').length >= 2));
+    await p.locator('#modal .outfit-piece-row').first().click();
     await p.waitForTimeout(700);
     check('and they open the piece without taking you off Faves',
       await p.evaluate(()=>appMode==='saved' &&

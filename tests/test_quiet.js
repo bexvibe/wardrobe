@@ -52,7 +52,7 @@ const hush = p => p.evaluate(()=>{
     await toFaves(p, 900);
     await p.evaluate(()=>closeFilterSheet()); await p.waitForTimeout(400);
     await p.click('#saved-gallery .outfit-card'); await p.waitForTimeout(500);
-    await p.click('#saved-gallery .modal-actions button'); await p.waitForTimeout(600);
+    await p.click('#outfit-page-extras'); await p.waitForTimeout(600);
 
     await p.click('#extras-gallery .picker-tile'); await p.waitForTimeout(600);
     const after = await toastUp(p);

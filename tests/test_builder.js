@@ -192,11 +192,15 @@ const ticked = p => p.evaluate(()=>Array.from(document.querySelectorAll('#builde
         const rows = window.__WARDROBE_STATE.saved_outfits;
         return rows.length===1 && rows[0].combo_key===k && rows[0].archived_at===null;
       }, key));
-    check('the sheet is gone and you are back on Faves',
+    check('you are back on Faves, with the outfit\'s page open',
       await p.evaluate(()=>appMode==='saved' &&
-        !document.getElementById('modal-backdrop').classList.contains('open')));
-    check('with the card open, so accessories are one tap away',
-      await p.evaluate(k=>expandedSavedKey===k, key));
+        document.getElementById('modal-backdrop').classList.contains('open')));
+    check('so accessories are one tap away',
+      await p.evaluate(k=>{
+        const t = sheetTrail[sheetTrail.length-1];
+        return Boolean(t) && t.sheet==='outfit' && t.id===k;
+      }, key) && await p.isVisible('#outfit-page-extras'));
+    await p.click('#outfit-page-back'); await p.waitForTimeout(600);
     check('and it is on the page', await p.evaluate(()=>
       document.querySelectorAll('#saved-gallery .outfit-card').length === 1));
 
@@ -221,6 +225,7 @@ const ticked = p => p.evaluate(()=>Array.from(document.querySelectorAll('#builde
     await p.click('#builder-save-btn');
     await p.waitForFunction(()=>favoriteOutfits.length === 1);
     await p.waitForTimeout(700);
+    await p.click('#outfit-page-back'); await p.waitForTimeout(600);   // it opens on its page
 
     // Build the identical one again.
     await plus(p);

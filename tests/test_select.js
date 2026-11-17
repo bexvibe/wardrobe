@@ -253,7 +253,6 @@ async function longPress(p, sel){
     const p=await open(b);
     const id = await p.evaluate(()=>ITEMS.find(i=>tabForItem(i)==='Jackets').id);
     await p.evaluate(i=>openModal(i), id); await p.waitForTimeout(1300);
-    await p.click('#m-outfit-gallery .outfit-card'); await p.waitForTimeout(600);
     // The sheet scrolls inside itself now, so this is the sheet, not the
     // backdrop it sits on.
     await p.evaluate(()=>document.getElementById('modal').scrollTo({top:1400}));
@@ -261,11 +260,9 @@ async function longPress(p, sel){
     check('scrolled down the piece\'s own sheet',
       (await p.evaluate(()=>document.getElementById('modal').scrollTop)) > 1000);
 
-    const rows = await p.evaluate(i=>Array.from(document.querySelectorAll('#m-outfit-gallery .outfit-piece-row'))
-      .map(r=>(r.getAttribute('onclick')||'').includes(i)), id);
-    const self = rows.indexOf(true);
-    check('the piece itself is listed under one of its own outfits', self >= 0);
-    await p.locator('#m-outfit-gallery .outfit-piece-row').nth(self).click();
+    // An outfit in this list opens as a page of its own now, so the piece
+    // is asked for the way anything else would ask for the sheet it is on.
+    await p.evaluate(i=>openPieceSheet(i), id);
     await p.waitForTimeout(900);
     const after = await p.evaluate(i=>({
       top: document.getElementById('modal').scrollTop,

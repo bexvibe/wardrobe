@@ -33,15 +33,23 @@ async function open(b, extra){
   return p;
 }
 
+// An outfit opens as a page of its own now, so "which outfit is open" is the
+// top of the sheet trail, and the way out of it is Back on its bar.
+const openKey = p => p.evaluate(()=>{
+  const t = sheetTrail[sheetTrail.length - 1];
+  return t && t.sheet === 'outfit' ? t.id : null;
+});
+async function leavePage(p){ await p.click('#outfit-page-back'); await p.waitForTimeout(600); }
+
 // Open the first generated outfit and put the first accessory on it. The
 // picker stages, so the tap ticks it and Save is what puts it on.
 async function dressFirst(p){
   await p.click('#outfit-gallery .outfit-card'); await p.waitForTimeout(700);
-  const key = await p.evaluate(()=>expandedComboKey);
-  await p.click('.outfit-card.expanded .modal-actions button:has-text("accessories")');
+  const key = await openKey(p);
+  await p.click('#outfit-page-extras');
   await p.waitForTimeout(700);
   await p.click('#extras-gallery .picker-tile'); await p.waitForTimeout(500);
-  await leaveSheet(p, {settle:700});
+  await leaveSheet(p, {settle:700});     // Save: back on the outfit's page
   return key;
 }
 
@@ -54,12 +62,12 @@ const rows = p => p.evaluate(()=>window.__WARDROBE_STATE.outfit_extras.slice());
   {
     const p=await open(b);
     await p.click('#outfit-gallery .outfit-card'); await p.waitForTimeout(700);
-    const key = await p.evaluate(()=>expandedComboKey);
+    const key = await openKey(p);
     check('an outfit you have not kept is not kept', !(await p.evaluate(k=>isFavorited(k), key)));
     check('and it still offers accessories',
-      await p.isVisible('.outfit-card.expanded .modal-actions button:has-text("Add accessories")'));
+      await p.isVisible('#outfit-page-extras:has-text("Add accessories")'));
 
-    await p.click('.outfit-card.expanded .modal-actions button:has-text("accessories")');
+    await p.click('#outfit-page-extras');
     await p.waitForTimeout(700);
     await p.click('#extras-gallery .picker-tile'); await p.waitForTimeout(500);
     await leaveSheet(p, {settle:700});
@@ -73,12 +81,11 @@ const rows = p => p.evaluate(()=>window.__WARDROBE_STATE.outfit_extras.slice());
       await p.evaluate(k=>!isFavorited(k) && window.__WARDROBE_STATE.saved_outfits.length === 0, key));
 
     check('the card wears it', await p.evaluate(()=>
-      document.querySelectorAll('.outfit-card.expanded .outfit-extras img').length === 1));
+      document.querySelectorAll('#modal .outfit-extras img').length === 1));
     check('the heart is still empty, because nothing was decided',
-      await p.evaluate(()=>!document.querySelector('.outfit-card.expanded .outfit-fav-btn')
-        .classList.contains('favorited')));
+      await p.evaluate(()=>document.querySelector('#modal .outfit-fav-btn').dataset.level === '0'));
     check('and the button offers the way back in',
-      await p.isVisible('.outfit-card.expanded .modal-actions button:has-text("Edit accessories")'));
+      await p.isVisible('#outfit-page-extras:has-text("Edit accessories")'));
     await p.close();
   }
 
@@ -86,6 +93,7 @@ const rows = p => p.evaluate(()=>window.__WARDROBE_STATE.outfit_extras.slice());
   {
     const p=await open(b);
     const key = await dressFirst(p);
+    await leavePage(p);
     await p.evaluate(k=>setFavorited(k, true, comboForKey(k)), key);
     await p.waitForFunction(()=>favoriteOutfits.length === 1);
     await p.waitForTimeout(600);
@@ -114,7 +122,7 @@ const rows = p => p.evaluate(()=>window.__WARDROBE_STATE.outfit_extras.slice());
     const key = await dressFirst(p);
     check('one row while it is wearing something', (await rows(p)).length === 1);
 
-    await p.click('.outfit-card.expanded .modal-actions button:has-text("accessories")');
+    await p.click('#outfit-page-extras');
     await p.waitForTimeout(700);
     await p.click('#extras-gallery .picker-selected'); await p.waitForTimeout(500);
     await leaveSheet(p, {settle:700});
@@ -134,13 +142,15 @@ const rows = p => p.evaluate(()=>window.__WARDROBE_STATE.outfit_extras.slice());
     await p.close();
   }
 
-  // ---- 4b. Dressing an outfit does not stop the page expanding outfits ----
+  // ---- 4b. Dressing an outfit does not stop the page opening outfits ----
   {
     const p=await open(b);
     const first = await dressFirst(p);
+    await leavePage(p);
     await p.locator('#outfit-gallery .outfit-card').nth(1).click(); await p.waitForTimeout(700);
-    check('another outfit still expands after dressing one',
-      await p.evaluate(k=>Boolean(expandedComboKey) && expandedComboKey !== k, first), await p.evaluate(()=>expandedComboKey));
+    const second = await openKey(p);
+    check('another outfit still opens after dressing one',
+      Boolean(second) && second !== first, String(second));
     await p.close();
   }
   {
@@ -150,23 +160,22 @@ const rows = p => p.evaluate(()=>window.__WARDROBE_STATE.outfit_extras.slice());
     const pieceId = await p.evaluate(()=>comboPieces(outfitDisplayed[0])[0].id);
     await p.evaluate(id=>openModal(id), pieceId); await p.waitForTimeout(1500);
     await p.click('#m-outfit-gallery .outfit-card'); await p.waitForTimeout(700);
-    await p.click('#m-outfit-gallery .outfit-card.expanded .modal-actions button:has-text("accessories")');
+    await p.click('#outfit-page-extras');
     await p.waitForTimeout(700);
     await p.click('#extras-gallery .picker-tile'); await p.waitForTimeout(400);
     await p.click('#extras-save'); await p.waitForTimeout(900);
-    check('saving accessories returns to the piece sheet',
+    check('saving accessories returns to the outfit',
+      (await openKey(p)) !== null);
+    await leavePage(p);
+    check('and Back from the outfit returns to the piece sheet',
       await p.evaluate(()=>Boolean(document.getElementById('m-outfit-gallery')) &&
         document.getElementById('modal-backdrop').classList.contains('open')));
     await leaveSheet(p, {settle:700});
     check('the page draws its own outfits again once the sheet is gone',
       await p.evaluate(()=>outfitRenderContext === 'tab'), await p.evaluate(()=>outfitRenderContext));
-    // Not the one that was open in the sheet: that key is still held, and
-    // tapping it would be a collapse.
-    const stale = await p.evaluate(()=>expandedComboKey);
-    await p.locator(`#outfit-gallery .outfit-card:not([data-key="${stale}"])`).first().click(); await p.waitForTimeout(700);
-    check('and an outfit on the page expands',
-      await p.evaluate(()=>document.querySelectorAll('#outfit-gallery .outfit-card.expanded').length === 1),
-      await p.evaluate(()=>document.querySelectorAll('#outfit-gallery .outfit-card.expanded').length));
+    await p.locator('#outfit-gallery .outfit-card').first().click(); await p.waitForTimeout(700);
+    check('and an outfit on the page opens',
+      (await openKey(p)) !== null, String(await openKey(p)));
     await p.close();
   }
 
@@ -177,9 +186,9 @@ const rows = p => p.evaluate(()=>window.__WARDROBE_STATE.outfit_extras.slice());
     check('and reports the feature as missing', !(await p.evaluate(()=>extrasAvailable)));
     await p.click('#outfit-gallery .outfit-card'); await p.waitForTimeout(700);
     check('so no accessories button is offered',
-      !(await p.isVisible('.outfit-card.expanded .modal-actions button:has-text("accessories")')));
-    check('while the rest of the card is untouched',
-      await p.isVisible('.outfit-card.expanded .outfit-collapse-btn'));
+      !(await p.isVisible('#outfit-page-extras')));
+    check('while the rest of the page is untouched',
+      await p.isVisible('#outfit-page-back') && await p.isVisible('#modal .outfit-fav-btn'));
     await p.close();
   }
 

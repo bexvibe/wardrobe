@@ -37,13 +37,14 @@ async function boot(b, url){
   await p.click('#outfit-gallery .outfit-card >> nth=2'); await p.waitForTimeout(600);
   const after = await p.evaluate(()=>{
     const imgs=[...document.querySelectorAll('#outfit-gallery img')];
+    const t = sheetTrail[sheetTrail.length - 1];
     return { total:imgs.length, kept:imgs.filter(i=>i.__mark).length,
-      expanded:document.querySelectorAll('#outfit-gallery .outfit-card.expanded').length };
+      open: Boolean(t) && t.sheet === 'outfit' };
   });
-  check('opening a card expands exactly one', after.expanded === 1);
-  check('opening a card keeps the photos it had (no reload)', after.kept >= marked, JSON.stringify(after));
-  await p.click('#outfit-gallery .outfit-card.expanded .outfit-collapse-btn'); await p.waitForTimeout(600);
-  check('collapsing closes it', await p.evaluate(()=>!document.querySelector('#outfit-gallery .outfit-card.expanded')));
+  check('opening a card opens that outfit\'s page', after.open);
+  check('and the page behind keeps the photos it had (no reload)', after.kept >= marked, JSON.stringify(after));
+  await p.click('#outfit-page-back'); await p.waitForTimeout(600);
+  check('Back closes it', await p.evaluate(()=>!document.getElementById('modal-backdrop').classList.contains('open')));
 
   // morphHtml directly: keyed reorder keeps elements, attribute change keeps the node
   const direct = await p.evaluate(()=>{

@@ -66,15 +66,10 @@ async function keepOne(p){
     await toFaves(p, 900);
     await p.evaluate(()=>closeFilterSheet()); await p.waitForTimeout(400);
     const wasTab = await p.evaluate(()=>activeTab);
-    await p.click('#saved-gallery .outfit-card'); await p.waitForTimeout(500);
-    // Expanding the card lengthens the page, so where you are standing is
-    // read after that, immediately before stepping into the sheet.
     await p.evaluate(()=>window.scrollTo({top:120})); await p.waitForTimeout(400);
-    // The row may sit below the fold; bring it in first so the click does
-    // not scroll the page after where you were standing is read.
-    await p.evaluate(()=>window.scrollBy(0, document.querySelector('#saved-gallery .outfit-piece-row').getBoundingClientRect().top - 200)); await p.waitForTimeout(300);
     const wasAt = await p.evaluate(()=>Math.round(window.scrollY));
-    await p.locator('#saved-gallery .outfit-piece-row').first().click();
+    await p.click('#saved-gallery .outfit-card'); await p.waitForTimeout(500);
+    await p.locator('#modal .outfit-piece-row').first().click();
     await p.waitForTimeout(700);
 
     check('the piece opened', await sheetUp(p));
@@ -82,17 +77,19 @@ async function keepOne(p){
       await p.evaluate(()=>appMode === 'saved'), await p.evaluate(()=>appMode));
     check('the wardrobe was not moved to the piece\'s category either',
       (await p.evaluate(()=>activeTab)) === wasTab, await p.evaluate(()=>activeTab));
-    check('one step on the trail', JSON.stringify(await trail(p))===JSON.stringify(['item']),
+    check('one step on from the outfit',
+      JSON.stringify(await trail(p))===JSON.stringify(['outfit','item']),
       (await trail(p)).join(' > '));
 
     await back(p);
-    check('back puts the sheet away', !(await sheetUp(p)));
+    check('back returns to the outfit it was opened from',
+      JSON.stringify(await trail(p))===JSON.stringify(['outfit']) && await sheetUp(p));
+    await back(p);
+    check('and back from that puts the sheets away', !(await sheetUp(p)));
     check('and leaves you on Faves', await p.evaluate(()=>appMode === 'saved'));
     check('at the same place on it',
       Math.abs((await p.evaluate(()=>Math.round(window.scrollY))) - wasAt) <= 3,
       `${wasAt} -> ${await p.evaluate(()=>Math.round(window.scrollY))}`);
-    check('with the card still open',
-      await p.evaluate(()=>Boolean(expandedSavedKey)));
     await p.close();
   }
 
@@ -156,24 +153,22 @@ async function keepOne(p){
     await p.click('#nav-outfits-btn'); await p.waitForTimeout(1200);
     await p.evaluate(()=>closeFilterSheet()); await p.waitForTimeout(400);
     await p.click('#outfit-gallery .outfit-card'); await p.waitForTimeout(500);
-    await p.locator('#outfit-gallery .outfit-piece-row').first().click();
+    await p.locator('#modal .outfit-piece-row').first().click();
     await p.waitForTimeout(900);
-    const first = await p.evaluate(()=>sheetTrail[0].id);
+    const first = await p.evaluate(()=>sheetTrail[sheetTrail.length-1].id);
 
     // Now tap a different piece from this sheet's own outfit list.
     const rows = await p.locator('#m-outfit-gallery .outfit-card').count();
     check('the sheet lists outfits with this piece', rows > 0, String(rows));
-    // Which card in that list is expanded is whatever the page behind it
-    // had open, which may not be in this list at all — so open one here
-    // deliberately rather than hoping.
+    // Open one deliberately: an outfit in this list opens as a page of its
+    // own, over the piece, and its pieces are the way on from there.
     await p.evaluate(()=>{
-      const shut = document.querySelector('#m-outfit-gallery .outfit-card:not(.expanded)');
+      const shut = document.querySelector('#m-outfit-gallery .outfit-card');
       if(shut) shut.click();
     });
     await p.waitForTimeout(600);
     const other = await p.evaluate(id => {
-      const rows = Array.from(document.querySelectorAll(
-        '#m-outfit-gallery .outfit-card.expanded .outfit-piece-row'));
+      const rows = Array.from(document.querySelectorAll('#modal .outfit-piece-row'));
       const row = rows.find(r => !(r.getAttribute('onclick')||'').includes(id));
       if(row) row.click();
       return Boolean(row);
@@ -181,10 +176,11 @@ async function keepOne(p){
     await p.waitForTimeout(800);
     if(other){
       check('tapping another piece from it goes deeper, not sideways',
-        JSON.stringify(await trail(p))===JSON.stringify(['item','item']),
+        JSON.stringify(await trail(p))===JSON.stringify(['outfit','item','outfit','item']),
         (await trail(p)).join(' > '));
       await back(p);
-      check('and back returns to the piece you came from',
+      await back(p);
+      check('and back twice returns to the piece you came from',
         (await p.evaluate(()=>sheetTrail[sheetTrail.length-1].id)) === first &&
         await sheetUp(p));
     } else {
@@ -198,7 +194,7 @@ async function keepOne(p){
     await p.evaluate(id=>openPieceSheet(id), await p.evaluate(()=>sheetTrail[sheetTrail.length-1].id));
     await p.waitForTimeout(700);
     check('tapping the piece you are already on scrolls up, it does not stack',
-      (await trail(p)).length === 1 &&
+      (await trail(p)).length === 2 &&
       (await p.evaluate(()=>document.getElementById('modal-backdrop').scrollTop)) < 100,
       `${(await trail(p)).length} deep, at ${await p.evaluate(()=>document.getElementById('modal-backdrop').scrollTop)}`);
     await p.close();

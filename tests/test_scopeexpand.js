@@ -34,9 +34,16 @@ const results=[]; const check=(n,p,d)=>{results.push(p);console.log(`${p?'PASS':
   check('the piece sheet lists outfits', n > 1, String(n));
 
   // open one, then another (the second also fades the first one's panel)
+  // An outfit in the sheet opens as a page of its own, over the sheet; going
+  // back from it and opening another must leave the capsule behind alone.
   await p.click('#modal-outfits-container .outfit-card >> nth=0'); await p.waitForTimeout(700);
-  check('an outfit in the sheet opens', await p.evaluate(()=>Boolean(document.querySelector('#modal-outfits-container .outfit-card.expanded'))));
-  await p.click('#modal-outfits-container .outfit-card:not(.expanded) >> nth=0'); await p.waitForTimeout(900);
+  check('an outfit in the sheet opens', await p.evaluate(()=>{
+    const t = sheetTrail[sheetTrail.length - 1];
+    return Boolean(t) && t.sheet === 'outfit';
+  }));
+  await p.click('#outfit-page-back'); await p.waitForTimeout(700);
+  await p.click('#modal-outfits-container .outfit-card >> nth=1'); await p.waitForTimeout(700);
+  await p.click('#outfit-page-back'); await p.waitForTimeout(900);
   const after = await behind();
   check('the capsule behind did not scroll', after.y === before.y, `${before.y} -> ${after.y}`);
   check('the capsule behind kept its panel visible', after.closing === 0 && after.panelOpacity === '1', JSON.stringify(after));

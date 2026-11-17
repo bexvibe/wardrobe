@@ -151,44 +151,39 @@ const dbTags = (p, id) => p.evaluate(i =>
     const p=await open(b);
     await p.click('#nav-outfits-btn'); await p.waitForTimeout(900);
     check('nothing is open to start with',
-      await p.evaluate(()=>!document.querySelector('.outfit-expanded-panel')));
+      await p.evaluate(()=>!document.getElementById('modal-backdrop').classList.contains('open')));
 
     await p.click('.hero-card'); await p.waitForTimeout(500);
     const hero = await p.evaluate(()=>{
-      const card = document.querySelector('.hero-card');
+      const t = sheetTrail[sheetTrail.length - 1];
       return {
-        expanded: card.classList.contains('expanded'),
-        panel: Boolean(card.querySelector('.outfit-expanded-panel')),
-        rows: card.querySelectorAll('.outfit-piece-row.tappable').length,
+        open: Boolean(t) && t.sheet === 'outfit' && t.id === comboKey(heroCombo),
+        rows: document.querySelectorAll('#modal .outfit-piece-row.tappable').length,
         pieces: comboPieces(heroCombo).length,
-        canCollapse: Boolean(card.querySelector('.outfit-collapse-btn')),
+        canGoBack: Boolean(document.getElementById('outfit-page-back')),
       };
     });
-    check('tapping the lead card opens it', hero.expanded && hero.panel);
+    check('tapping the lead card opens it', hero.open);
     check('it lists every piece in it, each a way to that piece',
       hero.rows === hero.pieces && hero.rows > 0, `${hero.rows} of ${hero.pieces}`);
     check('there is no Hide this combo any more',
       await p.evaluate(()=>!Array.from(document.querySelectorAll('button')).some(x=>/Hide this combo/.test(x.textContent))));
-    check('and so is the way to close it', hero.canCollapse);
+    check('and there is a way back out', hero.canGoBack);
 
-    check('the same outfit is not also drawn in the grid below',
-      await p.evaluate(()=>{
-        const key = comboKey(heroCombo);
-        return !Array.from(document.querySelectorAll('#outfit-gallery .outfit-card'))
-          .some(c => c.querySelector('.outfit-collapse-btn'));
-      }));
+    check('the lead card does not grow in place',
+      await p.evaluate(()=>!document.querySelector('.hero-card .outfit-piece-row')));
 
-    await p.click('.hero-card .outfit-collapse-btn'); await p.waitForTimeout(450);
-    check('Collapse closes it', await p.evaluate(()=>
-      !document.querySelector('.hero-card .outfit-expanded-panel')));
+    await p.click('#outfit-page-back'); await p.waitForTimeout(450);
+    check('Back closes it', await p.evaluate(()=>
+      !document.getElementById('modal-backdrop').classList.contains('open')));
 
-    // And opening one in the grid still closes the hero, since only one is
-    // open at a time.
-    await p.click('.hero-card'); await p.waitForTimeout(400);
+    // A card in the grid opens its own page, not the lead card's.
     await p.click('#outfit-gallery .outfit-card'); await p.waitForTimeout(500);
-    check('opening one in the grid closes the lead card',
-      await p.evaluate(()=>!document.querySelector('.hero-card .outfit-expanded-panel') &&
-                           Boolean(document.querySelector('#outfit-gallery .outfit-expanded-panel'))));
+    check('a card in the grid opens that outfit instead',
+      await p.evaluate(()=>{
+        const t = sheetTrail[sheetTrail.length - 1];
+        return Boolean(t) && t.sheet === 'outfit' && t.id !== comboKey(heroCombo);
+      }));
     await p.close();
   }
 
@@ -198,8 +193,8 @@ const dbTags = (p, id) => p.evaluate(i =>
     await p.click('#nav-outfits-btn'); await p.waitForTimeout(900);
     await p.click('.hero-card'); await p.waitForTimeout(500);
     const wanted = await p.evaluate(()=>
-      document.querySelector('.hero-card .outfit-piece-row .p-name').textContent.trim());
-    await p.locator('.hero-card .outfit-piece-row').first().click(); await p.waitForTimeout(800);
+      document.querySelector('#modal .outfit-piece-row .p-name').textContent.trim());
+    await p.locator('#modal .outfit-piece-row').first().click(); await p.waitForTimeout(800);
     const landed = await p.evaluate(n=>({
       mode: appMode,
       open: document.getElementById('modal-backdrop').classList.contains('open'),
@@ -210,7 +205,8 @@ const dbTags = (p, id) => p.evaluate(i =>
       landed.name === wanted, `${landed.name} vs ${wanted}`);
     check('without taking you off Outfits', landed.mode==='outfits', landed.mode);
     check('and back is the one step you took',
-      JSON.stringify(landed.trail)===JSON.stringify(['item']), landed.trail.join(' > '));
+      JSON.stringify(landed.trail)===JSON.stringify(['outfit','item']), landed.trail.join(' > '));
+    await leaveSheet(p, {settle:600});
     await leaveSheet(p, {settle:600});
     check('which puts you back on the lead card', await p.evaluate(()=>
       appMode==='outfits' &&
