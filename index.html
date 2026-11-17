@@ -552,6 +552,14 @@
     transform:translateY(100%);
   }
   .modal-backdrop.open .modal{transform:translateY(0);}
+  /* A piece opened from the wardrobe fills the screen like an outfit does:
+     the sheet frame, full height, with its controls on the bar below. */
+  .modal-backdrop.as-page{background:transparent;}
+  .modal-backdrop.as-page .modal{
+    height:100%;border-radius:0;box-shadow:none;
+    padding-top:env(safe-area-inset-top, 0px);
+  }
+  .sheet-footer-inner.modal-actions{margin-top:0;flex-wrap:nowrap;}
   /* A tall sheet that has been scrolled earns the rest of the screen, less a
      sliver of page at the top to pull on. */
   .modal.sheet-full{height:calc(100% - max(12px, env(safe-area-inset-top, 0px)));}
@@ -583,6 +591,9 @@
   }
   .back-glyph{width:16px;height:16px;flex:none;display:block;}
   .modal-photo{
+    /* Never squeezed: with a long list of outfits beneath it, a shrinking
+       photo went to nothing and the piece had no picture. */
+    flex:none;
     aspect-ratio:1/1;
     background:var(--page);
     display:flex;align-items:center;justify-content:center;
@@ -2543,6 +2554,9 @@ function pushSheet(entry){
   const here = sheetTrail[sheetTrail.length - 1];
   if(here) here.y = sheetScrollTop();
   sheetTrail.push(entry);
+  // A piece draws itself as a page when nothing is beneath it; whatever
+  // opens next starts as a sheet until it says otherwise.
+  document.getElementById('modal-backdrop')?.classList.remove('as-page');
   // Off by default. A sheet that can be pushed away says so as it draws,
   // so a sheet that forgets to is merely undraggable rather than dragging
   // away into whatever the last one meant by closing.
@@ -2555,6 +2569,7 @@ function goBackFromSheet(){
   sheetTrail.pop();
   const back = sheetTrail[sheetTrail.length - 1];
   const spec = back && SHEETS[back.sheet];
+  document.getElementById('modal-backdrop')?.classList.remove('as-page');
   if(spec && spec.draw){
     showSheetBackdrop(spec.backdrop);
     // The page beneath is drawn again whichever sheet is on top: what was
@@ -6587,25 +6602,45 @@ function drawItemSheet(id){
   const item = ITEMS.find(i => i.id === id);
   if(!item) return;
   const modal = document.getElementById('modal');
+  // A piece is a page of its own when it is where you have arrived from the
+  // wardrobe; opened from an outfit or a capsule it is a sheet over that page,
+  // which stays visible beneath it.
+  const asPage = !sheetTrail.slice(0, -1).some(e => PAGE_DRAW[e.sheet]);
+  document.getElementById('modal-backdrop').classList.toggle('as-page', asPage);
+
+  const edit = cls => `<button class="btn ${cls}" id="item-page-edit" onclick='openItemForm(${JSON.stringify(item.id)})'>Edit</button>`;
+  const addTo = cls => capsulesAvailable
+    ? `<button class="btn ${cls}" id="item-page-capsule" onclick='openItemCapsulePicker(${JSON.stringify(item.id)})'>Add to capsule</button>` : '';
+
   modal.innerHTML = `
-    <div class="sheet-grip"></div>
+    ${asPage ? '' : '<div class="sheet-grip"></div>'}
     <div class="modal-photo">
       ${item.photo ? `<img src="${esc(item.photo)}" alt="${esc(item.name)}" referrerpolicy="no-referrer" decoding="async">` : `<span class="no-photo">No photo yet</span>`}
     </div>
-    <div class="modal-body">
+    <div class="modal-body ${asPage ? 'has-footer' : ''}">
       <h2 class="modal-name">${esc(item.name)}</h2>
       <p class="detail-sub">${[item.brand, tabForItem(item)].filter(Boolean).map(esc).join(' · ')}</p>
       ${detailFactsHtml(item)}
-      <div class="modal-actions">
-        <button class="btn small secondary" onclick='openItemForm(${JSON.stringify(item.id)})'>Edit</button>
-        ${capsulesAvailable ? `<button class="btn small secondary" onclick='openItemCapsulePicker(${JSON.stringify(item.id)})'>Add to capsule</button>` : ''}
-      </div>
+      ${asPage ? '' : `<div class="modal-actions">
+        ${edit('small secondary')}
+        ${addTo('small secondary')}
+      </div>`}
       <div id="modal-outfits-container"></div>
     </div>
+    ${asPage ? `
+    <div class="sheet-footer split item-page-bar">
+      <div class="sheet-footer-inner modal-actions">
+        <button class="btn secondary" type="button" id="item-page-back" onclick="goBackFromSheet()">
+          <svg class="back-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>Back</button>
+        ${edit('outlined')}
+        ${addTo('outlined')}
+      </div>
+    </div>` : ''}
   `;
-  // Nothing on it to keep or throw away, so the gesture is the whole way
-  // out — and the grip at its head is what says so.
-  allowSheetDrag(goBackFromSheet);
+  // A page has nothing to push down: Back is the way out. A sheet answers
+  // the gesture, and the grip at its head says so.
+  allowSheetDrag(asPage ? null : goBackFromSheet);
   document.getElementById('modal-backdrop').classList.add('open');
   showOutfitsInModal(item.id);
 }

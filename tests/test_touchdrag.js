@@ -39,6 +39,16 @@ async function open(b){
   return p;
 }
 
+// A piece opened from the wardrobe is a page, which is not dragged away. The
+// gesture belongs to a piece opened as a sheet — over a capsule here — so
+// that is how these open it.
+const openAsSheet = p => p.evaluate(()=>{
+  closeModal();
+  setMode('capsules');
+  openCapsulePage(capsules[0].id);
+  openPieceSheet('seed_0');
+});
+
 // Everything that should travel together, measured against the sheet.
 const where = (p, sel) => p.evaluate(sel=>{
   const m = document.querySelector(sel);
@@ -106,7 +116,7 @@ const sheetOpen = p => p.evaluate(()=>
   // ---- 1. A piece sheet, pulled down by its grip ----
   {
     const p=await open(b);
-    await p.evaluate(()=>openModal('seed_0')); await p.waitForTimeout(600);
+    await openAsSheet(p); await p.waitForTimeout(600);
     const rest = await where(p, '#modal');
     const {seen, cancels} = await touchDrag(p, '#modal', await pointIn(p, '#modal', 10), 0, 170);
     const low = seen[seen.length - 1];
@@ -134,7 +144,7 @@ const sheetOpen = p => p.evaluate(()=>
   // ---- 2. The same pull from the photo, not the grip ----
   {
     const p=await open(b);
-    await p.evaluate(()=>openModal('seed_0')); await p.waitForTimeout(600);
+    await openAsSheet(p); await p.waitForTimeout(600);
     const {cancels} = await touchDrag(p, '#modal', await pointIn(p, '#modal', 160), 0, 170);
     check('anywhere on the sheet will do', cancels === 0 && !(await sheetOpen(p)),
       `${cancels} pointercancel`);
@@ -144,7 +154,7 @@ const sheetOpen = p => p.evaluate(()=>
   // ---- 3. A short pull springs back, all of it ----
   {
     const p=await open(b);
-    await p.evaluate(()=>openModal('seed_0')); await p.waitForTimeout(600);
+    await openAsSheet(p); await p.waitForTimeout(600);
     const rest = await where(p, '#modal');
     let mid = null;
     await touchDrag(p, '#modal', await pointIn(p, '#modal', 10), 0, 80, async()=>{
@@ -172,7 +182,7 @@ const sheetOpen = p => p.evaluate(()=>
   // ---- 4. Up is still scrolling, and so is down from partway ----
   {
     const p=await open(b);
-    await p.evaluate(()=>openModal('seed_0')); await p.waitForTimeout(800);
+    await openAsSheet(p); await p.waitForTimeout(800);
     const rest = await where(p, '#modal');
     const up = await touchDrag(p, '#modal', await pointIn(p, '#modal', 500), 0, -220);
     const after = await where(p, '#modal');
@@ -238,18 +248,18 @@ const sheetOpen = p => p.evaluate(()=>
   // ---- 6b. Far enough, or fast enough ----
   {
     const p=await open(b);
-    await p.evaluate(()=>openModal('seed_0')); await p.waitForTimeout(600);
+    await openAsSheet(p); await p.waitForTimeout(600);
     await touchDrag(p, '#modal', await pointIn(p, '#modal', 10), 0, 112);
     check('a slow pull past 100px closes it', !(await sheetOpen(p)));
 
-    await p.evaluate(()=>openModal('seed_0')); await p.waitForTimeout(600);
+    await openAsSheet(p); await p.waitForTimeout(600);
     await p.evaluate(()=>{ const m = document.getElementById('modal');
       m.addEventListener('pointerup', ()=>{ window.__flickSpeed = sheetDrag && dragSpeed(performance.now()); }, true); });
     await flick(p, await pointIn(p, '#modal', 10), 90);
     check('a quick flick short of 100px closes it too', !(await sheetOpen(p)),
       `${(await p.evaluate(()=>window.__flickSpeed||0)).toFixed(2)}px/ms`);
 
-    await p.evaluate(()=>openModal('seed_0')); await p.waitForTimeout(600);
+    await openAsSheet(p); await p.waitForTimeout(600);
     const rest = await where(p, '#modal');
     await flick(p, await pointIn(p, '#modal', 10), 90, 250);
     check('but the same flick held still before letting go does not',
@@ -267,7 +277,7 @@ const sheetOpen = p => p.evaluate(()=>
   // ---- 6c. Nothing bounces inside a sheet ----
   {
     const p=await open(b);
-    await p.evaluate(()=>openModal('seed_0')); await p.waitForTimeout(600);
+    await openAsSheet(p); await p.waitForTimeout(600);
     check('the sheets do not let iOS bounce their contents',
       await p.evaluate(()=>Array.from(document.querySelectorAll('.modal'))
         .every(m => getComputedStyle(m).overscrollBehaviorY === 'none')));

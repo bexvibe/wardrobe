@@ -343,7 +343,16 @@ const confirmText = p => p.evaluate(()=>({
     // meant by closing. A half-typed rename flicked away is the kind of
     // thing nobody reports; they just stop trusting the gesture.
     const p=await open(b);
-    await p.evaluate(()=>openModal('seed_0')); await p.waitForTimeout(700);
+    // A piece opened from the wardrobe is a page; as a sheet over an outfit it
+    // is the thing the gesture is for.
+    await p.evaluate(()=>setMode('outfits'));
+    await p.waitForFunction(()=>outfitDisplayed.length > 0);
+    await p.evaluate(()=>{
+      const c = outfitDisplayed[0];
+      openOutfitPage(comboKey(c));
+      openPieceSheet(comboPieces(c)[0].id);
+    });
+    await p.waitForTimeout(700);
     check('a piece sheet answers the gesture, having nothing to lose',
       await p.evaluate(()=>sheetIsUp()));
     await p.evaluate(()=>closeModal()); await p.waitForTimeout(400);

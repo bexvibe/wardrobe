@@ -47,6 +47,8 @@ module.exports = {
     if(await page.evaluate(() => typeof filterSheetOpen === 'function' && filterSheetOpen()
         && !document.querySelector('.modal-backdrop.open, #form-backdrop.open'))){
       await page.click('#filter-sheet-see');           // the filters: See N outfits
+    } else if(await page.$('#modal-backdrop.open.as-page #item-page-back')){
+      await page.click('#item-page-back');             // a piece's page: Back
     } else if(await page.$('#form-backdrop.open .sheet-footer .btn')){
       await page.click('#form-backdrop .sheet-footer .btn' + side);
     } else if(await page.$('#modal-backdrop.open #modal .sheet-footer.split .btn')){
