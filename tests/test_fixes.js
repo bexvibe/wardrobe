@@ -151,14 +151,14 @@ const dbTags = (p, id) => p.evaluate(i =>
     const p=await open(b);
     await p.click('#nav-outfits-btn'); await p.waitForTimeout(900);
     check('nothing is open to start with',
-      await p.evaluate(()=>!document.getElementById('modal-backdrop').classList.contains('open')));
+      await p.evaluate(()=>!anySheetShowing()));
 
     await p.click('.hero-card'); await p.waitForTimeout(500);
     const hero = await p.evaluate(()=>{
       const t = sheetTrail[sheetTrail.length - 1];
       return {
         open: Boolean(t) && t.sheet === 'outfit' && t.id === comboKey(heroCombo),
-        rows: document.querySelectorAll('#modal .outfit-piece-row.tappable').length,
+        rows: document.querySelectorAll('#outfit-page .outfit-piece-row.tappable').length,
         pieces: comboPieces(heroCombo).length,
         canGoBack: Boolean(document.getElementById('outfit-page-back')),
       };
@@ -175,7 +175,7 @@ const dbTags = (p, id) => p.evaluate(i =>
 
     await p.click('#outfit-page-back'); await p.waitForTimeout(450);
     check('Back closes it', await p.evaluate(()=>
-      !document.getElementById('modal-backdrop').classList.contains('open')));
+      !anySheetShowing()));
 
     // A card in the grid opens its own page, not the lead card's.
     await p.click('#outfit-gallery .outfit-card'); await p.waitForTimeout(500);
@@ -193,8 +193,8 @@ const dbTags = (p, id) => p.evaluate(i =>
     await p.click('#nav-outfits-btn'); await p.waitForTimeout(900);
     await p.click('.hero-card'); await p.waitForTimeout(500);
     const wanted = await p.evaluate(()=>
-      document.querySelector('#modal .outfit-piece-row .p-name').textContent.trim());
-    await p.locator('#modal .outfit-piece-row').first().click(); await p.waitForTimeout(800);
+      document.querySelector('#outfit-page .outfit-piece-row .p-name').textContent.trim());
+    await p.locator('#outfit-page .outfit-piece-row').first().click(); await p.waitForTimeout(800);
     const landed = await p.evaluate(n=>({
       mode: appMode,
       open: document.getElementById('modal-backdrop').classList.contains('open'),
@@ -210,7 +210,7 @@ const dbTags = (p, id) => p.evaluate(i =>
     await leaveSheet(p, {settle:600});
     check('which puts you back on the lead card', await p.evaluate(()=>
       appMode==='outfits' &&
-      !document.getElementById('modal-backdrop').classList.contains('open')));
+      !anySheetShowing()));
     await p.close();
   }
 

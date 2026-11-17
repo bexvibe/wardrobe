@@ -73,7 +73,7 @@ const check=(n,p,d)=>{results.push(p);console.log(`${p?'PASS':'FAIL'}  ${n}${d?'
   await typeSearch(p, '');
   await toFaves(p, 500);
   await p.click('#saved-gallery .outfit-card'); await p.waitForTimeout(400);
-  const pieceNames = await p.$$eval('#modal .p-name', els=>els.map(e=>e.textContent.trim()));
+  const pieceNames = await p.$$eval('#outfit-page .p-name', els=>els.map(e=>e.textContent.trim()));
   check('saved outfit shows the new name', pieceNames.includes(NEW_NAME), pieceNames.join(' | '));
 
   // survives a reload (came back from the database, not just local state)

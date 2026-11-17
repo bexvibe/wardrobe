@@ -69,7 +69,7 @@ async function keepOne(p){
     await p.evaluate(()=>window.scrollTo({top:120})); await p.waitForTimeout(400);
     const wasAt = await p.evaluate(()=>Math.round(window.scrollY));
     await p.click('#saved-gallery .outfit-card'); await p.waitForTimeout(500);
-    await p.locator('#modal .outfit-piece-row').first().click();
+    await p.locator('#outfit-page .outfit-piece-row').first().click();
     await p.waitForTimeout(700);
 
     check('the piece opened', await sheetUp(p));
@@ -83,9 +83,11 @@ async function keepOne(p){
 
     await back(p);
     check('back returns to the outfit it was opened from',
-      JSON.stringify(await trail(p))===JSON.stringify(['outfit']) && await sheetUp(p));
+      JSON.stringify(await trail(p))===JSON.stringify(['outfit']) &&
+      await p.evaluate(()=>outfitPageShowing()) && !(await sheetUp(p)));
     await back(p);
-    check('and back from that puts the sheets away', !(await sheetUp(p)));
+    check('and back from that puts the sheets away',
+      !(await sheetUp(p)) && !(await p.evaluate(()=>anySheetShowing())));
     check('and leaves you on Faves', await p.evaluate(()=>appMode === 'saved'));
     check('at the same place on it',
       Math.abs((await p.evaluate(()=>Math.round(window.scrollY))) - wasAt) <= 3,
@@ -153,7 +155,7 @@ async function keepOne(p){
     await p.click('#nav-outfits-btn'); await p.waitForTimeout(1200);
     await p.evaluate(()=>closeFilterSheet()); await p.waitForTimeout(400);
     await p.click('#outfit-gallery .outfit-card'); await p.waitForTimeout(500);
-    await p.locator('#modal .outfit-piece-row').first().click();
+    await p.locator('#outfit-page .outfit-piece-row').first().click();
     await p.waitForTimeout(900);
     const first = await p.evaluate(()=>sheetTrail[sheetTrail.length-1].id);
 
@@ -168,7 +170,7 @@ async function keepOne(p){
     });
     await p.waitForTimeout(600);
     const other = await p.evaluate(id => {
-      const rows = Array.from(document.querySelectorAll('#modal .outfit-piece-row'));
+      const rows = Array.from(document.querySelectorAll('#outfit-page .outfit-piece-row'));
       const row = rows.find(r => !(r.getAttribute('onclick')||'').includes(id));
       if(row) row.click();
       return Boolean(row);

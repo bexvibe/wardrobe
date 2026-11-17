@@ -47,16 +47,16 @@ module.exports = {
     if(await page.evaluate(() => typeof filterSheetOpen === 'function' && filterSheetOpen()
         && !document.querySelector('.modal-backdrop.open, #form-backdrop.open'))){
       await page.click('#filter-sheet-see');           // the filters: See N outfits
-    } else if(await page.$('#modal-backdrop.open #outfit-page-back')){
+    } else if(await page.$('#form-backdrop.open .sheet-footer .btn')){
+      await page.click('#form-backdrop .sheet-footer .btn' + side);
+    } else if(await page.$('#modal-backdrop.open #modal .sheet-footer.split .btn')){
+      await page.click('#modal .sheet-footer .btn' + side);
+    } else if(await page.$('#modal-backdrop.open #modal .sheet-footer .btn')){
+      await page.click('#modal .sheet-footer .btn');          // live: Done
+    } else if(!(await page.$('#modal-backdrop.open')) && await page.$('#outfit-page.open #outfit-page-back')){
       // An outfit's page has one way out, on its bar: Back. Its other
       // button is for the outfit, not for leaving.
       await page.click('#outfit-page-back');
-    } else if(await page.$('#form-backdrop.open .sheet-footer .btn')){
-      await page.click('#form-backdrop .sheet-footer .btn' + side);
-    } else if(await page.$('#modal .sheet-footer.split .btn')){
-      await page.click('#modal .sheet-footer .btn' + side);
-    } else if(await page.$('#modal .sheet-footer .btn')){
-      await page.click('#modal .sheet-footer .btn');          // live: Done
     } else {
       // Read-only: tap the page showing above the sheet, which means the
       // same as pushing the sheet down.

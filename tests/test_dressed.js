@@ -81,9 +81,9 @@ const rows = p => p.evaluate(()=>window.__WARDROBE_STATE.outfit_extras.slice());
       await p.evaluate(k=>!isFavorited(k) && window.__WARDROBE_STATE.saved_outfits.length === 0, key));
 
     check('the card wears it', await p.evaluate(()=>
-      document.querySelectorAll('#modal .outfit-extras img').length === 1));
+      document.querySelectorAll('#outfit-page .outfit-extras img').length === 1));
     check('the heart is still empty, because nothing was decided',
-      await p.evaluate(()=>document.querySelector('#modal .outfit-fav-btn').dataset.level === '0'));
+      await p.evaluate(()=>document.querySelector('#outfit-page .outfit-fav-btn').dataset.level === '0'));
     check('and the button offers the way back in',
       await p.isVisible('#outfit-page-extras:has-text("Edit accessories")'));
     await p.close();
@@ -188,7 +188,7 @@ const rows = p => p.evaluate(()=>window.__WARDROBE_STATE.outfit_extras.slice());
     check('so no accessories button is offered',
       !(await p.isVisible('#outfit-page-extras')));
     check('while the rest of the page is untouched',
-      await p.isVisible('#outfit-page-back') && await p.isVisible('#modal .outfit-fav-btn'));
+      await p.isVisible('#outfit-page-back') && await p.isVisible('#outfit-page .outfit-fav-btn'));
     await p.close();
   }
 

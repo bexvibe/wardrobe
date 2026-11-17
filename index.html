@@ -719,7 +719,25 @@
   .panel-actions{margin:0 0 10px;}
   /* The outfit as worn, centred and capped so a wide sheet on a tablet does
      not blow the flat-lay up past the size its photographs were cut for. */
-  .modal.outfit-page{height:100%;border-radius:0;box-shadow:none;}
+  /* Below the sheets (130) and above the page, the bar and the filters, so a
+     piece or the accessories rise over it and it shows through their dimming. */
+  .outfit-page-layer{
+    position:fixed;inset:0;z-index:128;
+    background:var(--page);
+    overflow-y:auto;overscroll-behavior:none;
+    visibility:hidden;
+    transform:translateY(100%);
+    transition:transform var(--sheet-ease-ms) var(--sheet-ease),
+               visibility 0s linear var(--sheet-ease-ms);
+  }
+  .outfit-page-layer.open{
+    visibility:visible;transform:none;
+    transition:transform var(--sheet-ease-ms) var(--sheet-ease), visibility 0s;
+  }
+  .outfit-page-inner{
+    max-width:640px;width:100%;min-height:100%;margin:0 auto;
+    display:flex;flex-direction:column;
+  }
   .outfit-page-body{padding-top:max(18px, env(safe-area-inset-top, 0px));}
   .outfit-page-flat{max-width:320px;margin:0 auto 18px;display:flex;flex-direction:column;}
   /* Bigger than a card, so the cut-outs' own margins are bigger too: the
@@ -1902,6 +1920,10 @@
        switch, so the bar cannot be static markup. -->
 </nav>
 
+<!-- An outfit's page. Its own layer rather than the sheet frame, so a piece
+     opened from it rises over it and the page stays visible beneath. -->
+<div class="outfit-page-layer" id="outfit-page" aria-label="Outfit"></div>
+
 <div class="modal-backdrop" id="modal-backdrop" onclick="closeModalIfBackdrop(event)">
   <div class="modal" id="modal"></div>
 </div>
@@ -2455,7 +2477,9 @@ const SHEETS = {
   item:      { backdrop: 'modal-backdrop', draw: id => drawItemSheet(id) },
   capsules:  { backdrop: 'modal-backdrop', draw: id => drawItemCapsulePicker(id) },
   form:      { backdrop: 'form-backdrop',  draw: id => drawItemForm(id) },
-  outfit:    { backdrop: 'modal-backdrop', draw: key => drawOutfitPage(key) },
+  // Drawn into its own layer, not the sheet frame: nothing else is on a
+  // backdrop while it is the sheet you are on.
+  outfit:    { backdrop: null, draw: key => drawOutfitPage(key) },
   // Only ever left, never returned to: their drafts do not survive the trip.
   capsule:   { backdrop: 'modal-backdrop', draw: null },
   builder:   { backdrop: 'modal-backdrop', draw: null },
@@ -2468,7 +2492,26 @@ let sheetOrigin = null;
 
 function anySheetShowing(){
   return SHEET_BACKDROPS.some(id =>
-    document.getElementById(id)?.classList.contains('open'));
+    document.getElementById(id)?.classList.contains('open')) || outfitPageShowing();
+}
+
+function outfitPageShowing(){
+  return Boolean(document.getElementById('outfit-page')?.classList.contains('open'));
+}
+
+// The outfit page stays up under whatever is opened from it, and is the one
+// beneath wherever the trail has an outfit lower down. Called as the trail
+// moves, so the layer always shows the nearest outfit at or below the top.
+function syncOutfitPage(redraw){
+  const layer = document.getElementById('outfit-page');
+  if(!layer) return;
+  let entry = null;
+  for(let i = sheetTrail.length - 1; i >= 0; i--){
+    if(sheetTrail[i].sheet === 'outfit'){ entry = sheetTrail[i]; break; }
+  }
+  if(!entry){ layer.classList.remove('open'); return; }
+  if(redraw || layer.dataset.key !== entry.id) drawOutfitPage(entry.id);
+  layer.classList.add('open');
 }
 
 function showSheetBackdrop(which){
@@ -2480,6 +2523,7 @@ function showSheetBackdrop(which){
 function hideAllSheets(){
   SHEET_BACKDROPS.forEach(id =>
     document.getElementById(id)?.classList.remove('open'));
+  document.getElementById('outfit-page')?.classList.remove('open');
   // A piece's sheet draws its own list of outfits, into the same generator
   // and list the page uses. With no sheet left the page has to take them
   // back: otherwise tapping an outfit on it expands one that is not in the
@@ -2506,8 +2550,6 @@ function pushSheet(entry){
   const here = sheetTrail[sheetTrail.length - 1];
   if(here) here.y = sheetScrollTop();
   sheetTrail.push(entry);
-  // Whatever opens next is a sheet unless it says it is the outfit's page.
-  document.getElementById('modal')?.classList.remove('outfit-page');
   // Off by default. A sheet that can be pushed away says so as it draws,
   // so a sheet that forgets to is merely undraggable rather than dragging
   // away into whatever the last one meant by closing.
@@ -2520,10 +2562,12 @@ function goBackFromSheet(){
   sheetTrail.pop();
   const back = sheetTrail[sheetTrail.length - 1];
   const spec = back && SHEETS[back.sheet];
-  document.getElementById('modal')?.classList.remove('outfit-page');
   if(spec && spec.draw){
     showSheetBackdrop(spec.backdrop);
-    spec.draw(back.id);
+    // The page beneath is drawn again whichever sheet is on top: what was
+    // done in between (accessories on, a heart changed) shows when you return.
+    syncOutfitPage(true);
+    if(back.sheet !== 'outfit') spec.draw(back.id);
     restoreSheetScroll(back.y || 0);
     return;
   }
@@ -2534,7 +2578,8 @@ function goBackFromSheet(){
 // is fixed to the screen.
 function openSheetEl(){
   const open = document.querySelector('.modal-backdrop.open');
-  return open ? open.querySelector('.modal') : null;
+  if(open) return open.querySelector('.modal');
+  return outfitPageShowing() ? document.getElementById('outfit-page') : null;
 }
 
 function sheetScrollTop(){
@@ -3190,7 +3235,7 @@ window.addEventListener('keydown', e => {
 // press starts on a chip and ends on the sheet, so the click that follows
 // belongs to neither and would otherwise read as a tap on the page.
 function sheetOverTheTop(){
-  return Boolean(document.querySelector('.modal-backdrop.open'));
+  return Boolean(document.querySelector('.modal-backdrop.open')) || outfitPageShowing();
 }
 
 // Escape puts the filters away, as it does for the other sheets.
@@ -3956,45 +4001,48 @@ function pickHeroCombo(){
 function openOutfitPage(key){
   if(!comboForKey(key)) return;
   pushSheet({ sheet: 'outfit', id: key });
-  drawOutfitPage(key);
+  // Opened from a piece's sheet, that sheet gives way to the page.
+  showSheetBackdrop(null);
+  syncOutfitPage(true);
 }
 
 // Drawing it is separate from arriving at it, as with the piece sheet: the
 // trail redraws it when you come back from a piece or the accessories.
 function drawOutfitPage(key){
   const combo = comboForKey(key);
-  if(!combo){ closeModal(); return; }
+  const layer = document.getElementById('outfit-page');
+  if(!combo || !layer){ closeModal(); return; }
   const worn = extrasFor(key).length;
-  const modal = document.getElementById('modal');
-  modal.classList.add('outfit-page');
-  modal.innerHTML = `
-    <div class="modal-body has-footer outfit-page-body">
-      <div class="outfit-page-flat">
-        <div class="outfit-thumbs">${outfitThumbsHtml(combo)}</div>
-      </div>
-      ${comboPieces(combo).map(p => `
-        <div class="outfit-piece-row tappable"
-             onclick='openPieceSheet(${JSON.stringify(p.id)})'>
-          ${p.photo ? `<img src="${esc(p.photo)}" alt="${esc(p.name)}" referrerpolicy="no-referrer" loading="lazy" decoding="async">` : `<div class="no-photo-mini">No photo</div>`}
-          <div class="outfit-piece-info">
-            <div class="p-name">${esc(p.name)}</div>
-          </div>
-          <span class="piece-go" aria-hidden="true">›</span>
+  layer.dataset.key = key;
+  layer.innerHTML = `
+    <div class="outfit-page-inner">
+      <div class="modal-body has-footer outfit-page-body">
+        <div class="outfit-page-flat">
+          <div class="outfit-thumbs">${outfitThumbsHtml(combo)}</div>
         </div>
-      `).join('')}
-    </div>
-    <div class="sheet-footer split outfit-page-bar">
-      <div class="sheet-footer-inner">
-        <button class="btn secondary" type="button" id="outfit-page-back" onclick="goBackFromSheet()">
-          <svg class="back-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>Back</button>
-        ${faveHeartHtml(key)}
-        ${extrasAvailable ? `<button class="btn" type="button" id="outfit-page-extras" onclick='openOutfitExtrasPicker(${JSON.stringify(key)})'>${worn ? 'Edit accessories' : '+ Add accessories'}</button>` : ''}
+        ${comboPieces(combo).map(p => `
+          <div class="outfit-piece-row tappable"
+               onclick='openPieceSheet(${JSON.stringify(p.id)})'>
+            ${p.photo ? `<img src="${esc(p.photo)}" alt="${esc(p.name)}" referrerpolicy="no-referrer" loading="lazy" decoding="async">` : `<div class="no-photo-mini">No photo</div>`}
+            <div class="outfit-piece-info">
+              <div class="p-name">${esc(p.name)}</div>
+            </div>
+            <span class="piece-go" aria-hidden="true">›</span>
+          </div>
+        `).join('')}
+      </div>
+      <div class="sheet-footer split outfit-page-bar">
+        <div class="sheet-footer-inner">
+          <button class="btn secondary" type="button" id="outfit-page-back" onclick="goBackFromSheet()">
+            <svg class="back-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>Back</button>
+          ${faveHeartHtml(key)}
+          ${extrasAvailable ? `<button class="btn" type="button" id="outfit-page-extras" onclick='openOutfitExtrasPicker(${JSON.stringify(key)})'>${worn ? 'Edit accessories' : '+ Add accessories'}</button>` : ''}
+        </div>
       </div>
     </div>`;
   // A page, not a sheet: nothing to push down. Back is the way out.
   allowSheetDrag(null);
-  document.getElementById('modal-backdrop').classList.add('open');
 }
 
 function renderHero(){

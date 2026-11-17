@@ -44,7 +44,7 @@ async function boot(b, url){
   check('opening a card opens that outfit\'s page', after.open);
   check('and the page behind keeps the photos it had (no reload)', after.kept >= marked, JSON.stringify(after));
   await p.click('#outfit-page-back'); await p.waitForTimeout(600);
-  check('Back closes it', await p.evaluate(()=>!document.getElementById('modal-backdrop').classList.contains('open')));
+  check('Back closes it', await p.evaluate(()=>!anySheetShowing()));
 
   // morphHtml directly: keyed reorder keeps elements, attribute change keeps the node
   const direct = await p.evaluate(()=>{

@@ -62,7 +62,7 @@ async function openPicker(p){
   check('the outfit\'s page offers to add accessories',
     await p.isVisible('#outfit-page-extras:has-text("+ Add accessories")'));
   check('and there is only the one button for it, not one per kind of thing',
-    await p.evaluate(()=>document.querySelectorAll('#modal .sheet-footer .btn:not(.secondary)').length)===1);
+    await p.evaluate(()=>document.querySelectorAll('#outfit-page .sheet-footer .btn:not(.secondary)').length)===1);
   await p.screenshot({path:shot('e-1-add.png')});
 
   await openPicker(p);
@@ -118,7 +118,7 @@ async function openPicker(p){
   check('both show on the card', (await onCard(p))===2, String(await onCard(p)));
   check('and both are listed among its pieces',
     await p.evaluate(()=>{
-      const names = Array.from(document.querySelectorAll('#modal .outfit-piece-row .p-name'))
+      const names = Array.from(document.querySelectorAll('#outfit-page .outfit-piece-row .p-name'))
         .map(e=>e.textContent.trim());
       const want = extrasFor(favoriteOutfits[0].key).map(id=>itemById(id).name);
       return want.every(n=>names.includes(n));

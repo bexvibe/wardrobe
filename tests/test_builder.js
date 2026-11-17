@@ -194,7 +194,7 @@ const ticked = p => p.evaluate(()=>Array.from(document.querySelectorAll('#builde
       }, key));
     check('you are back on Faves, with the outfit\'s page open',
       await p.evaluate(()=>appMode==='saved' &&
-        document.getElementById('modal-backdrop').classList.contains('open')));
+        outfitPageShowing()));
     check('so accessories are one tap away',
       await p.evaluate(k=>{
         const t = sheetTrail[sheetTrail.length-1];
