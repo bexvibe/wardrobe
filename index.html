@@ -717,6 +717,15 @@
     .outfit-expanded-panel,.outfit-expanded-panel.closing{animation:none;}
   }
   .panel-actions{margin:0 0 10px;}
+  /* The outfit as worn, centred and capped so a wide sheet on a tablet does
+     not blow the flat-lay up past the size its photographs were cut for. */
+  .modal.outfit-page{height:100%;border-radius:0;box-shadow:none;}
+  .outfit-page-body{padding-top:max(18px, env(safe-area-inset-top, 0px));}
+  .outfit-page-flat{max-width:320px;margin:0 auto 18px;display:flex;flex-direction:column;}
+  /* The heart lives on the bar here, not over a corner of the picture. */
+  .outfit-page-bar .outfit-fav-btn{
+    position:static;flex:none;width:48px;height:48px;background:none;
+  }
   /* A 48px target round a 24px glyph. The negative margins put the glyph, not
      the target, on the edge of the content it lines up with. */
   .icon-btn{
@@ -1979,7 +1988,6 @@ let activeTab = 'All';
 let pendingPhotoItemId = null;
 let appMode = 'inventory';
 let favoriteOutfits = [];
-let expandedSavedKey = null;
 let capsules = [];
 let expandedCapsuleId = null;
 let viewMode = 'photos'; // 'photos' or 'names'
@@ -2191,7 +2199,6 @@ function toggleCapsuleFilter(id){
   renderFilterControls();
   renderFiltersFab();
   if(appMode === 'saved'){
-    expandedSavedKey = null;
     renderSavedOutfits();
   } else {
     resetOutfitResults();
@@ -2273,9 +2280,6 @@ function shuffleOutfits(){
   sessionSeed = (Math.random() * 4294967296) >>> 0;
   try{ sessionStorage.setItem(SESSION_SEED_KEY, String(sessionSeed)); }catch(e){ }
 
-  // An outfit you had open is not the one that will be there afterwards.
-  expandedComboKey = null;
-  expandedSavedKey = null;
   resetOutfitResults();     // re-picks the lead card from the new order
   if(appMode === 'saved') renderSavedOutfits();
 
@@ -2444,6 +2448,7 @@ const SHEETS = {
   item:      { backdrop: 'modal-backdrop', draw: id => drawItemSheet(id) },
   capsules:  { backdrop: 'modal-backdrop', draw: id => drawItemCapsulePicker(id) },
   form:      { backdrop: 'form-backdrop',  draw: id => drawItemForm(id) },
+  outfit:    { backdrop: 'modal-backdrop', draw: key => drawOutfitPage(key) },
   // Only ever left, never returned to: their drafts do not survive the trip.
   capsule:   { backdrop: 'modal-backdrop', draw: null },
   builder:   { backdrop: 'modal-backdrop', draw: null },
@@ -2494,6 +2499,8 @@ function pushSheet(entry){
   const here = sheetTrail[sheetTrail.length - 1];
   if(here) here.y = sheetScrollTop();
   sheetTrail.push(entry);
+  // Whatever opens next is a sheet unless it says it is the outfit's page.
+  document.getElementById('modal')?.classList.remove('outfit-page');
   // Off by default. A sheet that can be pushed away says so as it draws,
   // so a sheet that forgets to is merely undraggable rather than dragging
   // away into whatever the last one meant by closing.
@@ -2506,6 +2513,7 @@ function goBackFromSheet(){
   sheetTrail.pop();
   const back = sheetTrail[sheetTrail.length - 1];
   const spec = back && SHEETS[back.sheet];
+  document.getElementById('modal')?.classList.remove('outfit-page');
   if(spec && spec.draw){
     showSheetBackdrop(spec.backdrop);
     spec.draw(back.id);
@@ -3498,11 +3506,11 @@ async function saveBuiltOutfit(){
     return;
   }
   outfitDraft = null;
-  // Straight to it on the page it now lives on, open, so you can put
-  // accessories on it while you are still thinking about it.
-  expandedSavedKey = key;
   goBackFromSheet();
   renderSavedOutfits();
+  // Straight to it, open, so you can put accessories on it while you are
+  // still thinking about it.
+  openOutfitPage(key);
 }
 
 // One garment, not a category: "No jacket", not "None" or "No jackets".
@@ -3578,7 +3586,6 @@ function applyFilterResults(){
   if(!filterResultsStale) return;
   filterResultsStale = false;
   if(appMode === 'saved'){
-    expandedSavedKey = null;
     renderSavedOutfits();
   } else {
     resetOutfitResults();
@@ -3926,39 +3933,61 @@ function pickHeroCombo(){
   if(heroCombo) storeHero(heroCombo);
 }
 
-// What an outfit shows once it is opened: its pieces, each a way to that
-// piece, and the one thing you can do to the combination itself. Shared, so
-// the outfit the page leads with opens exactly like the ones in the grid —
-// it used to set expandedComboKey and then draw nothing, which made the
-// featured outfit the one you could not look into.
-// One panel, drawn the same on both pages. The two differ only in which
-// collapse they call and whether hiding is offered — an outfit you kept on
-// purpose is not one you are looking to dismiss.
+// An outfit opens as a page of its own rather than growing in place. Growing
+// a card in a grid moved everything under the finger and needed a scroll to
+// put it right; a page leaves the one behind it where it was, and its
+// controls sit on the same bar every other sheet keeps them on.
 //
-// Accessories are offered on every outfit, not just a kept one. They hang
-// off the combination, so putting a hat on something does not decide
+// It is drawn in the sheet frame, so the trail still works: a piece opened
+// from here comes back here, and Back returns to whichever page you came from.
+//
+// It shows the outfit as worn and its pieces, each a way to that piece. The
+// bar holds what you can do to the combination itself — Back, the heart, and
+// accessories, which are offered on every outfit, not just a kept one. They
+// hang off the combination, so putting a hat on something does not decide
 // anything about whether you are keeping it.
-function outfitExpandedPanelHtml(combo, key, opts){
-  const o = opts || {};
-  const collapse = o.collapse || `toggleExpandCombo(${JSON.stringify(key)})`;
+function openOutfitPage(key){
+  if(!comboForKey(key)) return;
+  pushSheet({ sheet: 'outfit', id: key });
+  drawOutfitPage(key);
+}
+
+// Drawing it is separate from arriving at it, as with the piece sheet: the
+// trail redraws it when you come back from a piece or the accessories.
+function drawOutfitPage(key){
+  const combo = comboForKey(key);
+  if(!combo){ closeModal(); return; }
   const worn = extrasFor(key).length;
-  return `
-      <div class="outfit-expanded-panel">
-        <button class="outfit-collapse-btn" onclick='event.stopPropagation();${collapse}'>Collapse ↑</button>
-        <div class="modal-actions panel-actions">
-          ${extrasAvailable ? `<button class="btn small secondary" onclick='event.stopPropagation();openOutfitExtrasPicker(${JSON.stringify(key)})'>${worn ? 'Edit accessories' : '+ Add accessories'}</button>` : ''}
-        </div>
-        ${comboPieces(combo).map(p => `
-          <div class="outfit-piece-row tappable"
-               onclick='event.stopPropagation();openPieceSheet(${JSON.stringify(p.id)})'>
-            ${p.photo ? `<img src="${esc(p.photo)}" alt="${esc(p.name)}" referrerpolicy="no-referrer" loading="lazy" decoding="async">` : `<div class="no-photo-mini">No photo</div>`}
-            <div class="outfit-piece-info">
-              <div class="p-name">${esc(p.name)}</div>
-            </div>
-            <span class="piece-go" aria-hidden="true">›</span>
+  const modal = document.getElementById('modal');
+  modal.classList.add('outfit-page');
+  modal.innerHTML = `
+    <div class="modal-body has-footer outfit-page-body">
+      <div class="outfit-page-flat">
+        <div class="outfit-thumbs">${outfitThumbsHtml(combo)}</div>
+      </div>
+      ${comboPieces(combo).map(p => `
+        <div class="outfit-piece-row tappable"
+             onclick='openPieceSheet(${JSON.stringify(p.id)})'>
+          ${p.photo ? `<img src="${esc(p.photo)}" alt="${esc(p.name)}" referrerpolicy="no-referrer" loading="lazy" decoding="async">` : `<div class="no-photo-mini">No photo</div>`}
+          <div class="outfit-piece-info">
+            <div class="p-name">${esc(p.name)}</div>
           </div>
-        `).join('')}
-      </div>`;
+          <span class="piece-go" aria-hidden="true">›</span>
+        </div>
+      `).join('')}
+    </div>
+    <div class="sheet-footer split outfit-page-bar">
+      <div class="sheet-footer-inner">
+        <button class="btn secondary" type="button" id="outfit-page-back" onclick="goBackFromSheet()">
+          <svg class="back-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>Back</button>
+        ${faveHeartHtml(key)}
+        ${extrasAvailable ? `<button class="btn" type="button" id="outfit-page-extras" onclick='openOutfitExtrasPicker(${JSON.stringify(key)})'>${worn ? 'Edit accessories' : '+ Add accessories'}</button>` : ''}
+      </div>
+    </div>`;
+  // A page, not a sheet: nothing to push down. Back is the way out.
+  allowSheetDrag(null);
+  document.getElementById('modal-backdrop').classList.add('open');
 }
 
 function renderHero(){
@@ -3968,12 +3997,10 @@ function renderHero(){
   host.style.display = 'block';
 
   const key = comboKey(heroCombo);
-  const isExpanded = expandedComboKey === key;
   morphHtml(host, `
-    <div class="outfit-card hero-card ${isExpanded ? 'expanded' : ''}" data-key="hero" onclick='toggleExpandCombo(${JSON.stringify(key)})'>
+    <div class="outfit-card hero-card" data-key="hero" onclick='openOutfitPage(${JSON.stringify(key)})'>
       ${faveHeartHtml(key)}
       <div class="outfit-thumbs">${outfitThumbsHtml(heroCombo)}</div>
-      ${isExpanded ? outfitExpandedPanelHtml(heroCombo, key) : ''}
     </div>`);
 }
 
@@ -4505,14 +4532,6 @@ function floatExpandedCardToTop(scope, within){
   });
 }
 
-function toggleExpandSaved(key){
-  withPanelCollapse(expandedSavedKey !== null, '#saved-gallery', () => {
-    expandedSavedKey = (expandedSavedKey === key) ? null : key;
-    holdCardInPlace('#saved-gallery', key, renderSavedOutfits);
-    if(expandedSavedKey) floatExpandedCardToTop('#saved-gallery');
-  });
-}
-
 // ---- Accessories on an outfit ------------------------------
 //
 // Outfits generate from clothes alone — a jacket changes whether an outfit
@@ -4776,20 +4795,11 @@ function renderSavedOutfits(){
 
   morphHtml(gallery, shown.map(rec => {
     const combo = favoriteRecordToCombo(rec);
-    const isExpanded = expandedSavedKey === rec.key;
     const thumbs = outfitThumbsHtml(combo);
 
-    // The same panel the Outfits page draws, minus hiding: you kept this
-    // one on purpose.
-    const expandedPanel = isExpanded
-      ? outfitExpandedPanelHtml(combo, rec.key,
-          { collapse: `toggleExpandSaved(${JSON.stringify(rec.key)})` })
-      : '';
-
-    return `<div class="outfit-card ${isExpanded ? 'expanded' : ''}" data-key="${esc(rec.key)}" onclick='toggleExpandSaved(${JSON.stringify(rec.key)})'>
+    return `<div class="outfit-card" data-key="${esc(rec.key)}" onclick='openOutfitPage(${JSON.stringify(rec.key)})'>
       ${faveHeartHtml(rec.key)}
       <div class="outfit-thumbs">${thumbs}</div>
-      ${expandedPanel}
     </div>`;
   }).join(''), { flip:true });
   renderShuffleFab();
@@ -5136,26 +5146,6 @@ async function submitCapsuleEditor(){
     } : null);
 }
 
-let expandedComboKey = null;
-
-function toggleExpandCombo(key){
-  const scope = outfitRenderContext === 'modal' ? '#m-outfit-gallery' : '#outfits-view';
-  withPanelCollapse(expandedComboKey !== null, scope, () => {
-    const opening = expandedComboKey !== key;
-    expandedComboKey = opening ? key : null;
-    // Either the lead card or the grid may be holding this outfit, so both are
-    // redrawn — the hero is not in the grid's list.
-    holdCardInPlace(scope, key, () => {
-      renderOutfits();
-      if(outfitRenderContext !== 'modal') renderHero();
-    });
-
-    // Float the opened card to the top, which also clears the docked filter
-    // panel, the one thing on the page that does not scroll with it.
-    if(opening) floatExpandedCardToTop(scope);
-  });
-}
-
 function renderOutfits(){
   const ids = outfitRenderContext === 'modal'
     ? {gallery:'m-outfit-gallery', empty:null, loadMore:'m-load-more-btn'}
@@ -5210,14 +5200,11 @@ function renderOutfits(){
 
   morphHtml(gallery, shown.map(combo => {
     const key = comboKey(combo);
-    const isExpanded = expandedComboKey === key;
     const thumbs = outfitThumbsHtml(combo);
-    const expandedPanel = isExpanded ? outfitExpandedPanelHtml(combo, key) : '';
 
-    return `<div class="outfit-card ${isExpanded ? 'expanded' : ''}" data-key="${esc(key)}" onclick='toggleExpandCombo(${JSON.stringify(key)})'>
+    return `<div class="outfit-card" data-key="${esc(key)}" onclick='openOutfitPage(${JSON.stringify(key)})'>
       ${faveHeartHtml(key)}
       <div class="outfit-thumbs">${thumbs}</div>
-      ${expandedPanel}
     </div>`;
   }).join(''), { flip:true });
 
@@ -6556,7 +6543,6 @@ function setOutfitTag(tag){
   renderFilterControls();     // redraws the chips and the Clear all control with them
   renderFiltersFab();
   if(appMode === 'saved'){
-    expandedSavedKey = null;  // an expanded card may be filtered away
     renderSavedOutfits();
   } else {
     resetOutfitResults();
