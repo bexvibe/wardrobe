@@ -317,10 +317,10 @@ const confirmText = p => p.evaluate(()=>({
     const p=await open(b);
     const src = fs.readFileSync(REPO + '/index.html', 'utf8');
     const arrows = [...src.matchAll(/class="sheet-back"[^>]*/g)].map(m => m[0]);
-    check('one back arrow left in the whole app', arrows.length === 1,
+    check('no back arrow at the top of any page', arrows.length === 0,
       `${arrows.length}: ${arrows.join(' | ').slice(0, 120)}`);
-    check('and it belongs to select mode, not to a sheet',
-      arrows[0] && arrows[0].includes('edit-back-btn'), arrows[0]);
+    check('select mode leaves by Back on its bar, like the sheets do',
+      /id="edit-back-btn"/.test(src) && /class="btn secondary bulk-back"/.test(src));
 
     // And the editors leave the way the other sheets do.
     await p.click('#add-item-btn'); await p.waitForTimeout(500);

@@ -103,7 +103,7 @@ async function login(page) {
 
     await holdFirstTile(page);             // holding selects it
     // No confirmation step: the undo on the toast is the safety net.
-    await page.click('button:has-text("Delete selected")');
+    await page.click('#bulk-delete');
     await page.waitForTimeout(700);
 
     const afterCount = await shown(page);

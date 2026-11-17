@@ -53,16 +53,16 @@ async function longPress(p, sel){
     // on, and naming it as well was a third voice saying the same thing.
     check('the head carries no title in the mode',
       await p.evaluate(()=>document.getElementById('wardrobe-title').offsetParent === null));
-    check('the count is in the bar, with the buttons that act on it',
-      (await bar(p))==='1 selected Select all Delete selected', await bar(p));
+    check('the count is inside the button that acts on it, and nowhere else',
+      (await bar(p))==='Back Select all Delete 1 item', await bar(p));
     check('and the navigation stands down', !(await p.isVisible('.bottom-bar')));
-    check('the way out is the arrow every sheet uses, on the left',
+    check('the way out is Back, at the bottom left of the bar',
       (await p.isVisible('#edit-back-btn')) &&
       (await p.evaluate(()=>{
         const bk=document.getElementById('edit-back-btn').getBoundingClientRect();
-        const head=document.getElementById('wardrobe-head').getBoundingClientRect();
+        const bar=document.getElementById('bulk-bar').getBoundingClientRect();
         return Boolean(document.querySelector('#edit-back-btn .back-glyph')) &&
-               bk.left - head.left < 24;
+               bk.left - bar.left < 24 && bk.top > window.innerHeight / 2;
       })));
     check('and there is no Done button any more',
       await p.evaluate(()=>!document.getElementById('edit-done-btn')));
@@ -103,21 +103,13 @@ async function longPress(p, sel){
       };
     }, {page: restHeight, selecting: selectingRest});
     check('scrolled a long way down', g.scrolled > 1800, String(g.scrolled));
-    check('the head is stuck to the top of the screen', g.headTop === 0, `${g.headTop}px`);
     check('so the way out is still on screen', g.done, `Back at ${g.doneTop}px`);
     check('the action bar is still on screen too', g.bar);
-    check('and the head is shallower than the page head it replaced',
-      g.headHeight <= 60 && g.headHeight < g.restHeight,
-      `${g.headHeight}px vs ${g.restHeight}px at rest`);
-    check('and it is the same bar it was before you scrolled',
-      g.headHeight === g.selectingRestHeight && g.selectingRestTop === 0,
-      `${g.selectingRestTop}..${g.selectingRestTop + g.selectingRestHeight} at rest, ` +
-      `${g.headTop}..${g.headTop + g.headHeight} stuck`);
     // Two buttons a thumb has to hit while the other hand holds the phone.
     check('both actions are thumb-sized', await p.evaluate(()=>
       Array.from(document.querySelectorAll('#bulk-bar .btn'))
         .every(x => x.getBoundingClientRect().height >= 44 &&
-                    x.getBoundingClientRect().width >= 80)),
+                    x.getBoundingClientRect().width >= 60)),
       await p.evaluate(()=>Array.from(document.querySelectorAll('#bulk-bar .btn'))
         .map(x=>`${x.textContent.trim()} ${Math.round(x.getBoundingClientRect().width)}x${Math.round(x.getBoundingClientRect().height)}`).join(', ')));
     check('and the bar still fits the screen without scrolling',
@@ -145,8 +137,8 @@ async function longPress(p, sel){
       await p.isVisible('#bulk-bar button:has-text("Deselect all")'), await bar(p));
     await p.click('#bulk-bar button:has-text("Deselect all")'); await p.waitForTimeout(500);
     check('which it does', (await p.evaluate(()=>selectedIds.size))===0);
-    check('with nothing selected it says so rather than counting zero',
-      (await bar(p)).startsWith('Select pieces'), await bar(p));
+    check('with nothing selected the button just says Delete, not a count of zero',
+      (await bar(p))==='Back Select all Delete', await bar(p));
     check('and there is nothing to delete',
       await p.evaluate(()=>document.querySelector('#bulk-bar button:last-child').disabled));
     await p.close();

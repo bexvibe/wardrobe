@@ -232,7 +232,7 @@ const dbTags = (p, id) => p.evaluate(i =>
     await hold(p, '#gallery .tile', 700);
     await p.locator('#gallery .tile').nth(1).click(); await p.waitForTimeout(200);
     const n = await p.evaluate(()=>ITEMS.length);
-    await p.click('button:has-text("Delete selected")'); await p.waitForTimeout(700);
+    await p.click('#bulk-delete'); await p.waitForTimeout(700);
     check('archiving a selection does not ask either', !(await asked(p)));
     check('two go, and both are offered back',
       await p.evaluate(()=>ITEMS.length) === n-2 && await hasUndo(p),

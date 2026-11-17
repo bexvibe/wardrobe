@@ -139,7 +139,7 @@ async function holdFirstTile(p){
     await holdFirstTile(p);
     await p.locator('#gallery .tile').nth(1).click(); await p.waitForTimeout(200);
     await p.locator('#gallery .tile').nth(2).click(); await p.waitForTimeout(200);
-    await p.click('button:has-text("Delete selected")'); await p.waitForTimeout(700);
+    await p.click('#bulk-delete'); await p.waitForTimeout(700);
     const t = await toast(p);
     check('a bulk archive offers the lot back', t.undo, t.msg);
     check('three are gone', (await shown(p)) === before-3, String(await shown(p)));

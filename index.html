@@ -429,11 +429,8 @@
     padding:10px 12px;
     box-shadow:0 6px 24px rgba(0,0,0,0.11);
   }
-  .bulk-count{
-    margin-right:auto;padding-left:6px;
-    font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink-soft);
-    white-space:nowrap;
-  }
+  .bulk-bar .bulk-back{margin-right:auto;border-color:transparent;color:var(--ink-soft);padding:0 10px 0 4px;}
+  .bulk-bar .bulk-delete{white-space:nowrap;}
   /* These are the two things the mode is for, so they get a real target
      rather than the small button used inside a sheet. */
   .bulk-bar .btn{
@@ -442,27 +439,6 @@
   }
   .btn[disabled]{opacity:0.4;cursor:default;}
 
-  /* The head stays put while you scroll, so the way out is never more than
-     a glance away. It is a contextual bar rather than the page's own head:
-     the back arrow and what you are doing, grouped left, at the size a
-     sheet titles itself — no page title to compete with, so it can be
-     shallow. */
-  .page-head.selecting{
-    position:sticky;top:0;z-index:85;
-    justify-content:flex-start;gap:12px;
-    margin:calc(var(--page-top) * -1) -16px 14px;padding:6px 16px;
-    background:var(--page);
-    box-shadow:0 6px 16px -12px rgba(0,0,0,0.5);
-  }
-  .page-head.selecting h1{
-    font-family:'Fraunces', serif;font-size:22px;font-weight:500;
-    letter-spacing:normal;
-  }
-  /* The sheets give this arrow a padded row to sit in; here the row is
-     shallow, so the button carries its own thumb-sized height. */
-  .page-head.selecting .sheet-back{
-    flex:none;min-height:44px;padding:0 12px 0 0;
-  }
   .bottom-bar.unlocked{display:flex;}
   body.selecting .bottom-bar{display:none;}
 
@@ -576,18 +552,6 @@
     content:'';
     width:38px;height:4px;border-radius:999px;
     background:var(--line);
-  }
-  /* The one arrow left in the app: leaving select mode on the wardrobe,
-     which is a page rather than a sheet. Every sheet leaves by its own bar
-     now. Drawn like the search glyph beside it rather than typed as a
-     character. */
-  .sheet-back{
-    display:inline-flex;align-items:center;gap:7px;
-    font-family:'Work Sans',sans-serif;
-    font-size:13px;font-weight:600;
-    background:none;border:none;
-    color:var(--ink);cursor:pointer;
-    padding:6px 4px;
   }
   .back-glyph{width:16px;height:16px;flex:none;display:block;}
   .modal-photo{
@@ -1689,11 +1653,6 @@
 <div class="wrap" id="app-root" style="display:none;">
   <div id="inventory-view">
     <header class="page-head" id="wardrobe-head">
-      <!-- Leaving a selection is going back out of it, and the app already
-           has one way of saying that: the arrow at the top left of every
-           sheet. A Done button on the right was a second vocabulary for the
-           same idea. -->
-      <button class="sheet-back" id="edit-back-btn" onclick="toggleEditMode()" style="display:none;"><svg class="back-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>Back</button>
       <h1 id="wardrobe-title">Wardrobe</h1>
       <div class="icon-row">
         <button class="icon-btn" id="search-btn" onclick="openSearch()" aria-label="Search" title="Search">
@@ -7003,14 +6962,14 @@ function renderToolbarIcons(){
   // and none of the controls, because none of them do anything useful while
   // you are selecting. The head sticks to the top of the screen in this
   // mode, so the way out stays reachable however far you have scrolled.
-  const back = document.getElementById('edit-back-btn');
-  if(back) back.style.display = editMode ? 'inline-flex' : 'none';
   ['search-btn', 'view-toggle-btn', 'add-item-btn'].forEach(id => {
     const btn = document.getElementById(id);
     if(btn) btn.style.display = editMode ? 'none' : 'flex';
   });
+  // The head has nothing to hold while selecting: the way out and what you
+  // can do both live on the bar at the foot of the screen.
   const head = document.getElementById('wardrobe-head');
-  if(head) head.classList.toggle('selecting', editMode);
+  if(head) head.style.display = editMode ? 'none' : '';
   // No title in the mode: the checkboxes and the action bar say what is
   // going on, and naming it as well was a third voice saying the same thing.
   const title = document.getElementById('wardrobe-title');
@@ -7243,12 +7202,17 @@ function render(){
     // count sits next to the buttons that act on it.
     const n = selectedIds.size;
     const allOn = filtered.length > 0 && filtered.every(i => selectedIds.has(i.id));
+    // The count lives in the button that acts on it, so nothing else on the
+    // bar has to say how many. Back sits at the left, where the other bars
+    // keep it.
     bulkBar.innerHTML = `
-      <span class="bulk-count">${n ? `${n} selected` : 'Select pieces'}</span>
-      <button class="btn small secondary" onclick="selectAllVisible()"
+      <button class="btn secondary bulk-back" id="edit-back-btn" type="button" onclick="toggleEditMode()">
+        <svg class="back-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>Back</button>
+      <button class="btn secondary" onclick="selectAllVisible()"
               ${filtered.length ? '' : 'disabled'}>${allOn ? 'Deselect all' : 'Select all'}</button>
-      <button class="btn small" onclick="bulkDeleteSelected()"
-              ${n ? '' : 'disabled'}>Delete selected</button>
+      <button class="btn bulk-delete" id="bulk-delete" onclick="bulkDeleteSelected()"
+              ${n ? '' : 'disabled'}>${n ? `Delete ${n} ${n === 1 ? 'item' : 'items'}` : 'Delete'}</button>
     `;
   }
 

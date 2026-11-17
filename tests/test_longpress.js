@@ -78,9 +78,15 @@ const selected = p => p.evaluate(()=>Array.from(selectedIds));
       (await p.evaluate(()=>Boolean(document.querySelector('#edit-back-btn .back-glyph')))));
     check('and the head carries no title at all in the mode',
       await p.evaluate(()=>document.getElementById('wardrobe-title').offsetParent === null));
-    check('and the count is in the action bar, beside what acts on it',
-      (await p.textContent('#bulk-bar')).replace(/\s+/g,' ').trim().startsWith('1 selected'),
+    check('and the count is inside the button that acts on it, with no other count',
+      (await p.textContent('#bulk-delete')).trim()==='Delete 1 item' &&
+      !/selected/i.test(await p.textContent('#bulk-bar')),
       (await p.textContent('#bulk-bar')).replace(/\s+/g,' ').trim());
+    check('and Back is at the bottom left of the bar', await p.evaluate(()=>{
+      const b=document.getElementById('edit-back-btn').getBoundingClientRect();
+      const bar=document.getElementById('bulk-bar').getBoundingClientRect();
+      return b.left < bar.left + 40 && b.top > window.innerHeight/2;
+    }));
     check('and the other controls get out of the way',
       !(await p.isVisible('#add-item-btn')) && !(await p.isVisible('#search-btn')) &&
       !(await p.isVisible('#view-toggle-btn')));
@@ -132,7 +138,7 @@ const selected = p => p.evaluate(()=>Array.from(selectedIds));
 
     // The archive path still works from here, and no longer asks first — the
     // undo on the toast is the safety net.
-    await p.click('button:has-text("Delete selected")'); await p.waitForTimeout(700);
+    await p.click('#bulk-delete'); await p.waitForTimeout(700);
     check('nothing asked "are you sure"',
       await p.evaluate(()=>!Array.from(document.querySelectorAll('button'))
         .some(x=>/Yes, delete/.test(x.textContent))));
