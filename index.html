@@ -721,16 +721,18 @@
      not blow the flat-lay up past the size its photographs were cut for. */
   .modal.outfit-page{height:100%;border-radius:0;box-shadow:none;}
   .outfit-page-body{padding-top:max(18px, env(safe-area-inset-top, 0px));}
-  .outfit-page-flat{max-width:320px;margin:0 auto 18px;display:flex;flex-direction:column;}
-  /* White cards, the same pattern as the outfit cards on the Outfits page. */
+  .outfit-page-flat{margin:0 0 12px;display:flex;flex-direction:column;}
+  /* White cards, the same pattern as the outfit cards on the Outfits page:
+     one for the outfit, one for the whole item list, both full width. */
   .outfit-page-flat,
-  .outfit-page-body .outfit-piece-row{
+  .outfit-page-list{
     background:var(--surface);
     border:1px solid var(--line);
     border-radius:10px;
     padding:8px;
   }
-  .outfit-page-body .outfit-piece-row{margin:0 0 10px;padding:8px 12px 8px 8px;}
+  .outfit-page-list .outfit-piece-row{padding:8px 4px;}
+  .outfit-page-list .outfit-piece-row + .outfit-piece-row{border-top:1px solid var(--line);}
   /* The heart lives on the bar here, not over a corner of the picture. */
   .outfit-page-bar .outfit-fav-btn{
     position:static;flex:none;width:48px;height:48px;background:none;
@@ -3974,6 +3976,7 @@ function drawOutfitPage(key){
       <div class="outfit-page-flat">
         <div class="outfit-thumbs">${outfitThumbsHtml(combo)}</div>
       </div>
+      <div class="outfit-page-list">
       ${comboPieces(combo).map(p => `
         <div class="outfit-piece-row tappable"
              onclick='openPieceSheet(${JSON.stringify(p.id)})'>
@@ -3984,6 +3987,7 @@ function drawOutfitPage(key){
           <span class="piece-go" aria-hidden="true">›</span>
         </div>
       `).join('')}
+      </div>
     </div>
     <div class="sheet-footer split outfit-page-bar">
       <div class="sheet-footer-inner">
