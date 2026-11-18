@@ -106,7 +106,7 @@ const rect = (p, sel) => p.evaluate(s=>{
       };
     });
     check('it is a real <header> with an <h1> inside it', head.tag==='HEADER');
-    check('the title is set in the display serif', head.titleFont==='Fraunces', head.titleFont);
+    check('the title is set in the display font', head.titleFont==='Bricolage Grotesque', head.titleFont);
     // 43, 35, 19, 26, 34, and settled at 28: it names the page clearly
     // without reading as a masthead.
     check('and set to name the page, not announce it', head.titleSize===28, head.titleSize+'px');

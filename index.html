@@ -6,7 +6,7 @@
 <meta name="color-scheme" content="light">
 <title>Wardrobe Inventory</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Work+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,800&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   /* One neutral scale, no hue anywhere. The clothes are the only colour in
      the app, which is the point of a wardrobe: a sage pill or a terracotta
@@ -62,7 +62,7 @@
     margin:0;
     background:var(--page);
     color:var(--ink);
-    font-family:'Work Sans', sans-serif;
+    font-family:'Figtree',sans-serif;
     -webkit-font-smoothing:antialiased;
   }
   input::placeholder, textarea::placeholder{
@@ -85,15 +85,15 @@
     margin-bottom:16px;
   }
   h1{
-    font-family:'Fraunces', serif;
-    font-weight:400;
+    font-family:'Bricolage Grotesque',sans-serif;
+    font-weight:800;
     /* Grows with the screen and stops before it can wrap on a phone.
        It has been 43, 35, 19, 26, 34 — and settled at about 28px on a
        390px phone. */
     font-size:clamp(25px, 7.18vw, 31px);
     line-height:1.1;
     margin:0;
-    letter-spacing:-0.02em;
+    letter-spacing:-0.04em;
   }
 
   /* The same All / Faves switch as the nav, under the title, so the choice
@@ -105,7 +105,7 @@
   .view-switch button{
     min-height:36px;padding:0 16px;border:none;background:none;border-radius:999px;
     display:flex;align-items:center;
-    font-family:'Work Sans',sans-serif;font-size:13px;font-weight:600;
+    font-family:'Figtree',sans-serif;font-size:13px;font-weight:600;
     color:var(--ink-soft);cursor:pointer;
   }
   .view-switch button.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,0.14);}
@@ -161,7 +161,7 @@
     /* A full thumb, like every other chip in the app. It was 33px, which
        is under the 44 a fingertip actually covers. */
     min-height:44px;
-    font-family:'Work Sans',sans-serif;
+    font-family:'Figtree',sans-serif;
     font-size:13px;
     font-weight:600;
     padding:0 16px;
@@ -234,7 +234,7 @@
   }
   .search-clear svg{width:15px;height:15px;display:block;}
   input[type=text]{
-    font-family:'Work Sans',sans-serif;
+    font-family:'Figtree',sans-serif;
     /* 16px exactly, and not a pixel less: Safari on iOS zooms the page in
        when it focuses a field whose text is smaller than that. Tapping the
        search icon left the whole wardrobe scaled up. Sizing the text to the
@@ -252,7 +252,7 @@
     min-width:160px;
   }
   .btn{
-    font-family:'Work Sans',sans-serif;
+    font-family:'Figtree',sans-serif;
     font-size:13px;
     font-weight:600;
     padding:9px 16px;
@@ -281,7 +281,7 @@
 
   input, textarea, select{
     width:100%;
-    font-family:'Work Sans',sans-serif;
+    font-family:'Figtree',sans-serif;
     /* Same 16px floor as above — every field that can take focus, or the
        add form and the password screen zoom instead. */
     font-size:16px;
@@ -306,7 +306,7 @@
   }
 
   .count-line{
-    font-family:'IBM Plex Mono', monospace;
+    font-family:'Figtree',sans-serif;font-variant-numeric:tabular-nums;
     font-size:12px;
     color:var(--ink-soft);
     margin-bottom:14px;
@@ -340,7 +340,7 @@
   .tile .no-photo{
     width:100%;height:100%;
     display:flex;align-items:center;justify-content:center;
-    font-family:'IBM Plex Mono',monospace;
+    font-family:'Figtree',sans-serif;font-variant-numeric:tabular-nums;
     font-size:10px;color:var(--ink-soft);
     text-align:center;padding:8px;
   }
@@ -349,7 +349,7 @@
     bottom:6px;left:6px;
     background:rgba(0,0,0,0.70);
     color:var(--page);
-    font-family:'IBM Plex Mono',monospace;
+    font-family:'Figtree',sans-serif;font-variant-numeric:tabular-nums;
     font-size:9px;
     letter-spacing:0.06em;
     text-transform:uppercase;
@@ -360,7 +360,7 @@
   .empty{text-align:center;padding:60px 20px;color:var(--ink-soft);}
   .empty-hint{margin:6px 0 0;font-size:13px;line-height:1.4;}
   .empty-hint:empty{display:none;}
-  .empty h3{font-family:'Fraunces', serif;font-weight:500;color:var(--ink);margin-bottom:0;}
+  .empty h3{font-family:'Bricolage Grotesque',sans-serif;font-weight:500;color:var(--ink);margin-bottom:0;}
   /* The line says what is missing; the button is how you fix it. A second
      line explaining the first was the app talking to itself. */
   .empty-action{
@@ -396,10 +396,10 @@
   }
   .name-row-thumb.no-photo-mini{
     display:flex;align-items:center;justify-content:center;
-    font-family:'IBM Plex Mono',monospace;font-size:7px;color:var(--ink-soft);
+    font-family:'Figtree',sans-serif;font-variant-numeric:tabular-nums;font-size:7px;color:var(--ink-soft);
   }
   .name-row-text{flex:1;min-width:0;}
-  .name-row-title{font-family:'Fraunces',serif;font-size:15px;}
+  .name-row-title{font-family:'Bricolage Grotesque',sans-serif;font-size:15px;}
   .name-row-sub{font-size:12px;color:var(--ink-soft);}
 
   /* Edit mode / bulk select */
@@ -499,11 +499,11 @@
     box-shadow:0 18px 44px rgba(0,0,0,0.22);
   }
   .confirm-title{
-    font-family:'Fraunces',serif;font-weight:400;
+    font-family:'Bricolage Grotesque',sans-serif;font-weight:400;
     font-size:21px;line-height:1.2;margin:0 0 6px;
   }
   .confirm-body{
-    font-family:'Work Sans',sans-serif;font-size:14px;
+    font-family:'Figtree',sans-serif;font-size:14px;
     color:var(--ink-soft);margin:0 0 18px;line-height:1.45;
   }
   .confirm-actions{display:flex;flex-direction:column;gap:8px;}
@@ -666,7 +666,7 @@
   }
   .modal-photo img{width:100%;height:100%;object-fit:contain;}
   .modal-photo .no-photo{
-    font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink-soft);
+    font-family:'Figtree',sans-serif;font-variant-numeric:tabular-nums;font-size:12px;color:var(--ink-soft);
   }
   /* Grows to fill a short sheet, never shrinks a long one — the sheet
      itself is what scrolls. */
@@ -686,18 +686,18 @@
   }
   .form-photo-thumb img{width:100%;height:100%;object-fit:contain;}
   .form-photo-thumb span{
-    font-family:'IBM Plex Mono',monospace;font-size:9px;
+    font-family:'Figtree',sans-serif;font-variant-numeric:tabular-nums;font-size:9px;
     color:var(--ink-soft);text-align:center;line-height:1.3;
   }
   .form-photo-label{
-    font-family:'Work Sans',sans-serif;font-size:14px;font-weight:600;
+    font-family:'Figtree',sans-serif;font-size:14px;font-weight:600;
   }
-  .modal-name{font-family:'Fraunces', serif;font-size:22px;font-weight:500;margin:0;}
+  .modal-name{font-family:'Bricolage Grotesque',sans-serif;font-size:22px;font-weight:500;margin:0;}
   /* Brand and category on one quiet line under the name. They answer the
      same question — what this is — so they read as one thing rather than
      as two facts in two different fonts. */
   .detail-sub{
-    font-family:'Work Sans',sans-serif;font-size:13px;color:var(--ink-soft);
+    font-family:'Figtree',sans-serif;font-size:13px;color:var(--ink-soft);
     margin:4px 0 0;
   }
 
@@ -711,14 +711,14 @@
     margin:18px 0 0;
   }
   .detail-facts dt{
-    font-family:'IBM Plex Mono',monospace;font-size:10px;
+    font-family:'Figtree',sans-serif;font-variant-numeric:tabular-nums;font-size:10px;
     text-transform:uppercase;letter-spacing:0.08em;color:var(--ink-soft);
     padding-top:3px;white-space:nowrap;
   }
   .detail-facts dd{
-    margin:0;font-family:'Work Sans',sans-serif;font-size:14px;color:var(--ink);
+    margin:0;font-family:'Figtree',sans-serif;font-size:14px;color:var(--ink);
   }
-  .detail-facts dd.numeric{font-family:'IBM Plex Mono',monospace;font-size:13px;}
+  .detail-facts dd.numeric{font-family:'Figtree',sans-serif;font-variant-numeric:tabular-nums;font-size:13px;}
   /* Pills carry their own spacing elsewhere; inside a row of the grid the
      row gap is already the spacing. */
   .detail-facts .detail-tags{margin:0;}
@@ -805,7 +805,7 @@
   /* Room for it, so the last field is not stuck underneath. */
   .modal-body.has-footer{padding-bottom:12px;}
   .outfits-heading{
-    font-family:'Fraunces', serif;
+    font-family:'Bricolage Grotesque',sans-serif;
     font-weight:500;
     font-size:17px;
     margin:22px 0 10px;
@@ -885,18 +885,18 @@
      keep it, then every pin in a grid — nothing hidden off the edge. */
   .outfit-page-inspo{padding:12px;}
   .inspo-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;}
-  .inspo-title{font-family:'Fraunces',serif;font-weight:500;font-size:17px;margin:0;}
+  .inspo-title{font-family:'Bricolage Grotesque',sans-serif;font-weight:500;font-size:17px;margin:0;}
   .inspo-tools{display:flex;align-items:center;gap:8px;}
   .inspo-tools .btn{text-decoration:none;white-space:nowrap;}
   .inspo-search-card{
     background:#EFE7DA;border:1px solid var(--line);border-radius:14px;
     padding:14px;margin-top:12px;
   }
-  .inspo-search-title{font-family:'Fraunces',serif;font-weight:500;font-size:15px;margin:0 0 4px;}
+  .inspo-search-title{font-family:'Bricolage Grotesque',sans-serif;font-weight:500;font-size:15px;margin:0 0 4px;}
   .inspo-search-sub{font-size:12px;line-height:1.4;color:var(--ink-soft);margin:0 0 10px;}
   .inspo-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;}
   .inspo-chip{
-    font-family:'Work Sans',sans-serif;font-size:12px;
+    font-family:'Figtree',sans-serif;font-size:12px;
     padding:5px 10px;border-radius:999px;
     background:var(--surface);color:var(--ink);
   }
@@ -919,7 +919,7 @@
   .inspo-tile img{width:100%;height:100%;object-fit:cover;display:block;}
   .inspo-src{
     position:absolute;left:6px;bottom:6px;max-width:calc(100% - 12px);
-    font-family:'Work Sans',sans-serif;font-size:10px;font-weight:600;
+    font-family:'Figtree',sans-serif;font-size:10px;font-weight:600;
     background:rgba(0,0,0,0.55);color:#fff;padding:2px 7px;border-radius:999px;
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
   }
@@ -929,7 +929,7 @@
   .inspo-opt{
     display:flex;align-items:center;gap:14px;width:100%;background:none;border:none;
     border-bottom:1px solid var(--accent-soft);padding:14px 2px;cursor:pointer;
-    font:500 15px 'Work Sans',sans-serif;color:var(--ink);text-align:left;
+    font:500 15px 'Figtree',sans-serif;color:var(--ink);text-align:left;
   }
   .inspo-opt:last-child{border-bottom:none;}
   .inspo-opt svg{width:22px;height:22px;flex:none;stroke:var(--ink);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
@@ -1023,7 +1023,7 @@
     display:flex;align-items:center;gap:10px;
     background:var(--ink);color:var(--page);
     padding:10px 18px;border-radius:8px;font-size:13px;
-    font-family:'Work Sans',sans-serif;
+    font-family:'Figtree',sans-serif;
     opacity:0;pointer-events:none;transition:opacity 0.25s;
     z-index:200;
   }
@@ -1039,7 +1039,7 @@
        margin takes it back off the bar. */
     min-height:44px;min-width:64px;
     display:flex;align-items:center;justify-content:center;
-    font-family:'Work Sans',sans-serif;
+    font-family:'Figtree',sans-serif;
     font-size:13px;font-weight:600;
     color:var(--page);
     background:rgba(255,255,255,0.16);
@@ -1078,7 +1078,7 @@
   .bottom-btn{
     display:flex;align-items:center;justify-content:center;gap:7px;
     min-height:44px;
-    font-family:'Work Sans',sans-serif;
+    font-family:'Figtree',sans-serif;
     font-size:13px;font-weight:600;
     /* Four destinations have to fit inside a 390px screen, so the
        side padding is what gives rather than the label or the height. */
@@ -1118,7 +1118,7 @@
     padding:0 13px;
     display:flex;align-items:center;justify-content:center;
     border:none;background:none;border-radius:999px;
-    font-family:'Work Sans',sans-serif;
+    font-family:'Figtree',sans-serif;
     font-size:13px;font-weight:600;
     /* Off the destination it is a plain label like the two beside it; on
        it, the pill is dark and both halves lighten to sit on it. */
@@ -1163,12 +1163,12 @@
     padding:28px 24px;
   }
   .gate-title{
-    font-family:'Fraunces', serif;font-weight:500;font-size:22px;
+    font-family:'Bricolage Grotesque',sans-serif;font-weight:500;font-size:22px;
     margin:0 0 8px;
   }
   .gate-note{font-size:13px;color:var(--ink-soft);line-height:1.5;margin:0 0 16px;}
   .gate-note code{
-    font-family:'IBM Plex Mono',monospace;font-size:12px;
+    font-family:'Figtree',sans-serif;font-variant-numeric:tabular-nums;font-size:12px;
     background:var(--accent-soft);padding:1px 5px;border-radius:4px;
   }
   .gate-card input[type="password"],
@@ -1193,7 +1193,7 @@
      a readable size — mono, 11px and uppercase made it decoration. */
   .form-grid label{
     display:flex;flex-direction:column;gap:6px;
-    font-family:'Work Sans',sans-serif;
+    font-family:'Figtree',sans-serif;
     font-size:13px;font-weight:600;
     color:var(--ink-soft);
   }
@@ -1212,13 +1212,13 @@
     padding:12px 4px;
   }
   .archive-row-text{flex:1;min-width:0;}
-  .archive-row-title{font-family:'Fraunces',serif;font-size:15px;}
+  .archive-row-title{font-family:'Bricolage Grotesque',sans-serif;font-size:15px;}
   .archive-row-sub{font-size:12px;color:var(--ink-soft);}
 
   /* Quiet secondary destinations — the archive, and its way back */
   .quiet-link-row{margin-top:26px;text-align:center;}
   .quiet-link{
-    font-family:'IBM Plex Mono',monospace;
+    font-family:'Figtree',sans-serif;font-variant-numeric:tabular-nums;
     font-size:11px;letter-spacing:0.08em;text-transform:uppercase;
     background:none;border:none;
     color:var(--ink-soft);cursor:pointer;
@@ -1228,7 +1228,7 @@
 
   .signout-row{margin-top:34px;text-align:center;}
   .signout-btn{
-    font-family:'IBM Plex Mono',monospace;
+    font-family:'Figtree',sans-serif;font-variant-numeric:tabular-nums;
     font-size:11px;letter-spacing:0.08em;text-transform:uppercase;
     background:none;border:none;color:var(--ink-soft);
     cursor:pointer;padding:8px;
@@ -1250,7 +1250,7 @@
     flex:none;
     display:inline-flex;align-items:center;
     min-height:44px;
-    font-family:'Work Sans',sans-serif;
+    font-family:'Figtree',sans-serif;
     font-size:12px;font-weight:600;
     padding:0 16px;
     /* Fully round, like the wardrobe's own category tabs, the nav and the
@@ -1276,7 +1276,7 @@
   /* Read-only tags on an item's detail sheet */
   .detail-tags{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0;}
   .detail-tags span{
-    font-family:'IBM Plex Mono',monospace;
+    font-family:'Figtree',sans-serif;font-variant-numeric:tabular-nums;
     font-size:10px;letter-spacing:0.06em;
     background:var(--accent-soft);color:var(--ink);
     padding:4px 10px;border-radius:999px;
@@ -1298,7 +1298,7 @@
   .picker-option-group{opacity:.55;font-size:.85em;margin-left:4px;}
   .picker-option{
     flex:none;
-    font-family:'Work Sans',sans-serif;
+    font-family:'Figtree',sans-serif;
     font-size:12px;font-weight:600;
     min-height:36px;padding:0 14px;
     border-radius:10px;
@@ -1375,7 +1375,7 @@
   .filters-fab{
     position:relative;
     display:flex;align-items:center;gap:8px;
-    font-family:'Work Sans',sans-serif;
+    font-family:'Figtree',sans-serif;
     font-size:13px;font-weight:600;
     /* A fixed height rather than padding alone: the count badge is taller
        than the label, so the pill was 37px at rest and 42px with a filter
@@ -1410,7 +1410,7 @@
     border:1px solid var(--brand-deep);
     background:var(--brand);
     color:#fff;
-    font-family:'Work Sans',sans-serif;
+    font-family:'Figtree',sans-serif;
     font-size:13px;font-weight:600;
     white-space:nowrap;cursor:pointer;
     /* Tapped in quick succession, two taps read as double-tap-to-zoom and
@@ -1533,13 +1533,13 @@
   }
   .filter-sheet-heading{display:flex;flex-direction:column;min-width:0;}
   .filter-sheet-title{
-    font-family:'Fraunces', serif;font-size:17px;font-weight:500;line-height:1.2;
+    font-family:'Bricolage Grotesque',sans-serif;font-size:17px;font-weight:500;line-height:1.2;
   }
   /* A full thumb's worth of target. */
   .filter-sheet-clear{
     align-items:center;
     min-height:44px;
-    font-family:'IBM Plex Mono',monospace;
+    font-family:'Figtree',sans-serif;font-variant-numeric:tabular-nums;
     font-size:11px;letter-spacing:0.06em;
     background:none;border:none;color:var(--ink);
     cursor:pointer;padding:0 6px;margin-right:-6px;
@@ -1560,7 +1560,7 @@
   }
   .filter-sheet-label{
     display:block;
-    font-family:'IBM Plex Mono',monospace;
+    font-family:'Figtree',sans-serif;font-variant-numeric:tabular-nums;
     font-size:10px;letter-spacing:0.1em;text-transform:uppercase;
     color:var(--ink-soft);
     margin-bottom:9px;
@@ -1573,7 +1573,7 @@
   .base-btn{
     display:inline-flex;align-items:center;
     min-height:44px;
-    font-family:'Work Sans',sans-serif;
+    font-family:'Figtree',sans-serif;
     font-size:12px;font-weight:600;
     padding:0 16px;border-radius:999px;
     border:1px solid var(--line);background:var(--page);
@@ -1592,7 +1592,7 @@
     position:relative;
     display:inline-flex;align-items:center;gap:7px;
     min-height:44px;
-    font-family:'Work Sans',sans-serif;
+    font-family:'Figtree',sans-serif;
     font-size:12px;font-weight:600;
     padding:0 16px;
     border-radius:999px;
@@ -1648,7 +1648,7 @@
   /* Nothing in this category yet. Small and quiet: it is an answer, not a
      problem to solve. */
   .picker-empty{
-    font-family:'Work Sans',sans-serif;font-size:12px;
+    font-family:'Figtree',sans-serif;font-size:12px;
     color:var(--ink-soft);margin:14px 0 0;
   }
   /* The border never changes width — a 1px to 2px swap snapped and nudged
@@ -1731,7 +1731,7 @@
     border-radius:5px;
     background:var(--page);
     display:flex;align-items:center;justify-content:center;
-    font-family:'IBM Plex Mono',monospace;
+    font-family:'Figtree',sans-serif;font-variant-numeric:tabular-nums;
     font-size:8px;color:var(--ink-soft);
   }
   .outfit-piece-row{
@@ -1744,7 +1744,7 @@
   }
   .outfit-piece-row .no-photo-mini{
     display:flex;align-items:center;justify-content:center;
-    font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--ink-soft);
+    font-family:'Figtree',sans-serif;font-variant-numeric:tabular-nums;font-size:8px;color:var(--ink-soft);
   }
   /* A piece in an outfit's list is the way to that piece in the wardrobe. */
   .outfit-piece-row.tappable{cursor:pointer;}
@@ -1753,7 +1753,7 @@
     font-size:20px;line-height:1;color:var(--ink-soft);
     padding:0 4px;
   }
-  .outfit-piece-info .p-name{font-family:'Fraunces',serif;font-size:14px;}
+  .outfit-piece-info .p-name{font-family:'Bricolage Grotesque',sans-serif;font-size:14px;}
   .outfit-piece-info .p-meta{font-size:11px;color:var(--ink-soft);}
 
   /* Capsules
@@ -1768,7 +1768,7 @@
     gap:10px;margin-bottom:8px;
   }
   .sheet-title-row{display:flex;align-items:center;justify-content:space-between;gap:10px;}
-  .capsule-name{font-family:'Fraunces',serif;font-weight:500;font-size:19px;}
+  .capsule-name{font-family:'Bricolage Grotesque',sans-serif;font-weight:500;font-size:19px;}
   .capsule-desc{display:block;margin-top:2px;font-size:13px;line-height:1.35;color:var(--ink-soft);}
   /* The leftovers, at the end of the page rather than mixed in with the
      capsules — it is a different kind of thing from a capsule. */
@@ -1776,7 +1776,7 @@
   .capsule-picks{display:flex;flex-direction:column;gap:8px;margin:14px 0;}
   .capsule-pick{
     display:flex;align-items:center;justify-content:space-between;gap:10px;
-    font-family:'Work Sans',sans-serif;
+    font-family:'Figtree',sans-serif;
     font-size:14px;font-weight:600;text-align:left;
     min-height:52px;padding:0 16px;
     border:1px solid var(--line);border-radius:10px;
@@ -1785,7 +1785,7 @@
   }
   .form-nav-row{
     display:flex;align-items:center;gap:10px;width:100%;margin-top:14px;
-    font-family:'Work Sans',sans-serif;font-size:14px;font-weight:600;text-align:left;
+    font-family:'Figtree',sans-serif;font-size:14px;font-weight:600;text-align:left;
     min-height:52px;padding:0 14px 0 16px;
     border:1px solid var(--line);border-radius:10px;
     background:var(--surface);color:var(--ink);cursor:pointer;
@@ -1838,7 +1838,7 @@
   .capsule-band .no-photo-mini{
     background:var(--page);
     display:flex;align-items:center;justify-content:center;
-    font-family:'IBM Plex Mono',monospace;
+    font-family:'Figtree',sans-serif;font-variant-numeric:tabular-nums;
     font-size:8px;color:var(--ink-soft);
   }
   .capsule-empty-note{
@@ -4116,7 +4116,7 @@ function comboCountWhere(untaggedOnly){
 
 // The heart, drawn rather than typed.
 //
-// It used to be ♥ and ♡, and neither is in Work Sans or Fraunces — so the
+// It used to be ♥ and ♡, and neither is in Figtree or Bricolage Grotesque — so the
 // browser quietly substituted whichever system font had them, which is a
 // different font on every platform, and on Apple's often the colour emoji
 // one for the filled heart only. Even on one machine the two did not
