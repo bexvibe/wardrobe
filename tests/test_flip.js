@@ -128,6 +128,70 @@ const box = (p, sel) => p.evaluate(s=>{ const r=document.querySelector(s).getBou
     await p.close();
   }
 
+  // ---- the front of the card: fixed height, unfolds on scroll -------------
+  {
+    const p=await open(b, {viewport:{width:390,height:440}});
+    const ids = await p.evaluate(()=>[ITEMS[0].id, ITEMS[ITEMS.length-1].id]);
+    const heights = [];
+    for(const id of ids){
+      await p.evaluate(i=>openPieceSheet(i), id); await p.waitForTimeout(600);
+      heights.push(Math.round((await box(p,'#modal')).h));
+      await p.evaluate(()=>closeModal()); await p.waitForTimeout(400);
+    }
+    check('two different pieces get the same card height', heights[0]===heights[1], heights.join(' vs '));
+    await p.evaluate(i=>openPieceSheet(i), ids[0]); await p.waitForTimeout(600);
+    const room = await p.evaluate(()=>{const m=document.getElementById('modal');return m.scrollHeight-m.clientHeight;});
+    const isFull = () => p.evaluate(()=>document.getElementById('modal').classList.contains('card-full'));
+    check('a short screen gives the card something to scroll', room > 100, 'room '+room);
+    if(room > 100){
+      check('not unfolded before it is scrolled', !(await isFull()));
+      await p.evaluate(()=>{document.getElementById('modal').scrollTop = 50;}); await p.waitForTimeout(500);
+      const full = await box(p,'#modal');
+      check('scrolling the front unfolds it to the whole screen',
+        await isFull() && full.l<=0.5 && Math.abs(full.r-390)<1 && full.t<=1, JSON.stringify(full));
+      // Turned over while unfolded: the back arrives the same size.
+      await p.click('#item-page-edit'); await p.waitForTimeout(600);
+      const back = await box(p,'#form-backdrop .modal');
+      check('turned over unfolded, the back arrives unfolded too', back.l<=0.5 && back.t<=1, JSON.stringify(back));
+      await p.click('#form-backdrop .sheet-footer .btn.secondary'); await p.waitForTimeout(600);
+      check('and turns back to an unfolded front', await isFull());
+      await p.evaluate(()=>{document.getElementById('modal').scrollTop = 60;}); await p.waitForTimeout(500);
+      await p.evaluate(()=>{document.getElementById('modal').scrollTop = 0;}); await p.waitForTimeout(500);
+      check('scrolled back to the top it folds into the card again', !(await isFull()));
+    } else {
+      check('(this piece fits its card, nothing to unfold)', true, 'room '+room);
+    }
+    await p.close();
+  }
+
+  // ---- the outfit and capsule pages do the same --------------------------
+  {
+    const p=await open(b);
+    await p.click('#nav-outfits-btn'); await p.waitForSelector('.outfit-gallery .outfit-fav-btn');
+    await p.waitForTimeout(900);
+    await p.evaluate(()=>closeFilterSheet()); await p.waitForTimeout(500);
+    await p.evaluate(()=>openOutfitPage(comboKey(outfitDisplayed[0]), null)); await p.waitForTimeout(800);
+    const ex = () => p.evaluate(()=>document.getElementById('outfit-page').classList.contains('expanded'));
+    check('an outfit opens as a card', !(await ex()));
+    await p.evaluate(()=>document.getElementById('outfit-page').scrollTo({top:200})); await p.waitForTimeout(700);
+    check('scrolled, the outfit becomes the full page', await ex());
+    await p.evaluate(()=>document.getElementById('outfit-page').scrollTo({top:0})); await p.waitForTimeout(700);
+    check('and a card again at the top', !(await ex()));
+    await p.close();
+  }
+  {
+    const p=await open(b);
+    await p.evaluate(()=>{ capsules.push({id:'cap_t',name:'Test',description:'',itemIds:ITEMS.slice(0,12).map(i=>i.id)}); });
+    await p.evaluate(()=>openCapsulePage('cap_t', null)); await p.waitForTimeout(800);
+    const ex = () => p.evaluate(()=>document.getElementById('outfit-page').classList.contains('expanded'));
+    check('a capsule opens as a card', await p.evaluate(()=>document.getElementById('outfit-page').classList.contains('open')) && !(await ex()));
+    await p.evaluate(()=>document.getElementById('outfit-page').scrollTo({top:300})); await p.waitForTimeout(700);
+    check('scrolled, the capsule becomes the full page', await ex());
+    await p.evaluate(()=>document.getElementById('outfit-page').scrollTo({top:0})); await p.waitForTimeout(700);
+    check('and a card again at the top', !(await ex()));
+    await p.close();
+  }
+
   // ---- the page behind does not scroll ----------------------------------
   {
     const p=await open(b);

@@ -545,25 +545,31 @@
     background:rgba(0,0,0,calc(0.2 * var(--dim, 1)));
     -webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);
   }
-  /* Centred on the screen, as tall as its content and no taller: a short
-     piece sits in the middle with the wardrobe blurred around it, and only
-     a piece with more than fits scrolls — inside the card, never the page. */
-  .modal-backdrop.open.as-page.item-card{
-    display:flex;align-items:center;justify-content:center;
-    padding:max(20px, calc(env(safe-area-inset-top, 0px) + 12px)) 14px
-            calc(20px + env(safe-area-inset-bottom, 0px));
-  }
+  /* A fixed box, the same size for every piece: short ones leave room, long
+     ones scroll inside it, and scrolling it is what unfolds it to the whole
+     screen (and back again at the top). The form on its back is the same
+     box, so the flip turns one object rather than two. */
   .modal-backdrop.as-page.item-card .modal{
-    position:relative;left:auto;right:auto;bottom:auto;top:auto;
-    width:100%;max-height:100%;
+    left:14px;right:14px;
+    top:max(56px, calc(env(safe-area-inset-top, 0px) + 20px));
+    bottom:calc(14px + env(safe-area-inset-bottom, 0px));
     height:auto;
-    margin:0 auto;
     padding-top:0;
     border-radius:26px;
     box-shadow:0 18px 50px rgba(0,0,0,0.28);
     transform:translateY(110%);
+    transition:transform var(--sheet-ease-ms) var(--sheet-ease),
+               top .28s var(--sheet-ease), left .28s var(--sheet-ease),
+               right .28s var(--sheet-ease), bottom .28s var(--sheet-ease),
+               border-radius .28s var(--sheet-ease), box-shadow .28s ease;
   }
   .modal-backdrop.open.as-page.item-card .modal{transform:translateY(0);}
+  .modal-backdrop.as-page.item-card .modal.card-full{
+    left:0;right:0;bottom:0;
+    top:env(safe-area-inset-top, 0px);
+    border-radius:0;
+    box-shadow:none;
+  }
   /* With the page held still behind a popover, nothing may scroll but the
      popover itself. */
   body.sheet-open{overflow:hidden;}
@@ -2763,6 +2769,7 @@ function pushSheet(entry){
   // A piece draws itself as a page when nothing is beneath it; whatever
   // opens next starts as a sheet until it says otherwise.
   document.getElementById('modal-backdrop')?.classList.remove('as-page', 'item-card', 'compact');
+  { const m = document.getElementById('modal'); if(m){ m.onscroll = null; m.classList.remove('card-full'); } }
   // Off by default. A sheet that can be pushed away says so as it draws,
   // so a sheet that forgets to is merely undraggable rather than dragging
   // away into whatever the last one meant by closing.
@@ -2777,6 +2784,7 @@ function goBackFromSheet(){
   // dropping to the front: the same flip, the other way.
   if(formIsCardBack() && cardMotionOk() && formBackdropOpen()){
     turnCard(formModalEl(), 'back', () => {
+      cardCarryFull = formModalEl().classList.contains('card-full');
       stepBackFromSheet();
       return document.getElementById('modal');
     });
@@ -7204,6 +7212,9 @@ function drawItemSheet(id){
   // Same rule, different look: a piece reached from the wardrobe floats as a
   // card over it, so the list you came from stays in view behind.
   document.getElementById('modal-backdrop').classList.toggle('item-card', asPage);
+  // A fresh card, or the same size as the face it was just turned from.
+  modal.classList.toggle('card-full', asPage && takeCarriedFull());
+  cardUnfoldsOnScroll(modal);
 
   const edit = cls => `<button class="btn ${cls}" id="item-page-edit" onclick='openItemForm(${JSON.stringify(item.id)})'>Edit</button>`;
   const editIcon = `<button type="button" class="photo-edit" id="item-page-edit" aria-label="Edit" onclick='openItemForm(${JSON.stringify(item.id)})'><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg></button>`;
@@ -7373,6 +7384,7 @@ function openItemForm(id){
                    document.getElementById('modal-backdrop').classList.contains('open');
   if(fromCard && cardMotionOk()){
     turnCard(document.getElementById('modal'), 'fwd', () => {
+      cardCarryFull = document.getElementById('modal').classList.contains('card-full');
       pushSheet({ sheet: 'form', id });
       drawItemForm(id);
       return formModalEl();
@@ -7383,6 +7395,30 @@ function openItemForm(id){
   drawItemForm(id);
 }
 
+// A card unfolds to the whole screen once scrolled, and folds back when
+// scrolled to the top again. Shared by a piece's front and its back.
+function cardUnfoldsOnScroll(modal){
+  modal.onscroll = () => {
+    const full = modal.classList.contains('card-full');
+    if(!full){
+      // Only unfold if there will still be something to scroll once it has:
+      // unfolding gains about 90px, and a card with less than that to spare
+      // would have nothing left to scroll and fold straight back.
+      if(modal.scrollTop > 0 && modal.scrollHeight - modal.clientHeight > 100){
+        modal.classList.add('card-full');
+        cardUnfoldedAt = performance.now();
+      }
+    }else if(modal.scrollTop <= 0 && performance.now() - cardUnfoldedAt > 400){
+      modal.classList.remove('card-full');
+    }
+  };
+}
+
+// Whether the card was unfolded when it was turned over, so the other face
+// arrives the same size rather than snapping back to a card mid-flip.
+let cardCarryFull = false;
+function takeCarriedFull(){ const v = cardCarryFull; cardCarryFull = false; return v; }
+
 // How the form is dressed, and what scrolling it does. As the back of a card
 // it is the card — and, like a tall sheet, it unfolds to the whole screen as
 // soon as you scroll it, since scrolling is asking for room.
@@ -7392,21 +7428,7 @@ function setFormCardLook(){
   const modal = formModalEl();
   backdrop.classList.toggle('item-card-back', asCard);
   if(!asCard){ modal.classList.remove('card-full'); modal.onscroll = null; return asCard; }
-  modal.onscroll = () => {
-    const full = modal.classList.contains('card-full');
-    if(!full){
-      // Only unfold if there will still be something to scroll once it has:
-      // unfolding gains about 90px, and a form with less than that to spare
-      // would have nothing left to scroll and fold straight back.
-      if(modal.scrollTop > 0 && modal.scrollHeight - modal.clientHeight > 100){
-        modal.classList.add('card-full');
-        cardUnfoldedAt = performance.now();
-      }
-    }else if(modal.scrollTop <= 0 && performance.now() - cardUnfoldedAt > 400){
-      // Back at the top of the page it became: it is a card again.
-      modal.classList.remove('card-full');
-    }
-  };
+  cardUnfoldsOnScroll(modal);
   return asCard;
 }
 
@@ -7451,7 +7473,7 @@ function drawItemForm(id){
   const asCard = setFormCardLook();
   // Fresh each time: a card that was unfolded last time folds up again, and
   // the form starts at its top.
-  formModalEl().classList.remove('card-full');
+  formModalEl().classList.toggle('card-full', asCard && takeCarriedFull());
   formModalEl().scrollTop = 0;
   allowSheetDrag(asCard ? null : closeItemForm, itemFormIsDirty);
   // The form and the detail sheet are two backdrops; only one of them is
