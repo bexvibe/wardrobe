@@ -81,7 +81,7 @@ const hush = p => p.evaluate(()=>{
     await p.evaluate(async()=>{ await saveCapsule({ id:null, name:'Winter', itemIds:[] }); });
     await p.waitForTimeout(500);
     await p.evaluate(()=>{ openModal('seed_0'); }); await p.waitForTimeout(600);
-    await p.click('.modal-actions .btn:has-text("Add to capsule")'); await p.waitForTimeout(700);
+    await p.click('.modal .modal-actions .btn:has-text("Edit")'); await p.waitForTimeout(500); await p.click('#form-capsules-row'); await p.waitForTimeout(700);
 
     await p.click('.capsule-pick'); await p.waitForTimeout(600);
     check('ticking a capsule raises no toast', !(await toastUp(p)).shown);

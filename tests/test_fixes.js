@@ -278,7 +278,7 @@ const dbTags = (p, id) => p.evaluate(i =>
 
     // "New capsule", not "New capsule with this piece".
     await p.evaluate(()=>openModal('seed_0')); await p.waitForTimeout(450);
-    await p.click('.modal button:has-text("Add to capsule")'); await p.waitForTimeout(500);
+    await p.click('.modal .modal-actions .btn:has-text("Edit")'); await p.waitForTimeout(500); await p.click('#form-capsules-row'); await p.waitForTimeout(500);
     const label = await p.evaluate(()=>Array.from(document.querySelectorAll('#modal .modal-actions button'))
       .map(x=>x.textContent.trim()));
     check('the button is just "New capsule"',

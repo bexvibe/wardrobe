@@ -400,10 +400,10 @@ const foldedCount = p => p.evaluate(()=>
         return Boolean(dt) && /Winter/.test(dt.nextElementSibling.textContent);
       }),
       (await p.textContent('.detail-facts')).replace(/\s+/g,' ').trim());
-    check('and offers a way to change that',
-      await p.isVisible('.modal button:has-text("Add to capsule")'));
+    check('and the piece page itself has no capsule button',
+      !(await p.isVisible('.modal button:has-text("Add to capsule")')));
 
-    await p.click('.modal button:has-text("Add to capsule")'); await p.waitForTimeout(500);
+    await p.click('.modal .modal-actions .btn:has-text("Edit")'); await p.waitForTimeout(500); await p.click('#form-capsules-row'); await p.waitForTimeout(500);
     const picks = await p.evaluate(()=>
       Array.from(document.querySelectorAll('.capsule-pick'))
         .map(x=>({name:x.textContent.trim().replace(/\s*✓$/,''), picked:x.classList.contains('picked')})));
@@ -428,7 +428,9 @@ const foldedCount = p => p.evaluate(()=>
       await p.evaluate(()=>!window.__WARDROBE_STATE.capsule_items
         .some(r=>r.capsule_id==='cap_a' && r.item_id==='seed_0')));
 
-    await p.click('.modal button:has-text("Add to capsule")'); await p.waitForTimeout(500);
+    // Save lands on the edit form the list was opened from; back to the piece.
+    await p.evaluate(()=>closeItemForm()); await p.waitForTimeout(500);
+    await p.click('.modal .modal-actions .btn:has-text("Edit")'); await p.waitForTimeout(500); await p.click('#form-capsules-row'); await p.waitForTimeout(500);
     await p.click('.capsule-pick'); await p.waitForTimeout(500);
     await leaveSheet(p, {settle:700});
     check('tapping again puts it back in',
@@ -450,7 +452,7 @@ const foldedCount = p => p.evaluate(()=>
     check('a piece can be in both at once',
       await p.evaluate(()=>capsulesForItem('seed_0').length) === 2,
       String(await p.evaluate(()=>capsulesForItem('seed_0').map(c=>c.name).join(','))));
-    check('saving returns to the piece', /Add to capsule/.test(await p.textContent('.modal-actions')));
+    check('saving returns to where the list was opened from', await p.isVisible('.modal .modal-photo'));
     await p.close();
   }
 

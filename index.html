@@ -1611,6 +1611,17 @@
     background:var(--surface);color:var(--ink);
     cursor:pointer;
   }
+  .form-nav-row{
+    display:flex;align-items:center;gap:10px;width:100%;margin-top:14px;
+    font-family:'Work Sans',sans-serif;font-size:14px;font-weight:600;text-align:left;
+    min-height:52px;padding:0 14px 0 16px;
+    border:1px solid var(--line);border-radius:10px;
+    background:var(--surface);color:var(--ink);cursor:pointer;
+  }
+  .form-nav-label{flex:none;}
+  .form-nav-value{flex:1;min-width:0;text-align:right;font-weight:400;color:var(--ink-soft);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .form-nav-row svg{flex:none;color:var(--ink-soft);}
   .capsule-pick.picked{border-color:var(--accent);background:var(--accent-soft);}
   .capsule-pick-mark{flex:none;font-size:15px;color:var(--ink);width:18px;text-align:right;}
 
@@ -1944,6 +1955,13 @@
            the way to change it, before any of the fields. It used to be a
            bare button at the foot of the form with nothing to show you. -->
       <div id="form-photo-row"></div>
+      <button type="button" class="form-nav-row" id="form-capsules-row" style="display:none;margin-top:12px"
+              onclick="openCapsulesFromForm()">
+        <span class="form-nav-label">Add to capsules</span>
+        <span class="form-nav-value" id="form-capsules-summary"></span>
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+      </button>
       <div class="form-grid">
         <label>Name<input type="text" id="form-name"></label>
         <label>Brand<input type="text" id="form-brand"></label>
@@ -5841,7 +5859,7 @@ function drawItemCapsulePicker(itemId){
   modal.innerHTML = `
     <div class="sheet-grip"></div>
     <div class="modal-body has-footer">
-      <div class="modal-name" style="margin-bottom:14px;">Capsules</div>
+      <div class="modal-name" style="margin-bottom:14px;">Add to capsules</div>
       <div class="capsule-picks" id="capsule-picks"></div>
       <div class="form-error" id="capsule-pick-error"></div>
       <div class="modal-actions">
@@ -5851,7 +5869,7 @@ function drawItemCapsulePicker(itemId){
     </div>
     <div class="sheet-footer split">
       <div class="sheet-footer-inner">
-        <button class="btn secondary" type="button" onclick="closeCapsulePicker()">Cancel</button>
+        <button class="btn secondary" type="button" onclick="closeCapsulePicker()">Back</button>
         <button class="btn" type="button" id="capsule-picks-save"
                 onclick="saveItemCapsules()">Save</button>
       </div>
@@ -5859,7 +5877,8 @@ function drawItemCapsulePicker(itemId){
   `;
   renderItemCapsulePicks(itemId);
   allowSheetDrag(closeCapsulePicker, capsulePicksDirty);
-  document.getElementById('modal-backdrop').classList.add('open');
+  // Opened over the edit form as often as over the piece: only one backdrop up.
+  showSheetBackdrop('modal-backdrop');
 }
 
 function capsulePicksSnapshot(){
@@ -6952,8 +6971,6 @@ function drawItemSheet(id){
   document.getElementById('modal-backdrop').classList.toggle('as-page', asPage);
 
   const edit = cls => `<button class="btn ${cls}" id="item-page-edit" onclick='openItemForm(${JSON.stringify(item.id)})'>Edit</button>`;
-  const addTo = cls => capsulesAvailable
-    ? `<button class="btn ${cls}" id="item-page-capsule" onclick='openItemCapsulePicker(${JSON.stringify(item.id)})'>Add to capsule</button>` : '';
 
   modal.innerHTML = `
     ${asPage ? '' : '<div class="sheet-grip"></div>'}
@@ -6966,7 +6983,6 @@ function drawItemSheet(id){
       ${detailFactsHtml(item)}
       ${asPage ? '' : `<div class="modal-actions">
         ${edit('small secondary')}
-        ${addTo('small secondary')}
       </div>`}
       <div id="modal-outfits-container"></div>
     </div>
@@ -6977,7 +6993,6 @@ function drawItemSheet(id){
           <svg class="back-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>Back</button>
         ${edit('outlined')}
-        ${addTo('outlined')}
       </div>
     </div>` : ''}
   `;
@@ -7050,6 +7065,14 @@ function openItemForm(id){
 }
 
 function drawItemForm(id){
+  // Coming back from the capsules list: the form is still as you left it,
+  // and redrawing it from the saved piece would throw your edits away.
+  if(itemFormBaseline !== null && editingItemId === (id || null)){
+    renderFormCapsulesRow();
+    allowSheetDrag(closeItemForm, itemFormIsDirty);
+    showSheetBackdrop('form-backdrop');
+    return;
+  }
   editingItemId = id || null;
   clearStagedPhoto();
   const item = id ? ITEMS.find(i => i.id === id) : null;
@@ -7064,6 +7087,7 @@ function drawItemForm(id){
   document.getElementById('form-tags').value = item ? (item.tags || []).join(', ') : '';
   document.getElementById('form-tags-field').style.display = tagsAvailable ? '' : 'none';
   renderTagSuggestions();
+  renderFormCapsulesRow();
 
   // A piece that does not exist yet has nowhere to be archived to, but it
   // can still be given a photo, which is kept until it is saved.
@@ -7082,6 +7106,21 @@ function drawItemForm(id){
   // ever up, and which one is the trail's business now.
   showSheetBackdrop('form-backdrop');
   setTimeout(() => document.getElementById('form-name').focus(), 50);
+}
+
+// A piece that is not saved yet cannot be in a capsule, so only an edit
+// gets the row.
+function renderFormCapsulesRow(){
+  const row = document.getElementById('form-capsules-row');
+  if(!row) return;
+  row.style.display = capsulesAvailable && editingItemId ? '' : 'none';
+  const names = editingItemId ? capsulesForItem(editingItemId).map(c => c.name) : [];
+  document.getElementById('form-capsules-summary').textContent = names.join(', ');
+}
+
+function openCapsulesFromForm(){
+  if(!editingItemId) return;
+  openItemCapsulePicker(editingItemId);
 }
 
 // What the form said when it opened. Comparing against it rather than

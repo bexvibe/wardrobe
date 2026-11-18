@@ -246,7 +246,7 @@ const confirmText = p => p.evaluate(()=>({
     // than an arrow in a corner, it needs a word: Cancel.
     const p=await open(b);
     await p.evaluate(()=>openModal('seed_0')); await p.waitForTimeout(500);
-    await p.click('.modal button:has-text("Add to capsule")'); await p.waitForTimeout(600);
+    await p.click('.modal .modal-actions .btn:has-text("Edit")'); await p.waitForTimeout(500); await p.click('#form-capsules-row'); await p.waitForTimeout(600);
     const bar = await p.evaluate(()=>{
       const f = document.querySelector('#modal .sheet-footer');
       const btns = Array.from(f.querySelectorAll('.btn'));
@@ -266,7 +266,7 @@ const confirmText = p => p.evaluate(()=>({
       };
     });
     check('a sheet holding a draft leaves by its own bar', bar.split, bar.labels.join(' / '));
-    check('and the way out is called Cancel', bar.labels[0] === 'Cancel', bar.labels.join(' / '));
+    check('and the way out is called Back', bar.labels[0] === 'Back', bar.labels.join(' / '));
     check('drawn quieter than the thing you came to do', bar.quiet);
     check('on the left, so a right thumb falls on the side that keeps your work',
       bar.order);

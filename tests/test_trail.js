@@ -117,10 +117,10 @@ async function keepOne(p){
     check('one step left on the trail',
       JSON.stringify(await trail(p))===JSON.stringify(['item']));
 
-    await p.click('.modal .modal-actions .btn:has-text("Add to capsule")');
+    await p.click('.modal .modal-actions .btn:has-text("Edit")'); await p.waitForTimeout(500); await p.click('#form-capsules-row');
     await p.waitForTimeout(700);
     check('Add to capsule is another step',
-      JSON.stringify(await trail(p))===JSON.stringify(['item','capsules']),
+      JSON.stringify(await trail(p))===JSON.stringify(['item','form','capsules']),
       (await trail(p)).join(' > '));
     // New capsule from here does not go deeper: you are holding a piece
     // and the only thing missing is a name, so it asks for one over the
@@ -130,7 +130,7 @@ async function keepOne(p){
     check('and a new capsule from there only asks for a name',
       await p.evaluate(()=>document.getElementById('prompt-backdrop').classList.contains('open')));
     check('without going a step deeper',
-      JSON.stringify(await trail(p))===JSON.stringify(['item','capsules']),
+      JSON.stringify(await trail(p))===JSON.stringify(['item','form','capsules']),
       (await trail(p)).join(' > '));
     await p.fill('#prompt-input', 'Trail Capsule');
     await p.click('#prompt-confirm'); await p.waitForTimeout(800);
@@ -139,6 +139,9 @@ async function keepOne(p){
     check('and leaves you on the picker',
       Boolean(await p.evaluate(()=>document.getElementById('capsule-picks'))));
 
+    await back(p);
+    check('back from the capsules lands on the edit form it was opened from',
+      await p.evaluate(()=>document.getElementById('form-backdrop').classList.contains('open')));
     await back(p);
     check('back again lands on the piece',
       Boolean(await p.evaluate(()=>document.querySelector('.modal .modal-photo'))));
