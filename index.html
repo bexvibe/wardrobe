@@ -7116,10 +7116,9 @@ function drawItemSheet(id){
   const item = ITEMS.find(i => i.id === id);
   if(!item) return;
   const modal = document.getElementById('modal');
-  // A piece is a page of its own when it is where you have arrived from the
-  // wardrobe; opened from an outfit or a capsule it is a sheet over that page,
-  // which stays visible beneath it.
-  const asPage = !sheetTrail.slice(0, -1).some(e => PAGE_DRAW[e.sheet]);
+  // A piece is always the same centred card, wherever it was opened from:
+  // the wardrobe, an outfit or a capsule. Back retraces the way you came.
+  const asPage = true;
   document.getElementById('modal-backdrop').classList.toggle('as-page', asPage);
   // Same rule, different look: a piece reached from the wardrobe floats as a
   // card over it, so the list you came from stays in view behind.
