@@ -267,9 +267,13 @@ const dbTags = (p, id) => p.evaluate(i =>
     // sheet that carries "Outfits with this piece".
     await p.evaluate(()=>{ const t = ITEMS.find(i=>tabForItem(i)==='Tops'); openModal(t.id); });
     await p.waitForTimeout(1000);
-    check('the piece\'s sheet lists outfits with it',
-      await p.evaluate(()=>document.querySelectorAll('#m-outfit-gallery .outfit-card').length) > 0,
-      String(await p.evaluate(()=>document.querySelectorAll('#m-outfit-gallery .outfit-card').length)));
+    check('the piece\'s sheet links to outfits with it rather than listing them',
+      await p.evaluate(()=>Boolean(document.getElementById('find-outfits-link')) &&
+        !document.getElementById('m-outfit-gallery')));
+    await p.click('#find-outfits-link'); await p.waitForTimeout(1200);
+    check('tapping it opens the Outfits tab with that piece already filtered',
+      await p.evaluate(()=>appMode==='outfits' &&
+        OUTFIT_TABS.some(t=>outfitFilters[t].type==='items' && outfitFilters[t].ids.length===1)));
     check('and prints no count above them',
       await p.evaluate(()=>!document.getElementById('m-outfit-count-line')));
     check('nor says "possible combinations" anywhere on it',

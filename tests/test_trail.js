@@ -163,14 +163,12 @@ async function keepOne(p){
     const first = await p.evaluate(()=>sheetTrail[sheetTrail.length-1].id);
 
     // Now tap a different piece from this sheet's own outfit list.
-    const rows = await p.locator('#m-outfit-gallery .outfit-card').count();
-    check('the sheet lists outfits with this piece', rows > 0, String(rows));
-    // Open one deliberately: an outfit in this list opens as a page of its
-    // own, over the piece, and its pieces are the way on from there.
-    await p.evaluate(()=>{
-      const shut = document.querySelector('#m-outfit-gallery .outfit-card');
-      if(shut) shut.click();
-    });
+    check('the sheet offers a link to outfits with this piece, not a list',
+      await p.evaluate(()=>Boolean(document.getElementById('find-outfits-link')) &&
+        !document.getElementById('m-outfit-gallery')));
+    // Open an outfit deliberately: it opens as a page of its own, over the
+    // piece, and its pieces are the way on from there.
+    await p.evaluate(()=>openOutfitPage(comboKey(outfitDisplayed[1]), null));
     await p.waitForTimeout(600);
     const other = await p.evaluate(id => {
       const rows = Array.from(document.querySelectorAll('#outfit-page .outfit-piece-row'));
@@ -194,7 +192,7 @@ async function keepOne(p){
     }
 
     // Tapping the piece you are already on takes you back up to it.
-    await p.evaluate(()=>{ document.getElementById('modal-backdrop').scrollTop = 500; });
+    await p.evaluate(()=>{ document.getElementById('modal-outfits-container').style.minHeight='2000px'; document.getElementById('modal-backdrop').scrollTop = 500; });
     await p.waitForTimeout(300);
     await p.evaluate(id=>openPieceSheet(id), await p.evaluate(()=>sheetTrail[sheetTrail.length-1].id));
     await p.waitForTimeout(700);
@@ -218,8 +216,8 @@ async function keepOne(p){
     // Open any piece from the wardrobe, which draws "outfits with this piece".
     await p.click('#nav-inventory-btn'); await p.waitForTimeout(700);
     await p.click('#gallery .tile'); await p.waitForTimeout(900);
-    check('the sheet drew its own outfit list',
-      await p.evaluate(()=>Object.values(modalFilters).some(f=>f.type==='items')));
+    check('the sheet draws no outfit list of its own',
+      await p.evaluate(()=>!document.getElementById('m-outfit-gallery')));
     check('and it is not the page\'s set of filters',
       (await p.evaluate(()=>JSON.stringify(outfitFilters))) === set,
       await p.evaluate(()=>JSON.stringify(outfitFilters)));
@@ -251,9 +249,8 @@ async function keepOne(p){
       return i ? i.id : null;
     });
     await p.evaluate(id=>openPieceSheet(id), plainId); await p.waitForTimeout(1000);
-    check('an untagged piece still lists the outfits it is in',
-      (await p.locator('#m-outfit-gallery .outfit-card').count()) > 0,
-      String(await p.locator('#m-outfit-gallery .outfit-card').count()));
+    check('an untagged piece still offers its outfits link',
+      await p.locator('#find-outfits-link').count() === 1);
     check('and the page keeps its tag',
       await p.evaluate(()=>outfitTags.join() === 'winter'));
     await p.close();

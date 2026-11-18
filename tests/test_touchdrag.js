@@ -47,6 +47,8 @@ const openAsSheet = p => p.evaluate(()=>{
   setMode('capsules');
   openCapsulePage(capsules[0].id);
   openPieceSheet('seed_0');
+  // No outfit list under the piece any more; give the sheet room to scroll.
+  document.getElementById('modal-outfits-container').style.minHeight = '2000px';
 });
 
 // Everything that should travel together, measured against the sheet.

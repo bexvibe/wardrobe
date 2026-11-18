@@ -159,7 +159,7 @@ const rows = p => p.evaluate(()=>window.__WARDROBE_STATE.outfit_extras.slice());
     const p=await open(b);
     const pieceId = await p.evaluate(()=>comboPieces(outfitDisplayed[0])[0].id);
     await p.evaluate(id=>openModal(id), pieceId); await p.waitForTimeout(1500);
-    await p.click('#m-outfit-gallery .outfit-card'); await p.waitForTimeout(700);
+    await p.evaluate(()=>openOutfitPage(comboKey(outfitDisplayed[0]), null)); await p.waitForTimeout(700);
     await p.click('#outfit-page-extras');
     await p.waitForTimeout(700);
     await p.click('#extras-gallery .picker-tile'); await p.waitForTimeout(400);
@@ -168,7 +168,7 @@ const rows = p => p.evaluate(()=>window.__WARDROBE_STATE.outfit_extras.slice());
       (await openKey(p)) !== null);
     await leavePage(p);
     check('and Back from the outfit returns to the piece sheet',
-      await p.evaluate(()=>Boolean(document.getElementById('m-outfit-gallery')) &&
+      await p.evaluate(()=>Boolean(document.getElementById('modal-outfits-container')) &&
         document.getElementById('modal-backdrop').classList.contains('open')));
     await leaveSheet(p, {settle:700});
     check('the page draws its own outfits again once the sheet is gone',

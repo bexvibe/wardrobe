@@ -709,6 +709,7 @@
     margin:22px 0 10px;
     padding-top:16px;
   }
+  .find-outfits-link{width:100%;margin:22px 0 4px;}
   .panel-actions{margin:0 0 10px;}
   /* The outfit as worn, centred and capped so a wide sheet on a tablet does
      not blow the flat-lay up past the size its photographs were cut for. */
@@ -5709,23 +5710,18 @@ function findOutfitsWithPiece(itemId){
 
 function showOutfitsInModal(itemId){
   const container = document.getElementById('modal-outfits-container');
-  const locked = lockFilterForPiece(itemId);
-  if(!locked){
+  if(!container) return;
+  // No gallery here any more: a link to the Outfits tab, which opens with
+  // this piece already filtered. Pieces from categories outfits are not
+  // built from have no outfits to find, so they get no link.
+  if(!lockFilterForPiece(itemId)){
     container.innerHTML = '';
     return;
   }
-  // The sheet's own, so the page it is sitting over keeps whatever you
-  // narrowed it to.
-  modalFilters = locked;
-  outfitRenderContext = 'modal';
   container.innerHTML = `
-    <div class="outfits-heading">Outfits with this piece</div>
-    <div class="outfit-gallery" id="m-outfit-gallery"></div>
-    <div style="text-align:center;margin-top:12px;">
-      <button class="btn small secondary" id="m-load-more-btn" onclick="loadMoreOutfits()" style="display:none;">Load more</button>
-    </div>
+    <button type="button" class="btn secondary find-outfits-link" id="find-outfits-link"
+      onclick='findOutfitsWithPiece(${JSON.stringify(itemId)})'>Find outfits with this piece</button>
   `;
-  resetOutfitResults();
 }
 
 // ============================================================

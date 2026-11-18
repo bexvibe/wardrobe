@@ -238,6 +238,8 @@ const scrollTo = async (p, top) => { await p.evaluate(t=>window.scrollTo({top:t}
     const p=await open(b);
     await p.evaluate(()=>{ const t = ITEMS.find(i=>tabForItem(i)==='Jackets'); openModal(t.id); });
     await p.waitForTimeout(1400);
+    // The sheet no longer carries an outfit list, so give it room to scroll.
+    await p.addStyleTag({content:'#modal-outfits-container{min-height:2000px}'});
     const room = await p.evaluate(()=>{
       const el = document.getElementById('modal');
       return Math.round(el.scrollHeight - el.clientHeight);

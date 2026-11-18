@@ -32,19 +32,23 @@ const results=[]; const check=(n,p,d)=>{results.push(p);console.log(`${p?'PASS':
     key:document.getElementById('outfit-page').dataset.key,
     rows:document.querySelectorAll('#outfit-page .outfit-piece-row').length}));
   const before = await behind();
-  const n = await p.evaluate(()=>document.querySelectorAll('#modal-outfits-container .outfit-card').length);
-  check('the piece sheet lists outfits', n > 1, String(n));
+  await p.evaluate(()=>{
+    // The piece sheet no longer lists outfits, so put two on the stream by hand.
+    const tops=ITEMS.filter(i=>tabForItem(i)==='Tops'), bots=ITEMS.filter(i=>tabForItem(i)==='Pants'||tabForItem(i)==='Skirts');
+    outfitDisplayed=[{base:'tb',top:tops[0],bottom:bots[0],jumper:null,jacket:null},{base:'tb',top:tops[1],bottom:bots[1],jumper:null,jacket:null}];
+  });
+    check('the piece sheet links to outfits', await p.locator('#find-outfits-link').count() === 1);
 
   // open one, then another (the second also fades the first one's panel)
   // An outfit in the sheet opens as a page of its own, over the sheet; going
   // back from it and opening another must leave the capsule behind alone.
-  await p.click('#modal-outfits-container .outfit-card >> nth=0'); await p.waitForTimeout(700);
+  await p.evaluate(()=>openOutfitPage(comboKey(outfitDisplayed[0]), null)); await p.waitForTimeout(700);
   check('an outfit in the sheet opens', await p.evaluate(()=>{
     const t = sheetTrail[sheetTrail.length - 1];
     return Boolean(t) && t.sheet === 'outfit';
   }));
   await p.click('#outfit-page-back'); await p.waitForTimeout(700);
-  await p.click('#modal-outfits-container .outfit-card >> nth=1'); await p.waitForTimeout(700);
+  await p.evaluate(()=>openOutfitPage(comboKey(outfitDisplayed[1]), null)); await p.waitForTimeout(700);
   await p.click('#outfit-page-back'); await p.waitForTimeout(900);
   const after = await behind();
   check('the capsule behind did not scroll', after.y === before.y, `${before.y} -> ${after.y}`);

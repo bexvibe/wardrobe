@@ -245,6 +245,7 @@ async function longPress(p, sel){
     const p=await open(b);
     const id = await p.evaluate(()=>ITEMS.find(i=>tabForItem(i)==='Jackets').id);
     await p.evaluate(i=>openModal(i), id); await p.waitForTimeout(1300);
+    await p.evaluate(()=>{ document.getElementById('modal-outfits-container').style.minHeight='2000px'; });
     // The sheet scrolls inside itself now, so this is the sheet, not the
     // backdrop it sits on.
     await p.evaluate(()=>document.getElementById('modal').scrollTo({top:1400}));
