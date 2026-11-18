@@ -47,13 +47,12 @@
   .inspo{margin-top:14px;padding-top:14px;border-top:1px solid var(--accent-soft)}
   .inspo-h{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:10px}
   .inspo-h b{font:600 13px 'Work Sans';letter-spacing:.02em}
-  .inspo-h span{color:var(--ink-soft);font-size:12px}
-  .strip{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scroll-snap-type:x proximity;margin:0 -14px;padding-inline:14px}
-  .strip::-webkit-scrollbar{display:none}
-  .tile{flex:0 0 92px;height:122px;border-radius:12px;position:relative;overflow:hidden;border:0;padding:0;cursor:pointer;scroll-snap-align:start;color:#fff;text-align:left}
+  .add-btn{width:36px;height:36px;display:inline-flex;align-items:center;justify-content:center;border:none;border-radius:999px;background:var(--ink);color:#fff;cursor:pointer;padding:0}
+  .add-btn svg{width:18px;height:18px;display:block}
+  /* Every pin shown, in a grid that wraps: nothing hidden off the edge. */
+  .strip{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .tile{aspect-ratio:3/4;width:100%;border-radius:12px;position:relative;overflow:hidden;border:0;padding:0;cursor:pointer;color:#fff;text-align:left}
   .tile .src{position:absolute;left:6px;bottom:6px;font:600 10px 'Work Sans';background:rgba(0,0,0,.55);padding:2px 7px;border-radius:999px}
-  .add{flex:0 0 92px;height:122px;border-radius:12px;border:1.5px dashed var(--line);background:none;color:var(--ink-soft);font:500 12px 'Work Sans';display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer;scroll-snap-align:start}
-  .add i{font:300 26px/1 'Work Sans';font-style:normal;color:var(--ink)}
   /* The app's own empty state: a picture, a Fraunces line, a line of help,
      and a round + button. No box round it. */
   .empty{text-align:center;padding:22px 20px 6px;color:var(--ink-soft)}
@@ -71,13 +70,18 @@
   .sheet.on{transform:none}
   .grab{width:36px;height:4px;border-radius:2px;background:var(--line);margin:0 auto 12px}
   .sheet h4{font:400 20px 'Fraunces',serif;margin:0 0 12px}
-  .opt{display:flex;align-items:center;gap:14px;width:100%;background:none;border:0;border-bottom:1px solid var(--accent-soft);padding:13px 2px;font:500 15px 'Work Sans';color:var(--ink);cursor:pointer;text-align:left}
-  .opt:last-of-type{border-bottom:0}
-  .opt svg{width:22px;height:22px;stroke:var(--ink);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
-  .opt small{display:block;color:var(--ink-soft);font-weight:400;font-size:12px}
-  .field{display:flex;gap:8px;margin-top:6px}
-  .field input{flex:1;min-width:0;border:1px solid var(--line);border-radius:12px;padding:11px 12px;font:15px 'Work Sans';color:var(--ink)}
-  .hint{color:var(--ink-soft);font-size:12px;margin:8px 2px 0}
+  /* The app's own dialog (confirm / text prompt): a centred card, a Fraunces
+     title, stacked full-width buttons, the first one dark. */
+  .dlg-back{position:absolute;inset:0;background:rgba(0,0,0,.38);display:none;align-items:center;justify-content:center;padding:24px}
+  .dlg-back.on{display:flex}
+  .dlg{width:100%;max-width:300px;background:var(--surface);border-radius:18px;padding:22px 20px 16px;box-shadow:0 18px 44px rgba(0,0,0,.22)}
+  .dlg-title{font:400 21px/1.2 'Fraunces',serif;margin:0 0 6px}
+  .dlg-body{font:14px/1.45 'Work Sans';color:var(--ink-soft);margin:0 0 18px}
+  .dlg-field{display:block;font:500 12px 'Work Sans';color:var(--ink-soft)}
+  .dlg-field input{display:block;width:100%;margin-top:6px;border:1px solid var(--line);border-radius:10px;padding:11px 12px;font:15px 'Work Sans';color:var(--ink)}
+  .dlg-actions{display:flex;flex-direction:column;gap:8px}
+  .dlg-actions .btn{width:100%;min-height:46px;justify-content:center}
+  .hint{color:var(--ink-soft);font-size:12px;margin:8px 0 16px}
   .viewer .big{height:330px;border-radius:14px;margin-bottom:12px;display:flex;align-items:flex-end;padding:10px}
   .viewer .big span{background:rgba(0,0,0,.55);color:#fff;font:600 11px 'Work Sans';padding:3px 9px;border-radius:999px}
   .viewer .two{display:flex;gap:8px}.viewer .two .btn{flex:1;justify-content:center}
@@ -110,28 +114,29 @@
 
         <div class="scrim" id="scrim"></div>
 
-        <div class="sheet" id="addSheet" role="dialog" aria-label="Add inspo">
-          <div class="grab"></div>
-          <h4>Add inspo</h4>
-          <button class="opt" data-add="camera">
-            <svg viewBox="0 0 24 24"><path d="M4 8h3l1.5-2h7L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>
-            <span>Take photo<small>Opens the camera</small></span></button>
-          <button class="opt" data-add="library">
-            <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M4 18l5-5 4 4 3-3 4 4"/></svg>
-            <span>Camera roll<small>Choose one or more screenshots</small></span></button>
-          <button class="opt" data-add="link">
-            <svg viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>
-            <span>Paste a link<small>Pinterest pin, Instagram, any page</small></span></button>
+        <div class="dlg-back" id="addDlg">
+          <div class="dlg" role="dialog" aria-label="Add inspo">
+            <h2 class="dlg-title">Add inspo</h2>
+            <p class="dlg-body">A photo or screenshot, or a link to any image or page.</p>
+            <div class="dlg-actions">
+              <button class="btn dark" data-add="photo">Photo or screenshot</button>
+              <button class="btn" data-add="link">Paste a link</button>
+            </div>
+          </div>
         </div>
 
-        <div class="sheet" id="linkSheet" role="dialog" aria-label="Paste a link">
-          <div class="grab"></div>
-          <h4>Paste a link</h4>
-          <div class="field">
-            <input id="url" inputmode="url" autocapitalize="off" autocorrect="off" placeholder="https://pin.it/…">
-            <button class="btn dark" id="saveLink">Save</button>
+        <div class="dlg-back" id="linkDlg">
+          <div class="dlg" role="dialog" aria-label="Paste a link">
+            <h2 class="dlg-title">Paste a link</h2>
+            <label class="dlg-field">Link
+              <input id="url" inputmode="url" autocapitalize="off" autocorrect="off" placeholder="https://…">
+            </label>
+            <p class="hint">Any image or page. For a page we save its preview picture, and keep the link to open the original.</p>
+            <div class="dlg-actions">
+              <button class="btn dark" id="saveLink">Save</button>
+              <button class="btn" id="cancelLink">Cancel</button>
+            </div>
           </div>
-          <p class="hint">We'll grab the pin's picture so you can see it here. The link stays attached so you can open the original.</p>
         </div>
 
         <div class="sheet viewer" id="viewSheet" role="dialog" aria-label="Inspo">
@@ -157,9 +162,10 @@
 
     <h3>Adding</h3>
     <ul>
-      <li><b>Take photo</b>, <b>Camera roll</b> and <b>Paste a link</b> live in one sheet behind a single Add tile, so the card stays quiet.</li>
-      <li>Camera and roll are plain file inputs (<code>capture</code> for camera), so they work on iOS and Android with no permissions prompt of our own.</li>
-      <li>Link adds a thumbnail from the page's preview image. If none can be fetched, a plain tile shows the site name.</li>
+      <li><b>Add inspo</b> is always on screen: a round + at the top right of the section once there is any inspo, and the big + in the middle while there is none, the same as the app's other empty pages.</li>
+      <li>It opens the app's own dialog (the one used for confirmations and naming), with two choices.</li>
+      <li><b>Photo or screenshot</b> opens the phone's own chooser, exactly as adding a photo to a piece does today, so camera and camera roll come from the phone with nothing for us to build.</li>
+      <li><b>Paste a link</b> asks for one line of text in a dialog shaped like the app's naming prompt. Any link works: a Pinterest pin, an Instagram post, a shop page, or a direct image. An image link is saved as it is; a page link saves the page's preview picture. If there is none, a plain tile shows the site name.</li>
     </ul>
 
     <h3>Removing</h3>
@@ -171,8 +177,8 @@
     <h3>Search Pinterest</h3>
     <p>A plain link to <code>pinterest.com/search/pins/?q=…</code>, with the query built from the pieces. On a phone with the Pinterest app, the link usually opens the app; otherwise it opens in the browser. The app can't know when you come back with a pin, which is why Add is always one tap away.</p>
 
-    <h3>Open question</h3>
-    <p>Tiles are a horizontal strip so many pins don't make the card long. A 2-column grid would show more at once; say if you'd prefer that.</p>
+    <h3>Showing them</h3>
+    <p>All inspo shows at once in a three-column grid that wraps, so nothing sits off the edge of a scroll. Tapping a tile opens it larger.</p>
   </div>
 </div>
 
@@ -190,38 +196,42 @@ const pinterestUrl = 'https://www.pinterest.com/search/pins/?q=' + encodeURIComp
 function render(){
   const el = $('inspo');
   const searchBtn = `<a class="btn search" href="${pinterestUrl}" target="_blank" rel="noopener">Search Pinterest ↗</a>`;
+  const plus = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>`;
   if(!items.length){
     el.innerHTML = `<div class="inspo-h"><b>Inspo</b></div>
       <div class="empty">
         <span class="empty-emoji" aria-hidden="true">📌</span>
         <h3>Save your inspo</h3>
         <p class="empty-sub">Pins or screenshots of similar outfits</p>
-        <button class="empty-action" data-open="add" aria-label="Add inspo" title="Add inspo">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
-        </button>
+        <button class="empty-action" data-open="add" aria-label="Add inspo" title="Add inspo">${plus}</button>
       </div>${searchBtn}`;
   } else {
-    el.innerHTML = `<div class="inspo-h"><b>Inspo</b><span>${items.length} saved</span></div>
+    el.innerHTML = `<div class="inspo-h"><b>Inspo</b>
+        <button class="add-btn" data-open="add" aria-label="Add inspo" title="Add inspo">${plus}</button></div>
       <div class="strip">
         ${items.map((p,i)=>`<button class="tile" data-view="${i}" style="background:${p.bg}" aria-label="Open inspo ${i+1}"><span class="src">${p.src}</span></button>`).join('')}
-        <button class="add" data-open="add"><i>+</i>Add</button>
       </div>${searchBtn}`;
   }
 }
-function sheet(id){ ['addSheet','linkSheet','viewSheet'].forEach(s=>$(s).classList.toggle('on', s===id)); $('scrim').classList.toggle('on', !!id); }
+function sheet(id){
+  ['addDlg','linkDlg','viewSheet'].forEach(s=>$(s).classList.toggle('on', s===id));
+  $('scrim').classList.toggle('on', id==='viewSheet');
+}
 function addItem(p){ items.push(p); render(); sheet(null); }
 let tn;
 function toast(){ $('toast').classList.add('on'); clearTimeout(tn); tn=setTimeout(()=>$('toast').classList.remove('on'),5000); }
 
 document.addEventListener('click', e=>{
   const t = e.target.closest('[data-open],[data-view],[data-add]'); if(!t) return;
-  if(t.dataset.open==='add') sheet('addSheet');
+  if(t.dataset.open==='add') sheet('addDlg');
   if(t.dataset.view){ current=+t.dataset.view; const p=items[current];
     $('bigImg').style.background=p.bg; $('bigSrc').textContent=p.src; $('openOrig').style.display=p.url?'':'none'; sheet('viewSheet'); }
-  if(t.dataset.add==='link'){ sheet('linkSheet'); setTimeout(()=>$('url').focus(),280); }
-  if(t.dataset.add==='camera') addItem({src:'Photo',url:null,bg:'linear-gradient(160deg,#d9c9c1,#8a7467)'});
-  if(t.dataset.add==='library') addItem({src:'Photo',url:null,bg:'linear-gradient(160deg,#c8cbd6,#6c7187)'});
+  if(t.dataset.add==='link'){ sheet('linkDlg'); setTimeout(()=>$('url').focus(),50); }
+  if(t.dataset.add==='photo') addItem({src:'Photo',url:null,bg:'linear-gradient(160deg,#d9c9c1,#8a7467)'});
 });
+// Tapping the dim area round a dialog puts it away, as the app's dialogs do.
+['addDlg','linkDlg'].forEach(id=>$(id).addEventListener('click',e=>{ if(e.target.id===id) sheet(null); }));
+$('cancelLink').onclick = ()=>sheet(null);
 $('scrim').onclick = ()=>sheet(null);
 $('saveLink').onclick = ()=>{ const v=$('url').value.trim(); let host='Link'; try{host=new URL(v).hostname.replace('www.','')}catch(e){ if(!v){$('url').focus();return;} }
   $('url').value=''; addItem({src:host,url:v,bg:'linear-gradient(160deg,#d6cfc2,#857c66)'}); };
