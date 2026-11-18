@@ -896,10 +896,10 @@
   }
   .outfit-page-list .outfit-piece-row{padding:8px 4px;}
   .outfit-page-list{margin-bottom:12px;}
-  .outfit-page-body > .modal-name + .detail-sub,
-  .outfit-page-body > .modal-name{margin-bottom:0;}
-  .outfit-page-body > .modal-name ~ .outfit-page-list,
-  .outfit-page-body > .detail-sub ~ .outfit-page-list{margin-top:14px;}
+  /* The capsule's name and line are the first thing in its card, above the
+     pieces, with a little more room than a row has. */
+  .capsule-page-head{padding:6px 4px 10px;}
+  .capsule-page-head .modal-name{margin:0;}
 
   /* Inspo on an outfit's page: a title, the way to find some and the way to
      keep it, then every pin in a grid — nothing hidden off the edge. */
@@ -4409,9 +4409,12 @@ function drawCapsulePage(id){
   layer.innerHTML = `
     <div class="outfit-page-inner">
       <div class="modal-body has-footer outfit-page-body">
-        <h2 class="modal-name">${esc(capsule.name)}</h2>
-        ${capsule.description ? `<p class="detail-sub">${esc(capsule.description)}</p>` : ''}
-        ${pieces.length ? `<div class="outfit-page-list">` + pieces.map(p => `
+        <div class="outfit-page-list">
+        <div class="capsule-page-head">
+          <h2 class="modal-name">${esc(capsule.name)}</h2>
+          ${capsule.description ? `<p class="detail-sub">${esc(capsule.description)}</p>` : ''}
+        </div>
+        ${pieces.length ? pieces.map(p => `
           <div class="outfit-piece-row tappable"
                onclick='openPieceSheet(${JSON.stringify(p.id)})'>
             ${p.photo ? `<img src="${esc(p.photo)}" alt="${esc(p.name)}" referrerpolicy="no-referrer" loading="lazy" decoding="async">` : `<div class="no-photo-mini">No photo</div>`}
@@ -4421,7 +4424,8 @@ function drawCapsulePage(id){
             </div>
             <span class="piece-go" aria-hidden="true">›</span>
           </div>
-        `).join('') + `</div>` : `<div class="outfit-page-list"><div class="capsule-empty-note">No pieces yet</div></div>`}
+        `).join('') : `<div class="capsule-empty-note">No pieces yet</div>`}
+        </div>
       </div>
       <div class="sheet-footer split pagebar outfit-page-bar">
         <div class="sheet-footer-inner">

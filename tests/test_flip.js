@@ -230,6 +230,10 @@ const box = (p, sel) => p.evaluate(s=>{ const r=document.querySelector(s).getBou
       return l && {bg:getComputedStyle(l).backgroundColor, rows:l.querySelectorAll('.outfit-piece-row').length}; });
     const surf = await p.evaluate(()=>{const d=document.createElement('i');d.style.background='var(--surface)';document.body.appendChild(d);const c=getComputedStyle(d).backgroundColor;d.remove();return c;});
     check('the capsule\'s pieces sit on a white card', bg && bg.bg===surf && bg.rows===6, JSON.stringify(bg)+' vs '+surf);
+    check('and its title and line are in that same card',
+      await p.evaluate(()=>{ const l=document.querySelector('#outfit-page .outfit-page-list');
+        return !!l.querySelector('.modal-name') && !!l.querySelector('.detail-sub') &&
+          !document.querySelector('#outfit-page .outfit-page-body > .modal-name'); }));
     await p.click('#outfit-page .outfit-piece-row'); await p.waitForTimeout(900);
     check('a piece from a capsule unfolds the page then opens', await up(p,'modal-backdrop') &&
       await p.evaluate(()=>document.getElementById('outfit-page').classList.contains('expanded')));
