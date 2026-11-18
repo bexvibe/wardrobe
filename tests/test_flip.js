@@ -81,12 +81,16 @@ const box = (p, sel) => p.evaluate(s=>{ const r=document.querySelector(s).getBou
     const full = await box(p,'#form-backdrop .modal');
     check('scrolled: it has grown to the whole screen',
       full.l<=0.5 && Math.abs(full.r-390)<1 && full.t<=1 && Math.abs(full.b-844)<1, JSON.stringify(full));
-    check('and stays unfolded when scrolled back to the top', await (async()=>{
-      await p.evaluate(()=>{document.querySelector('#form-backdrop .modal').scrollTop = 0;});
-      await p.waitForTimeout(100);
-      return p.evaluate(()=>document.querySelector('#form-backdrop .modal').classList.contains('card-full'));
-    })());
     await p.screenshot({path:path.join(SHOTS,'flip_5_full.png')});
+    check('...and no longer once it is scrolled back to the top: it is a card again', await (async()=>{
+      await p.evaluate(()=>{document.querySelector('#form-backdrop .modal').scrollTop = 60;});
+      await p.waitForTimeout(600);
+      await p.evaluate(()=>{document.querySelector('#form-backdrop .modal').scrollTop = 0;});
+      await p.waitForTimeout(500);
+      const bx = await box(p,'#form-backdrop .modal');
+      return !(await p.evaluate(()=>document.querySelector('#form-backdrop .modal').classList.contains('card-full')))
+        && Math.abs(bx.l-14)<1 && bx.t>40;
+    })());
     check('the bar is still at the foot', (await box(p,'#form-backdrop .sheet-footer-inner')).b > 800);
 
     // ---- cancel turns it back ------------------------------------------
@@ -121,6 +125,21 @@ const box = (p, sel) => p.evaluate(s=>{ const r=document.querySelector(s).getBou
     await p.waitForTimeout(700);
     check('a double tap is one step deeper, not two',
       JSON.stringify(await p.evaluate(()=>sheetTrail.map(e=>e.sheet)))==='["item","form"]');
+    await p.close();
+  }
+
+  // ---- the page behind does not scroll ----------------------------------
+  {
+    const p=await open(b);
+    const id = await p.evaluate(()=>ITEMS.find(i=>tabForItem(i)==='Tops').id);
+    const refused = sel => p.evaluate(s=>{
+      const e = new WheelEvent('wheel',{deltaY:120,bubbles:true,cancelable:true});
+      document.querySelector(s).dispatchEvent(e); return e.defaultPrevented; }, sel);
+    check('with nothing open the page scrolls freely', !(await refused('#gallery')));
+    await p.evaluate(i=>openPieceSheet(i), id); await p.waitForTimeout(500);
+    check('a piece open: a wheel over the dimmed page is refused', await refused('#modal-backdrop'));
+    await p.click('#item-page-edit'); await p.waitForTimeout(600);
+    check('the form open: the same', await refused('#form-backdrop'));
     await p.close();
   }
 
