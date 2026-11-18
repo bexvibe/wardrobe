@@ -555,6 +555,57 @@
     transform:translateY(110%);
   }
   .modal-backdrop.open.as-page.item-card .modal{transform:translateY(0);}
+  /* The back of the card. Editing a piece turns its card over rather than
+     opening a different sheet, so the form is dressed as the same card —
+     same margins, same corners, same blur behind — and the flip below does
+     the rest. It lives in its own backdrop, so the turn is two halves: the
+     front goes edge-on, then the back comes round from the other edge. */
+  .modal-backdrop.item-card-back{
+    background:rgba(0,0,0,calc(0.2 * var(--dim, 1)));
+    -webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);
+  }
+  .modal-backdrop.item-card-back .modal{
+    left:14px;right:14px;
+    top:max(56px, calc(env(safe-area-inset-top, 0px) + 20px));
+    bottom:calc(14px + env(safe-area-inset-bottom, 0px));
+    height:auto;
+    border-radius:26px;
+    box-shadow:0 18px 50px rgba(0,0,0,0.28);
+    transform:none;
+    /* The same unfolding a tall sheet does when scrolled, done to a card:
+       it grows out to the edges of the screen. Edges rather than height,
+       because a card is pinned top and bottom. */
+    transition:top .28s var(--sheet-ease), left .28s var(--sheet-ease),
+               right .28s var(--sheet-ease), bottom .28s var(--sheet-ease),
+               border-radius .28s var(--sheet-ease), box-shadow .28s ease;
+  }
+  .modal-backdrop.item-card-back .sheet-grip{display:none;}
+  .modal-backdrop.item-card-back .modal.card-full{
+    left:0;right:0;bottom:0;
+    top:env(safe-area-inset-top, 0px);
+    border-radius:0;
+    box-shadow:none;
+  }
+  /* The turn. Perspective is in the transform itself so each half is
+     self-contained; a card is turned about its own vertical middle. Ease in
+     going edge-on and out coming round, so it speeds into the middle of the
+     turn and settles at the end rather than moving at one pace throughout. */
+  :root{ --flip-half-ms:140ms; }
+  @media (prefers-reduced-motion: reduce){ :root{ --flip-half-ms:0ms; } }
+  .modal.flip-out-fwd, .modal.flip-out-back,
+  .modal.flip-in-fwd, .modal.flip-in-back{
+    transition:none !important;
+    will-change:transform;
+    backface-visibility:hidden;
+  }
+  .modal.flip-out-fwd { animation:flip-out-fwd  var(--flip-half-ms) cubic-bezier(0.4,0,1,1) both; }
+  .modal.flip-in-fwd  { animation:flip-in-fwd   var(--flip-half-ms) cubic-bezier(0,0,0.2,1) both; }
+  .modal.flip-out-back{ animation:flip-out-back var(--flip-half-ms) cubic-bezier(0.4,0,1,1) both; }
+  .modal.flip-in-back { animation:flip-in-back  var(--flip-half-ms) cubic-bezier(0,0,0.2,1) both; }
+  @keyframes flip-out-fwd { from{transform:perspective(1400px) rotateY(0)}      to{transform:perspective(1400px) rotateY(-90deg)} }
+  @keyframes flip-in-fwd  { from{transform:perspective(1400px) rotateY(90deg)}  to{transform:perspective(1400px) rotateY(0)} }
+  @keyframes flip-out-back{ from{transform:perspective(1400px) rotateY(0)}      to{transform:perspective(1400px) rotateY(90deg)} }
+  @keyframes flip-in-back { from{transform:perspective(1400px) rotateY(-90deg)} to{transform:perspective(1400px) rotateY(0)} }
   .item-card .modal-photo{position:relative;aspect-ratio:1/0.88;margin:10px 10px 0;border-radius:18px;}
   .item-card .sheet-footer{padding-bottom:14px;}
   /* Edit is the rarer act, so it is a pencil on the photo rather than a
@@ -2648,6 +2699,7 @@ function showSheetBackdrop(which){
 }
 
 function hideAllSheets(){
+  cancelCardTurn();
   SHEET_BACKDROPS.forEach(id =>
     document.getElementById(id)?.classList.remove('open'));
   document.getElementById('outfit-page')?.classList.remove('open');
@@ -2689,6 +2741,20 @@ function pushSheet(entry){
 // The back arrow, everywhere inside the sheets. One step at a time: the
 // sheet you came from if there is one, otherwise the page you were on.
 function goBackFromSheet(){
+  if(cardTurning) return;
+  // Leaving the back of a piece's card turns it back over rather than
+  // dropping to the front: the same flip, the other way.
+  if(formIsCardBack() && cardMotionOk() && formBackdropOpen()){
+    turnCard(formModalEl(), 'back', () => {
+      stepBackFromSheet();
+      return document.getElementById('modal');
+    });
+    return;
+  }
+  stepBackFromSheet();
+}
+
+function stepBackFromSheet(){
   sheetTrail.pop();
   const back = sheetTrail[sheetTrail.length - 1];
   const spec = back && SHEETS[back.sheet];
@@ -7171,9 +7237,105 @@ function clearStagedPhoto(){
   stagedPhoto = null;
 }
 
+// ---- Turning a piece's card over ----------------------------
+// Editing a piece you opened from the wardrobe turns its card over to the
+// back, where the form is; Cancel or Save turns it back. The front and the
+// back are two backdrops, so the turn is two halves played one after the
+// other: the half that is leaving goes edge-on, the swap happens while it
+// is invisible, and the half that is arriving comes round from the far edge.
+let cardTurning = false;
+let cardTurnId = 0;
+
+function cardMotionOk(){
+  return !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+function formModalEl(){ return document.querySelector('#form-backdrop .modal'); }
+function formBackdropOpen(){ return document.getElementById('form-backdrop').classList.contains('open'); }
+
+// Is the form on top of the trail the back of a piece's card? Only when the
+// piece under it was itself a card, i.e. reached from the wardrobe and not
+// from an outfit or capsule page.
+function formIsCardBack(){
+  const n = sheetTrail.length;
+  if(n < 2 || sheetTrail[n - 1].sheet !== 'form') return false;
+  return sheetTrail[n - 2].sheet === 'item' &&
+         !sheetTrail.slice(0, n - 2).some(e => PAGE_DRAW[e.sheet]);
+}
+
+// Resolves when el has finished its animation. The timer is the way out if
+// the event never comes (a tab in the background, an animation that was
+// dropped) so the card cannot be left stuck edge-on.
+function afterAnimation(el){
+  return new Promise(resolve => {
+    const done = e => {
+      if(e && e.target !== el) return;
+      el.removeEventListener('animationend', done);
+      resolve();
+    };
+    el.addEventListener('animationend', done);
+    setTimeout(done, 500);
+  });
+}
+
+// dir is 'fwd' (front to back) or 'back'. swap() changes what is showing and
+// returns the element that is now on screen, or nothing if nothing is.
+function turnCard(fromEl, dir, swap){
+  const id = ++cardTurnId;
+  cardTurning = true;
+  fromEl.classList.add('flip-out-' + dir);
+  afterAnimation(fromEl).then(() => {
+    // The sheets were put away while it turned: there is nothing to swap to.
+    if(id !== cardTurnId) return;
+    let toEl = null;
+    try{ toEl = swap(); }finally{ fromEl.classList.remove('flip-out-' + dir); }
+    if(!toEl || id !== cardTurnId) return;
+    toEl.classList.add('flip-in-' + dir);
+    return afterAnimation(toEl).then(() => toEl.classList.remove('flip-in-' + dir));
+  }).catch(e => console.error('[wardrobe] card turn failed', e))
+    .finally(() => { if(id === cardTurnId) cardTurning = false; });
+}
+
+// Closing the sheets from under a turn (the piece archived, a jump to
+// another tab) ends it where it stands: nothing is left edge-on, and the
+// half that was waiting to swap never does.
+function cancelCardTurn(){
+  cardTurnId++;
+  cardTurning = false;
+  document.querySelectorAll('.modal[class*="flip-"]').forEach(m =>
+    m.classList.remove('flip-out-fwd', 'flip-in-fwd', 'flip-out-back', 'flip-in-back'));
+}
+
 function openItemForm(id){
+  if(cardTurning) return;
+  const top = sheetTrail[sheetTrail.length - 1];
+  const fromCard = id && top && top.sheet === 'item' && top.id === id &&
+                   document.getElementById('modal-backdrop').classList.contains('item-card') &&
+                   document.getElementById('modal-backdrop').classList.contains('open');
+  if(fromCard && cardMotionOk()){
+    turnCard(document.getElementById('modal'), 'fwd', () => {
+      pushSheet({ sheet: 'form', id });
+      drawItemForm(id);
+      return formModalEl();
+    });
+    return;
+  }
   pushSheet({ sheet: 'form', id: id || null });
   drawItemForm(id);
+}
+
+// How the form is dressed, and what scrolling it does. As the back of a card
+// it is the card — and, like a tall sheet, it unfolds to the whole screen as
+// soon as you scroll it, since scrolling is asking for room.
+function setFormCardLook(){
+  const asCard = formIsCardBack();
+  const backdrop = document.getElementById('form-backdrop');
+  const modal = formModalEl();
+  backdrop.classList.toggle('item-card-back', asCard);
+  if(!asCard){ modal.classList.remove('card-full'); modal.onscroll = null; return asCard; }
+  modal.onscroll = () => {
+    if(modal.scrollTop > 0) modal.classList.add('card-full');
+  };
+  return asCard;
 }
 
 function drawItemForm(id){
@@ -7181,7 +7343,8 @@ function drawItemForm(id){
   // and redrawing it from the saved piece would throw your edits away.
   if(itemFormBaseline !== null && editingItemId === (id || null)){
     renderFormCapsulesRow();
-    allowSheetDrag(closeItemForm, itemFormIsDirty);
+    // The back of a card has no pull-down: Cancel turns it back over.
+    allowSheetDrag(setFormCardLook() ? null : closeItemForm, itemFormIsDirty);
     showSheetBackdrop('form-backdrop');
     return;
   }
@@ -7213,11 +7376,18 @@ function drawItemForm(id){
   renderCategoryOptions();
 
   itemFormBaseline = itemFormSnapshot();
-  allowSheetDrag(closeItemForm, itemFormIsDirty);
+  const asCard = setFormCardLook();
+  // Fresh each time: a card that was unfolded last time folds up again, and
+  // the form starts at its top.
+  formModalEl().classList.remove('card-full');
+  formModalEl().scrollTop = 0;
+  allowSheetDrag(asCard ? null : closeItemForm, itemFormIsDirty);
   // The form and the detail sheet are two backdrops; only one of them is
   // ever up, and which one is the trail's business now.
   showSheetBackdrop('form-backdrop');
-  setTimeout(() => document.getElementById('form-name').focus(), 50);
+  // On the back of a card the keyboard would jump up mid-turn; you tap the
+  // field you mean instead.
+  if(!asCard) setTimeout(() => document.getElementById('form-name').focus(), 50);
 }
 
 // A piece that is not saved yet cannot be in a capsule, so only an edit
