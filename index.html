@@ -632,13 +632,19 @@
     position:sticky;
     bottom:0;
     z-index:6;
-    background:var(--page);
-    /* A shadow rather than a rule: it lifts the bar off whatever is passing
-       underneath it without drawing a line across the screen. */
-    box-shadow:0 -6px 20px rgba(0,0,0,0.07);
-    padding:12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+    /* The strip itself is only the ruler: transparent and inset, so the bar
+       inside it floats over the content the way the bottom nav does. */
+    background:transparent;
+    pointer-events:none;
+    padding:0 16px calc(16px + env(safe-area-inset-bottom, 0px));
   }
-  .sheet-footer-inner{max-width:640px;margin:0 auto;}
+  .sheet-footer-inner{
+    max-width:640px;margin:0 auto;
+    pointer-events:auto;
+    background:var(--surface);border:1px solid var(--line);border-radius:14px;
+    padding:10px 12px;
+    box-shadow:0 6px 24px rgba(0,0,0,0.11);
+  }
   /* Full width and a proper thumb target — it is the one thing this screen
      is for. */
   .sheet-footer .btn{
@@ -666,7 +672,7 @@
   .sheet-footer.split .btn:not(.secondary){flex:1 1 auto;min-width:0;}
 
   /* Room for it, so the last field is not stuck underneath. */
-  .modal-body.has-footer{padding-bottom:24px;}
+  .modal-body.has-footer{padding-bottom:12px;}
   .outfits-heading{
     font-family:'Fraunces', serif;
     font-weight:500;
