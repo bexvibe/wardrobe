@@ -192,6 +192,50 @@ const box = (p, sel) => p.evaluate(s=>{ const r=document.querySelector(s).getBou
     await p.close();
   }
 
+  // ---- heart up top, capsule on white, piece from a page unfolds it first --
+  {
+    const p=await open(b);
+    await p.click('#nav-outfits-btn'); await p.waitForSelector('.outfit-gallery .outfit-fav-btn');
+    await p.waitForTimeout(900);
+    await p.evaluate(()=>closeFilterSheet()); await p.waitForTimeout(500);
+    await p.evaluate(()=>openOutfitPage(comboKey(outfitDisplayed[0]), null)); await p.waitForTimeout(800);
+    const heart = await p.evaluate(()=>{
+      const h=document.querySelector('#outfit-page .outfit-page-flat .outfit-fav-btn');
+      const f=document.querySelector('#outfit-page .outfit-page-flat');
+      if(!h) return null; const hr=h.getBoundingClientRect(), fr=f.getBoundingClientRect();
+      return {top:Math.round(hr.top-fr.top), right:Math.round(fr.right-hr.right), onBar:!!document.querySelector('#outfit-page .sheet-footer .outfit-fav-btn')};
+    });
+    check('the heart is on the outfit picture, top right', heart && heart.top<=14 && heart.right<=14, JSON.stringify(heart));
+    check('and no longer down on the bar', heart && !heart.onBar);
+    const lvl = () => p.evaluate(()=>document.querySelector('#outfit-page .fave-heart').dataset.level);
+    const before = await lvl();
+    await p.click('#outfit-page .outfit-page-flat .fave-heart'); await p.waitForTimeout(500);
+    check('tapping it still changes the fave level', (await lvl()) !== before, before+' > '+(await lvl()));
+
+    // A piece from the page: the page unfolds first, then the piece rises.
+    const ex = () => p.evaluate(()=>document.getElementById('outfit-page').classList.contains('expanded'));
+    check('the outfit is a card before a piece is chosen', !(await ex()));
+    await p.click('#outfit-page .outfit-piece-row'); await p.waitForTimeout(60);
+    check('choosing a piece unfolds the page at once', await ex());
+    check('...before the piece is up', !(await up(p,'modal-backdrop')));
+    await p.waitForTimeout(600);
+    check('then the piece rises over the full page', await up(p,'modal-backdrop') && await ex());
+    await p.close();
+  }
+  {
+    const p=await open(b);
+    await p.evaluate(()=>{ capsules.push({id:'cap_w',name:'White',description:'x',itemIds:ITEMS.slice(0,6).map(i=>i.id)}); });
+    await p.evaluate(()=>openCapsulePage('cap_w', null)); await p.waitForTimeout(800);
+    const bg = await p.evaluate(()=>{ const l=document.querySelector('#outfit-page .outfit-page-list');
+      return l && {bg:getComputedStyle(l).backgroundColor, rows:l.querySelectorAll('.outfit-piece-row').length}; });
+    const surf = await p.evaluate(()=>{const d=document.createElement('i');d.style.background='var(--surface)';document.body.appendChild(d);const c=getComputedStyle(d).backgroundColor;d.remove();return c;});
+    check('the capsule\'s pieces sit on a white card', bg && bg.bg===surf && bg.rows===6, JSON.stringify(bg)+' vs '+surf);
+    await p.click('#outfit-page .outfit-piece-row'); await p.waitForTimeout(900);
+    check('a piece from a capsule unfolds the page then opens', await up(p,'modal-backdrop') &&
+      await p.evaluate(()=>document.getElementById('outfit-page').classList.contains('expanded')));
+    await p.close();
+  }
+
   // ---- the page behind does not scroll ----------------------------------
   {
     const p=await open(b);

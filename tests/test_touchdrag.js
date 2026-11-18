@@ -42,14 +42,19 @@ async function open(b){
 // A piece opened from the wardrobe is a page, which is not dragged away. The
 // gesture belongs to a piece opened as a sheet — over a capsule here — so
 // that is how these open it.
-const openAsSheet = p => p.evaluate(()=>{
-  closeModal();
-  setMode('capsules');
-  openCapsulePage(capsules[0].id);
-  openPieceSheet('seed_0');
+const openAsSheet = async p => {
+  await p.evaluate(()=>{
+    closeModal();
+    setMode('capsules');
+    openCapsulePage(capsules[0].id);
+  });
+  await p.waitForTimeout(500);
+  // From a page the piece rises once the page has unfolded.
+  await p.evaluate(()=>openPieceSheet('seed_0'));
+  await p.waitForFunction(()=>document.getElementById('modal-backdrop').classList.contains('open'));
   // No outfit list under the piece any more; give the sheet room to scroll.
-  document.getElementById('modal-outfits-container').style.minHeight = '2000px';
-});
+  await p.evaluate(()=>{ document.getElementById('modal-outfits-container').style.minHeight = '2000px'; });
+};
 
 // Everything that should travel together, measured against the sheet.
 const where = (p, sel) => p.evaluate(sel=>{

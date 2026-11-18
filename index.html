@@ -869,7 +869,14 @@
   }
   .outfit-page-body{padding-top:16px;}
   .outfit-page-layer.expanded .outfit-page-body{padding-top:max(18px, env(safe-area-inset-top, 0px));}
-  .outfit-page-flat{margin:0 0 12px;display:flex;flex-direction:column;}
+  .outfit-page-flat{position:relative;margin:0 0 12px;display:flex;flex-direction:column;}
+  /* The heart sits on the picture like a piece's pencil does: the same round
+     white button in the same corner, rather than down on the bar. */
+  .outfit-page-flat .outfit-fav-btn{
+    top:10px;right:10px;width:44px;height:44px;
+    background:var(--surface);border:1px solid var(--line);
+    box-shadow:0 2px 8px rgba(0,0,0,0.08);
+  }
   /* Bigger than a card, so the cut-outs' own margins are bigger too: the
      rows tuck together by a share of the width rather than a fixed 10px. */
   .outfit-page-flat .outfit-lower{margin-top:-9%;min-height:0;}
@@ -886,6 +893,10 @@
   }
   .outfit-page-list .outfit-piece-row{padding:8px 4px;}
   .outfit-page-list{margin-bottom:12px;}
+  .outfit-page-body > .modal-name + .detail-sub,
+  .outfit-page-body > .modal-name{margin-bottom:0;}
+  .outfit-page-body > .modal-name ~ .outfit-page-list,
+  .outfit-page-body > .detail-sub ~ .outfit-page-list{margin-top:14px;}
 
   /* Inspo on an outfit's page: a title, the way to find some and the way to
      keep it, then every pin in a grid — nothing hidden off the edge. */
@@ -2879,8 +2890,26 @@ function openPieceSheet(itemId){
     return;
   }
 
+  // From an outfit or capsule page the piece opens over the page. Over a
+  // card that would be a popup on a popup, so the page unfolds to the full
+  // screen first and the piece rises once it has.
+  const layer = document.getElementById('outfit-page');
+  const onPage = here && PAGE_DRAW[here.sheet] && layer && layer.classList.contains('open');
+  if(onPage && !layer.classList.contains('expanded')){
+    if(pieceOpenTimer) return;
+    layer.classList.add('expanded');
+    const depth = sheetTrail.length;
+    const wait = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 300;
+    pieceOpenTimer = setTimeout(() => {
+      pieceOpenTimer = null;
+      // Something else happened while it unfolded: do not open over it.
+      if(sheetTrail.length === depth && layer.classList.contains('open')) openModal(itemId);
+    }, wait);
+    return;
+  }
   openModal(itemId);
 }
+let pieceOpenTimer = null;
 
 function countNarrowedSlots(filters){
   return Object.keys(filters).filter(k => filters[k].type !== 'any').length;
@@ -4329,6 +4358,7 @@ function drawOutfitPage(key){
     <div class="outfit-page-inner">
       <div class="modal-body has-footer outfit-page-body">
         <div class="outfit-page-flat">
+          ${faveHeartHtml(key)}
           <div class="outfit-thumbs">${outfitThumbsHtml(combo)}</div>
         </div>
         <div class="outfit-page-list">
@@ -4352,7 +4382,6 @@ function drawOutfitPage(key){
                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>Back</button>
           <div class="sheet-footer-actions">
             ${extrasAvailable ? `<button class="btn tonal" type="button" id="outfit-page-extras" onclick='openOutfitExtrasPicker(${JSON.stringify(key)})'>${worn ? 'Edit accessories' : '+ Add accessories'}</button>` : ''}
-            ${faveHeartHtml(key)}
           </div>
         </div>
       </div>
@@ -4374,7 +4403,7 @@ function drawCapsulePage(id){
       <div class="modal-body has-footer outfit-page-body">
         <h2 class="modal-name">${esc(capsule.name)}</h2>
         ${capsule.description ? `<p class="detail-sub">${esc(capsule.description)}</p>` : ''}
-        ${pieces.length ? pieces.map(p => `
+        ${pieces.length ? `<div class="outfit-page-list">` + pieces.map(p => `
           <div class="outfit-piece-row tappable"
                onclick='openPieceSheet(${JSON.stringify(p.id)})'>
             ${p.photo ? `<img src="${esc(p.photo)}" alt="${esc(p.name)}" referrerpolicy="no-referrer" loading="lazy" decoding="async">` : `<div class="no-photo-mini">No photo</div>`}
@@ -4384,7 +4413,7 @@ function drawCapsulePage(id){
             </div>
             <span class="piece-go" aria-hidden="true">›</span>
           </div>
-        `).join('') : `<div class="capsule-empty-note">No pieces yet</div>`}
+        `).join('') + `</div>` : `<div class="outfit-page-list"><div class="capsule-empty-note">No pieces yet</div></div>`}
       </div>
       <div class="sheet-footer split pagebar outfit-page-bar">
         <div class="sheet-footer-inner">
