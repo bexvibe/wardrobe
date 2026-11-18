@@ -109,9 +109,9 @@ async function assertPattern(p, scope, label, name, outWord){
   check(`${name}: Cancel keeps to the width of its word`,
     Math.abs(f.outW - f.outNatural) <= 1, `${f.outW}px, ${f.outNatural}px on its own`);
   check(`${name}: and the save fills the rest of the row`,
-    ((f.outLeft === f.innerLeft + 13 && f.saveRight === f.innerRight - 13) ||
-      // A page bar: Back is its own pill, the save sits in the second one.
-      (f.outLeft === f.innerLeft && f.saveRight === f.innerRight - 6)) && f.gap >= 12 && f.gap <= 20,
+    ((f.outLeft === f.innerLeft + 13 && f.saveRight === f.innerRight - 13 && f.gap >= 12 && f.gap <= 20) ||
+      // A page bar: Back and the save are pills of their own, 8px apart.
+      (f.outLeft === f.innerLeft && f.saveRight === f.innerRight && f.gap === 8)),
     `${f.innerLeft}–${f.innerRight}: cancel from ${f.outLeft}, ${f.gap}px gap, save to ${f.saveRight}`);
   check(`${name}: so the save is the big target`, f.saveW > f.outW * 2,
     `${f.outW}px / ${f.saveW}px`);
