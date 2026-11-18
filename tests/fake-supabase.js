@@ -40,6 +40,11 @@ if(window.__FILTERS_OPEN_BY_DEFAULT === undefined) window.__FILTERS_OPEN_BY_DEFA
       ...(window.__NO_EXTRAS ? {} : {
         outfit_extras: (window.__SEED_EXTRAS || []).slice(),
       }),
+      // Inspo saved against an outfit. __NO_INSPO stands in for a database
+      // where supabase/add-inspo.sql has not been run.
+      ...(window.__NO_INSPO ? {} : {
+        outfit_inspo: (window.__SEED_INSPO || []).slice(),
+      }),
       // Set __NO_CAPSULES to stand in for a database where
       // supabase/add-capsules.sql has not been run: the tables are absent
       // and every query against them errors, as Postgres would.
@@ -179,7 +184,7 @@ if(window.__FILTERS_OPEN_BY_DEFAULT === undefined) window.__FILTERS_OPEN_BY_DEFA
         async getSession() { return { data: { session }, error: null }; },
         async signInWithPassword({ email, password }) {
           if (password !== PASSWORD) return { data: {}, error: { message: 'Invalid login credentials' } };
-          session = { user: { email } };
+          session = { user: { email }, access_token: 'fake-token' };
           try { localStorage.setItem(SESSION_KEY, JSON.stringify(session)); } catch (e) {}
           return { data: { session }, error: null };
         },

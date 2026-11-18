@@ -116,6 +116,31 @@ A password set here cannot be read back: Supabase stores a one-way hash, so
 no screen in the dashboard, the database, or the API will ever show it. If
 you forget it, reset it rather than going looking for it.
 
+## Inspo on outfits (optional)
+
+An outfit's page can keep inspo: photos or screenshots of someone wearing
+something similar, or a link to any image or page. The section stays hidden
+until both of these are done, so nothing breaks if you skip them.
+
+1. **The table.** Paste `supabase/add-inspo.sql` into the SQL Editor and Run.
+   Photos go in the existing private `wardrobe-uploads` bucket, under
+   `inspo/`; nothing is made public.
+2. **The preview route** (only for pictures from pasted links). It is the
+   app's one serverless function, `api/link-preview.js`, and it needs two
+   environment variables in Vercel (Project → Settings → Environment
+   Variables), the same two values that are in `config.js`:
+
+   - `SUPABASE_URL`
+   - `SUPABASE_ANON_KEY`
+
+   Redeploy after adding them. The route only answers someone who is signed
+   in (it checks their token against your project), and it refuses to fetch
+   anything private — localhost, internal addresses, odd ports.
+
+   Without these two variables the route answers "not set up" and a pasted
+   link is saved without a picture, showing the site's name instead. Photos
+   and links to images work either way.
+
 ## If something goes wrong
 
 The app tells you what it can't do rather than failing silently:
