@@ -54,8 +54,14 @@
   .tile .src{position:absolute;left:6px;bottom:6px;font:600 10px 'Work Sans';background:rgba(0,0,0,.55);padding:2px 7px;border-radius:999px}
   .add{flex:0 0 92px;height:122px;border-radius:12px;border:1.5px dashed var(--line);background:none;color:var(--ink-soft);font:500 12px 'Work Sans';display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer;scroll-snap-align:start}
   .add i{font:300 26px/1 'Work Sans';font-style:normal;color:var(--ink)}
-  .empty{border:1.5px dashed var(--line);border-radius:14px;padding:18px 14px;text-align:center}
-  .empty p{margin:0 0 12px;color:var(--ink-soft);font-size:13px}
+  /* The app's own empty state: a picture, a Fraunces line, a line of help,
+     and a round + button. No box round it. */
+  .empty{text-align:center;padding:22px 20px 6px;color:var(--ink-soft)}
+  .empty-emoji{display:block;font-size:26px;line-height:1;margin-bottom:12px}
+  .empty h3{font:500 17px 'Fraunces',serif;color:var(--ink);margin:0}
+  .empty-sub{margin:8px 0 0;font-size:15px;line-height:1.45}
+  .empty-action{margin-top:18px;width:52px;height:52px;display:inline-flex;align-items:center;justify-content:center;border:none;border-radius:999px;background:var(--ink);color:#fff;cursor:pointer;padding:0}
+  .empty-action svg{width:22px;height:22px;display:block}
   .search{margin-top:12px;width:100%;justify-content:center}
 
   /* ---- sheets ---- */
@@ -186,8 +192,14 @@ function render(){
   const searchBtn = `<a class="btn search" href="${pinterestUrl}" target="_blank" rel="noopener">Search Pinterest ↗</a>`;
   if(!items.length){
     el.innerHTML = `<div class="inspo-h"><b>Inspo</b></div>
-      <div class="empty"><p>Save pins or screenshots of people wearing something similar.</p>
-      <button class="btn dark" data-open="add">+ Add inspo</button></div>${searchBtn}`;
+      <div class="empty">
+        <span class="empty-emoji" aria-hidden="true">📌</span>
+        <h3>Save your inspo</h3>
+        <p class="empty-sub">Pins or screenshots of similar outfits</p>
+        <button class="empty-action" data-open="add" aria-label="Add inspo" title="Add inspo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+        </button>
+      </div>${searchBtn}`;
   } else {
     el.innerHTML = `<div class="inspo-h"><b>Inspo</b><span>${items.length} saved</span></div>
       <div class="strip">
