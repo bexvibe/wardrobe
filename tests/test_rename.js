@@ -43,7 +43,7 @@ const check=(n,p,d)=>{results.push(p);console.log(`${p?'PASS':'FAIL'}  ${n}${d?'
   // open that item's detail sheet from the list view (easier to target by name)
   await p.click('#view-toggle-btn'); await p.waitForTimeout(300);
   await p.evaluate(()=>openModal('seed_22')); await p.waitForTimeout(400);
-  await p.click('.modal-actions button:has-text("Edit")'); await p.waitForTimeout(400);
+  await p.click('#item-page-edit'); await p.waitForTimeout(400);
 
   const prefilled = await p.inputValue('#form-name');
   check('edit form pre-fills the current name', prefilled===original, `"${prefilled}"`);
@@ -83,7 +83,7 @@ const check=(n,p,d)=>{results.push(p);console.log(`${p?'PASS':'FAIL'}  ${n}${d?'
 
   // empty name is rejected rather than wiping the item
   await p.evaluate(()=>openModal('seed_22')); await p.waitForTimeout(400);
-  await p.click('.modal-actions button:has-text("Edit")'); await p.waitForTimeout(300);
+  await p.click('#item-page-edit'); await p.waitForTimeout(300);
   await p.fill('#form-name','   ');
   await p.click('#form-save-btn'); await p.waitForTimeout(400);
   const err = await p.textContent('#form-error');

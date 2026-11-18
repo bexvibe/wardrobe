@@ -103,7 +103,7 @@ const confirmText = p => p.evaluate(()=>({
 
     // And an edit put back the way you found it is also untouched.
     await p.click('#gallery .tile'); await p.waitForTimeout(400);
-    await p.click('.modal button:has-text("Edit")'); await p.waitForTimeout(500);
+    await p.click('#item-page-edit'); await p.waitForTimeout(500);
     const was = await p.inputValue('#form-name');
     await p.fill('#form-name', was + 'x'); await p.waitForTimeout(150);
     await p.fill('#form-name', was); await p.waitForTimeout(150);
@@ -157,7 +157,7 @@ const confirmText = p => p.evaluate(()=>({
   {
     const p=await open(b);
     await p.click('#gallery .tile'); await p.waitForTimeout(400);
-    await p.click('.modal button:has-text("Edit")'); await p.waitForTimeout(500);
+    await p.click('#item-page-edit'); await p.waitForTimeout(500);
     await p.fill('#form-brand', 'Toteme'); await p.waitForTimeout(150);
     await p.click('#form-backdrop .sheet-footer .btn.secondary'); await p.waitForTimeout(400);
     check('an edit in progress is named as changes, not a new piece',
@@ -172,7 +172,7 @@ const confirmText = p => p.evaluate(()=>({
 
     // Saving must not ask — the work has gone somewhere.
     await p.click('#gallery .tile'); await p.waitForTimeout(400);
-    await p.click('.modal button:has-text("Edit")'); await p.waitForTimeout(500);
+    await p.click('#item-page-edit'); await p.waitForTimeout(500);
     await p.fill('#form-brand', 'Toteme'); await p.waitForTimeout(150);
     await p.click('#form-save-btn'); await p.waitForTimeout(900);
     check('saving never asks', !(await confirmOpen(p)));
@@ -246,7 +246,7 @@ const confirmText = p => p.evaluate(()=>({
     // than an arrow in a corner, it needs a word: Cancel.
     const p=await open(b);
     await p.evaluate(()=>openModal('seed_0')); await p.waitForTimeout(500);
-    await p.click('.modal .modal-actions .btn:has-text("Edit")'); await p.waitForTimeout(500); await p.click('#form-capsules-row'); await p.waitForTimeout(600);
+    await p.click('#item-page-edit'); await p.waitForTimeout(500); await p.click('#form-capsules-row'); await p.waitForTimeout(600);
     const bar = await p.evaluate(()=>{
       const f = document.querySelector('#modal .sheet-footer');
       const btns = Array.from(f.querySelectorAll('.btn'));

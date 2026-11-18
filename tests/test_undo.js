@@ -111,7 +111,7 @@ async function holdFirstTile(p){
     const id = await p.evaluate(()=>document.querySelector('#gallery .tile').dataset.id);
     await p.click('#gallery .tile'); await p.waitForTimeout(400);
     // Archiving lives under Edit now, with Replace photo.
-    await p.click('.modal button:has-text("Edit")'); await p.waitForTimeout(450);
+    await p.click('#item-page-edit'); await p.waitForTimeout(450);
     await p.click('#form-item-actions button:has-text("Archive")'); await p.waitForTimeout(500);
     const t = await toast(p);
     check('archiving a piece offers it back', t.shown && t.undo, `${t.msg} undo=${t.undo}`);
@@ -224,7 +224,7 @@ async function holdFirstTile(p){
     const p=await open(b);
     const before = await shown(p);
     await p.click('#gallery .tile'); await p.waitForTimeout(400);
-    await p.click('.modal button:has-text("Edit")'); await p.waitForTimeout(450);
+    await p.click('#item-page-edit'); await p.waitForTimeout(450);
     await p.click('#form-item-actions button:has-text("Archive")'); await p.waitForTimeout(400);
     check('the offer is up to begin with', (await toast(p)).shown);
     // Ten seconds, not six: reading it, deciding, and reaching for Undo with

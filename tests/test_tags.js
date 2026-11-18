@@ -128,7 +128,7 @@ async function open(b, {withTags=true, tags={}}={}){
     await p.evaluate(()=>openModal('seed_22')); await p.waitForTimeout(400);
     check('tags show on the item detail',
       (await p.textContent('.detail-tags')).includes('summer'));
-    await p.click('.modal-actions button:has-text("Edit")'); await p.waitForTimeout(400);
+    await p.click('#item-page-edit'); await p.waitForTimeout(400);
     check('edit form pre-fills existing tags',
       (await p.inputValue('#form-tags'))==='summer');
     // tap a suggestion chip to add another

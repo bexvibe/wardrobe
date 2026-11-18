@@ -161,7 +161,7 @@ async function assertPattern(p, scope, label, name, outWord){
   {
     const p=await open(b);
     await p.click('#gallery .tile'); await p.waitForTimeout(450);
-    await p.click('.modal button:has-text("Edit")'); await p.waitForTimeout(500);
+    await p.click('#item-page-edit'); await p.waitForTimeout(500);
     await assertPattern(p, '#form-backdrop', 'Save piece', 'edit piece');
     await p.close();
   }

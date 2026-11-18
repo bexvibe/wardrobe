@@ -403,7 +403,7 @@ const foldedCount = p => p.evaluate(()=>
     check('and the piece page itself has no capsule button',
       !(await p.isVisible('.modal button:has-text("Add to capsule")')));
 
-    await p.click('.modal .modal-actions .btn:has-text("Edit")'); await p.waitForTimeout(500); await p.click('#form-capsules-row'); await p.waitForTimeout(500);
+    await p.click('#item-page-edit'); await p.waitForTimeout(500); await p.click('#form-capsules-row'); await p.waitForTimeout(500);
     const picks = await p.evaluate(()=>
       Array.from(document.querySelectorAll('.capsule-pick'))
         .map(x=>({name:x.textContent.trim().replace(/\s*✓$/,''), picked:x.classList.contains('picked')})));
@@ -430,7 +430,7 @@ const foldedCount = p => p.evaluate(()=>
 
     // Save lands on the edit form the list was opened from; back to the piece.
     await p.evaluate(()=>closeItemForm()); await p.waitForTimeout(500);
-    await p.click('.modal .modal-actions .btn:has-text("Edit")'); await p.waitForTimeout(500); await p.click('#form-capsules-row'); await p.waitForTimeout(500);
+    await p.click('#item-page-edit'); await p.waitForTimeout(500); await p.click('#form-capsules-row'); await p.waitForTimeout(500);
     await p.click('.capsule-pick'); await p.waitForTimeout(500);
     await leaveSheet(p, {settle:700});
     check('tapping again puts it back in',
@@ -465,7 +465,7 @@ const foldedCount = p => p.evaluate(()=>
     check('the detail sheet is for reading, plus Edit and capsules',
       !onDetail.some(l=>/photo|archive/i.test(l)), onDetail.join(', '));
 
-    await p.click('.modal button:has-text("Edit")'); await p.waitForTimeout(500);
+    await p.click('#item-page-edit'); await p.waitForTimeout(500);
     const inForm = await p.evaluate(()=>
       Array.from(document.querySelectorAll('#form-item-actions button')).map(x=>x.textContent.trim()));
     check('Archive is under Edit instead', inForm.join(', ')==='Archive', inForm.join(', '));

@@ -537,6 +537,36 @@
     height:100%;border-radius:0;box-shadow:none;
     padding-top:env(safe-area-inset-top, 0px);
   }
+  /* A piece from the wardrobe is a card floating over it, not a page that
+     replaces it: margins on every side, the wardrobe softly blurred around
+     it, so you still feel you are working in the list you came from. */
+  .modal-backdrop.as-page.item-card{
+    background:rgba(0,0,0,calc(0.2 * var(--dim, 1)));
+    -webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);
+  }
+  .modal-backdrop.as-page.item-card .modal{
+    left:14px;right:14px;
+    top:max(56px, calc(env(safe-area-inset-top, 0px) + 20px));
+    bottom:calc(14px + env(safe-area-inset-bottom, 0px));
+    height:auto;
+    padding-top:0;
+    border-radius:26px;
+    box-shadow:0 18px 50px rgba(0,0,0,0.28);
+    transform:translateY(110%);
+  }
+  .modal-backdrop.open.as-page.item-card .modal{transform:translateY(0);}
+  .item-card .modal-photo{position:relative;aspect-ratio:1/0.88;margin:10px 10px 0;border-radius:18px;}
+  .item-card .sheet-footer{padding-bottom:14px;}
+  /* Edit is the rarer act, so it is a pencil on the photo rather than a
+     third colour in the bar. */
+  .photo-edit{
+    position:absolute;top:10px;right:10px;z-index:2;
+    width:42px;height:42px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    background:var(--surface);border:1px solid var(--line);color:var(--ink);
+    box-shadow:0 2px 8px rgba(0,0,0,0.08);cursor:pointer;padding:0;
+  }
+  .photo-edit svg{width:18px;height:18px;}
   .sheet-footer-inner.modal-actions{margin-top:0;flex-wrap:nowrap;}
   /* A tall sheet that has been scrolled earns the rest of the screen, less a
      sliver of page at the top to pull on. */
@@ -2649,7 +2679,7 @@ function pushSheet(entry){
   sheetTrail.push(entry);
   // A piece draws itself as a page when nothing is beneath it; whatever
   // opens next starts as a sheet until it says otherwise.
-  document.getElementById('modal-backdrop')?.classList.remove('as-page', 'compact');
+  document.getElementById('modal-backdrop')?.classList.remove('as-page', 'item-card', 'compact');
   // Off by default. A sheet that can be pushed away says so as it draws,
   // so a sheet that forgets to is merely undraggable rather than dragging
   // away into whatever the last one meant by closing.
@@ -2662,7 +2692,7 @@ function goBackFromSheet(){
   sheetTrail.pop();
   const back = sheetTrail[sheetTrail.length - 1];
   const spec = back && SHEETS[back.sheet];
-  document.getElementById('modal-backdrop')?.classList.remove('as-page', 'compact');
+  document.getElementById('modal-backdrop')?.classList.remove('as-page', 'item-card', 'compact');
   if(spec && spec.draw){
     showSheetBackdrop(spec.backdrop);
     // The page beneath is drawn again whichever sheet is on top: what was
@@ -3522,6 +3552,7 @@ function openOutfitBuilder(){
   // there is nothing to push down.
   allowSheetDrag(null);
   showSheetBackdrop('modal-backdrop');
+  document.getElementById('modal-backdrop').classList.remove('item-card');
   document.getElementById('modal-backdrop').classList.add('as-page');
   // Once it is up and there is a height to measure.
   stickBuilderTabs();
@@ -7045,13 +7076,18 @@ function drawItemSheet(id){
   // which stays visible beneath it.
   const asPage = !sheetTrail.slice(0, -1).some(e => PAGE_DRAW[e.sheet]);
   document.getElementById('modal-backdrop').classList.toggle('as-page', asPage);
+  // Same rule, different look: a piece reached from the wardrobe floats as a
+  // card over it, so the list you came from stays in view behind.
+  document.getElementById('modal-backdrop').classList.toggle('item-card', asPage);
 
   const edit = cls => `<button class="btn ${cls}" id="item-page-edit" onclick='openItemForm(${JSON.stringify(item.id)})'>Edit</button>`;
+  const editIcon = `<button type="button" class="photo-edit" id="item-page-edit" aria-label="Edit" onclick='openItemForm(${JSON.stringify(item.id)})'><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4z"/></svg></button>`;
 
   modal.innerHTML = `
     ${asPage ? '' : '<div class="sheet-grip"></div>'}
     <div class="modal-photo">
       ${item.photo ? `<img src="${esc(item.photo)}" alt="${esc(item.name)}" referrerpolicy="no-referrer" decoding="async">` : `<span class="no-photo">No photo yet</span>`}
+      ${asPage ? editIcon : ''}
     </div>
     <div class="modal-body ${asPage ? 'has-footer' : ''}">
       <h2 class="modal-name">${esc(item.name)}</h2>
@@ -7068,7 +7104,7 @@ function drawItemSheet(id){
         <button class="btn secondary" type="button" id="item-page-back" onclick="goBackFromSheet()">
           <svg class="back-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>Back</button>
-        <div class="sheet-footer-actions">${edit('tonal')}</div>
+        <div class="sheet-footer-actions"></div>
       </div>
     </div>` : ''}
   `;

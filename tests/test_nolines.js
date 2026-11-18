@@ -59,7 +59,7 @@ async function open(b){
     ['search open',        async()=>{ await p.click('#search-btn'); }],
     ['search shut',        async()=>{ await p.click('#search-back'); }],
     ['a piece',            async()=>{ await p.click('#gallery .tile'); }],
-    ['the edit sheet',     async()=>{ await p.click('.modal button:has-text("Edit")'); }],
+    ['the edit sheet',     async()=>{ await p.click('#item-page-edit'); }],
     ['the new piece form', async()=>{ await p.click('#form-backdrop .sheet-footer .btn.secondary');
                                       await p.evaluate(()=>closeModal());
                                       await p.click('#add-item-btn'); }],
