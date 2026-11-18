@@ -1,5 +1,5 @@
 // Item and outfit popovers: the page behind is held still, the item card is
-// centred and only scrolls when it must, and an outfit card grows to a full
+// a fixed-height box that scrolls inside itself, and an outfit card grows to a full
 // page once scrolled and shrinks again at the top.
 const { chromium } = require('playwright');
 const fs=require('fs'), path=require('path');
@@ -29,7 +29,7 @@ const results=[]; const check=(n,p,d)=>{results.push(p);console.log(`${p?'PASS':
     });
     console.log(vh, JSON.stringify(m));
     check(`${vh}: page behind is locked`, m.locked==='hidden');
-    check(`${vh}: card centred`, Math.abs(m.top-m.bottom)<=2);
+    check(`${vh}: card is a fixed box, inset 14px at the foot`, m.top>=40 && Math.abs(m.bottom-14)<=2, JSON.stringify(m));
     await p.screenshot({path:`/tmp/pop-item-${vh}.png`});
     await p.evaluate(()=>closeModal()); await p.waitForTimeout(500);
     check(`${vh}: lock released`, await p.evaluate(()=>getComputedStyle(document.body).overflow!=='hidden'));

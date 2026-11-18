@@ -545,25 +545,31 @@
     background:rgba(0,0,0,calc(0.2 * var(--dim, 1)));
     -webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);
   }
-  /* Centred on the screen, as tall as its content and no taller: a short
-     piece sits in the middle with the wardrobe blurred around it, and only
-     a piece with more than fits scrolls — inside the card, never the page. */
-  .modal-backdrop.open.as-page.item-card{
-    display:flex;align-items:center;justify-content:center;
-    padding:max(20px, calc(env(safe-area-inset-top, 0px) + 12px)) 14px
-            calc(20px + env(safe-area-inset-bottom, 0px));
-  }
+  /* A fixed box, the same size for every piece: short ones leave room, long
+     ones scroll inside it, and scrolling it is what unfolds it to the whole
+     screen (and back again at the top). The form on its back is the same
+     box, so the flip turns one object rather than two. */
   .modal-backdrop.as-page.item-card .modal{
-    position:relative;left:auto;right:auto;bottom:auto;top:auto;
-    width:100%;max-height:100%;
+    left:14px;right:14px;
+    top:max(56px, calc(env(safe-area-inset-top, 0px) + 20px));
+    bottom:calc(14px + env(safe-area-inset-bottom, 0px));
     height:auto;
-    margin:0 auto;
     padding-top:0;
     border-radius:26px;
     box-shadow:0 18px 50px rgba(0,0,0,0.28);
     transform:translateY(110%);
+    transition:transform var(--sheet-ease-ms) var(--sheet-ease),
+               top .28s var(--sheet-ease), left .28s var(--sheet-ease),
+               right .28s var(--sheet-ease), bottom .28s var(--sheet-ease),
+               border-radius .28s var(--sheet-ease), box-shadow .28s ease;
   }
   .modal-backdrop.open.as-page.item-card .modal{transform:translateY(0);}
+  .modal-backdrop.as-page.item-card .modal.card-full{
+    left:0;right:0;bottom:0;
+    top:env(safe-area-inset-top, 0px);
+    border-radius:0;
+    box-shadow:none;
+  }
   /* With the page held still behind a popover, nothing may scroll but the
      popover itself. */
   body.sheet-open{overflow:hidden;}
@@ -2083,7 +2089,7 @@
       </div>
     </div>
     <div class="filter-sheet-body" id="filter-sheet-body" data-filter-ns="sheet"></div>
-    <div class="sheet-footer split">
+    <div class="sheet-footer split pagebar">
       <div class="sheet-footer-inner" id="filter-sheet-foot"></div>
     </div>
   </div>
@@ -2155,10 +2161,10 @@
            it. They were on the detail sheet, which is for reading. -->
       <div class="modal-actions" id="form-item-actions"></div>
     </div>
-    <div class="sheet-footer split">
+    <div class="sheet-footer split pagebar">
       <div class="sheet-footer-inner">
         <button class="btn secondary" type="button" onclick="closeItemForm()">Cancel</button>
-        <button class="btn" id="form-save-btn" onclick="submitItemForm()">Save piece</button>
+        <div class="sheet-footer-actions"><button class="btn" id="form-save-btn" onclick="submitItemForm()">Save piece</button></div>
       </div>
     </div>
   </div>
@@ -2763,6 +2769,7 @@ function pushSheet(entry){
   // A piece draws itself as a page when nothing is beneath it; whatever
   // opens next starts as a sheet until it says otherwise.
   document.getElementById('modal-backdrop')?.classList.remove('as-page', 'item-card', 'compact');
+  { const m = document.getElementById('modal'); if(m){ m.onscroll = null; m.classList.remove('card-full'); } }
   // Off by default. A sheet that can be pushed away says so as it draws,
   // so a sheet that forgets to is merely undraggable rather than dragging
   // away into whatever the last one meant by closing.
@@ -2777,6 +2784,7 @@ function goBackFromSheet(){
   // dropping to the front: the same flip, the other way.
   if(formIsCardBack() && cardMotionOk() && formBackdropOpen()){
     turnCard(formModalEl(), 'back', () => {
+      cardCarryFull = formModalEl().classList.contains('card-full');
       stepBackFromSheet();
       return document.getElementById('modal');
     });
@@ -3190,7 +3198,7 @@ function renderFilterFooter(){
          <svg class="back-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>Back</button>`
     : '';
-  el.innerHTML = `${back}<button class="btn" id="filter-sheet-see" type="button" onclick="closeFilterSheet()"><span>${label}</span></button>`;
+  el.innerHTML = `${back}<div class="sheet-footer-actions"><button class="btn" id="filter-sheet-see" type="button" onclick="closeFilterSheet()"><span>${label}</span></button></div>`;
   if(lastFilterCount !== null && lastFilterCount !== n && filterSheetOpen()){
     const num = document.getElementById('filter-sheet-count');
     if(num) num.classList.add('filter-count-roll');
@@ -3419,12 +3427,20 @@ const SCROLL_KEYS = ['ArrowUp','ArrowDown','PageUp','PageDown','Home','End',' ',
 // be taller than its box) is left alone, and stopped from chaining out to the
 // page when it reaches an end.
 function filterSheetHoldsPage(){
-  return filterSheetOpen() && !sheetOverTheTop();
+  // Any sheet or page over the top holds the page too, not only the filters:
+  // a piece, a capsule or an outfit page is no place for the wardrobe behind
+  // it to move.
+  return filterSheetOpen() || sheetOverTheTop();
 }
 
+// The thing under the finger that can take the scroll itself, if there is
+// one: a sheet, a page or the filter panel, with room left in the direction
+// asked for. Anything else is the page behind, and is refused.
+const HELD_SCROLLERS = '.modal, .outfit-page-layer, #filter-sheet';
 function insideScrollableSheet(target, dy){
-  const sheet = document.getElementById('filter-sheet');
-  if(!sheet || !target.closest || !target.closest('#filter-sheet')) return false;
+  if(!target || !target.closest) return false;
+  const sheet = target.closest(HELD_SCROLLERS);
+  if(!sheet) return false;
   const room = sheet.scrollHeight - sheet.clientHeight;
   if(room <= 1) return false;
   if(dy === undefined) return true;
@@ -3432,20 +3448,26 @@ function insideScrollableSheet(target, dy){
   return dy > 0 ? sheet.scrollTop < room - 1 : sheet.scrollTop > 0;
 }
 
-let holdTouchY = 0;
+let holdTouchY = 0, holdTouchX = 0;
 window.addEventListener('touchstart', e => {
-  if(e.touches[0]) holdTouchY = e.touches[0].clientY;
+  if(e.touches[0]){ holdTouchY = e.touches[0].clientY; holdTouchX = e.touches[0].clientX; }
 }, {passive:true, capture:true});
 window.addEventListener('touchmove', e => {
   if(!filterSheetHoldsPage()) return;
-  const y = e.touches[0] ? e.touches[0].clientY : holdTouchY;
+  const t = e.touches[0];
+  const y = t ? t.clientY : holdTouchY;
+  const x = t ? t.clientX : holdTouchX;
   const dy = holdTouchY - y;          // finger up = content wants to go down
-  holdTouchY = y;
+  const dx = holdTouchX - x;
+  holdTouchY = y; holdTouchX = x;
+  // A row that scrolls sideways is the row's own business.
+  if(Math.abs(dx) > Math.abs(dy)) return;
   if(insideScrollableSheet(e.target, dy)) return;
   if(e.cancelable) e.preventDefault();
 }, {passive:false, capture:true});
 window.addEventListener('wheel', e => {
   if(!filterSheetHoldsPage()) return;
+  if(Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
   if(insideScrollableSheet(e.target, e.deltaY)) return;
   if(e.cancelable) e.preventDefault();
 }, {passive:false, capture:true});
@@ -3453,7 +3475,7 @@ window.addEventListener('keydown', e => {
   if(!filterSheetHoldsPage() || !SCROLL_KEYS.includes(e.key)) return;
   const t = e.target;
   // Space on a button is a press, and arrows in a field move the caret.
-  if(t && t.closest && t.closest('button, a, input, textarea, select, [contenteditable], #filter-sheet')) return;
+  if(t && t.closest && t.closest('button, a, input, textarea, select, [contenteditable], .modal, .outfit-page-layer, #filter-sheet')) return;
   e.preventDefault();
 });
 
@@ -4370,7 +4392,7 @@ function drawCapsulePage(id){
             <svg class="back-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>Back</button>
           <div class="sheet-footer-actions"><button class="btn tonal btn-icon" type="button" id="capsule-page-edit" aria-label="Edit capsule"
-                  onclick='openCapsuleEditor(${JSON.stringify(id)})'><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM5.92 19H5v-.92l9.06-9.06.92.92L5.92 19zM20.71 5.63l-2.34-2.34a.9959.9959 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83a.9959.9959 0 0 0 0-1.41z"/></svg>Edit capsule</button></div>
+                  onclick='openCapsuleEditor(${JSON.stringify(id)})'><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg>Edit capsule</button></div>
         </div>
       </div>
     </div>`;
@@ -5250,10 +5272,10 @@ function openOutfitExtrasPicker(key){
       <div class="tabs" id="extras-tabs"></div>
       <div class="gallery" id="extras-gallery"></div>
     </div>
-    <div class="sheet-footer split">
+    <div class="sheet-footer split pagebar">
       <div class="sheet-footer-inner">
         <button class="btn secondary" type="button" onclick="closeExtrasPicker()">Cancel</button>
-        <button class="btn" type="button" id="extras-save" onclick="saveOutfitExtras()">Save</button>
+        <div class="sheet-footer-actions"><button class="btn" type="button" id="extras-save" onclick="saveOutfitExtras()">Save</button></div>
       </div>
     </div>
   `;
@@ -5589,10 +5611,10 @@ function openCapsuleEditor(id, seedItemIds){
       <div class="tabs" id="capsule-tabs"></div>
       <div class="gallery" id="capsule-editor-gallery"></div>
     </div>
-    <div class="sheet-footer split">
+    <div class="sheet-footer split pagebar">
       <div class="sheet-footer-inner">
         <button class="btn secondary" type="button" onclick="closeCapsuleEditor()">Cancel</button>
-        <button class="btn" id="capsule-save-btn" onclick="submitCapsuleEditor()">Save capsule</button>
+        <div class="sheet-footer-actions"><button class="btn" id="capsule-save-btn" onclick="submitCapsuleEditor()">Save capsule</button></div>
       </div>
     </div>
   `;
@@ -6085,11 +6107,11 @@ function drawItemCapsulePicker(itemId){
                 onclick='startNewCapsuleForPiece()'>New capsule</button>
       </div>
     </div>
-    <div class="sheet-footer split">
+    <div class="sheet-footer split pagebar">
       <div class="sheet-footer-inner">
         <button class="btn secondary" type="button" onclick="closeCapsulePicker()">Back</button>
-        <button class="btn" type="button" id="capsule-picks-save"
-                onclick="saveItemCapsules()">Save</button>
+        <div class="sheet-footer-actions"><button class="btn" type="button" id="capsule-picks-save"
+                onclick="saveItemCapsules()">Save</button></div>
       </div>
     </div>
   `;
@@ -7038,10 +7060,10 @@ function openTagEditor(tag){
         <button class="btn small secondary" onclick='deleteTag(${JSON.stringify(tag)})'>Delete tag</button>
       </div>
     </div>
-    <div class="sheet-footer split">
+    <div class="sheet-footer split pagebar">
       <div class="sheet-footer-inner">
         <button class="btn secondary" type="button" onclick="closeModal()">Cancel</button>
-        <button class="btn" id="tag-edit-save" onclick='renameTag(${JSON.stringify(tag)})'>Save</button>
+        <div class="sheet-footer-actions"><button class="btn" id="tag-edit-save" onclick='renameTag(${JSON.stringify(tag)})'>Save</button></div>
       </div>
     </div>
   `;
@@ -7190,9 +7212,12 @@ function drawItemSheet(id){
   // Same rule, different look: a piece reached from the wardrobe floats as a
   // card over it, so the list you came from stays in view behind.
   document.getElementById('modal-backdrop').classList.toggle('item-card', asPage);
+  // A fresh card, or the same size as the face it was just turned from.
+  modal.classList.toggle('card-full', asPage && takeCarriedFull());
+  cardUnfoldsOnScroll(modal);
 
   const edit = cls => `<button class="btn ${cls}" id="item-page-edit" onclick='openItemForm(${JSON.stringify(item.id)})'>Edit</button>`;
-  const editIcon = `<button type="button" class="photo-edit" id="item-page-edit" aria-label="Edit" onclick='openItemForm(${JSON.stringify(item.id)})'><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4z"/></svg></button>`;
+  const editIcon = `<button type="button" class="photo-edit" id="item-page-edit" aria-label="Edit" onclick='openItemForm(${JSON.stringify(item.id)})'><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg></button>`;
 
   modal.innerHTML = `
     ${asPage ? '' : '<div class="sheet-grip"></div>'}
@@ -7290,6 +7315,7 @@ function clearStagedPhoto(){
 // is invisible, and the half that is arriving comes round from the far edge.
 let cardTurning = false;
 let cardTurnId = 0;
+let cardUnfoldedAt = 0;
 
 function cardMotionOk(){
   return !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -7358,6 +7384,7 @@ function openItemForm(id){
                    document.getElementById('modal-backdrop').classList.contains('open');
   if(fromCard && cardMotionOk()){
     turnCard(document.getElementById('modal'), 'fwd', () => {
+      cardCarryFull = document.getElementById('modal').classList.contains('card-full');
       pushSheet({ sheet: 'form', id });
       drawItemForm(id);
       return formModalEl();
@@ -7368,6 +7395,30 @@ function openItemForm(id){
   drawItemForm(id);
 }
 
+// A card unfolds to the whole screen once scrolled, and folds back when
+// scrolled to the top again. Shared by a piece's front and its back.
+function cardUnfoldsOnScroll(modal){
+  modal.onscroll = () => {
+    const full = modal.classList.contains('card-full');
+    if(!full){
+      // Only unfold if there will still be something to scroll once it has:
+      // unfolding gains about 90px, and a card with less than that to spare
+      // would have nothing left to scroll and fold straight back.
+      if(modal.scrollTop > 0 && modal.scrollHeight - modal.clientHeight > 100){
+        modal.classList.add('card-full');
+        cardUnfoldedAt = performance.now();
+      }
+    }else if(modal.scrollTop <= 0 && performance.now() - cardUnfoldedAt > 400){
+      modal.classList.remove('card-full');
+    }
+  };
+}
+
+// Whether the card was unfolded when it was turned over, so the other face
+// arrives the same size rather than snapping back to a card mid-flip.
+let cardCarryFull = false;
+function takeCarriedFull(){ const v = cardCarryFull; cardCarryFull = false; return v; }
+
 // How the form is dressed, and what scrolling it does. As the back of a card
 // it is the card — and, like a tall sheet, it unfolds to the whole screen as
 // soon as you scroll it, since scrolling is asking for room.
@@ -7377,9 +7428,7 @@ function setFormCardLook(){
   const modal = formModalEl();
   backdrop.classList.toggle('item-card-back', asCard);
   if(!asCard){ modal.classList.remove('card-full'); modal.onscroll = null; return asCard; }
-  modal.onscroll = () => {
-    if(modal.scrollTop > 0) modal.classList.add('card-full');
-  };
+  cardUnfoldsOnScroll(modal);
   return asCard;
 }
 
@@ -7424,7 +7473,7 @@ function drawItemForm(id){
   const asCard = setFormCardLook();
   // Fresh each time: a card that was unfolded last time folds up again, and
   // the form starts at its top.
-  formModalEl().classList.remove('card-full');
+  formModalEl().classList.toggle('card-full', asCard && takeCarriedFull());
   formModalEl().scrollTop = 0;
   allowSheetDrag(asCard ? null : closeItemForm, itemFormIsDirty);
   // The form and the detail sheet are two backdrops; only one of them is
