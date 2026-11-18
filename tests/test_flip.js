@@ -236,6 +236,40 @@ const box = (p, sel) => p.evaluate(s=>{ const r=document.querySelector(s).getBou
     await p.close();
   }
 
+  // ---- Edit capsule and Add accessories are full pages, not sheets --------
+  {
+    const p=await open(b);
+    const page = async () => p.evaluate(()=>{
+      const m=document.getElementById('modal'), r=m.getBoundingClientRect(), cs=getComputedStyle(m);
+      return {t:Math.round(r.top), b:Math.round(r.bottom), l:Math.round(r.left), r:Math.round(r.right),
+        radius:cs.borderTopLeftRadius, grip:!!m.querySelector('.sheet-grip'),
+        asPage:document.getElementById('modal-backdrop').classList.contains('as-page'),
+        bar:Math.round(m.querySelector('.sheet-footer-inner').getBoundingClientRect().bottom)};
+    });
+    const fullPage = (n, g) => check(n+' is a full page', g.asPage && g.t===0 && g.b===844 && g.l===0 && g.r===390 &&
+      g.radius==='0px' && !g.grip && g.bar>=800, JSON.stringify(g));
+
+    await p.evaluate(()=>{ capsules.push({id:'cap_e',name:'Edit me',description:'',itemIds:ITEMS.slice(0,4).map(i=>i.id)}); });
+    await p.evaluate(()=>openCapsulePage('cap_e', null)); await p.waitForTimeout(700);
+    await p.click('#capsule-page-edit'); await p.waitForTimeout(700);
+    fullPage('Edit capsule', await page());
+    await p.click('#modal .sheet-footer .btn.secondary'); await p.waitForTimeout(600);
+    check('Cancel goes back to the capsule', !(await up(p,'modal-backdrop')) &&
+      await p.evaluate(()=>document.getElementById('outfit-page').classList.contains('open')));
+
+    await p.evaluate(()=>closeModal()); await p.waitForTimeout(400);
+    await p.click('#nav-outfits-btn'); await p.waitForSelector('.outfit-gallery .outfit-fav-btn');
+    await p.waitForTimeout(900);
+    await p.evaluate(()=>closeFilterSheet()); await p.waitForTimeout(500);
+    await p.evaluate(()=>openOutfitPage(comboKey(outfitDisplayed[0]), null)); await p.waitForTimeout(800);
+    await p.click('#outfit-page-extras'); await p.waitForTimeout(700);
+    fullPage('Add accessories', await page());
+    await p.click('#modal .sheet-footer .btn.secondary'); await p.waitForTimeout(600);
+    check('Cancel goes back to the outfit', !(await up(p,'modal-backdrop')) &&
+      await p.evaluate(()=>document.getElementById('outfit-page').classList.contains('open')));
+    await p.close();
+  }
+
   // ---- the page behind does not scroll ----------------------------------
   {
     const p=await open(b);

@@ -5302,8 +5302,8 @@ function openOutfitExtrasPicker(key){
   extrasDraft = { key, ids: new Set(extrasFor(key)) };
   extrasDraft.baseline = extrasDraftSnapshot();
 
+  document.getElementById('modal-backdrop').classList.add('as-page');
   document.getElementById('modal').innerHTML = `
-    <div class="sheet-grip"></div>
     <div class="modal-body has-footer">
       <div class="modal-name" style="margin-bottom:14px;">Add accessories</div>
       <div class="tabs" id="extras-tabs"></div>
@@ -5317,7 +5317,7 @@ function openOutfitExtrasPicker(key){
     </div>
   `;
   renderExtrasPicker(key);
-  allowSheetDrag(closeExtrasPicker, extrasDraftIsDirty);
+  allowSheetDrag(null);
   document.getElementById('modal-backdrop').classList.add('open');
   // Once it is up and there is a height to measure.
   stickSheetTabs('extras-tabs');
@@ -5626,8 +5626,10 @@ function openCapsuleEditor(id, seedItemIds){
   capsuleDraft.baseline = capsuleDraftSnapshot();
 
   const modal = document.getElementById('modal');
+  // A page of its own, not a sheet over the last one: it is long, and you
+  // are in it for a while, so it gets the whole screen.
+  document.getElementById('modal-backdrop').classList.add('as-page');
   modal.innerHTML = `
-    <div class="sheet-grip"></div>
     <div class="modal-body has-footer">
       <div class="sheet-title-row">
         <div class="modal-name">${capsule ? 'Edit capsule' : 'New capsule'}</div>
@@ -5657,10 +5659,10 @@ function openCapsuleEditor(id, seedItemIds){
   `;
   renderCapsuleEditorTabs();
   renderCapsuleEditorGallery();
-  allowSheetDrag(closeCapsuleEditor, capsuleDraftIsDirty);
-  // Scrolling the picker is a sign you want room: let the sheet go full height.
+  // A page has nothing to push down: Cancel is the way out.
+  allowSheetDrag(null);
   modal.classList.remove('sheet-full');
-  modal.onscroll = () => modal.classList.toggle('sheet-full', modal.scrollTop > 0 || modal.classList.contains('sheet-full'));
+  modal.onscroll = null;
   document.getElementById('modal-backdrop').classList.add('open');
   // Once it is up and there is a height to measure.
   stickCapsuleEditorTabs();
@@ -6965,7 +6967,7 @@ function stickSheetTabs(rowId){
   // The sheet scrolls inside itself, so it is the scroller the row is
   // watched against — the backdrop behind it never moves. Nothing sits
   // above the row any more, so it comes to rest at the sheet's own top.
-  el.style.setProperty('--stuck-top', '0px');
+  el.style.setProperty('--stuck-top', backdrop.classList.contains('as-page') ? 'env(safe-area-inset-top, 0px)' : '0px');
   stickCategoryRow(el, document.getElementById('modal'));
 }
 
