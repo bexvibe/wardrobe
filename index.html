@@ -23,6 +23,9 @@
                                Never a rule drawn across the page — space and
                                a shadow separate things here, not lines. */
     --accent-soft:#D5D2CC;  /* the wash behind a chip that is on */
+    --shadow-btn:0 1px 2px rgba(18,18,18,0.07), 0 2px 7px rgba(18,18,18,0.07);
+                            /* what lifts a button off the page, in place of an
+                               outline: raised at rest, flat when it is on */
     --ink-soft:#6E6E6E;     /* secondary text, labels */
     --accent:#1A1A1A;       /* a control that is selected or active */
     --ink:#121212;          /* primary text, and a button that acts */
@@ -166,7 +169,8 @@
     font-weight:600;
     padding:0 16px;
     border-radius:999px;
-    border:1px solid var(--line);
+    border:1px solid transparent;
+    box-shadow:var(--shadow-btn);
     background:var(--surface);
     color:var(--ink-soft);
     cursor:pointer;
@@ -175,7 +179,7 @@
   .tab.active{
     /* Grey like the active bottom-nav tab, not black. */
     background:var(--accent-soft);
-    border-color:var(--accent-soft);
+    box-shadow:none;
     color:var(--ink);
   }
 
@@ -202,9 +206,9 @@
   .icon-btn:hover{background:var(--accent-soft);}
   /* The one button that makes something new keeps a filled circle — it is
      the only control here that is an action rather than a view. */
-  .icon-btn.primary{background:var(--ink);border-color:var(--ink);color:#fff;}
+  .icon-btn.primary{background:var(--ink);box-shadow:var(--shadow-btn);color:#fff;}
   .icon-btn.primary:hover{background:var(--accent);}
-  .icon-btn.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+  .icon-btn.active{background:var(--accent);color:#fff;}
   .icon-row{display:flex;gap:8px;align-items:center;}
 
   /* Search opens over the page rather than sitting on it. The results stay
@@ -257,15 +261,15 @@
     font-weight:600;
     padding:9px 16px;
     border-radius:6px;
-    border:1px solid var(--ink);
+    border:1px solid transparent;
+    box-shadow:var(--shadow-btn);
     background:var(--ink);
     color:var(--page);
     cursor:pointer;
   }
   .btn.secondary{
-    background:transparent;
+    background:var(--surface);
     color:var(--ink);
-    border:1px solid var(--line);
   }
   /* The act that is offered rather than the one you came to do: a grey fill
      — solid enough not to read as disabled, quiet enough not to be the
@@ -273,7 +277,6 @@
   .btn.tonal{
     background:#D5D2CC;
     color:var(--ink);
-    border:1px solid #D5D2CC;
   }
   .btn.tonal:hover{background:#CAC7C0;opacity:1;}
   .btn.small{padding:6px 10px;font-size:12px;}
@@ -432,7 +435,7 @@
     padding:10px 12px;
     box-shadow:0 6px 24px rgba(0,0,0,0.11);
   }
-  .bulk-bar .bulk-back{margin-right:auto;border-color:transparent;color:var(--ink-soft);padding:0 10px 0 4px;}
+  .bulk-bar .bulk-back{margin-right:auto;background:transparent;box-shadow:none;color:var(--ink-soft);padding:0 10px 0 4px;}
   .bulk-bar .bulk-delete{white-space:nowrap;}
   /* These are the two things the mode is for, so they get a real target
      rather than the small button used inside a sheet. */
@@ -633,8 +636,8 @@
     position:absolute;top:10px;right:10px;z-index:2;
     width:42px;height:42px;border-radius:50%;
     display:flex;align-items:center;justify-content:center;
-    background:var(--surface);border:1px solid var(--line);color:var(--ink);
-    box-shadow:0 2px 8px rgba(0,0,0,0.08);cursor:pointer;padding:0;
+    background:var(--surface);border:1px solid transparent;color:var(--ink);
+    box-shadow:var(--shadow-btn);cursor:pointer;padding:0;
   }
   .photo-edit svg{width:18px;height:18px;}
   .sheet-footer-inner.modal-actions{margin-top:0;flex-wrap:nowrap;}
@@ -682,7 +685,8 @@
   .form-photo{
     display:flex;align-items:center;gap:14px;width:100%;
     margin:14px 0 4px;padding:10px;
-    background:var(--surface);border:1px solid var(--line);border-radius:12px;
+    background:var(--surface);border:1px solid transparent;border-radius:12px;
+    box-shadow:var(--shadow-btn);
     cursor:pointer;text-align:left;font:inherit;color:var(--ink);
   }
   .form-photo-thumb{
@@ -790,7 +794,7 @@
   .sheet-footer.pagebar .btn.secondary{
     flex:none;width:auto;min-height:54px;padding:0 20px 0 16px;
     background:var(--surface);color:var(--ink);
-    border:1px solid var(--line);
+    border:1px solid transparent;
     box-shadow:0 6px 24px rgba(0,0,0,0.11);
   }
   /* Each action is a pill of its own, not a group: the wrapper in the markup
@@ -801,10 +805,9 @@
     white-space:nowrap;
     box-shadow:0 6px 24px rgba(0,0,0,0.11);
   }
-  .sheet-footer.pagebar .sheet-footer-actions .btn.tonal{border-color:var(--line);}
   .sheet-footer.pagebar .sheet-footer-actions .outfit-fav-btn{
     flex:none;width:54px;height:54px;
-    background:var(--surface);border:1px solid var(--line);
+    background:var(--surface);border:1px solid transparent;
     box-shadow:0 6px 24px rgba(0,0,0,0.11);
   }
 
@@ -874,8 +877,8 @@
      white button in the same corner, rather than down on the bar. */
   .outfit-page-flat .outfit-fav-btn{
     top:10px;right:10px;width:44px;height:44px;
-    background:var(--surface);border:1px solid var(--line);
-    box-shadow:0 2px 8px rgba(0,0,0,0.08);
+    background:var(--surface);border:1px solid transparent;
+    box-shadow:var(--shadow-btn);
   }
   /* Bigger than a card, so the cut-outs' own margins are bigger too: the
      rows tuck together by a share of the width rather than a fixed 10px. */
@@ -1087,7 +1090,7 @@
     gap:4px;
     padding:5px;
     background:var(--surface);
-    border:1px solid var(--line);
+    border:1px solid transparent;
     border-radius:999px;
     box-shadow:0 6px 24px rgba(0,0,0,0.11);
     max-width:calc(100% - 32px);
@@ -1277,15 +1280,16 @@
        no more, so a filled one always means it is on. Transparent rather
        than white, because the same chip sits on the white panel and on the
        grey page inside the item form. */
-    border:1px solid var(--line);
-    background:transparent;
+    border:1px solid transparent;
+    box-shadow:var(--shadow-btn);
+    background:var(--surface);
     color:var(--ink-soft);
     cursor:pointer;
     white-space:nowrap;
-    transition:background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+    transition:background 0.12s ease, box-shadow 0.12s ease, color 0.12s ease;
   }
   .tag-chip.active{
-    border-color:transparent;
+    box-shadow:none;
     background:var(--accent-soft);
     color:var(--ink);
   }
@@ -1319,8 +1323,9 @@
     font-size:12px;font-weight:600;
     min-height:36px;padding:0 14px;
     border-radius:10px;
-    border:1px solid var(--line);
-    background:var(--page);
+    border:1px solid transparent;
+    box-shadow:var(--shadow-btn);
+    background:var(--surface);
     color:var(--ink);
     cursor:pointer;white-space:nowrap;
   }
@@ -1401,7 +1406,7 @@
        edge, so the extra height grows upward and the gap to the nav holds. */
     min-height:48px;
     padding:0 18px;border-radius:999px;
-    border:1px solid var(--line);
+    border:1px solid transparent;
     background:var(--surface);
     color:var(--ink);
     cursor:pointer;white-space:nowrap;
@@ -1424,7 +1429,7 @@
     min-height:48px;
     padding:0 16px 0 14px;
     border-radius:999px;
-    border:1px solid var(--brand-deep);
+    border:1px solid transparent;
     background:var(--brand);
     color:#fff;
     font-family:'Figtree',sans-serif;
@@ -1593,10 +1598,10 @@
     font-family:'Figtree',sans-serif;
     font-size:12px;font-weight:600;
     padding:0 16px;border-radius:999px;
-    border:1px solid var(--line);background:var(--page);
+    border:1px solid transparent;box-shadow:var(--shadow-btn);background:var(--surface);
     color:var(--ink-soft);cursor:pointer;
   }
-  .base-btn.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+  .base-btn.active{background:var(--accent);box-shadow:none;color:#fff;}
   .filter-grid{
     display:flex;
     flex-wrap:wrap;
@@ -1614,18 +1619,19 @@
     padding:0 16px;
     border-radius:999px;
     /* Same bargain as a tag chip: an outline until it is doing something. */
-    border:1px solid var(--line);
-    background:transparent;
+    border:1px solid transparent;
+    box-shadow:var(--shadow-btn);
+    background:var(--surface);
     color:var(--ink-soft);
     cursor:pointer;
     white-space:nowrap;
-    transition:background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+    transition:background 0.12s ease, box-shadow 0.12s ease, color 0.12s ease;
   }
   /* On is filled; off is an outline. Two states, one difference — a ring as
      well was saying it twice. Transparent rather than no border, so the box
      stays the same size and the row cannot shift under your thumb. */
   .filter-chip.active{
-    border-color:transparent;
+    box-shadow:none;
     background:var(--accent-soft);
     color:var(--ink);
   }
@@ -1796,7 +1802,8 @@
     font-family:'Figtree',sans-serif;
     font-size:14px;font-weight:600;text-align:left;
     min-height:52px;padding:0 16px;
-    border:1px solid var(--line);border-radius:10px;
+    border:1px solid transparent;border-radius:10px;
+    box-shadow:var(--shadow-btn);
     background:var(--surface);color:var(--ink);
     cursor:pointer;
   }
@@ -1804,14 +1811,15 @@
     display:flex;align-items:center;gap:10px;width:100%;margin-top:14px;
     font-family:'Figtree',sans-serif;font-size:14px;font-weight:600;text-align:left;
     min-height:52px;padding:0 14px 0 16px;
-    border:1px solid var(--line);border-radius:10px;
+    border:1px solid transparent;border-radius:10px;
+    box-shadow:var(--shadow-btn);
     background:var(--surface);color:var(--ink);cursor:pointer;
   }
   .form-nav-label{flex:none;}
   .form-nav-value{flex:1;min-width:0;text-align:right;font-weight:400;color:var(--ink-soft);
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .form-nav-row svg{flex:none;color:var(--ink-soft);}
-  .capsule-pick.picked{border-color:var(--accent);background:var(--accent-soft);}
+  .capsule-pick.picked{box-shadow:none;background:var(--accent-soft);}
   .capsule-pick-mark{flex:none;font-size:15px;color:var(--ink);width:18px;text-align:right;}
 
   /* Set apart by the room around it rather than a rule above it. */

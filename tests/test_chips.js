@@ -53,7 +53,8 @@ const chip = (p, label) => p.evaluate(l => {
   const lab = el.querySelector('.chip-label');
   return {
     state: el.dataset.state,
-    filled: !/rgba\(0, 0, 0, 0\)|transparent/.test(cs.backgroundColor),
+    // Off is raised on the surface colour; filled means the wash that says on.
+    filled: !/rgba\(0, 0, 0, 0\)|transparent|rgb\(247, 245, 241\)/.test(cs.backgroundColor),
     ringed: !/rgba\(0, 0, 0, 0\)|transparent/.test(cs.borderTopColor),
     badge: badge ? badge.textContent.trim() : null,
     // Not aria-pressed: this chip takes you to a page of pieces, it does
