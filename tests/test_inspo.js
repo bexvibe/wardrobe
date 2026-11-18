@@ -82,12 +82,14 @@ async function addLink(p, text){
           Boolean(e.querySelector('.empty-sub').textContent.trim()) && Boolean(b) &&
           Math.round(b.getBoundingClientRect().width) === 52;
       }));
-    check('Search Pinterest is at the top, beside where you add',
+    check('Search Pinterest is a card at the top, with an explainer and keyword chips',
       await p.evaluate(()=>{
-        const head = document.querySelector('#outfit-page .inspo-head');
+        const card = document.querySelector('#outfit-page .inspo-search-card');
         const s = document.getElementById('inspo-search');
         const grid = document.querySelector('#outfit-page .empty');
-        return head.contains(s) && s.getBoundingClientRect().top < grid.getBoundingClientRect().top;
+        return card.contains(s) && card.querySelector('.inspo-search-title') &&
+          card.querySelector('.inspo-search-sub').textContent.trim() &&
+          card.querySelectorAll('.inspo-chip').length >= 2 && s.getBoundingClientRect().top < grid.getBoundingClientRect().top;
       }));
     const href = await p.getAttribute('#inspo-search', 'href');
     check('it opens Pinterest with the outfit\'s own pieces as the words',
