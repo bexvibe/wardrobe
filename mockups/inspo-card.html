@@ -47,6 +47,8 @@
   .inspo{margin-top:14px;padding-top:14px;border-top:1px solid var(--accent-soft)}
   .inspo-h{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:10px}
   .inspo-h b{font:600 13px 'Work Sans';letter-spacing:.02em}
+  .tools{display:flex;align-items:center;gap:8px}
+  .btn.small{padding:7px 11px;font-size:12px}
   .add-btn{width:36px;height:36px;display:inline-flex;align-items:center;justify-content:center;border:none;border-radius:999px;background:var(--ink);color:#fff;cursor:pointer;padding:0}
   .add-btn svg{width:18px;height:18px;display:block}
   /* Every pin shown, in a grid that wraps: nothing hidden off the edge. */
@@ -166,7 +168,7 @@
     </ul>
 
     <h3>Search Pinterest</h3>
-    <p>A plain link to <code>pinterest.com/search/pins/?q=…</code>, with the query built from the pieces. On a phone with the Pinterest app, the link usually opens the app; otherwise it opens in the browser. The app can't know when you come back with a pin, which is why Add is always one tap away.</p>
+    <p>Sits at the top of the section beside the add button, above the grid, so finding and saving are one place. A plain link to <code>pinterest.com/search/pins/?q=…</code>, with the query built from the pieces. On a phone with the Pinterest app, the link usually opens the app; otherwise it opens in the browser. The app can't know when you come back with a pin, which is why Add is always one tap away.</p>
 
     <h3>Showing them</h3>
     <p>All inspo shows at once in a three-column grid that wraps, so nothing sits off the edge of a scroll. Tapping a tile opens it larger.</p>
@@ -186,22 +188,23 @@ const pinterestUrl = 'https://www.pinterest.com/search/pins/?q=' + encodeURIComp
 
 function render(){
   const el = $('inspo');
-  const searchBtn = `<a class="btn search" href="${pinterestUrl}" target="_blank" rel="noopener">Search Pinterest ↗</a>`;
+  const searchBtn = `<a class="btn small" href="${pinterestUrl}" target="_blank" rel="noopener">Search Pinterest ↗</a>`;
   const plus = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>`;
   if(!items.length){
-    el.innerHTML = `<div class="inspo-h"><b>Inspo</b></div>
+    el.innerHTML = `<div class="inspo-h"><b>Inspo</b><div class="tools">${searchBtn}</div></div>
       <div class="empty">
         <span class="empty-emoji" aria-hidden="true">📌</span>
         <h3>Save your inspo</h3>
         <p class="empty-sub">Pins or screenshots of similar outfits</p>
         <button class="empty-action" data-open="add" aria-label="Add inspo" title="Add inspo">${plus}</button>
-      </div>${searchBtn}`;
+      </div>`;
   } else {
     el.innerHTML = `<div class="inspo-h"><b>Inspo</b>
-        <button class="add-btn" data-open="add" aria-label="Add inspo" title="Add inspo">${plus}</button></div>
+        <div class="tools">${searchBtn}
+          <button class="add-btn" data-open="add" aria-label="Add inspo" title="Add inspo">${plus}</button></div></div>
       <div class="strip">
         ${items.map((p,i)=>`<button class="tile" data-view="${i}" style="background:${p.bg}" aria-label="Open inspo ${i+1}"><span class="src">${p.src}</span></button>`).join('')}
-      </div>${searchBtn}`;
+      </div>`;
   }
 }
 function sheet(id){
