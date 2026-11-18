@@ -312,10 +312,8 @@ const foldedCount = p => p.evaluate(()=>
       renderFilterControls();
       return r;
     });
-    // Off is raised on the surface colour (a shadow, not an outline); on is
-    // the grey wash.
-    check('a chip filtering nothing is raised on the surface, not filled',
-      chipStates.off.bg === 'rgb(247, 245, 241)', chipStates.off.bg);
+    check('a chip filtering nothing is transparent, not filled',
+      /rgba\(0, 0, 0, 0\)|transparent/.test(chipStates.off.bg), chipStates.off.bg);
     // Filled versus outlined is the whole difference. A ring as well was
     // saying it twice, so the selected chip has none.
     check('and one that is filtering is filled, with no ring',

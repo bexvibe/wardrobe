@@ -24,8 +24,11 @@
                                a shadow separate things here, not lines. */
     --accent-soft:#D5D2CC;  /* the wash behind a chip that is on */
     --shadow-btn:0 1px 2px rgba(18,18,18,0.07), 0 2px 7px rgba(18,18,18,0.07);
-                            /* what lifts a button off the page, in place of an
-                               outline: raised at rest, flat when it is on */
+                            /* THE RULE. A button (something you press to do a
+                               thing) is lifted by this shadow and has no outline.
+                               A selector (a tab, tag, category, chip or option
+                               you switch on and off) has an outline and no
+                               shadow, and is filled when it is on. */
     --ink-soft:#6E6E6E;     /* secondary text, labels */
     --accent:#1A1A1A;       /* a control that is selected or active */
     --ink:#121212;          /* primary text, and a button that acts */
@@ -169,8 +172,7 @@
     font-weight:600;
     padding:0 16px;
     border-radius:999px;
-    border:1px solid transparent;
-    box-shadow:var(--shadow-btn);
+    border:1px solid var(--line);
     background:var(--surface);
     color:var(--ink-soft);
     cursor:pointer;
@@ -179,7 +181,7 @@
   .tab.active{
     /* Grey like the active bottom-nav tab, not black. */
     background:var(--accent-soft);
-    box-shadow:none;
+    border-color:var(--accent-soft);
     color:var(--ink);
   }
 
@@ -1280,16 +1282,15 @@
        no more, so a filled one always means it is on. Transparent rather
        than white, because the same chip sits on the white panel and on the
        grey page inside the item form. */
-    border:1px solid transparent;
-    box-shadow:var(--shadow-btn);
-    background:var(--surface);
+    border:1px solid var(--line);
+    background:transparent;
     color:var(--ink-soft);
     cursor:pointer;
     white-space:nowrap;
-    transition:background 0.12s ease, box-shadow 0.12s ease, color 0.12s ease;
+    transition:background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
   }
   .tag-chip.active{
-    box-shadow:none;
+    border-color:transparent;
     background:var(--accent-soft);
     color:var(--ink);
   }
@@ -1323,9 +1324,8 @@
     font-size:12px;font-weight:600;
     min-height:36px;padding:0 14px;
     border-radius:10px;
-    border:1px solid transparent;
-    box-shadow:var(--shadow-btn);
-    background:var(--surface);
+    border:1px solid var(--line);
+    background:var(--page);
     color:var(--ink);
     cursor:pointer;white-space:nowrap;
   }
@@ -1598,10 +1598,10 @@
     font-family:'Figtree',sans-serif;
     font-size:12px;font-weight:600;
     padding:0 16px;border-radius:999px;
-    border:1px solid transparent;box-shadow:var(--shadow-btn);background:var(--surface);
+    border:1px solid var(--line);background:var(--page);
     color:var(--ink-soft);cursor:pointer;
   }
-  .base-btn.active{background:var(--accent);box-shadow:none;color:#fff;}
+  .base-btn.active{background:var(--accent);border-color:var(--accent);color:#fff;}
   .filter-grid{
     display:flex;
     flex-wrap:wrap;
@@ -1619,19 +1619,18 @@
     padding:0 16px;
     border-radius:999px;
     /* Same bargain as a tag chip: an outline until it is doing something. */
-    border:1px solid transparent;
-    box-shadow:var(--shadow-btn);
-    background:var(--surface);
+    border:1px solid var(--line);
+    background:transparent;
     color:var(--ink-soft);
     cursor:pointer;
     white-space:nowrap;
-    transition:background 0.12s ease, box-shadow 0.12s ease, color 0.12s ease;
+    transition:background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
   }
   /* On is filled; off is an outline. Two states, one difference — a ring as
      well was saying it twice. Transparent rather than no border, so the box
      stays the same size and the row cannot shift under your thumb. */
   .filter-chip.active{
-    box-shadow:none;
+    border-color:transparent;
     background:var(--accent-soft);
     color:var(--ink);
   }
@@ -1798,8 +1797,7 @@
     font-family:'Figtree',sans-serif;
     font-size:14px;font-weight:600;text-align:left;
     min-height:52px;padding:0 16px;
-    border:1px solid transparent;border-radius:10px;
-    box-shadow:var(--shadow-btn);
+    border:1px solid var(--line);border-radius:10px;
     background:var(--surface);color:var(--ink);
     cursor:pointer;
   }
@@ -1815,7 +1813,7 @@
   .form-nav-value{flex:1;min-width:0;text-align:right;font-weight:400;color:var(--ink-soft);
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .form-nav-row svg{flex:none;color:var(--ink-soft);}
-  .capsule-pick.picked{box-shadow:none;background:var(--accent-soft);}
+  .capsule-pick.picked{border-color:var(--accent);background:var(--accent-soft);}
   .capsule-pick-mark{flex:none;font-size:15px;color:var(--ink);width:18px;text-align:right;}
 
   /* Set apart by the room around it rather than a rule above it. */

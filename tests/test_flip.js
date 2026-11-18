@@ -274,6 +274,27 @@ const box = (p, sel) => p.evaluate(s=>{ const r=document.querySelector(s).getBou
     await p.close();
   }
 
+  // ---- the rule: buttons have a shadow and no outline; selectors the reverse --
+  {
+    const p=await open(b);
+    const look = sel => p.evaluate(s=>{ const e=document.querySelector(s); if(!e) return null;
+      const c=getComputedStyle(e); const clear=v=>/rgba\(0, 0, 0, 0\)|transparent/.test(v);
+      return {outline:!clear(c.borderTopColor) && c.borderTopWidth!=='0px', shadow:c.boxShadow!=='none'}; }, sel);
+    const isButton = (n, l) => check(n+' is a button: shadow, no outline', l && l.shadow && !l.outline, JSON.stringify(l));
+    const isSelector = (n, l) => check(n+' is a selector: outline, no shadow', l && l.outline && !l.shadow, JSON.stringify(l));
+    isSelector('a category tab', await look('#tabs .tab:not(.active)'));
+    isButton('the add button', await look('#add-item-btn'));
+    // The edit form: a Save button, and a category option to pick.
+    await p.evaluate(()=>openPieceSheet(ITEMS[0].id)); await p.waitForTimeout(500);
+    await p.click('#item-page-edit'); await p.waitForTimeout(700);
+    isButton('Save piece', await look('#form-save-btn'));
+    isButton('Cancel', await look('#form-backdrop .sheet-footer .btn.secondary'));
+    isButton('Replace photo', await look('.form-photo'));
+    await p.fill('#form-category',''); await p.focus('#form-category'); await p.waitForTimeout(200);
+    isSelector('a category option', await look('#form-category-options .picker-option'));
+    await p.close();
+  }
+
   // ---- the page behind does not scroll ----------------------------------
   {
     const p=await open(b);
