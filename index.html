@@ -17,7 +17,8 @@
   :root{
     color-scheme: light;
     --page:#E3E0DB;         /* behind everything */
-    --surface:#FFFFFF;      /* cards and sheets lift off the page */
+    --surface:#F7F5F1;      /* cards and sheets lift off the page: a warm off-white,
+                               not pure white, so they belong to the stone behind them */
     --line:#D2CFC9;         /* the edge of an object: a card, a chip, a field.
                                Never a rule drawn across the page — space and
                                a shadow separate things here, not lines. */
@@ -544,17 +545,28 @@
     background:rgba(0,0,0,calc(0.2 * var(--dim, 1)));
     -webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);
   }
+  /* Centred on the screen, as tall as its content and no taller: a short
+     piece sits in the middle with the wardrobe blurred around it, and only
+     a piece with more than fits scrolls — inside the card, never the page. */
+  .modal-backdrop.open.as-page.item-card{
+    display:flex;align-items:center;justify-content:center;
+    padding:max(20px, calc(env(safe-area-inset-top, 0px) + 12px)) 14px
+            calc(20px + env(safe-area-inset-bottom, 0px));
+  }
   .modal-backdrop.as-page.item-card .modal{
-    left:14px;right:14px;
-    top:max(56px, calc(env(safe-area-inset-top, 0px) + 20px));
-    bottom:calc(14px + env(safe-area-inset-bottom, 0px));
+    position:relative;left:auto;right:auto;bottom:auto;top:auto;
+    width:100%;max-height:100%;
     height:auto;
+    margin:0 auto;
     padding-top:0;
     border-radius:26px;
     box-shadow:0 18px 50px rgba(0,0,0,0.28);
     transform:translateY(110%);
   }
   .modal-backdrop.open.as-page.item-card .modal{transform:translateY(0);}
+  /* With the page held still behind a popover, nothing may scroll but the
+     popover itself. */
+  body.sheet-open{overflow:hidden;}
   .item-card .modal-photo{position:relative;aspect-ratio:1/0.88;margin:10px 10px 0;border-radius:18px;}
   .item-card .sheet-footer{padding-bottom:14px;}
   /* Edit is the rarer act, so it is a pencil on the photo rather than a
@@ -755,32 +767,50 @@
      piece or the accessories rise over it and it shows through their dimming. */
   .outfit-page-layer{
     position:fixed;inset:0;z-index:128;
-    background:var(--page);
+    /* The same blurred, dimmed wardrobe as a piece's card. The layer is the
+       scroller; the card inside it is what you read. */
+    background:rgba(0,0,0,0.2);
+    -webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);
     overflow-y:auto;overscroll-behavior:none;
-    visibility:hidden;
-    transform:translateY(100%);
-    transition:transform var(--sheet-ease-ms) var(--sheet-ease),
+    visibility:hidden;opacity:0;
+    transition:opacity var(--sheet-ease-ms) ease,
+               background-color .4s var(--sheet-ease),
                visibility 0s linear var(--sheet-ease-ms);
   }
   .outfit-page-layer.open{
-    visibility:visible;transform:none;
-    transition:transform var(--sheet-ease-ms) var(--sheet-ease), visibility 0s;
+    visibility:visible;opacity:1;
+    transition:opacity var(--sheet-ease-ms) ease,
+               background-color .4s var(--sheet-ease), visibility 0s;
   }
-  /* Growing out of the card it was opened from: no slide, the clip does the
-     travelling, and the content arrives a beat after the edges. */
-  .outfit-page-layer.from-card{
-    transform:none;
-    transition:clip-path var(--sheet-ease-ms) var(--sheet-ease), visibility 0s;
-  }
-  .outfit-page-layer.from-card .outfit-page-inner{
-    animation:outfit-page-in var(--sheet-ease-ms) ease-out both;
-  }
-  @keyframes outfit-page-in{ from{opacity:0;} 40%{opacity:0;} to{opacity:1;} }
+  /* Scrolled to see what was hidden: the card has done its job as a preview
+     and becomes the page. Scrolled back to the top it shrinks again. */
+  .outfit-page-layer.expanded{background:var(--page);}
   .outfit-page-inner{
-    max-width:640px;width:100%;min-height:100%;margin:0 auto;
+    --card-gap:14px;
+    --card-top:max(56px, calc(env(safe-area-inset-top, 0px) + 20px));
+    max-width:640px;width:calc(100% - 2 * var(--card-gap));
+    /* Anchored to the foot of the screen so the bar sits where it always
+       does; the card's top edge is what floats. */
+    min-height:calc(100% - var(--card-top));
+    margin:var(--card-top) auto 0;
+    background:var(--page);
+    border-radius:26px 26px 0 0;
+    box-shadow:0 18px 50px rgba(0,0,0,0.28);
     display:flex;flex-direction:column;
+    transform:translateY(110%);
+    transition:transform var(--sheet-ease-ms) var(--sheet-ease),
+               margin .4s var(--sheet-ease), width .4s var(--sheet-ease),
+               border-radius .4s var(--sheet-ease), box-shadow .4s var(--sheet-ease),
+               min-height .4s var(--sheet-ease);
   }
-  .outfit-page-body{padding-top:max(18px, env(safe-area-inset-top, 0px));}
+  .outfit-page-layer.open .outfit-page-inner{transform:none;}
+  .outfit-page-layer.expanded .outfit-page-inner{
+    --card-gap:0px;--card-top:0px;
+    width:100%;min-height:100%;margin:0 auto;
+    border-radius:0;box-shadow:none;
+  }
+  .outfit-page-body{padding-top:16px;}
+  .outfit-page-layer.expanded .outfit-page-body{padding-top:max(18px, env(safe-area-inset-top, 0px));}
   .outfit-page-flat{margin:0 0 12px;display:flex;flex-direction:column;}
   /* Bigger than a card, so the cut-outs' own margins are bigger too: the
      rows tuck together by a share of the width rather than a fixed 10px. */
@@ -4161,27 +4191,41 @@ function openCapsulePage(id, fromEl){
 }
 
 function openPage(sheet, id, fromEl){
-  const layer = document.getElementById('outfit-page');
-  const rect = fromEl && fromEl.getBoundingClientRect ? fromEl.getBoundingClientRect() : null;
-  const grows = rect && rect.width > 0 && !outfitPageShowing() &&
-    !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
   pushSheet({ sheet, id });
   // Opened from a piece's sheet, that sheet gives way to the page.
   showSheetBackdrop(null);
-  if(!grows){ syncOutfitPage(true); return; }
+  syncOutfitPage(true);
+}
 
-  const vw = window.innerWidth, vh = window.innerHeight;
-  const from = `inset(${Math.max(0, rect.top)}px ${Math.max(0, vw - rect.right)}px ${Math.max(0, vh - rect.bottom)}px ${Math.max(0, rect.left)}px round 10px)`;
-  layer.classList.add('from-card');
-  layer.style.clipPath = from;
-  syncOutfitPage(true);            // draws it and marks it open, in place
-  void layer.offsetWidth;          // the start state has to be seen to be left
-  layer.style.clipPath = 'inset(0px 0px 0px 0px round 0px)';
-  setTimeout(() => {
-    layer.classList.remove('from-card');
-    layer.style.clipPath = '';
-  }, 320);
+// The page behind a sheet is held still while any sheet is up; only the
+// sheet scrolls. And an outfit opens as a card over the blurred page, then
+// grows to fill the screen once you scroll to read what was hidden, and
+// settles back when you return to the top. Two thresholds, so it cannot
+// flicker at the edge: it grows past 40px, and shrinks only at the very top.
+function syncScrollLock(){
+  document.body.classList.toggle('sheet-open', anySheetShowing());
+}
+function wireSheetScrollLock(){
+  const watch = new MutationObserver(syncScrollLock);
+  ['modal-backdrop','form-backdrop','outfit-page'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) watch.observe(el, { attributes:true, attributeFilter:['class'] });
+  });
+  const layer = document.getElementById('outfit-page');
+  if(!layer) return;
+  layer.addEventListener('scroll', () => {
+    const y = layer.scrollTop;
+    const expanded = layer.classList.contains('expanded');
+    if(!expanded && y > 40 && layer.scrollHeight - layer.clientHeight > 140){
+      layer.classList.add('expanded');
+    } else if(expanded && y <= 0){
+      layer.classList.remove('expanded');
+    }
+  }, { passive:true });
+  // A fresh page starts as a card, whatever the last one ended as.
+  new MutationObserver(() => {
+    if(!layer.classList.contains('open') && layer.classList.contains('expanded')) layer.classList.remove('expanded');
+  }).observe(layer, { attributes:true, attributeFilter:['class'] });
 }
 
 // Drawing it is separate from arriving at it, as with the piece sheet: the
@@ -6597,6 +6641,7 @@ async function boot(){
   wireLongPress(document.getElementById('name-list'));
   wireTagLongPress(document.getElementById('filter-sheet'));
   wireSheetDrag();
+  wireSheetScrollLock();
   // Kept up to date as you scroll as well as when you leave a page, so a
   // reload inside the same visit lands where you were too.
   let scrollTick = null;
