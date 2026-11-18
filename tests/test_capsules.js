@@ -222,12 +222,12 @@ const db = p => p.evaluate(()=>({
       await p.evaluate(()=>Array.from(document.querySelectorAll('#outfit-page .outfit-piece-row'))
         .every(r=>r.classList.contains('tappable'))));
 
-    check('Edit capsule is an outlined icon-and-text button on the bar, with Back beside it',
+    check('Edit capsule is a tonal icon-and-text button on the bar, with Back beside it',
       await p.evaluate(()=>{
         const e = document.querySelector('#capsule-page-edit');
         const back = document.getElementById('outfit-page-back');
         const bar = document.querySelector('#outfit-page .sheet-footer').getBoundingClientRect();
-        return e.classList.contains('outlined') &&
+        return e.classList.contains('tonal') &&
           e.textContent.trim() === 'Edit capsule' && Boolean(e.querySelector('svg')) &&
           Boolean(back) && Math.round(bar.bottom) === window.innerHeight;
       }));
