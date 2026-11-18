@@ -807,8 +807,8 @@
   .inspo-tools{display:flex;align-items:center;gap:8px;}
   .inspo-tools .btn{text-decoration:none;white-space:nowrap;}
   .inspo-search-card{
-    background:var(--page);border:1px solid var(--line);border-radius:14px;
-    padding:14px;margin-bottom:12px;
+    background:#EFE7DA;border:1px solid var(--line);border-radius:14px;
+    padding:14px;margin-top:12px;
   }
   .inspo-search-title{font-family:'Fraunces',serif;font-weight:500;font-size:15px;margin:0 0 4px;}
   .inspo-search-sub{font-size:12px;line-height:1.4;color:var(--ink-soft);margin:0 0 10px;}
@@ -816,7 +816,7 @@
   .inspo-chip{
     font-family:'Work Sans',sans-serif;font-size:12px;
     padding:5px 10px;border-radius:999px;
-    background:var(--accent-soft);color:var(--ink);
+    background:var(--surface);color:var(--ink);
   }
   .inspo-search-card .btn{
     width:100%;display:flex;align-items:center;justify-content:center;
@@ -4922,15 +4922,15 @@ function inspoSectionHtml(key, combo){
   const chips = inspoSearchWords(combo).concat('outfit')
     .map(w => `<span class="inspo-chip">${esc(w)}</span>`).join('');
   const search = `<div class="inspo-search-card">
-      <h4 class="inspo-search-title">Find similar looks</h4>
-      <p class="inspo-search-sub">Searches Pinterest using this outfit’s pieces. Save anything you like back here.</p>
+      <h4 class="inspo-search-title">Find inspo on Pinterest</h4>
+      <p class="inspo-search-sub">Quick search with piece names</p>
       <div class="inspo-chips">${chips}</div>
       <a class="btn small" id="inspo-search" href="${esc(inspoSearchUrl(combo))}" target="_blank" rel="noopener">Search Pinterest ↗</a>
     </div>`;
   const add = `<button class="inspo-add" id="inspo-add" type="button" aria-label="Add inspo" title="Add inspo"
       onclick='openInspoAdd(${JSON.stringify(key)})'>${INSPO_PLUS}</button>`;
   const head = `<div class="inspo-head"><h3 class="inspo-title">Inspo</h3>
-    <div class="inspo-tools">${pins.length ? add : ''}</div></div>${search}`;
+    <div class="inspo-tools">${pins.length ? add : ''}</div></div>`;
   const body = pins.length
     ? `<div class="inspo-grid">${pins.map((p, i) => `
         <button class="inspo-tile" type="button" aria-label="Open inspo ${i + 1}"
@@ -4939,13 +4939,13 @@ function inspoSectionHtml(key, combo){
           <span class="inspo-src">${esc(p.source || 'Link')}</span>
         </button>`).join('')}</div>`
     : `<div class="empty">
-        <span class="empty-emoji" aria-hidden="true">📌</span>
+        <span class="empty-emoji" aria-hidden="true">✨</span>
         <h3>Save your inspo</h3>
         <p class="empty-sub">Pins or screenshots of similar outfits</p>
         <button class="empty-action" id="inspo-add" type="button" aria-label="Add inspo" title="Add inspo"
                 onclick='openInspoAdd(${JSON.stringify(key)})'>${INSPO_PLUS}</button>
       </div>`;
-  return `<div class="outfit-page-inspo">${head}${body}</div>`;
+  return `<div class="outfit-page-inspo">${head}${body}</div>${search}`;
 }
 
 // A small sheet over the outfit's page. Leaving any of these three goes
