@@ -93,13 +93,15 @@ const straysInTheBody = (p, scope) => p.evaluate(sel =>
                  /^(cancel|back|discard)$/i.test(x.textContent.trim()))
     .map(x => x.textContent.trim()), scope);
 
-async function assertPattern(p, scope, label, name, outWord){
+// inset: how far in from the screen's edge the sheet itself sits. Zero for a
+// sheet, 14 for the back of a piece's card, which floats over the wardrobe.
+async function assertPattern(p, scope, label, name, outWord, inset = 0){
   const f = await footer(p, scope);
   check(`${name}: the bar rides at the foot of the sheet`, f && f.stick === 'sticky', f && f.stick);
   check(`${name}: and sits at the very bottom of the screen`,
-    f.bottom >= f.fold - 1, `${f.top}–${f.bottom} of ${f.fold}`);
+    f.bottom >= f.fold - inset - 1, `${f.top}–${f.bottom} of ${f.fold}`);
   check(`${name}: full width, edge to edge`,
-    f.left === 0 && f.right === f.vw, `${f.left}–${f.right} of ${f.vw}`);
+    f.left === inset && f.right === f.vw - inset, `${f.left}–${f.right} of ${f.vw}`);
   check(`${name}: it holds the two acts and nothing else`,
     f.split && f.buttons === 2, `${f.buttons}: ${f.outLabel} / ${f.saveLabel}`);
   check(`${name}: the save is named after what it saves`,
@@ -162,7 +164,9 @@ async function assertPattern(p, scope, label, name, outWord){
     const p=await open(b);
     await p.click('#gallery .tile'); await p.waitForTimeout(450);
     await p.click('#item-page-edit'); await p.waitForTimeout(500);
-    await assertPattern(p, '#form-backdrop', 'Save piece', 'edit piece');
+    // From the wardrobe the form is the back of the piece's card: the same
+    // bar, 14px in from each side with the card.
+    await assertPattern(p, '#form-backdrop', 'Save piece', 'edit piece', undefined, 14);
     await p.close();
   }
 
