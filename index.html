@@ -5721,9 +5721,19 @@ function showOutfitsInModal(itemId){
     container.innerHTML = '';
     return;
   }
+  const onclick = `findOutfitsWithPiece(${JSON.stringify(itemId)})`;
+  // On a piece's page it is the primary action in the bottom bar, ahead of
+  // Edit. On a sheet there is no bar, so it stays in the body.
+  const actions = document.querySelector('.item-page-bar .sheet-footer-actions');
+  if(actions){
+    container.innerHTML = '';
+    actions.insertAdjacentHTML('afterbegin',
+      `<button type="button" class="btn" id="find-outfits-link" onclick='${onclick}'>Find outfits</button>`);
+    return;
+  }
   container.innerHTML = `
     <button type="button" class="btn secondary find-outfits-link" id="find-outfits-link"
-      onclick='findOutfitsWithPiece(${JSON.stringify(itemId)})'>Find outfits with this piece</button>
+      onclick='${onclick}'>Find outfits</button>
   `;
 }
 
