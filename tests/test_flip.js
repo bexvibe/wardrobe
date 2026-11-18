@@ -190,13 +190,13 @@ const box = (p, sel) => p.evaluate(s=>{ const r=document.querySelector(s).getBou
     await p.evaluate(()=>closeFilterSheet()); await p.waitForTimeout(500);
     await p.evaluate(()=>openOutfitPage(comboKey(outfitDisplayed[0]), null)); await p.waitForTimeout(700);
     await p.evaluate(()=>openPieceSheet(comboPieces(comboForKey(sheetTrail[0].id))[0].id)); await p.waitForTimeout(700);
-    check('a piece over an outfit page is a sheet, not a card',
-      !(await p.evaluate(()=>document.getElementById('modal-backdrop').classList.contains('item-card'))));
+    check('a piece over an outfit page is the same card as from the wardrobe',
+      (await p.evaluate(()=>document.getElementById('modal-backdrop').classList.contains('item-card'))));
     await p.click('#item-page-edit'); await p.waitForTimeout(100);
-    check('so its form simply opens, no turn',
+    await p.waitForTimeout(600);
+    check('so its form is the back of that card',
       await up(p,'form-backdrop') &&
-      !(await p.evaluate(()=>document.querySelector('.modal[class*="flip-"]'))) &&
-      !(await p.evaluate(()=>document.getElementById('form-backdrop').classList.contains('item-card-back'))));
+      (await p.evaluate(()=>document.getElementById('form-backdrop').classList.contains('item-card-back'))));
     await p.close();
   }
 
