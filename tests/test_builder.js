@@ -97,8 +97,8 @@ const ticked = p => p.evaluate(()=>Array.from(document.querySelectorAll('#builde
       await p.evaluate(()=>document.getElementById('builder-tabs')
         .classList.contains('stuck-row')));
     check('nothing to keep yet', !(await saveOn(p)));
-    check('and no preview of an outfit that is not one',
-      await p.evaluate(()=>!document.querySelector('.builder-preview')));
+    check('and there is no preview on the page',
+      await p.evaluate(()=>!document.querySelector('.builder-preview, #builder-preview-slot')));
     await p.close();
   }
 
@@ -107,8 +107,8 @@ const ticked = p => p.evaluate(()=>Array.from(document.querySelectorAll('#builde
     const p=await open(b);
     await pick(p, 'Tops', 0);
     check('one piece is already an outfit worth keeping', await saveOn(p));
-    check('and it is drawn, so you can see what you have',
-      await p.evaluate(()=>Boolean(document.querySelector('.builder-preview img'))));
+    check('and the page stays without a preview',
+      await p.evaluate(()=>!document.querySelector('.builder-preview')));
     const first = (await picks(p)).top;
 
     await pick(p, 'Tops', 1);

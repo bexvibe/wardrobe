@@ -244,8 +244,10 @@ const dbTags = (p, id) => p.evaluate(i =>
     await p.click('#nav-capsules-btn'); await p.waitForTimeout(700);
     await p.click('#capsule-gallery .outfit-card'); await p.waitForTimeout(400);
     await p.click('#capsule-page-edit'); await p.waitForTimeout(450);
-    await p.click('#capsule-delete-btn'); await p.waitForTimeout(700);
-    check('deleting a capsule does not ask', !(await asked(p)));
+    await p.click('#capsule-delete-btn'); await p.waitForTimeout(400);
+    check('deleting a capsule asks first',
+      await p.evaluate(()=>document.getElementById('confirm-backdrop').classList.contains('open')));
+    await p.click('#confirm-go'); await p.waitForTimeout(700);
     check('it goes, and is offered back whole',
       await p.evaluate(()=>capsules.length) === 0 && await hasUndo(p));
     await p.click('.toast-undo'); await p.waitForTimeout(700);

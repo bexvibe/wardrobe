@@ -309,11 +309,19 @@ const db = p => p.evaluate(()=>({
     await p.click('#nav-capsules-btn'); await p.waitForTimeout(500);
     await expandCard(p);
     await p.click('#capsule-page-edit'); await p.waitForTimeout(450);
-    await p.click('#capsule-delete-btn'); await p.waitForTimeout(700);
-    check('deleting does not ask first',
-      await p.evaluate(()=>!Array.from(document.querySelectorAll('button'))
-        .some(x=>/Yes, delete/.test(x.textContent))));
-    check('it offers the capsule back instead',
+    await p.click('#capsule-delete-btn'); await p.waitForTimeout(400);
+    check('deleting asks first, in the same dialog as leaving a draft',
+      await p.evaluate(()=>document.getElementById('confirm-backdrop').classList.contains('open') &&
+        /Delete this capsule/.test(document.getElementById('confirm-title').textContent) &&
+        document.getElementById('confirm-stay').textContent==='Keep capsule' &&
+        document.getElementById('confirm-go').textContent==='Delete'));
+    await p.click('#confirm-stay'); await p.waitForTimeout(300);
+    check('keeping it leaves it where it was',
+      await p.evaluate(()=>!document.getElementById('confirm-backdrop').classList.contains('open') &&
+        capsules.length>0 && !document.querySelector('.toast-undo')));
+    await p.click('#capsule-delete-btn'); await p.waitForTimeout(400);
+    await p.click('#confirm-go'); await p.waitForTimeout(700);
+    check('it offers the capsule back once confirmed',
       await p.evaluate(()=>Boolean(document.querySelector('.toast-undo'))));
 
     check('the capsule leaves the page', await cards(p)===0 && await p.isVisible('#capsule-empty'));

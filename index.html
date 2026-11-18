@@ -1661,10 +1661,6 @@
   /* Building an outfit by hand. The outfit as it stands, small: it is here
      to be glanced at, and a full-size card pushed the pieces you are
      choosing from off the screen. */
-  .builder-preview{max-width:150px;margin:14px auto 4px;}
-  .builder-preview .outfit-lower{min-height:0;}
-  .builder-preview .outfit-upper > *,
-  .builder-preview .outfit-lower > *{max-height:86px;}
   /* A category you have already taken something from, marked on the tab, so
      what you picked two categories ago is visible from wherever you are. */
 
@@ -3688,7 +3684,6 @@ function openOutfitBuilder(){
     <div class="modal-body has-footer">
       <div class="modal-name">Fave an outfit</div>
       <p class="detail-sub">Select items to save as a fave outfit</p>
-      <div id="builder-preview-slot"></div>
       <div class="tabs" id="builder-tabs"></div>
       <div class="gallery" id="builder-gallery"></div>
     </div>
@@ -3801,27 +3796,11 @@ function draftCombo(){
           jumper:pick('jumper'), jacket:pick('jacket'), shoe:null};
 }
 
-// What the preview draws: the same thing the save would write.
-function draftPreviewCombo(){
-  return draftCombo();
-}
-
-// The preview and the button say the same thing twice on purpose: the
-// picture is what you are keeping, the button is whether you can.
+// Whether there is something to keep, and whether you already have.
 function renderBuilderState(){
   const combo = draftCombo();
   const already = combo && isFavorited(comboKey(combo));
   const anything = Boolean(combo);
-
-  const slot = document.getElementById('builder-preview-slot');
-  if(slot){
-    slot.innerHTML = anything
-      ? `<div class="outfit-card builder-preview"><div class="outfit-thumbs">${outfitThumbsHtml(draftPreviewCombo())}</div></div>`
-      : '';
-    // The tabs come to rest at the top of the sheet, and the preview
-    // above them has just changed height.
-    stickBuilderTabs();
-  }
 
   const btn = document.getElementById('builder-save-btn');
   if(btn){
@@ -5767,7 +5746,15 @@ function closeCapsuleEditor(){
 // so it does not ask first, and the draft is not worth stopping over.
 async function deleteCapsuleFromEditor(){
   if(!capsuleDraft || !capsuleDraft.id) return;
-  if(await archiveCapsule(capsuleDraft.id)) discardCapsuleEditor();
+  const { id, name } = capsuleDraft;
+  const shown = (name || '').trim();
+  askConfirm({
+    title: 'Delete this capsule?',
+    body: `${shown ? `“${shown}”` : 'This capsule'} will be removed. The pieces in it stay in your wardrobe.`,
+    stay: 'Keep capsule',
+    go: 'Delete',
+    onConfirm: async () => { if(await archiveCapsule(id)) discardCapsuleEditor(); }
+  });
 }
 
 function discardCapsuleEditor(){
@@ -7763,12 +7750,20 @@ document.addEventListener('keydown', e => {
 // do if you say yes, so the caller stays a one-liner.
 let confirmAction = null;
 
-function askToLeave(noun, onLeave){
-  confirmAction = onLeave;
-  document.getElementById('confirm-body').textContent =
-    `Your ${noun} won't be saved.`;
+// The one dialog, asked in different words. Leaving a draft is the common
+// question and the defaults; anything else says what it is asking.
+function askConfirm({ title, body, stay, go, onConfirm }){
+  confirmAction = onConfirm;
+  document.getElementById('confirm-title').textContent = title || 'Go back?';
+  document.getElementById('confirm-body').textContent = body || '';
+  document.getElementById('confirm-stay').textContent = stay || 'Keep editing';
+  document.getElementById('confirm-go').textContent = go || 'Discard';
   document.getElementById('confirm-backdrop').classList.add('open');
   setTimeout(() => document.getElementById('confirm-stay').focus(), 50);
+}
+
+function askToLeave(noun, onLeave){
+  askConfirm({ body: `Your ${noun} won't be saved.`, onConfirm: onLeave });
 }
 
 function dismissConfirm(){
