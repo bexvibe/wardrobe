@@ -560,8 +560,13 @@
     /* Never squeezed: with a long list of outfits beneath it, a shrinking
        photo went to nothing and the piece had no picture. */
     flex:none;
+    /* A container of its own: a white card inset from the edges, so the
+       piece sits on something instead of floating on the page grey. */
     aspect-ratio:1/1;
-    background:var(--page);
+    margin:16px 16px 0;
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:16px;
     display:flex;align-items:center;justify-content:center;
     overflow:hidden;
   }
