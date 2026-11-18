@@ -290,8 +290,90 @@ const box = (p, sel) => p.evaluate(s=>{ const r=document.querySelector(s).getBou
     isButton('Save piece', await look('#form-save-btn'));
     isButton('Cancel', await look('#form-backdrop .sheet-footer .btn.secondary'));
     isButton('Replace photo', await look('.form-photo'));
-    await p.fill('#form-category',''); await p.focus('#form-category'); await p.waitForTimeout(200);
-    isSelector('a category option', await look('#form-category-options .picker-option'));
+    await p.click('#form-category-field'); await p.waitForTimeout(400);
+    isSelector('a category option', await look('#form-pick-list .capsule-pick'));
+    isButton('Done on the category page', await look('#form-pick-done'));
+    await p.close();
+  }
+
+  // ---- category and tags are picked on pages, like capsules ---------------
+  {
+    const p=await open(b);
+    await p.evaluate(()=>{ const it=ITEMS.find(i=>i.id==='seed_0'); it.tags=['summer','work']; });
+    await p.evaluate(()=>openPieceSheet('seed_0')); await p.waitForTimeout(500);
+    await p.click('#item-page-edit'); await p.waitForTimeout(700);
+    const rows = await p.evaluate(()=>({
+      cat:document.getElementById('form-category-summary').textContent,
+      tags:document.getElementById('form-tags-summary').textContent,
+      oldFields: !!document.querySelector('#form-backdrop label #form-category, #form-backdrop label #form-tags')}));
+    check('category and tags are rows showing their value, like capsules',
+      rows.cat.length>0 && rows.tags==='summer, work' && !rows.oldFields, JSON.stringify(rows));
+
+    // Category: find, pick, Done.
+    await p.click('#form-category-field'); await p.waitForTimeout(400);
+    check('the category page is a full page',
+      await p.evaluate(()=>document.getElementById('modal-backdrop').classList.contains('as-page')));
+    await p.fill('#form-pick-input','sho'); await p.waitForTimeout(200);
+    const opts = await p.evaluate(()=>Array.from(document.querySelectorAll('#form-pick-list .capsule-pick')).map(e=>e.textContent.trim()));
+    check('typing filters it, and offers to add what you typed',
+      opts.some(o=>o.startsWith('Shorts')) && opts.some(o=>o.startsWith('Add')), opts.join(' | '));
+    await p.locator('#form-pick-list .capsule-pick', {hasText:'Shorts'}).first().click();
+    await p.click('#form-pick-done'); await p.waitForTimeout(500);
+    check('Done puts it on the form', (await p.textContent('#form-category-summary')).trim()==='Shorts' &&
+      await p.inputValue('#form-category')==='Shorts');
+    check('and back on the card, not a new sheet',
+      await p.evaluate(()=>document.getElementById('form-backdrop').classList.contains('item-card-back')));
+
+    // A brand new category, by typing it.
+    await p.click('#form-category-field'); await p.waitForTimeout(400);
+    await p.fill('#form-pick-input','Kimonos'); await p.press('#form-pick-input','Enter');
+    check('a new category is added and ticked',
+      await p.evaluate(()=>Array.from(document.querySelectorAll('#form-pick-list .capsule-pick.picked')).some(e=>e.textContent.includes('Kimonos'))));
+    await p.click('#form-pick-done'); await p.waitForTimeout(500);
+    check('and lands on the form', await p.inputValue('#form-category')==='Kimonos');
+
+    // Tags: tick, untick, add new.
+    await p.click('#form-tags-field'); await p.waitForTimeout(400);
+    const picked = () => p.evaluate(()=>Array.from(document.querySelectorAll('#form-pick-list .capsule-pick.picked')).map(e=>e.textContent.replace('✓','').trim()));
+    check('the piece\'s tags are ticked', JSON.stringify((await picked()).sort())==='["summer","work"]', (await picked()).join(','));
+    await p.locator('#form-pick-list .capsule-pick', {hasText:'work'}).first().click();
+    await p.fill('#form-pick-input','Linen, Brand New'); await p.click('#form-pick-add');
+    check('untick one, add two new: new tags lead the list, ticked',
+      JSON.stringify((await picked()).sort())==='["brand new","linen","summer"]', (await picked()).join(','));
+    await p.click('#form-pick-done'); await p.waitForTimeout(500);
+    check('Done stages them in the form, in order',
+      await p.inputValue('#form-tags')==='summer, linen, brand new');
+    // Back with a change asks first.
+    await p.click('#form-tags-field'); await p.waitForTimeout(400);
+    await p.locator('#form-pick-list .capsule-pick', {hasText:'summer'}).first().click();
+    await p.click('#modal .sheet-footer .btn.secondary'); await p.waitForTimeout(300);
+    check('Back with a change asks first',
+      await p.evaluate(()=>document.getElementById('confirm-backdrop').classList.contains('open')));
+    await p.click('#confirm-go'); await p.waitForTimeout(500);
+    check('and Discard leaves the form as it was', await p.inputValue('#form-tags')==='summer, linen, brand new');
+    // Save writes it.
+    await p.click('#form-save-btn'); await p.waitForTimeout(600);
+    const saved = await p.evaluate(()=>{const r=window.__WARDROBE_STATE.items.find(x=>x.id==='seed_0');return {c:r.category,t:r.tags};});
+    check('saving keeps the category and tags', saved.c==='Kimonos' && JSON.stringify(saved.t)==='["summer","linen","brand new"]', JSON.stringify(saved));
+    await p.close();
+  }
+
+  // ---- the outfit and its items are one container -----------------------
+  {
+    const p=await open(b);
+    await p.click('#nav-outfits-btn'); await p.waitForSelector('.outfit-gallery .outfit-fav-btn');
+    await p.waitForTimeout(900);
+    await p.evaluate(()=>closeFilterSheet()); await p.waitForTimeout(500);
+    await p.evaluate(()=>openOutfitPage(comboKey(outfitDisplayed[0]), null)); await p.waitForTimeout(800);
+    const c = await p.evaluate(()=>{
+      const card=document.querySelector('#outfit-page .outfit-page-card');
+      if(!card) return null;
+      const fl=card.querySelector('.outfit-page-flat'), li=card.querySelector('.outfit-page-list');
+      const own = e => { const s=getComputedStyle(e); return s.backgroundColor!=='rgba(0, 0, 0, 0)' || s.borderTopWidth!=='0px'; };
+      return {both:!!fl&&!!li, innerBoxed: own(fl)||own(li)};
+    });
+    check('the outfit and its item list share one card, with no boxes inside it',
+      c && c.both && !c.innerBoxed, JSON.stringify(c));
     await p.close();
   }
 

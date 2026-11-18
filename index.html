@@ -896,6 +896,21 @@
     border-radius:10px;
     padding:8px;
   }
+  /* The outfit and the pieces it is made of are one thing, so they share one
+     card: the picture, then the list, with space between and no second box. */
+  .outfit-page-card{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:8px;
+    margin-bottom:12px;
+  }
+  .outfit-page-card .outfit-page-flat,
+  .outfit-page-card .outfit-page-list{
+    background:none;border:none;border-radius:0;padding:0;margin:0;
+  }
+  .outfit-page-card .outfit-page-flat{margin-bottom:10px;}
+  .outfit-page-card .outfit-page-list{margin-bottom:0;}
   .outfit-page-list .outfit-piece-row{padding:8px 4px;}
   .outfit-page-list{margin-bottom:12px;}
   /* The capsule's name and line are the first thing in its card, above the
@@ -1306,6 +1321,8 @@
 
   /* Tag chips inside the add/edit form sit under their input */
   .form-grid .tag-chips{margin-top:8px;}
+  .form-grid .form-nav-row{margin-top:0;}
+  .form-grid > .btn.small{align-self:flex-start;}
   /* The matches under a field you type into. A row that scrolls sideways,
      like every other row of chips here, rather than a list that pushes the
      rest of the form down as you type. */
@@ -2156,18 +2173,26 @@
       <div class="form-grid">
         <label>Name<input type="text" id="form-name"></label>
         <label>Brand<input type="text" id="form-brand"></label>
-        <label id="form-category-field">Category
-          <input type="text" id="form-category" autocomplete="off"
-                 oninput="renderCategoryOptions()" onfocus="renderCategoryOptions()">
-          <div class="picker-options" id="form-category-options"></div>
-        </label>
+        <!-- Category and tags are picked on a page of their own, the way
+             capsules are, and kept in these two hidden fields so the form
+             still saves and compares itself the same way. -->
+        <button type="button" class="form-nav-row" id="form-category-field" onclick="openFormCategoryPicker()">
+          <span class="form-nav-label">Category</span>
+          <span class="form-nav-value" id="form-category-summary"></span>
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+        </button>
+        <input type="hidden" id="form-category">
         <label>Size<input type="text" id="form-size"></label>
         <label>Price<input type="text" id="form-price"></label>
         <label>Source<input type="text" id="form-source"></label>
-        <label id="form-tags-field">Tags, separated by commas
-          <input type="text" id="form-tags">
-          <div class="tag-chips" id="form-tag-suggestions"></div>
-        </label>
+        <button type="button" class="form-nav-row" id="form-tags-field" onclick="openFormTagsPicker()">
+          <span class="form-nav-label">Tags</span>
+          <span class="form-nav-value" id="form-tags-summary"></span>
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+        </button>
+        <input type="hidden" id="form-tags">
       </div>
       <div class="form-error" id="form-error"></div>
       <!-- The things you do TO a piece rather than the fields you type into
@@ -2693,6 +2718,9 @@ const SHEETS = {
   item:      { backdrop: 'modal-backdrop', draw: id => drawItemSheet(id) },
   capsules:  { backdrop: 'modal-backdrop', draw: id => drawItemCapsulePicker(id) },
   form:      { backdrop: 'form-backdrop',  draw: id => drawItemForm(id) },
+  // Picked on a page of their own, then handed back to the form as staged.
+  formcategory: { backdrop: 'modal-backdrop', draw: null },
+  formtags:     { backdrop: 'modal-backdrop', draw: null },
   // Drawn into its own layer, not the sheet frame: nothing else is on a
   // backdrop while it is the sheet you are on.
   outfit:    { backdrop: null, draw: key => drawOutfitPage(key) },
@@ -4342,6 +4370,7 @@ function drawOutfitPage(key){
   layer.innerHTML = `
     <div class="outfit-page-inner">
       <div class="modal-body has-footer outfit-page-body">
+        <div class="outfit-page-card">
         <div class="outfit-page-flat">
           ${faveHeartHtml(key)}
           <div class="outfit-thumbs">${outfitThumbsHtml(combo)}</div>
@@ -4357,6 +4386,7 @@ function drawOutfitPage(key){
             <span class="piece-go" aria-hidden="true">›</span>
           </div>
         `).join('')}
+        </div>
         </div>
         ${inspoSectionHtml(key, combo)}
       </div>
@@ -7465,6 +7495,7 @@ function drawItemForm(id){
   // and redrawing it from the saved piece would throw your edits away.
   if(itemFormBaseline !== null && editingItemId === (id || null)){
     renderFormCapsulesRow();
+    renderFormPickerRows();
     // The back of a card has no pull-down: Cancel turns it back over.
     allowSheetDrag(setFormCardLook() ? null : closeItemForm, itemFormIsDirty);
     showSheetBackdrop('form-backdrop');
@@ -7483,7 +7514,6 @@ function drawItemForm(id){
   document.getElementById('form-source').value = item ? item.source : '';
   document.getElementById('form-tags').value = item ? (item.tags || []).join(', ') : '';
   document.getElementById('form-tags-field').style.display = tagsAvailable ? '' : 'none';
-  renderTagSuggestions();
   renderFormCapsulesRow();
 
   // A piece that does not exist yet has nowhere to be archived to, but it
@@ -7495,7 +7525,7 @@ function drawItemForm(id){
   ` : '';
 
   document.getElementById('form-category').value = item ? item.category : '';
-  renderCategoryOptions();
+  renderFormPickerRows();
 
   itemFormBaseline = itemFormSnapshot();
   const asCard = setFormCardLook();
@@ -7555,54 +7585,180 @@ function renderFormPhotoRow(item){
     </button>`;
 }
 
-// The category list is long enough to scroll past and short enough to know
-// the name of, so it is a field you type into with the matches underneath —
-// a dropdown made you hunt, and only offered what was already on the list.
-// What you type stands whether or not it matches: a new category is just a
-// word nothing has used yet.
+// Category and tags are chosen on pages of their own, like capsules: the
+// form shows what is picked and a row to change it, and the pick is staged
+// until Done. The values live in two hidden fields, so saving and the
+// unsaved-changes check read the form exactly as they always did.
+function renderFormPickerRows(){
+  const cat = document.getElementById('form-category').value.trim();
+  const catEl = document.getElementById('form-category-summary');
+  if(catEl) catEl.textContent = cat;
+  const tags = parseTags(document.getElementById('form-tags').value);
+  const tagEl = document.getElementById('form-tags-summary');
+  if(tagEl) tagEl.textContent = tags.join(', ');
+}
+
+let formPickDraft = null;   // { kind:'category'|'tags', value, baseline }
+
+function formPickFrame(title, intro, inputHtml, kind){
+  const modal = document.getElementById('modal');
+  document.getElementById('modal-backdrop').classList.add('as-page');
+  modal.innerHTML = `
+    <div class="modal-body has-footer">
+      <div class="modal-name" style="margin-bottom:14px;">${title}</div>
+      <div class="form-grid">${inputHtml}</div>
+      <div class="capsule-picks" id="form-pick-list"></div>
+    </div>
+    <div class="sheet-footer split pagebar">
+      <div class="sheet-footer-inner">
+        <button class="btn secondary" type="button" onclick="closeFormPicker()">Back</button>
+        <div class="sheet-footer-actions"><button class="btn" type="button" id="form-pick-done" onclick="commitFormPicker()">Done</button></div>
+      </div>
+    </div>`;
+  allowSheetDrag(null);
+  showSheetBackdrop('modal-backdrop');
+}
+
+const pickRow = (label, picked, onclick, extra) =>
+  `<button type="button" class="capsule-pick ${picked ? 'picked' : ''}" onclick='${onclick}'>
+     <span>${esc(label)}${extra || ''}</span>
+     <span class="capsule-pick-mark">${picked ? '✓' : ''}</span>
+   </button>`;
+
+// -- Category: one of the list, or a word nothing has used yet.
+function openFormCategoryPicker(){
+  pushSheet({ sheet: 'formcategory', id: null });
+  drawFormCategoryPicker();
+}
+
+function drawFormCategoryPicker(){
+  const current = document.getElementById('form-category').value.trim();
+  formPickDraft = { kind: 'category', value: current, baseline: current };
+  formPickFrame('Category', '',
+    `<label>Find, or type a new one
+       <input type="text" id="form-pick-input" autocomplete="off" oninput="renderFormCategoryPicks()"
+              onkeydown="if(event.key==='Enter'){event.preventDefault();addFormCategory();}">
+     </label>`);
+  renderFormCategoryPicks();
+}
+
 // The group each category goes into is shown beside it, so a specific name
 // like Singlets still says it is a top.
-function renderCategoryOptions(){
-  const input = document.getElementById('form-category');
-  const list = document.getElementById('form-category-options');
-  if(!input || !list) return;
-
-  const typed = input.value.trim().toLowerCase();
-  const matches = CATEGORY_OPTIONS.filter(c => c.toLowerCase().includes(typed));
-  // Nothing left to offer once you have typed the whole of one.
-  const settled = matches.length === 1 && matches[0].toLowerCase() === typed;
-
-  list.style.display = matches.length && !settled ? 'flex' : 'none';
-  list.innerHTML = matches.map(c => `
-    <button type="button" class="picker-option" onclick='pickCategory(${JSON.stringify(c)})'>${esc(c)}${CATEGORY_TO_TAB[c] !== c ? ` <span class="picker-option-group">${esc(CATEGORY_TO_TAB[c])}</span>` : ''}</button>
-  `).join('');
+function renderFormCategoryPicks(){
+  const list = document.getElementById('form-pick-list');
+  if(!list || !formPickDraft) return;
+  const typed = (document.getElementById('form-pick-input').value || '').trim();
+  const q = typed.toLowerCase();
+  const chosen = formPickDraft.value;
+  const matches = CATEGORY_OPTIONS.filter(c => c.toLowerCase().includes(q));
+  const known = CATEGORY_OPTIONS.some(c => c.toLowerCase() === q);
+  const rows = [];
+  // A category you made up and chose stays on the list, ticked.
+  if(chosen && !CATEGORY_OPTIONS.includes(chosen) && chosen.toLowerCase().includes(q)){
+    rows.push(pickRow(chosen, true, 'pickFormCategory(' + JSON.stringify(chosen).replace(/'/g,'&#39;') + ')'));
+  }
+  if(typed && !known){
+    rows.push(pickRow('Add “' + typed + '”', false, 'addFormCategory()', ''));
+  }
+  matches.forEach(c => rows.push(pickRow(c, c === chosen,
+    'pickFormCategory(' + JSON.stringify(c).replace(/'/g,'&#39;') + ')',
+    CATEGORY_TO_TAB[c] !== c ? ` <span class="picker-option-group">${esc(CATEGORY_TO_TAB[c])}</span>` : '')));
+  list.innerHTML = rows.join('') || '<p class="modal-meta">Nothing matches.</p>';
 }
 
-function pickCategory(category){
-  document.getElementById('form-category').value = category;
-  renderCategoryOptions();
+function pickFormCategory(c){
+  if(!formPickDraft) return;
+  formPickDraft.value = c;
+  renderFormCategoryPicks();
 }
 
-// Tags you have already used, tappable so they stay consistent rather than
-// drifting into near-duplicates typed slightly differently each time.
-function renderTagSuggestions(){
-  const el = document.getElementById('form-tag-suggestions');
-  if(!el) return;
-  const existing = allTags();
-  if(!existing.length){ el.innerHTML = ''; return; }
+function addFormCategory(){
+  const input = document.getElementById('form-pick-input');
+  const typed = (input.value || '').trim();
+  if(!typed || !formPickDraft) return;
+  // Said the way the list says it when it is a category already.
+  const same = CATEGORY_OPTIONS.find(c => c.toLowerCase() === typed.toLowerCase());
+  formPickDraft.value = same || typed;
+  input.value = '';
+  renderFormCategoryPicks();
+}
+
+// -- Tags: any number of the ones you have used, and new ones as you think
+// of them. Tags are kept lower case and de-duplicated, as they always were.
+function openFormTagsPicker(){
+  pushSheet({ sheet: 'formtags', id: null });
+  drawFormTagsPicker();
+}
+
+function drawFormTagsPicker(){
   const current = parseTags(document.getElementById('form-tags').value);
-  el.innerHTML = existing.map(t => `
-    <button type="button" class="tag-chip ${current.includes(t) ? 'active' : ''}"
-            onclick='toggleFormTag(${JSON.stringify(t)})'>${esc(t)}</button>
-  `).join('');
+  formPickDraft = { kind: 'tags', value: new Set(current), baseline: JSON.stringify(current.slice().sort()) };
+  formPickFrame('Tags', '',
+    `<label>Add a new tag
+       <input type="text" id="form-pick-input" autocomplete="off" placeholder="e.g. summer, work"
+              onkeydown="if(event.key==='Enter'){event.preventDefault();addFormTag();}">
+     </label>
+     <button type="button" class="btn small" id="form-pick-add" onclick="addFormTag()">Add tag</button>`);
+  renderFormTagPicks();
+}
+
+function renderFormTagPicks(){
+  const list = document.getElementById('form-pick-list');
+  if(!list || !formPickDraft) return;
+  const used = tagsByUse();
+  // Tags you have just made are not on the list yet; they lead it, ticked.
+  const fresh = Array.from(formPickDraft.value).filter(t => !used.includes(t));
+  const all = fresh.concat(used);
+  list.innerHTML = all.length
+    ? all.map(t => pickRow(t, formPickDraft.value.has(t), 'toggleFormTag(' + JSON.stringify(t).replace(/'/g,'&#39;') + ')')).join('')
+    : '<p class="modal-meta">No tags yet. Add the first one above.</p>';
 }
 
 function toggleFormTag(tag){
-  const input = document.getElementById('form-tags');
-  const current = parseTags(input.value);
-  const next = current.includes(tag) ? current.filter(t => t !== tag) : current.concat(tag);
-  input.value = next.join(', ');
-  renderTagSuggestions();
+  if(!formPickDraft) return;
+  if(formPickDraft.value.has(tag)) formPickDraft.value.delete(tag);
+  else formPickDraft.value.add(tag);
+  renderFormTagPicks();
+}
+
+function addFormTag(){
+  const input = document.getElementById('form-pick-input');
+  if(!input || !formPickDraft) return;
+  parseTags(input.value).forEach(t => formPickDraft.value.add(t));
+  input.value = '';
+  renderFormTagPicks();
+  input.focus();
+}
+
+// -- Shared: Done stages it into the form, Back asks if there is a change.
+function formPickDirty(){
+  if(!formPickDraft) return false;
+  if(formPickDraft.kind === 'category') return formPickDraft.value !== formPickDraft.baseline;
+  return JSON.stringify(Array.from(formPickDraft.value).sort()) !== formPickDraft.baseline;
+}
+
+function closeFormPicker(){
+  if(formPickDirty()){
+    askToLeave(formPickDraft.kind === 'category' ? 'category choice' : 'tag changes', discardFormPicker);
+    return;
+  }
+  discardFormPicker();
+}
+
+function discardFormPicker(){
+  formPickDraft = null;
+  goBackFromSheet();
+}
+
+function commitFormPicker(){
+  if(!formPickDraft) return;
+  if(formPickDraft.kind === 'category'){
+    document.getElementById('form-category').value = formPickDraft.value;
+  } else {
+    document.getElementById('form-tags').value = Array.from(formPickDraft.value).join(', ');
+  }
+  formPickDraft = null;
+  goBackFromSheet();
 }
 
 // The back button asks first if there is anything to lose. Saving and

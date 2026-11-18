@@ -190,20 +190,21 @@ const tiles = p => p.evaluate(()=>document.querySelectorAll('#gallery .tile').le
     await p.close();
   }
 
-  // ---- 6. And the category field still knows both words ----
+  // ---- 6. And the category picker still knows both words ----
   {
     const p=await open(b);
     await p.click('#add-item-btn'); await p.waitForTimeout(500);
-    await p.fill('#form-category', 'sho'); await p.waitForTimeout(300);
+    await p.click('#form-category-field'); await p.waitForTimeout(400);
+    await p.fill('#form-pick-input', 'sho'); await p.waitForTimeout(300);
     const opts = await p.evaluate(()=>Array.from(
-      document.querySelectorAll('#form-category-options .picker-option')).map(e=>e.textContent.trim()));
-    check('typing "sho" offers Shoes and Shorts', opts.includes('Shorts') && opts.includes('Shoes'),
-      opts.join(', '));
-    await p.fill('#form-category', 'pan'); await p.waitForTimeout(300);
+      document.querySelectorAll('#form-pick-list .capsule-pick')).map(e=>e.textContent.trim()));
+    check('typing "sho" offers Shoes and Shorts',
+      opts.some(o=>o.startsWith('Shorts')) && opts.some(o=>o.startsWith('Shoes')), opts.join(', '));
+    await p.fill('#form-pick-input', 'pan'); await p.waitForTimeout(300);
     check('and "pan" offers Pants',
       await p.evaluate(()=>Array.from(
-        document.querySelectorAll('#form-category-options .picker-option'))
-          .some(e=>e.textContent.trim()==='Pants')));
+        document.querySelectorAll('#form-pick-list .capsule-pick'))
+          .some(e=>e.textContent.trim().startsWith('Pants'))));
     await p.close();
   }
 

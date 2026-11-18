@@ -66,4 +66,25 @@ module.exports = {
     }
     await page.waitForTimeout((opts && opts.settle) || 600);
   },
+
+  // The edit form picks its category and tags on pages of their own, the
+  // way capsules are picked. These do what a thumb does there.
+  //
+  // A category is found by typing it; Enter takes it as typed or as the
+  // list spells it, so a new one works the same as an old one.
+  async chooseCategory(page, name){
+    await page.click('#form-category-field'); await page.waitForTimeout(350);
+    await page.fill('#form-pick-input', name);
+    await page.press('#form-pick-input', 'Enter');
+    await page.click('#form-pick-done'); await page.waitForTimeout(450);
+  },
+
+  // Adds these tags (comma separated, as the field has always taken them)
+  // to whichever the piece already has.
+  async addTags(page, text){
+    await page.click('#form-tags-field'); await page.waitForTimeout(350);
+    await page.fill('#form-pick-input', text);
+    await page.click('#form-pick-add');
+    await page.click('#form-pick-done'); await page.waitForTimeout(450);
+  },
 };

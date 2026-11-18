@@ -1,4 +1,5 @@
 const { chromium } = require('playwright');
+const { addTags } = require('./nav');
 // The filters dock at the bottom of the screen and open themselves on
 // Outfits and Faves. Everywhere else the pill raises them.
 async function openFilters(page){
@@ -64,7 +65,7 @@ async function open(b, {withTags=true, tags={}}={}){
       await (async()=>{ await p.click('#add-item-btn'); await p.waitForTimeout(300);
                         return p.isVisible('#form-tags-field'); })());
     await p.fill('#form-name','Linen Shirt');
-    await p.fill('#form-tags','Summer,  WORK , summer');   // messy on purpose
+    await addTags(p, 'Summer,  WORK , summer');   // messy on purpose
     await p.click('#form-save-btn'); await p.waitForTimeout(500);
     const row=await p.evaluate(()=>window.__WARDROBE_STATE.items.find(r=>r.name==='Linen Shirt'));
     check('tags normalised and de-duplicated',
@@ -132,7 +133,7 @@ async function open(b, {withTags=true, tags={}}={}){
     check('edit form pre-fills existing tags',
       (await p.inputValue('#form-tags'))==='summer');
     // tap a suggestion chip to add another
-    await p.fill('#form-tags','summer, linen'); await p.click('#form-save-btn'); await p.waitForTimeout(500);
+    await addTags(p, 'linen'); await p.click('#form-save-btn'); await p.waitForTimeout(500);
     await p.reload(); await p.waitForTimeout(900);
     const after=await p.evaluate(()=>ITEMS.find(i=>i.id==='seed_22').tags);
     check('tag edits survive a reload', JSON.stringify(after)===JSON.stringify(['summer','linen']), JSON.stringify(after));

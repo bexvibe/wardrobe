@@ -1,5 +1,5 @@
 const { chromium } = require('playwright');
-const { toFaves } = require('./nav');
+const { toFaves, chooseCategory } = require('./nav');
 const fs = require('fs');
 const path = require('path');
 const REPO = require('path').join(__dirname, '..');
@@ -176,7 +176,7 @@ async function login(page) {
     await page.waitForTimeout(250);
     await page.fill('#form-name', 'Test Trench');
     await page.fill('#form-brand', 'Testwear');
-    await page.fill('#form-category', 'Jackets');
+    await chooseCategory(page, 'Jackets');
     await page.click('#form-save-btn');
     await page.waitForTimeout(400);
 
