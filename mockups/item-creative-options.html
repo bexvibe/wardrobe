@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Item Details Creative Options</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500&family=Work+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  /* The app's own tokens, so each phone reads as the app and not a redesign. */
+  :root{
+    --page:#F2F2F2; --surface:#FFFFFF; --line:#DCDCDC; --accent-soft:#E7E7E7;
+    --ink-soft:#6E6E6E; --ink:#121212;
+    --bg:#F7F7F6; --fg:#171717; --muted:#66666A; --rule:#E2E2E0; --stage:#E9E9E7;
+    --display:'Fraunces',Georgia,serif; --body:'Work Sans',system-ui,sans-serif; --mono:'IBM Plex Mono',ui-monospace,monospace;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.5;
+    padding:32px 16px 64px;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:1180px;margin:0 auto;}
+  h1,h2{font-family:var(--display);font-weight:400;letter-spacing:-0.015em;margin:0;}
+  h1{font-size:clamp(28px,6vw,38px);line-height:1.1;}
+  h2{font-size:22px;}
+  p{margin:0;}
+  .kicker{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);}
+  .intro{display:grid;gap:12px;max-width:64ch;margin-bottom:28px;color:var(--muted);}
+  .intro h1{color:var(--fg);}
+  .row{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:28px;align-items:start;}
+  .opt{display:grid;gap:14px;justify-items:center;}
+  .opt-head{width:100%;max-width:340px;display:grid;gap:4px;}
+  .opt-head p{color:var(--muted);font-size:14px;}
+  .fixes{width:100%;max-width:340px;font-size:13px;color:var(--muted);margin:0;padding-left:18px;}
+
+  /* The phone */
+  .phone{width:340px;height:700px;background:var(--page);border-radius:34px;border:8px solid #1c1c1e;
+    position:relative;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 12px 40px rgba(0,0,0,.18);}
+  .scroll{flex:1;overflow:hidden;padding-bottom:96px;}
+
+  /* Shared pieces */
+  .photo{margin:14px 14px 0;background:var(--surface);border:1px solid var(--line);border-radius:18px;
+    display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;}
+  .photo svg{width:78%;height:auto;display:block;}
+  .name{font-family:var(--display);font-weight:500;font-size:22px;margin:0;}
+  .sub{color:var(--ink-soft);font-size:14px;margin-top:2px;}
+  .pill{display:inline-flex;align-items:center;gap:6px;background:var(--accent-soft);border-radius:999px;
+    font-family:var(--mono);font-size:12px;padding:6px 12px;color:var(--ink);}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:16px;margin:12px 14px 0;overflow:hidden;}
+  .fact{display:grid;grid-template-columns:86px 1fr;gap:10px;align-items:center;padding:12px 14px;}
+  .fact + .fact{border-top:1px solid var(--line);}
+  .fact .k{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);}
+  .tags{display:flex;flex-wrap:wrap;gap:6px;}
+  .heart{position:absolute;top:10px;right:10px;width:38px;height:38px;border-radius:50%;background:var(--surface);
+    border:1px solid var(--line);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.08);}
+  .heart svg{width:18px;height:18px;}
+
+  /* Bottom bar: the app's floating pills */
+  .bar{position:absolute;left:0;right:0;bottom:0;padding:0 14px 16px;display:flex;gap:8px;align-items:center;}
+  .btn{height:54px;border-radius:999px;display:flex;align-items:center;justify-content:center;gap:8px;
+    font-family:var(--body);font-weight:600;font-size:14px;box-shadow:0 6px 24px rgba(0,0,0,.11);white-space:nowrap;}
+  .btn.back{flex:none;padding:0 18px 0 14px;background:var(--surface);border:1px solid var(--line);color:var(--ink);}
+  .btn.primary{flex:1;background:var(--ink);color:var(--page);border:1px solid var(--ink);}
+  .btn.tonal{flex:none;padding:0 20px;background:var(--accent-soft);border:1px solid var(--line);color:var(--ink);}
+  .btn.icon{flex:none;width:54px;padding:0;background:var(--accent-soft);border:1px solid var(--line);color:var(--ink);}
+  .btn svg{width:18px;height:18px;}
+  /* Option C: a quiet fade so nothing is cut off hard behind the bar */
+  .fade{position:absolute;left:0;right:0;bottom:0;height:110px;background:linear-gradient(to top,var(--page) 40%,rgba(242,242,242,0));pointer-events:none;}
+
+  /* Stat strip (B) */
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);}
+  .stat{padding:12px 8px;text-align:center;}
+  .stat + .stat{border-left:1px solid var(--line);}
+  .stat b{display:block;font-family:var(--display);font-weight:500;font-size:20px;}
+  .stat span{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);}
+  .head{padding:16px 18px 0;}
+  .head.in-card{padding:14px 18px 16px;}
+
+  #tee,use{fill:#3a2119;}
+
+  .phone{position:relative;}
+  .bgpage{position:absolute;inset:0;background:var(--page);padding:14px 12px;}
+  .bgtabs{display:flex;gap:6px;margin-bottom:12px;}
+  .bgtabs .t{font-size:12px;font-weight:600;padding:9px 14px;border-radius:999px;background:var(--surface);border:1px solid var(--line);color:var(--ink-soft);}
+  .bgtabs .t.on{background:var(--accent-soft);border-color:var(--accent-soft);color:var(--ink);}
+  .tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .tile{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:8px;font-size:11px;color:var(--ink-soft);}
+  .tile svg{width:100%;height:96px;display:block;}
+  .dim{position:absolute;inset:0;background:rgba(0,0,0,.32);}
+  .sheet{position:absolute;left:0;right:0;bottom:0;background:var(--page);display:flex;flex-direction:column;overflow:hidden;box-shadow:0 -8px 30px rgba(0,0,0,.18);}
+  .grip{width:38px;height:5px;border-radius:3px;background:#c4c4c4;margin:8px auto 4px;flex:none;}
+  .sheet .scroll{padding-bottom:84px;}
+  .sheet .bar{padding-bottom:14px;}
+  .sheet .photo{margin-top:8px;}
+  .hrow{display:flex;gap:12px;padding:14px;align-items:center;}
+  .hrow .thumb{width:112px;height:112px;flex:none;background:var(--surface);border:1px solid var(--line);border-radius:16px;display:flex;align-items:center;justify-content:center;}
+  .hrow .thumb svg{width:84%;}
+  .pagestack{position:absolute;inset:0;background:var(--page);transform-origin:top center;}
+
+  .tile.sel{outline:2px solid var(--ink);outline-offset:-2px;}
+  .bgpage.blur .tiles,.bgpage.blur .bgtabs{filter:blur(3px);}
+  .float{position:absolute;background:var(--page);box-shadow:0 18px 50px rgba(0,0,0,.28);overflow:hidden;display:flex;flex-direction:column;}
+  .float .photo{margin:10px 10px 0;}
+  .float .head{padding:12px 16px 0;}
+  .float .card{margin:12px 10px 0;}
+  .peekcard{position:absolute;top:70px;bottom:92px;width:250px;background:var(--surface);border:1px solid var(--line);border-radius:22px;overflow:hidden;}
+  .nav{position:absolute;left:14px;right:14px;bottom:14px;height:54px;border-radius:999px;background:var(--surface);border:1px solid var(--line);box-shadow:0 6px 24px rgba(0,0,0,.11);display:flex;align-items:center;justify-content:space-around;font-size:13px;font-weight:600;color:var(--ink-soft);}
+  .nav .on{background:var(--accent-soft);color:var(--ink);padding:9px 18px;border-radius:999px;}
+  .dots{display:flex;gap:6px;justify-content:center;margin-top:12px;}
+  .dots i{width:6px;height:6px;border-radius:50%;background:#c4c4c4;display:block;}
+  .dots i.on{background:var(--ink);}
+  .mini{position:absolute;left:14px;right:14px;bottom:78px;background:var(--surface);border:1px solid var(--line);border-radius:20px;box-shadow:0 10px 30px rgba(0,0,0,.16);padding:10px;display:flex;gap:12px;align-items:center;}
+  .mini .th{width:56px;height:56px;border-radius:12px;background:var(--page);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;flex:none;}
+  .mini .th svg{width:80%;}
+  .mini .nm{font-family:var(--display);font-weight:500;font-size:16px;}
+  .mini .go{margin-left:auto;background:var(--ink);color:var(--page);font-weight:600;font-size:13px;padding:11px 14px;border-radius:999px;white-space:nowrap;}
+  .pop{position:absolute;left:14px;right:14px;top:150px;background:var(--surface);border:1px solid var(--line);border-radius:20px;box-shadow:0 18px 50px rgba(0,0,0,.28);padding:14px;}
+  .pop::before{content:"";position:absolute;top:-8px;left:56px;width:16px;height:16px;background:var(--surface);border-left:1px solid var(--line);border-top:1px solid var(--line);transform:rotate(45deg);}
+  .pop .actions{display:flex;gap:8px;margin-top:14px;}
+  .pop .actions .btn{height:46px;box-shadow:none;}
+</style></head><body><div class="wrap"><div class="intro"><p class="kicker">Mockup · More creative options</p><h1>Beyond the sheet</h1><p>Four less conventional ways to open a piece while the wardrobe stays present. Each trades a bit of detail-page room for a stronger feeling of staying in the same place.</p></div><div class="row" style="grid-template-columns:repeat(auto-fit,minmax(320px,1fr))">
+<div class="opt"><div class="opt-head"><h2>D · Floating card</h2><p>The tile you tapped grows into a card with margins on every side; the wardrobe is softly blurred around it.</p></div><div class="phone"><div class="bgpage blur"><div class="bgtabs"><span class="t on">All</span><span class="t">Tops</span><span class="t">Pants</span><span class="t">Shoes</span></div><div class="tiles"><div class="tile sel"><svg viewBox="0 0 200 170"><use href="#tee" style="fill:#3a2119"/></svg><span>Piece 1</span></div><div class="tile "><svg viewBox="0 0 200 170"><use href="#tee" style="fill:#2b3a4a"/></svg><span>Piece 2</span></div><div class="tile "><svg viewBox="0 0 200 170"><use href="#tee" style="fill:#8a8f7a"/></svg><span>Piece 3</span></div><div class="tile "><svg viewBox="0 0 200 170"><use href="#tee" style="fill:#c9b8a0"/></svg><span>Piece 4</span></div><div class="tile "><svg viewBox="0 0 200 170"><use href="#tee" style="fill:#1f1f1f"/></svg><span>Piece 5</span></div><div class="tile "><svg viewBox="0 0 200 170"><use href="#tee" style="fill:#6b4f6e"/></svg><span>Piece 6</span></div><div class="tile "><svg viewBox="0 0 200 170"><use href="#tee" style="fill:#3a2119"/></svg><span>Piece 7</span></div><div class="tile "><svg viewBox="0 0 200 170"><use href="#tee" style="fill:#2b3a4a"/></svg><span>Piece 8</span></div><div class="tile "><svg viewBox="0 0 200 170"><use href="#tee" style="fill:#8a8f7a"/></svg><span>Piece 9</span></div><div class="tile "><svg viewBox="0 0 200 170"><use href="#tee" style="fill:#c9b8a0"/></svg><span>Piece 10</span></div><div class="tile "><svg viewBox="0 0 200 170"><use href="#tee" style="fill:#1f1f1f"/></svg><span>Piece 11</span></div><div class="tile "><svg viewBox="0 0 200 170"><use href="#tee" style="fill:#6b4f6e"/></svg><span>Piece 12</span></div></div></div><div class="dim" style="background:rgba(0,0,0,.2)"></div><div class="float" style="left:14px;right:14px;top:70px;bottom:14px;border-radius:26px;"><div class="photo" style="aspect-ratio:1/0.9;"><svg viewBox="0 0 200 170"><use href="#tee"/></svg><div class="heart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg></div></div><div class="head"><h3 class="name">Brown Baby Tee</h3><p class="sub">Cotton On · Tops</p></div><div class="card"><div class="fact"><span class="k">Tags</span><div class="tags"><span class="pill">summer</span><span class="pill">All year</span></div></div></div><div class="bar"><div class="btn back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>Back</div><div class="btn primary">Find outfits</div><div class="btn tonal">Edit</div></div></div></div><ul class="fixes"><li>Reads as the same object, enlarged</li><li>Clear edge on all sides to tap out</li></ul></div>
+<div class="opt"><div class="opt-head"><h2>E · Swipe through</h2><p>A card with the neighbouring pieces peeking at the sides. Swipe left or right to move through the list without going back.</p></div><div class="phone"><div class="bgpage blur"><div class="bgtabs"><span class="t on">All</span><span class="t">Tops</span><span class="t">Pants</span><span class="t">Shoes</span></div><div class="tiles"><div class="tile sel"><svg viewBox="0 0 200 170"><use href="#tee" style="fill:#3a2119"/></svg><span>Piece 1</span></div><div class="tile "><svg viewBox="0 0 200 170"><use href="#tee" style="fill:#2b3a4a"/></svg><span>Piece 2</span></div><div class="tile "><svg viewBox="0 0 200 170"><use href="#tee" style="fill:#8a8f7a"/></svg><span>Piece 3</span></div><div class="tile "><svg viewBox="0 0 200 170"><use href="#tee" style="fill:#c9b8a0"/></svg><span>Piece 4</span></div><div class="tile "><svg viewBox="0 0 200 170"><use href="#tee" style="fill:#1f1f1f"/></svg><span>Piece 5</span></div><div class="tile "><svg viewBox="0 0 200 170"><use href="#tee" style="fill:#6b4f6e"/></svg><span>Piece 6</span></div><div class="tile "><svg viewBox="0 0 200 170"><use href="#tee" style="fill:#3a2119"/></svg><span>Piece 7</span></div><div class="tile "><svg viewBox="0 0 200 170"><use href="#tee" style="fill:#2b3a4a"/></svg><span>Piece 8</span></div><div class="tile "><svg viewBox="0 0 200 170"><use href="#tee" style="fill:#8a8f7a"/></svg><span>Piece 9</span></div><div class="tile "><svg viewBox="0 0 200 170"><use href="#tee" style="fill:#c9b8a0"/></svg><span>Piece 10</span></div><div class="tile "><svg viewBox="0 0 200 170"><use href="#tee" style="fill:#1f1f1f"/></svg><span>Piece 11</span></div><div class="tile "><svg viewBox="0 0 200 170"><use href="#tee" style="fill:#6b4f6e"/></svg><span>Piece 12</span></div></div></div><div class="dim" style="background:rgba(0,0,0,.34)"></div>
+<div class="peekcard" style="left:-190px;opacity:.9"><div class="photo" style="margin:10px;aspect-ratio:1/1"><svg viewBox="0 0 200 170"><use href="#tee" style="fill:#2b3a4a"/></svg></div></div>
+<div class="peekcard" style="right:-190px;opacity:.9"><div class="photo" style="margin:10px;aspect-ratio:1/1"><svg viewBox="0 0 200 170"><use href="#tee" style="fill:#8a8f7a"/></svg></div></div>
+<div class="peekcard" style="left:35px;box-shadow:0 18px 50px rgba(0,0,0,.3)"><div class="photo" style="margin:10px;aspect-ratio:1/1;background:var(--page);"><svg viewBox="0 0 200 170"><use href="#tee"/></svg><div class="heart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg></div></div><div class="head"><h3 class="name">Brown Baby Tee</h3><p class="sub">Cotton On · Tops</p><div style="margin-top:12px"><div class="tags"><span class="pill">summer</span><span class="pill">All year</span></div></div></div></div>
+<div class="dots" style="position:absolute;left:0;right:0;bottom:84px;"><i></i><i class="on"></i><i></i><i></i><i></i></div>
+<div class="bar"><div class="btn back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>Back</div><div class="btn primary">Find outfits</div><div class="btn tonal">Edit</div></div></div><ul class="fixes"><li>Browse a whole category from one screen</li><li>Dots show where you are</li></ul></div>
+<div class="opt"><div class="opt-head"><h2>F · Docked mini-player</h2><p>Tapping a piece docks a strip above the nav, like a music player. Find outfits is right there; tap the strip to expand.</p></div><div class="phone"><div class="bgpage "><div class="bgtabs"><span class="t on">All</span><span class="t">Tops</span><span class="t">Pants</span><span class="t">Shoes</span></div><div class="tiles"><div class="tile sel"><svg viewBox="0 0 200 170"><use href="#tee" style="fill:#3a2119"/></svg><span>Piece 1</span></div><div class="tile "><svg viewBox="0 0 200 170"><use href="#tee" style="fill:#2b3a4a"/></svg><span>Piece 2</span></div><div class="tile "><svg viewBox="0 0 200 170"><use href="#tee" style="fill:#8a8f7a"/></svg><span>Piece 3</span></div><div class="tile "><svg viewBox="0 0 200 170"><use href="#tee" style="fill:#c9b8a0"/></svg><span>Piece 4</span></div><div class="tile "><svg viewBox="0 0 200 170"><use href="#tee" style="fill:#1f1f1f"/></svg><span>Piece 5</span></div><div class="tile "><svg viewBox="0 0 200 170"><use href="#tee" style="fill:#6b4f6e"/></svg><span>Piece 6</span></div><div class="tile "><svg viewBox="0 0 200 170"><use href="#tee" style="fill:#3a2119"/></svg><span>Piece 7</span></div><div class="tile "><svg viewBox="0 0 200 170"><use href="#tee" style="fill:#2b3a4a"/></svg><span>Piece 8</span></div><div class="tile "><svg viewBox="0 0 200 170"><use href="#tee" style="fill:#8a8f7a"/></svg><span>Piece 9</span></div><div class="tile "><svg viewBox="0 0 200 170"><use href="#tee" style="fill:#c9b8a0"/></svg><span>Piece 10</span></div><div class="tile "><svg viewBox="0 0 200 170"><use href="#tee" style="fill:#1f1f1f"/></svg><span>Piece 11</span></div><div class="tile "><svg viewBox="0 0 200 170"><use href="#tee" style="fill:#6b4f6e"/></svg><span>Piece 12</span></div></div></div><div class="mini"><div class="th"><svg viewBox="0 0 200 170"><use href="#tee"/></svg></div><div><div class="nm">Brown Baby Tee</div><div class="sub" style="margin:0;font-size:12px">Cotton On · Tops</div></div><div class="go">Find outfits</div></div><div class="nav"><span>Pieces</span><span class="on">Outfits</span><span>Faves</span></div></div><ul class="fixes"><li>The wardrobe stays fully usable</li><li>Most 'working in context' of all</li></ul></div>
+<div class="opt"><div class="opt-head"><h2>G · Anchored popover</h2><p>A small card points at the tile you tapped, with quick actions. Tap the photo for the full page.</p></div><div class="phone"><div class="bgpage blur"><div class="bgtabs"><span class="t on">All</span><span class="t">Tops</span><span class="t">Pants</span><span class="t">Shoes</span></div><div class="tiles"><div class="tile sel"><svg viewBox="0 0 200 170"><use href="#tee" style="fill:#3a2119"/></svg><span>Piece 1</span></div><div class="tile "><svg viewBox="0 0 200 170"><use href="#tee" style="fill:#2b3a4a"/></svg><span>Piece 2</span></div><div class="tile "><svg viewBox="0 0 200 170"><use href="#tee" style="fill:#8a8f7a"/></svg><span>Piece 3</span></div><div class="tile "><svg viewBox="0 0 200 170"><use href="#tee" style="fill:#c9b8a0"/></svg><span>Piece 4</span></div><div class="tile "><svg viewBox="0 0 200 170"><use href="#tee" style="fill:#1f1f1f"/></svg><span>Piece 5</span></div><div class="tile "><svg viewBox="0 0 200 170"><use href="#tee" style="fill:#6b4f6e"/></svg><span>Piece 6</span></div><div class="tile "><svg viewBox="0 0 200 170"><use href="#tee" style="fill:#3a2119"/></svg><span>Piece 7</span></div><div class="tile "><svg viewBox="0 0 200 170"><use href="#tee" style="fill:#2b3a4a"/></svg><span>Piece 8</span></div><div class="tile "><svg viewBox="0 0 200 170"><use href="#tee" style="fill:#8a8f7a"/></svg><span>Piece 9</span></div><div class="tile "><svg viewBox="0 0 200 170"><use href="#tee" style="fill:#c9b8a0"/></svg><span>Piece 10</span></div><div class="tile "><svg viewBox="0 0 200 170"><use href="#tee" style="fill:#1f1f1f"/></svg><span>Piece 11</span></div><div class="tile "><svg viewBox="0 0 200 170"><use href="#tee" style="fill:#6b4f6e"/></svg><span>Piece 12</span></div></div></div><div class="dim" style="background:rgba(0,0,0,.18)"></div><div class="tile sel" style="position:absolute;left:12px;top:56px;width:146px;z-index:3;"><svg viewBox="0 0 200 170"><use href="#tee"/></svg><span>Piece 1</span></div><div class="pop" style="top:208px"><h3 class="name">Brown Baby Tee</h3><p class="sub">Cotton On · Tops</p><div style="margin-top:10px"><div class="tags"><span class="pill">summer</span><span class="pill">All year</span></div></div><div class="actions"><div class="btn primary" style="flex:1">Find outfits</div><div class="btn icon">✎</div><div class="btn icon">♡</div></div><p class="sub" style="font-size:12px;margin-top:12px;text-align:center">Tap the photo for full details</p></div></div><ul class="fixes"><li>Fastest for a quick look or Find outfits</li><li>Keeps the tapped tile highlighted</li></ul></div>
+</div></div>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><g id="tee"><path d="M62 18c10 8 26 8 38 0 12 8 28 8 38 0l44 30-20 34-22-12v78H60V70L38 82 18 48z" transform="translate(-10 0) scale(.98)"/></g></defs></svg></body></html>
