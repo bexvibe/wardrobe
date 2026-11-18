@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Item Details Mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500&family=Work+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  /* The app's own tokens, so each phone reads as the app and not a redesign. */
+  :root{
+    --page:#F2F2F2; --surface:#FFFFFF; --line:#DCDCDC; --accent-soft:#E7E7E7;
+    --ink-soft:#6E6E6E; --ink:#121212;
+    --bg:#F7F7F6; --fg:#171717; --muted:#66666A; --rule:#E2E2E0; --stage:#E9E9E7;
+    --display:'Fraunces',Georgia,serif; --body:'Work Sans',system-ui,sans-serif; --mono:'IBM Plex Mono',ui-monospace,monospace;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.5;
+    padding:32px 16px 64px;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:1180px;margin:0 auto;}
+  h1,h2{font-family:var(--display);font-weight:400;letter-spacing:-0.015em;margin:0;}
+  h1{font-size:clamp(28px,6vw,38px);line-height:1.1;}
+  h2{font-size:22px;}
+  p{margin:0;}
+  .kicker{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);}
+  .intro{display:grid;gap:12px;max-width:64ch;margin-bottom:28px;color:var(--muted);}
+  .intro h1{color:var(--fg);}
+  .row{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:28px;align-items:start;}
+  .opt{display:grid;gap:14px;justify-items:center;}
+  .opt-head{width:100%;max-width:340px;display:grid;gap:4px;}
+  .opt-head p{color:var(--muted);font-size:14px;}
+  .fixes{width:100%;max-width:340px;font-size:13px;color:var(--muted);margin:0;padding-left:18px;}
+
+  /* The phone */
+  .phone{width:340px;height:700px;background:var(--page);border-radius:34px;border:8px solid #1c1c1e;
+    position:relative;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 12px 40px rgba(0,0,0,.18);}
+  .scroll{flex:1;overflow:hidden;padding-bottom:96px;}
+
+  /* Shared pieces */
+  .photo{margin:14px 14px 0;background:var(--surface);border:1px solid var(--line);border-radius:18px;
+    display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;}
+  .photo svg{width:78%;height:auto;display:block;}
+  .name{font-family:var(--display);font-weight:500;font-size:22px;margin:0;}
+  .sub{color:var(--ink-soft);font-size:14px;margin-top:2px;}
+  .pill{display:inline-flex;align-items:center;gap:6px;background:var(--accent-soft);border-radius:999px;
+    font-family:var(--mono);font-size:12px;padding:6px 12px;color:var(--ink);}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:16px;margin:12px 14px 0;overflow:hidden;}
+  .fact{display:grid;grid-template-columns:86px 1fr;gap:10px;align-items:center;padding:12px 14px;}
+  .fact + .fact{border-top:1px solid var(--line);}
+  .fact .k{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);}
+  .tags{display:flex;flex-wrap:wrap;gap:6px;}
+  .heart{position:absolute;top:10px;right:10px;width:38px;height:38px;border-radius:50%;background:var(--surface);
+    border:1px solid var(--line);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.08);}
+  .heart svg{width:18px;height:18px;}
+
+  /* Bottom bar: the app's floating pills */
+  .bar{position:absolute;left:0;right:0;bottom:0;padding:0 14px 16px;display:flex;gap:8px;align-items:center;}
+  .btn{height:54px;border-radius:999px;display:flex;align-items:center;justify-content:center;gap:8px;
+    font-family:var(--body);font-weight:600;font-size:14px;box-shadow:0 6px 24px rgba(0,0,0,.11);white-space:nowrap;}
+  .btn.back{flex:none;padding:0 18px 0 14px;background:var(--surface);border:1px solid var(--line);color:var(--ink);}
+  .btn.primary{flex:1;background:var(--ink);color:var(--page);border:1px solid var(--ink);}
+  .btn.tonal{flex:none;padding:0 20px;background:var(--accent-soft);border:1px solid var(--line);color:var(--ink);}
+  .btn.icon{flex:none;width:54px;padding:0;background:var(--accent-soft);border:1px solid var(--line);color:var(--ink);}
+  .btn svg{width:18px;height:18px;}
+  /* Option C: a quiet fade so nothing is cut off hard behind the bar */
+  .fade{position:absolute;left:0;right:0;bottom:0;height:110px;background:linear-gradient(to top,var(--page) 40%,rgba(242,242,242,0));pointer-events:none;}
+
+  /* Stat strip (B) */
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);}
+  .stat{padding:12px 8px;text-align:center;}
+  .stat + .stat{border-left:1px solid var(--line);}
+  .stat b{display:block;font-family:var(--display);font-weight:500;font-size:20px;}
+  .stat span{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);}
+  .head{padding:16px 18px 0;}
+  .head.in-card{padding:14px 18px 16px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="intro">
+    <p class="kicker">Mockup · Item details page</p>
+    <h1>The piece page, three ways</h1>
+    <p>Taken from your screenshot. What it's fixing: the photo takes more than half the screen and pushes the name below the fold on smaller phones, the facts float in an empty grey field, and the gap above the bar looks unfinished. Same tokens, same bar, same Find outfits as the primary action in all three.</p>
+  </div>
+
+  <div class="row">
+
+    <!-- A -->
+    <div class="opt">
+      <div class="opt-head"><h2>A · Tighter</h2><p>Least change. Shorter photo card, facts grouped in one card.</p></div>
+      <div class="phone">
+        <div class="scroll">
+          <div class="photo" style="aspect-ratio:5/4;"><svg viewBox="0 0 200 170"><use href="#tee"/></svg></div>
+          <div class="head">
+            <h3 class="name">Brown Baby Tee</h3>
+            <p class="sub">Cotton On · Tops</p>
+          </div>
+          <div class="card">
+            <div class="fact"><span class="k">Tags</span><div class="tags"><span class="pill">summer</span></div></div>
+            <div class="fact"><span class="k">Capsules</span><div class="tags"><span class="pill">All year</span></div></div>
+          </div>
+        </div>
+        <div class="bar">
+          <div class="btn back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>Back</div>
+          <div class="btn primary">Find outfits</div>
+          <div class="btn tonal">Edit</div>
+        </div>
+      </div>
+      <ul class="fixes"><li>Name and facts all visible without scrolling</li><li>Facts read as one object, not loose chips</li></ul>
+    </div>
+
+    <!-- B -->
+    <div class="opt">
+      <div class="opt-head"><h2>B · Caption in the card</h2><p>Name lives with the photo; the page below becomes useful info.</p></div>
+      <div class="phone">
+        <div class="scroll">
+          <div class="photo" style="flex-direction:column;align-items:stretch;justify-content:flex-start;">
+            <div style="aspect-ratio:1/0.82;display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 200 170" style="width:74%"><use href="#tee"/></svg></div>
+            <div class="head in-card" style="border-top:1px solid var(--line);">
+              <h3 class="name">Brown Baby Tee</h3>
+              <p class="sub">Cotton On · Tops</p>
+            </div>
+            <div class="heart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg></div>
+          </div>
+          <div class="card">
+            <div class="stats">
+              <div class="stat"><b>6</b><span>Worn</span></div>
+              <div class="stat"><b>14</b><span>Outfits</span></div>
+              <div class="stat"><b>2</b><span>Capsules</span></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="fact"><span class="k">Tags</span><div class="tags"><span class="pill">summer</span></div></div>
+            <div class="fact"><span class="k">Capsules</span><div class="tags"><span class="pill">All year</span></div></div>
+          </div>
+        </div>
+        <div class="bar">
+          <div class="btn back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>Back</div>
+          <div class="btn primary">Find outfits</div>
+          <div class="btn tonal">Edit</div>
+        </div>
+      </div>
+      <ul class="fixes"><li>Photo + name read as one card</li><li>Fills the dead space with useful numbers (worn, outfits)</li><li>Heart to fave the piece</li></ul>
+    </div>
+
+    <!-- C -->
+    <div class="opt">
+      <div class="opt-head"><h2>C · Calm &amp; scrolling</h2><p>Photo stays big; content scrolls under a soft fade; Edit becomes an icon.</p></div>
+      <div class="phone">
+        <div class="scroll">
+          <div class="photo" style="aspect-ratio:1/1;"><svg viewBox="0 0 200 170"><use href="#tee"/></svg>
+            <div class="heart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg></div>
+          </div>
+          <div class="head">
+            <h3 class="name">Brown Baby Tee</h3>
+            <p class="sub">Cotton On · Tops</p>
+          </div>
+          <div class="card">
+            <div class="fact"><span class="k">Tags</span><div class="tags"><span class="pill">summer</span></div></div>
+            <div class="fact"><span class="k">Capsules</span><div class="tags"><span class="pill">All year</span></div></div>
+          </div>
+        </div>
+        <div class="fade"></div>
+        <div class="bar">
+          <div class="btn back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>Back</div>
+          <div class="btn primary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/></svg>Find outfits</div>
+          <div class="btn icon" aria-label="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16v4z"/></svg></div>
+        </div>
+      </div>
+      <ul class="fixes"><li>Keeps the big photo you have now</li><li>Fade removes the hard "cut-off" behind the bar</li><li>Icon Edit gives Find outfits more room</li></ul>
+    </div>
+
+  </div>
+</div>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <g id="tee"><path d="M62 18c10 8 26 8 38 0 12 8 28 8 38 0l44 30-20 34-22-12v78H60V70L38 82 18 48z" fill="#3a2119" transform="translate(-10 0) scale(.98)"/></g>
+  </defs>
+</svg>
+</body>
+</html>
