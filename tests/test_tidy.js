@@ -466,9 +466,11 @@ const foldedCount = p => p.evaluate(()=>
       !onDetail.some(l=>/photo|archive/i.test(l)), onDetail.join(', '));
 
     await p.click('#item-page-edit'); await p.waitForTimeout(500);
-    const inForm = await p.evaluate(()=>
-      Array.from(document.querySelectorAll('#form-item-actions button')).map(x=>x.textContent.trim()));
-    check('Archive is under Edit instead', inForm.join(', ')==='Archive', inForm.join(', '));
+    const arch = await p.evaluate(()=>{ const b=document.getElementById('form-archive-btn');
+      if(!b || b.offsetParent===null) return null; const r=b.getBoundingClientRect();
+      return {label:b.getAttribute('aria-label'), w:Math.round(r.width), right:Math.round(window.innerWidth-r.right), top:Math.round(r.top)}; });
+    check('Archive is under Edit instead, a round button at the top right',
+      arch && arch.label==='Archive piece' && arch.w===44 && arch.right<=40 && arch.top<140, JSON.stringify(arch));
     // The photo is the piece, so it leads the form — and shows you what it
     // currently is rather than asking you to remember.
     const photoRow = await p.evaluate(()=>{
@@ -489,7 +491,7 @@ const foldedCount = p => p.evaluate(()=>
     check('and a target you cannot miss', photoRow.target >= 44, `${photoRow.target}px`);
 
     const before = await p.evaluate(()=>ITEMS.length);
-    await p.click('#form-item-actions button:has-text("Archive")'); await p.waitForTimeout(700);
+    await p.click('#form-archive-btn'); await p.waitForTimeout(700);
     check('archiving from the form archives the piece',
       await p.evaluate(()=>ITEMS.length) === before - 1);
     check('and closes the form rather than leaving it over the wardrobe',
@@ -499,8 +501,8 @@ const foldedCount = p => p.evaluate(()=>
 
     // A new piece has nothing to replace or archive.
     await p.click('#add-item-btn'); await p.waitForTimeout(500);
-    check('a new piece gets no action row',
-      (await p.evaluate(()=>document.getElementById('form-item-actions').children.length)) === 0);
+    check('a new piece has nothing to archive',
+      !(await p.isVisible('#form-archive-btn')));
     await p.close();
   }
 

@@ -82,6 +82,8 @@ const box = (p, sel) => p.evaluate(s=>{ const r=document.querySelector(s).getBou
     check('scrolled: it has grown to the whole screen',
       full.l<=0.5 && Math.abs(full.r-390)<1 && full.t<=1 && Math.abs(full.b-844)<1, JSON.stringify(full));
     await p.screenshot({path:path.join(SHOTS,'flip_5_full.png')});
+    // Folding back needs some room to have scrolled in: a shorter screen.
+    await p.setViewportSize({width:390,height:520}); await p.waitForTimeout(400);
     check('...and no longer once it is scrolled back to the top: it is a card again', await (async()=>{
       await p.evaluate(()=>{document.querySelector('#form-backdrop .modal').scrollTop = 60;});
       await p.waitForTimeout(600);
@@ -91,7 +93,7 @@ const box = (p, sel) => p.evaluate(s=>{ const r=document.querySelector(s).getBou
       return !(await p.evaluate(()=>document.querySelector('#form-backdrop .modal').classList.contains('card-full')))
         && Math.abs(bx.l-14)<1 && bx.t>40;
     })());
-    check('the bar is still at the foot', (await box(p,'#form-backdrop .sheet-footer-inner')).b > 800);
+    check('the bar is still at the foot', (await box(p,'#form-backdrop .sheet-footer-inner')).b > (await p.evaluate(()=>innerHeight)) - 50);
 
     // ---- cancel turns it back ------------------------------------------
     await p.click('#form-backdrop .sheet-footer .btn.secondary');

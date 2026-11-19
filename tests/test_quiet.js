@@ -142,7 +142,7 @@ const hush = p => p.evaluate(()=>{
     // Archiving a piece: it leaves the grid for a page you are not on.
     await p.click('#gallery .tile'); await p.waitForTimeout(700);
     await p.click('#item-page-edit'); await p.waitForTimeout(700);
-    await p.click('#form-item-actions .btn:has-text("Archive")'); await p.waitForTimeout(900);
+    await p.click('#form-archive-btn'); await p.waitForTimeout(900);
     const archived = await toastUp(p);
     check('archiving still says so', archived.shown && /Archive/i.test(archived.said),
       archived.said);

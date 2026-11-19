@@ -112,7 +112,7 @@ async function holdFirstTile(p){
     await p.click('#gallery .tile'); await p.waitForTimeout(400);
     // Archiving lives under Edit now, with Replace photo.
     await p.click('#item-page-edit'); await p.waitForTimeout(450);
-    await p.click('#form-item-actions button:has-text("Archive")'); await p.waitForTimeout(500);
+    await p.click('#form-archive-btn'); await p.waitForTimeout(500);
     const t = await toast(p);
     check('archiving a piece offers it back', t.shown && t.undo, `${t.msg} undo=${t.undo}`);
     check('and it is gone meanwhile', (await shown(p)) === before-1);
@@ -226,7 +226,7 @@ async function holdFirstTile(p){
     const before = await shown(p);
     await p.click('#gallery .tile'); await p.waitForTimeout(400);
     await p.click('#item-page-edit'); await p.waitForTimeout(450);
-    await p.click('#form-item-actions button:has-text("Archive")'); await p.waitForTimeout(400);
+    await p.click('#form-archive-btn'); await p.waitForTimeout(400);
     check('the offer is up to begin with', (await toast(p)).shown);
     // Ten seconds, not six: reading it, deciding, and reaching for Undo with
     // the hand holding the phone used to run out mid-reach.

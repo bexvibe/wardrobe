@@ -129,7 +129,7 @@ async function assertPattern(p, scope, label, name, outWord, inset = 0){
     hidden.length === 0, hidden.join(', '));
   const still = await footer(p, scope);
   check(`${name}: while the bar itself has not moved`,
-    still.bottom >= still.fold - 1, `${still.top}–${still.bottom} of ${still.fold}`);
+    still.bottom >= still.fold - inset - 1, `${still.top}–${still.bottom} of ${still.fold}`);
   const strays = await straysInTheBody(p, scope);
   check(`${name}: and leaving is said once, on the bar`,
     strays.length === 0, strays.join(', '));

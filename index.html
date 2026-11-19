@@ -989,6 +989,17 @@
   .icon-btn:hover{background:var(--accent-soft);}
   .btn-icon{display:inline-flex;align-items:center;gap:6px;}
   .sheet-title-row .icon-btn{margin:-8px -12px -8px 0;}
+  /* A button on its own in a corner, in a circle like the heart and the
+     pencil: round, white, lifted by a shadow rather than outlined. */
+  .round-btn{
+    flex:none;width:44px;height:44px;border-radius:50%;
+    display:inline-flex;align-items:center;justify-content:center;
+    background:var(--surface);color:var(--ink);
+    border:1px solid transparent;box-shadow:var(--shadow-btn);
+    cursor:pointer;padding:0;
+  }
+  .round-btn:hover{opacity:0.85;}
+  .sheet-title-row .round-btn{margin:-6px 0 -6px 0;}
   /* Saving is the one thing you do most on this page, and it was a 26px
      target with a 15px glyph — small to hit and easy to miss when scanning
      for what you had already kept. */
@@ -2158,7 +2169,14 @@
   <div class="modal">
     <div class="sheet-grip"></div>
     <div class="modal-body has-footer">
-      <div class="modal-name" id="form-title">New piece</div>
+      <div class="sheet-title-row">
+        <div class="modal-name" id="form-title">New piece</div>
+        <!-- Archiving is something you do TO a piece, so it is up here with
+             the title, as deleting is on a capsule, and only an existing
+             piece has one. -->
+        <button class="round-btn" id="form-archive-btn" type="button" aria-label="Archive piece" style="display:none"
+                onclick="archiveFromForm(editingItemId)"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M16 9v10H8V9h8m-1.5-6h-5l-1 1H5v2h14V4h-3.5l-1-1zM18 7H6v12c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7z"/></svg></button>
+      </div>
       <!-- The photo is the piece, so it leads: what it looks like now, and
            the way to change it, before any of the fields. It used to be a
            bare button at the foot of the form with nothing to show you. -->
@@ -2195,9 +2213,6 @@
         <input type="hidden" id="form-tags">
       </div>
       <div class="form-error" id="form-error"></div>
-      <!-- The things you do TO a piece rather than the fields you type into
-           it. They were on the detail sheet, which is for reading. -->
-      <div class="modal-actions" id="form-item-actions"></div>
     </div>
     <div class="sheet-footer split pagebar">
       <div class="sheet-footer-inner">
@@ -5644,7 +5659,7 @@ function openCapsuleEditor(id, seedItemIds){
     <div class="modal-body has-footer">
       <div class="sheet-title-row">
         <div class="modal-name">${capsule ? 'Edit capsule' : 'New capsule'}</div>
-        ${capsule ? `<button class="icon-btn" id="capsule-delete-btn" type="button" aria-label="Delete capsule" onclick="deleteCapsuleFromEditor()"><svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor" aria-hidden="true"><path d="M16 9v10H8V9h8m-1.5-6h-5l-1 1H5v2h14V4h-3.5l-1-1zM18 7H6v12c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7z"/></svg></button>` : ''}
+        ${capsule ? `<button class="round-btn" id="capsule-delete-btn" type="button" aria-label="Delete capsule" onclick="deleteCapsuleFromEditor()"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M16 9v10H8V9h8m-1.5-6h-5l-1 1H5v2h14V4h-3.5l-1-1zM18 7H6v12c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7z"/></svg></button>` : ''}
       </div>
       <div class="form-grid">
         <label>Name
@@ -7456,18 +7471,25 @@ function openItemForm(id){
 // A card unfolds to the whole screen once scrolled, and folds back when
 // scrolled to the top again. Shared by a piece's front and its back.
 function cardUnfoldsOnScroll(modal){
+  // Folding back needs you to have scrolled in the full page and come back
+  // to the top. A card with only a little to see unfolds and has no scroll
+  // left at all: scrollTop sits at 0 without you having gone anywhere, and
+  // that must not read as arriving at the top, or it would fold straight
+  // back and unfold again.
+  let scrolledSince = false;
   modal.onscroll = () => {
     const full = modal.classList.contains('card-full');
     if(!full){
-      // Only unfold if there will still be something to scroll once it has:
-      // unfolding gains about 90px, and a card with less than that to spare
-      // would have nothing left to scroll and fold straight back.
-      if(modal.scrollTop > 0 && modal.scrollHeight - modal.clientHeight > 100){
+      if(modal.scrollTop > 0){
         modal.classList.add('card-full');
         cardUnfoldedAt = performance.now();
+        scrolledSince = false;
       }
-    }else if(modal.scrollTop <= 0 && performance.now() - cardUnfoldedAt > 400){
+    }else if(modal.scrollTop > 0){
+      if(performance.now() - cardUnfoldedAt > 400) scrolledSince = true;
+    }else if(scrolledSince && performance.now() - cardUnfoldedAt > 400){
       modal.classList.remove('card-full');
+      scrolledSince = false;
     }
   };
 }
@@ -7519,10 +7541,7 @@ function drawItemForm(id){
   // A piece that does not exist yet has nowhere to be archived to, but it
   // can still be given a photo, which is kept until it is saved.
   renderFormPhotoRow(item);
-  const actions = document.getElementById('form-item-actions');
-  actions.innerHTML = item ? `
-    <button class="btn small secondary" onclick='archiveFromForm(${JSON.stringify(item.id)})'>Archive</button>
-  ` : '';
+  document.getElementById('form-archive-btn').style.display = item ? '' : 'none';
 
   document.getElementById('form-category').value = item ? item.category : '';
   renderFormPickerRows();

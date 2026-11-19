@@ -233,10 +233,10 @@ const db = p => p.evaluate(()=>({
       }));
 
     await p.click('#capsule-page-edit'); await p.waitForTimeout(400);
-    check('Delete capsule is an icon too, 48px, top right of the sheet',
+    check('Delete capsule is an icon too, in a 44px circle, top right of the sheet',
       await p.evaluate(()=>{
         const d = document.getElementById('capsule-delete-btn'), r = d.getBoundingClientRect();
-        return Math.round(r.width) === 48 && Math.round(r.height) === 48 && !d.textContent.trim() &&
+        return Math.round(r.width) === 44 && Math.round(r.height) === 44 && !d.textContent.trim() &&
           d.getAttribute('aria-label') === 'Delete capsule' && r.right > window.innerWidth - 24;
       }));
     await p.locator('#capsule-editor-gallery .picker-tile.picker-selected').first().click(); await p.waitForTimeout(200);

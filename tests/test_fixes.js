@@ -222,7 +222,7 @@ const dbTags = (p, id) => p.evaluate(i =>
     await p.click('#gallery .tile'); await p.waitForTimeout(450);
     await p.click('#item-page-edit'); await p.waitForTimeout(450);
     const before = await p.evaluate(()=>ITEMS.length);
-    await p.click('#form-item-actions button:has-text("Archive")'); await p.waitForTimeout(700);
+    await p.click('#form-archive-btn'); await p.waitForTimeout(700);
     check('archiving one piece does not ask', !(await asked(p)));
     check('it just goes, and offers it back',
       await p.evaluate(()=>ITEMS.length) === before-1 && await hasUndo(p));
