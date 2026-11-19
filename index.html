@@ -228,7 +228,9 @@
   .search-overlay-bar{display:flex;align-items:center;gap:6px;}
   /* The field, and the x that lives in it rather than beside it. */
   .search-field{position:relative;flex:1;min-width:0;}
-  .search-field input[type=text]{width:100%;padding-right:42px;}
+  .search-field input[type=text]{width:100%;padding-left:42px;padding-right:42px;}
+  .search-field-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);
+    width:18px;height:18px;color:var(--ink-soft);pointer-events:none;}
   .search-clear{
     position:absolute;right:6px;top:50%;
     transform:translateY(-50%);
@@ -2133,6 +2135,7 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
     </button>
     <div class="search-field">
+      <svg class="search-field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
       <input type="text" id="filter-search" placeholder="Search name or brand..."
              oninput="render()" onkeydown="if(event.key==='Escape') closeSearch()">
       <button class="search-clear" id="search-clear" onclick="clearSearch()"
