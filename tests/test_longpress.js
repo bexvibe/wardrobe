@@ -55,7 +55,7 @@ const selected = p => p.evaluate(()=>Array.from(selectedIds));
   {
     const p=await open(b);
     check('no way-out button at rest', !(await p.isVisible('#edit-back-btn')));
-    check('three controls remain',
+    check('search, add and the view toggle remain',
       (await p.isVisible('#add-item-btn')) && (await p.isVisible('#search-btn')) &&
       (await p.isVisible('#view-toggle-btn')));
     check('and the page is called the wardrobe',

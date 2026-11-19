@@ -133,9 +133,14 @@ const rect = (p, sel) => p.evaluate(s=>{
       row.titleLeft === row.headLeft, `${row.titleLeft} vs ${row.headLeft}`);
     check('every control sits to the right of it', row.allRight, row.buttons.join(','));
     check('and in line with it', row.allInLine);
-    check('search, then list view, then add',
-      JSON.stringify(row.order)===JSON.stringify(['search-btn','view-toggle-btn','add-item-btn']),
+    check('search, then add',
+      JSON.stringify(row.order)===JSON.stringify(['search-btn','add-item-btn']),
       row.order.join(' → '));
+    check('and the view toggle is the first chip in the category row',
+      await p.evaluate(()=>{
+        const first=document.querySelector('#tabs').firstElementChild;
+        return first && first.id==='view-toggle-btn';
+      }));
 
     // Capsules brings its own action up beside its title.
     await p.click('#nav-capsules-btn'); await p.waitForTimeout(600);

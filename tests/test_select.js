@@ -67,8 +67,10 @@ async function longPress(p, sel){
     check('and there is no Done button any more',
       await p.evaluate(()=>!document.getElementById('edit-done-btn')));
     check('and the icons are not', await p.evaluate(()=>
-      ['search-btn','view-toggle-btn','add-item-btn'].every(id =>
+      ['search-btn','add-item-btn'].every(id =>
         getComputedStyle(document.getElementById(id)).display === 'none')));
+    check('nor is the view toggle in the category row',
+      await p.evaluate(()=>!document.getElementById('view-toggle-btn')));
     await p.close();
   }
 
