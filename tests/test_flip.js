@@ -475,6 +475,9 @@ const box = (p, sel) => p.evaluate(s=>{ const r=document.querySelector(s).getBou
     await p.click('#modal .sheet-footer .btn.secondary'); await p.waitForTimeout(500);
     await p.fill('#form-name', 'Linen trousers'); await p.waitForTimeout(150);
     check('once you choose, the name no longer changes it', await p.inputValue('#form-category')==='Skirts');
+    check('and the selector fields are as tall as an input, not stretched',
+      await p.evaluate(()=>Array.from(document.querySelectorAll('.field-pick-btn'))
+        .filter(b=>b.offsetParent).every(b=>b.getBoundingClientRect().height < 60)));
     check('the empty fields say what to do',
       (await p.textContent('#form-tags-summary')).trim()==='Select tags');
     await p.close();

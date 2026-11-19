@@ -1860,7 +1860,7 @@
     background:var(--surface);color:var(--ink);cursor:pointer;
   }
   .field-pick-value{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .field-pick-value.empty{color:var(--ink-soft);}
+  .field-pick-value.unset{color:var(--ink-soft);}
   .field-pick-btn svg{flex:none;color:var(--ink-soft);}
   .form-extra{display:flex;flex-direction:column;gap:12px;}
   /* A search field keeps its icon inside it, at the left. */
@@ -7613,7 +7613,7 @@ function setPickValue(id, text, placeholder){
   const el = document.getElementById(id);
   if(!el) return;
   el.textContent = text || placeholder;
-  el.classList.toggle('empty', !text);
+  el.classList.toggle('unset', !text);
 }
 
 function itemFormIsDirty(){
