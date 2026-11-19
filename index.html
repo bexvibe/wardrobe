@@ -2242,7 +2242,15 @@
           <label>Brand<input type="text" id="form-brand"></label>
           <label>Size<input type="text" id="form-size"></label>
           <label>Price<input type="text" id="form-price"></label>
-          <label>Source<input type="text" id="form-source"></label>
+          <div class="field-pick" id="form-source-field">
+            <span>Source</span>
+            <button type="button" class="field-pick-btn" onclick="openFormSourcePicker()">
+              <span class="field-pick-value" id="form-source-summary"></span>
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"
+                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+            </button>
+          </div>
+          <input type="hidden" id="form-source">
         </div>
       </div>
       <div class="form-error" id="form-error"></div>
@@ -2769,6 +2777,7 @@ const SHEETS = {
   // Picked on a page of their own; ticks land on the form as you make them.
   formcategory: { backdrop: 'modal-backdrop', draw: null },
   formtags:     { backdrop: 'modal-backdrop', draw: null },
+  formsource:   { backdrop: 'modal-backdrop', draw: null },
   // Drawn into its own layer, not the sheet frame: nothing else is on a
   // backdrop while it is the sheet you are on.
   outfit:    { backdrop: null, draw: key => drawOutfitPage(key) },
@@ -7686,6 +7695,7 @@ function renderFormPhotoRow(item){
 function renderFormPickerRows(){
   setPickValue('form-category-summary', document.getElementById('form-category').value.trim(), 'Select category');
   setPickValue('form-tags-summary', parseTags(document.getElementById('form-tags').value), 'Select tags');
+  setPickValue('form-source-summary', document.getElementById('form-source').value.trim(), 'Select source');
 }
 
 let formPickKind = null;   // 'category' | 'tags' while that page is up
@@ -7933,6 +7943,66 @@ function addFormTag(){
   input.value = '';
   renderFormTagPicks();
   input.focus();
+}
+
+// -- Source: where it came from. One of the places already used, or a new one.
+function openFormSourcePicker(){
+  pushSheet({ sheet: 'formsource', id: null });
+  drawFormSourcePicker();
+}
+
+function drawFormSourcePicker(){
+  formPickKind = 'source';
+  formPickFrame('Select source', 'Search or add a source', 'renderFormSourcePicks()', 'addFormSource()');
+  renderFormSourcePicks();
+}
+
+// Sources already on pieces, most used first.
+function sourcesByUse(){
+  const counts = new Map();
+  ITEMS.concat(ARCHIVED).forEach(i => {
+    const v = (i.source || '').trim();
+    if(v) counts.set(v, (counts.get(v) || 0) + 1);
+  });
+  return Array.from(counts.keys()).sort((a, b) => {
+    const d = counts.get(b) - counts.get(a);
+    return d !== 0 ? d : a.localeCompare(b);
+  });
+}
+
+function renderFormSourcePicks(){
+  const list = document.getElementById('form-pick-list');
+  if(!list || formPickKind !== 'source') return;
+  const typed = (document.getElementById('form-pick-input').value || '').trim();
+  const q = typed.toLowerCase();
+  const chosen = document.getElementById('form-source').value.trim();
+  const used = sourcesByUse();
+  const all = (chosen && !used.includes(chosen) ? [chosen] : []).concat(used)
+    .filter(v => v.toLowerCase().includes(q));
+  const rows = [];
+  if(typed && !all.some(v => v.toLowerCase() === q)){
+    rows.push(pickRow('Add “' + typed + '”', false, 'addFormSource()'));
+  }
+  all.forEach(v => rows.push(pickRow(v, v === chosen, 'pickFormSource(' + jsArg(v) + ')')));
+  list.innerHTML = rows.join('') || '<p class="modal-meta">No sources yet. Type one to add it.</p>';
+}
+
+// Tapping the ticked one clears it.
+function pickFormSource(v){
+  const el = document.getElementById('form-source');
+  el.value = el.value.trim() === v ? '' : v;
+  renderFormSourcePicks();
+}
+
+function addFormSource(){
+  const input = document.getElementById('form-pick-input');
+  const typed = (input.value || '').trim();
+  if(!typed) return;
+  // Said the way an existing source says it when it is one already.
+  const same = sourcesByUse().find(v => v.toLowerCase() === typed.toLowerCase());
+  document.getElementById('form-source').value = same || typed;
+  input.value = '';
+  renderFormSourcePicks();
 }
 
 // Back is only ever Back: whatever was ticked is already on the form.
