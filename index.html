@@ -2872,7 +2872,9 @@ function goBackFromSheet(){
   // dropping to the front: the same flip, the other way.
   if(formIsCardBack() && cardMotionOk() && formBackdropOpen()){
     turnCard(formModalEl(), 'back', () => {
-      cardCarryFull = formModalEl().classList.contains('card-full');
+      // Back to the piece always lands on the short card, even if the form
+      // was open full screen.
+      cardCarryFull = false;
       stepBackFromSheet();
       return document.getElementById('modal');
     });
@@ -2882,7 +2884,7 @@ function goBackFromSheet(){
 }
 
 function stepBackFromSheet(){
-  sheetTrail.pop();
+  const left = sheetTrail.pop();
   const back = sheetTrail[sheetTrail.length - 1];
   const spec = back && SHEETS[back.sheet];
   document.getElementById('modal-backdrop')?.classList.remove('as-page', 'item-card', 'compact');
@@ -2892,7 +2894,10 @@ function stepBackFromSheet(){
     // done in between (accessories on, a heart changed) shows when you return.
     syncOutfitPage(true);
     if(!PAGE_DRAW[back.sheet]) spec.draw(back.id);
-    restoreSheetScroll(back.y || 0);
+    // Coming back from editing a piece lands on its short card at the top:
+    // restoring a scroll would unfold it straight back to full screen.
+    const fromForm = left && left.sheet === 'form' && back.sheet === 'item';
+    restoreSheetScroll(fromForm ? 0 : (back.y || 0));
     return;
   }
   closeModal();
