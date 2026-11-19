@@ -6,6 +6,7 @@
 // a capsule, an outfit and a tag — all follow the one pattern.
 const { chromium } = require('playwright');
 const fs=require('fs'), path=require('path');
+const { leaveSheet } = require('./nav');
 const REPO = require('path').join(__dirname, '..');
 const SHOTS = require('path').join(__dirname, 'shots');
 const fake=fs.readFileSync(path.join(__dirname,'fake-supabase.js'),'utf8');
@@ -183,6 +184,8 @@ async function assertPattern(p, scope, label, name, outWord, inset = 0){
     await p.click('#capsule-save-btn'); await p.waitForTimeout(800);
     check('the pinned save creates the capsule',
       await p.evaluate(()=>capsules.some(c=>c.name==='Footer Capsule')));
+    check('and opens it', await p.evaluate(()=>sheetTrail.some(e=>e.sheet==='capsulepage')));
+    await leaveSheet(p);
 
     await p.click('#capsule-gallery .outfit-card'); await p.waitForTimeout(400);
     await p.click('#capsule-page-edit'); await p.waitForTimeout(600);
@@ -236,6 +239,7 @@ async function assertPattern(p, scope, label, name, outWord, inset = 0){
     await p.locator('#capsule-editor-gallery .picker-tile').nth(0).click();
     await p.locator('#capsule-editor-gallery .picker-tile').nth(1).click();
     await p.click('#capsule-save-btn'); await p.waitForTimeout(800);
+    await leaveSheet(p);   // a new capsule opens
     check('the capsules page does not count its capsules',
       await p.evaluate(()=>!document.getElementById('capsule-count-line')));
     check('and a card does not count its pieces',

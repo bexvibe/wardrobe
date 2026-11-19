@@ -4,7 +4,7 @@
 // database and not just on screen, and that the toast is somewhere a thumb
 // can reach it.
 const { chromium } = require('playwright');
-const { toFaves } = require('./nav');
+const { toFaves, leaveSheet } = require('./nav');
 const fs=require('fs'), path=require('path');
 const REPO = require('path').join(__dirname, '..');
 const SHOTS = require('path').join(__dirname, 'shots');
@@ -174,6 +174,7 @@ async function holdFirstTile(p){
     await p.locator('#capsule-editor-gallery .picker-tile').nth(1).click();
     await p.locator('#capsule-editor-gallery .picker-tile').nth(2).click();
     await p.click('#capsule-save-btn'); await p.waitForTimeout(700);
+    await leaveSheet(p);   // a new capsule opens
 
     const capsuleId = await p.evaluate(()=>capsules[0].id);
     const order = await p.evaluate(()=>capsules[0].itemIds.slice());

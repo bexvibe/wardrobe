@@ -1,7 +1,7 @@
 // Adding a piece whose text contains HTML-significant characters must render
 // as text, not break the markup.
 const { chromium } = require('playwright');
-const { chooseCategory } = require('./nav');
+const { chooseCategory, leaveSheet } = require('./nav');
 // Search now lives behind an icon, in a bar that opens over the page.
 async function typeSearch(page, text){
   const open = await page.evaluate(()=>document.getElementById('search-overlay').classList.contains('open'));
@@ -31,7 +31,8 @@ const seed=fs.readFileSync(REPO + '/supabase/seed-items.json','utf8');
   await p.click('#add-item-btn'); await p.waitForTimeout(200);
   await p.fill('#form-name', NASTY);
   await chooseCategory(p, 'Shoes');
-  await p.click('#form-save-btn'); await p.waitForTimeout(400);
+  await p.click('#form-save-btn'); await p.waitForTimeout(600);
+  await leaveSheet(p);   // a new piece opens
 
   // switch to list view so the name is rendered as text
   await p.click('#view-toggle-btn'); await p.waitForTimeout(300);

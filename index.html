@@ -5881,6 +5881,8 @@ async function submitCapsuleEditor(){
   const wasNew = !capsuleDraft.id;
   discardCapsuleEditor();
   setMode('capsules');
+  // A capsule you have just made opens, as a saved outfit does.
+  if(wasNew) openCapsulePage(saved.id);
   showToast(wasNew ? 'Capsule created' : 'Capsule saved',
     previous ? async () => {
       if(await saveCapsule(previous)){ renderCapsules(); showToast('Capsule put back'); }
@@ -7925,6 +7927,8 @@ async function submitItemForm(){
   discardItemForm();
   render();
   showToast(wasEditing ? 'Saved' : 'Added to wardrobe');
+  // A piece you have just added opens, as a saved outfit does.
+  if(!wasEditing) openPieceSheet(saved.id);
   if(!wasEditing && staged){
     try{
       if(await uploadPhotoFor(saved.id, staged)) render();

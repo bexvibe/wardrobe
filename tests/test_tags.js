@@ -1,5 +1,5 @@
 const { chromium } = require('playwright');
-const { addTags } = require('./nav');
+const { addTags, leaveSheet } = require('./nav');
 // The filters dock at the bottom of the screen and open themselves on
 // Outfits and Faves. Everywhere else the pill raises them.
 async function openFilters(page){
@@ -70,6 +70,7 @@ async function open(b, {withTags=true, tags={}}={}){
     const row=await p.evaluate(()=>window.__WARDROBE_STATE.items.find(r=>r.name==='Linen Shirt'));
     check('tags normalised and de-duplicated',
       JSON.stringify(row.tags)===JSON.stringify(['summer','work']), JSON.stringify(row.tags));
+    await leaveSheet(p);   // the new piece opens
     // The pill lives on Outfits and Faves; the wardrobe never shows one.
     check('the wardrobe still offers no pill', !(await p.isVisible('#filters-fab')));
     await p.click('#nav-outfits-btn'); await p.waitForTimeout(800);
