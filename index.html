@@ -666,7 +666,7 @@
      sliver of page at the top to pull on. */
   .modal.sheet-full{height:calc(100% - max(12px, env(safe-area-inset-top, 0px)));}
   /* Following a thumb: no easing while it is under your finger. */
-  .modal.dragging{transition:none;}
+  .modal.dragging{transition:none !important;}
 
   /* The mark that says a sheet can be pushed away. Only on the sheets that
      can be — a handle on a sheet that ignores the gesture is a lie. */
@@ -886,6 +886,7 @@
                min-height .4s var(--sheet-ease);
   }
   .outfit-page-layer.open .outfit-page-inner{transform:none;}
+  .outfit-page-layer.dragging .outfit-page-inner{transition:none !important;}
   .outfit-page-layer.expanded .outfit-page-inner{
     --card-gap:0px;--card-top:0px;
     width:100%;min-height:100%;margin:0 auto;
@@ -3373,11 +3374,14 @@ function sheetBackdrop(el){
 
 let sheetDrag = null;
 
-function dragStart(el, isOpen, e){
+function dragStart(el, isOpen, e, moveSel){
   if(!el || !isOpen()) return;
   if(e.pointerType === 'mouse' && e.button !== 0) return;
   sheetDrag = {
     el, id: e.pointerId,
+    // What actually travels: usually the thing itself, but a scrolling layer
+    // stays put and its card is what follows the finger.
+    move: (moveSel && el.querySelector(moveSel)) || el,
     x: e.clientX, y: e.clientY,
     dy: 0,
     trail: [{t: e.timeStamp, y: e.clientY}],   // recent moves, for the speed
@@ -3416,7 +3420,7 @@ function dragMove(e){
   // being held, so it goes where the finger goes. It stays solid — what
   // gives way is the dimming behind it, in step with how far down it is.
   const travel = Math.max(0, dy);
-  el.style.transform = `translateY(${travel}px)`;
+  sheetDrag.move.style.transform = `translateY(${travel}px)`;
   const backdrop = sheetBackdrop(el);
   if(backdrop){
     const left = 1 - Math.min(1, travel / Math.max(1, el.offsetHeight));
@@ -3477,10 +3481,11 @@ function dragEnd(onClose, e){
     farEnough = pulled >= sheetCloseDistance(el);
     fastEnough = pulled > 0 && dragSpeed(e.timeStamp) >= SHEET_FLICK_SPEED;
   }
+  const moved = sheetDrag.move;
   sheetDrag = null;
 
   el.classList.remove('dragging');
-  el.style.transform = '';
+  moved.style.transform = '';
   const backdrop = sheetBackdrop(el);
   if(backdrop){
     backdrop.classList.remove('sheet-dragging');
@@ -3491,9 +3496,9 @@ function dragEnd(onClose, e){
 
 // Hands a thing the gesture. `isOpen` so a drag on something already down
 // does nothing, `onClose` because what closing means differs.
-function wireDragToClose(el, isOpen, onClose){
+function wireDragToClose(el, isOpen, onClose, moveSel){
   if(!el) return;
-  el.addEventListener('pointerdown', e => dragStart(el, isOpen, e));
+  el.addEventListener('pointerdown', e => dragStart(el, isOpen, e, moveSel));
   el.addEventListener('pointermove', dragMove);
   el.addEventListener('pointerup', e => dragEnd(onClose, e));
   el.addEventListener('pointercancel', e => dragEnd(null, e));
@@ -3521,8 +3526,20 @@ function sheetCanBeDragged(){
 }
 
 function sheetIsUp(){
-  return sheetCanBeDragged() &&
-         document.getElementById('modal-backdrop').classList.contains('open');
+  const backdrop = document.getElementById('modal-backdrop');
+  // A piece's card can be pushed away while it is the popup; unfolded to
+  // the whole screen it is a page, and Back is the way out.
+  const unfolded = backdrop.classList.contains('as-page') &&
+                   document.getElementById('modal').classList.contains('card-full');
+  return sheetCanBeDragged() && backdrop.classList.contains('open') && !unfolded;
+}
+
+// An outfit or capsule page, while it is still the popup card.
+function outfitPageIsCard(){
+  const layer = document.getElementById('outfit-page');
+  return sheetCanBeDragged() && Boolean(layer) &&
+         layer.classList.contains('open') && !layer.classList.contains('expanded') &&
+         !document.getElementById('modal-backdrop').classList.contains('open');
 }
 
 function formSheetIsUp(){
@@ -3535,6 +3552,9 @@ function wireSheetDrag(){
                   filterSheetOpen, closeFilterSheet);
   wireDragToClose(document.getElementById('modal'),
                   sheetIsUp, () => { if(sheetDragClose) sheetDragClose(); });
+  wireDragToClose(document.getElementById('outfit-page'),
+                  outfitPageIsCard, () => { if(sheetDragClose) sheetDragClose(); },
+                  '.outfit-page-inner');
   wireDragToClose(document.querySelector('#form-backdrop .modal'),
                   formSheetIsUp, () => { if(sheetDragClose) sheetDragClose(); });
 }
@@ -4468,8 +4488,8 @@ function drawOutfitPage(key){
         </div>
       </div>
     </div>`;
-  // A page, not a sheet: nothing to push down. Back is the way out.
-  allowSheetDrag(null);
+  // A card until it unfolds: pushed down it goes back, like Back does.
+  allowSheetDrag(goBackFromSheet);
 }
 
 // A capsule as a page: its name and line, and its pieces as a list, each a
@@ -4511,7 +4531,7 @@ function drawCapsulePage(id){
         </div>
       </div>
     </div>`;
-  allowSheetDrag(null);
+  allowSheetDrag(goBackFromSheet);
 }
 
 function renderHero(){
@@ -7354,9 +7374,9 @@ function drawItemSheet(id){
       </div>
     </div>` : ''}
   `;
-  // A page has nothing to push down: Back is the way out. A sheet answers
-  // the gesture, and the grip at its head says so.
-  allowSheetDrag(asPage ? null : goBackFromSheet);
+  // The card can be pushed down while it is the popup (sheetIsUp checks it
+  // has not unfolded); the full page has Back.
+  allowSheetDrag(goBackFromSheet);
   document.getElementById('modal-backdrop').classList.add('open');
   showOutfitsInModal(item.id);
 }
