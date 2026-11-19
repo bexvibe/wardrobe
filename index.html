@@ -217,6 +217,8 @@
   .icon-btn.active{background:var(--accent);color:#fff;}
   .icon-row{display:flex;gap:8px;align-items:center;}
   /* The way to make something new is a worded button, thumb-tall. */
+  .plus-glyph{width:16px;height:16px;flex:none;display:block;}
+  .icon-row .btn, .empty-action, .inspo-tools .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;}
   .icon-row .btn{min-height:44px;padding:0 18px;white-space:nowrap;border-radius:999px;}
 
   /* Search opens over the page rather than sitting on it. The results stay
@@ -1975,7 +1977,7 @@
           </svg>
         </button>
         <button class="icon-btn" id="view-toggle-btn" onclick="toggleViewMode()"></button>
-        <button class="btn" id="add-item-btn" type="button" onclick="openItemForm()">New piece</button>
+        <button class="btn" id="add-item-btn" type="button" onclick="openItemForm()"><svg class="plus-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New piece</button>
       </div>
     </header>
 
@@ -1987,7 +1989,7 @@
       <span class="empty-emoji" id="empty-emoji" aria-hidden="true">👗</span>
       <h3 id="empty-title">See all your clothes</h3>
       <p class="empty-sub" id="empty-sub">Add pieces here</p>
-      <button class="empty-action" onclick="openItemForm()">New piece</button>
+      <button class="empty-action" onclick="openItemForm()"><svg class="plus-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New piece</button>
     </div>
 
     <div class="bulk-bar" id="bulk-bar" style="display:none;"></div>
@@ -2005,7 +2007,7 @@
       <!-- The same way in as on the other half of the switch. Building one
            by hand is a thing you do to the wardrobe, not to a page. -->
       <div class="icon-row">
-        <button class="btn" id="build-outfit-btn-all" type="button" onclick="openOutfitBuilder()">New fave</button>
+        <button class="btn" id="build-outfit-btn-all" type="button" onclick="openOutfitBuilder()"><svg class="plus-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New fave</button>
       </div>
     </header>
     <div class="view-switch" role="group" aria-label="Outfits">
@@ -2024,7 +2026,7 @@
       <p class="empty-sub" id="outfit-empty-sub"></p>
       <p class="empty-hint" id="outfit-empty-hint"></p>
       <button class="empty-action" id="outfit-empty-action" style="display:none;"
-              onclick="openItemForm()">New piece</button>
+              onclick="openItemForm()"><svg class="plus-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New piece</button>
     </div>
     <div style="text-align:center;margin-top:16px;">
       <button class="btn secondary" id="load-more-btn" onclick="loadMoreOutfits()" style="display:none;">Load more</button>
@@ -2040,7 +2042,7 @@
            page stopped being. -->
       <h1>Outfits</h1>
       <div class="icon-row">
-        <button class="btn" id="build-outfit-btn" type="button" onclick="openOutfitBuilder()">New fave</button>
+        <button class="btn" id="build-outfit-btn" type="button" onclick="openOutfitBuilder()"><svg class="plus-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New fave</button>
       </div>
     </header>
     <div class="view-switch" role="group" aria-label="Outfits">
@@ -2053,7 +2055,7 @@
       <h3 id="saved-empty-title">Save your favourites</h3>
       <p class="empty-sub" id="saved-empty-sub">Tap a heart to save it here</p>
       <p class="empty-hint" id="saved-empty-hint"></p>
-      <button class="empty-action" id="saved-empty-action" onclick="openOutfitBuilder()">New fave</button>
+      <button class="empty-action" id="saved-empty-action" onclick="openOutfitBuilder()"><svg class="plus-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New fave</button>
     </div>
   </div>
 
@@ -2061,7 +2063,7 @@
     <header class="page-head">
       <h1>Capsules</h1>
       <div class="icon-row">
-        <button class="btn" id="new-capsule-btn" type="button" onclick="openCapsuleEditor()">New capsule</button>
+        <button class="btn" id="new-capsule-btn" type="button" onclick="openCapsuleEditor()"><svg class="plus-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New capsule</button>
       </div>
     </header>
     <div class="capsule-gallery" id="capsule-gallery"></div>
@@ -2071,7 +2073,7 @@
       <div class="empty-tags" aria-label="For example">
         <span>Summer</span><span>Office</span><span>Workout</span><span>Fiji</span><span>Em’s wedding</span>
       </div>
-      <button class="empty-action" onclick="openCapsuleEditor()">New capsule</button>
+      <button class="empty-action" onclick="openCapsuleEditor()"><svg class="plus-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New capsule</button>
     </div>
 
     <!-- What is left over. A capsule is a decision about a piece, so the
@@ -5165,7 +5167,7 @@ function inspoSectionHtml(key, combo){
       <a class="btn small" id="inspo-search" href="${esc(inspoSearchUrl(combo))}" target="_blank" rel="noopener">Search Pinterest ↗</a>
     </div>`;
   const add = `<button class="btn small" id="inspo-add" type="button"
-      onclick='openInspoAdd(${JSON.stringify(key)})'>New inspo</button>`;
+      onclick='openInspoAdd(${JSON.stringify(key)})'><svg class="plus-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New inspo</button>`;
   const head = `<div class="inspo-head"><h3 class="inspo-title">Inspo</h3>
     <div class="inspo-tools">${pins.length ? add : ''}</div></div>`;
   const body = pins.length
@@ -5180,7 +5182,7 @@ function inspoSectionHtml(key, combo){
         <h3>Save your inspo</h3>
         <p class="empty-sub">Pins or screenshots of similar outfits</p>
         <button class="empty-action" id="inspo-add" type="button"
-                onclick='openInspoAdd(${JSON.stringify(key)})'>New inspo</button>
+                onclick='openInspoAdd(${JSON.stringify(key)})'><svg class="plus-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New inspo</button>
       </div>`;
   return `<div class="outfit-page-inspo">${head}${body}</div>${search}`;
 }
