@@ -4382,6 +4382,13 @@ function openPage(sheet, id, fromEl){
   // Opened from a piece's sheet, that sheet gives way to the page.
   showSheetBackdrop(null);
   syncOutfitPage(true);
+  // The layer is reused by every outfit and capsule, so it still sits
+  // wherever the last one was left. A page opened fresh starts at the top,
+  // folded back to a card; going back to one keeps its place (the trail
+  // restores that).
+  const layer = document.getElementById('outfit-page');
+  layer.scrollTop = 0;
+  layer.classList.remove('expanded');
 }
 
 // The page behind a sheet is held still while any sheet is up; only the
