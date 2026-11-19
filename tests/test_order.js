@@ -37,13 +37,13 @@ async function open(b, patch){
 }
 
 const wardrobeTabs = p => p.evaluate(()=>
-  Array.from(document.querySelectorAll('#tabs .tab')).map(e=>e.textContent.trim()));
+  Array.from(document.querySelectorAll('#tabs .tab:not(.view-tab)')).map(e=>e.textContent.trim()));
 const filterChips = p => p.evaluate(()=>
   Array.from(document.querySelectorAll('#sheet-filter-grid .filter-chip'))
     .map(e=>e.childNodes[0].textContent.trim()));
 const counts = p => p.evaluate(()=>{
   const o = {};
-  Array.from(document.querySelectorAll('#tabs .tab')).forEach(e => {
+  Array.from(document.querySelectorAll('#tabs .tab:not(.view-tab)')).forEach(e => {
     const t = e.textContent.trim();
     if(t !== 'All') o[t] = itemsInTab(t).length;
   });
