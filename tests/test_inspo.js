@@ -74,13 +74,13 @@ async function addLink(p, text){
     const key = await openOutfit(p);
     check('an outfit with no inspo shows the empty state',
       await p.isVisible('#outfit-page .outfit-page-inspo .empty'));
-    check('with a title, a line of help and a round + button, like the other empty pages',
+    check('with a title, a line of help and a worded New inspo button, like the other empty pages',
       await p.evaluate(()=>{
         const e = document.querySelector('#outfit-page .outfit-page-inspo .empty');
         const b = e.querySelector('.empty-action');
         return e.querySelector('h3').textContent.trim() === 'Save your inspo' &&
           Boolean(e.querySelector('.empty-sub').textContent.trim()) && Boolean(b) &&
-          Math.round(b.getBoundingClientRect().width) === 52;
+          b.textContent.trim() === 'New inspo' && b.getBoundingClientRect().height >= 44;
       }));
     check('Search Pinterest is a card at the top, with an explainer and keyword chips',
       await p.evaluate(()=>{
