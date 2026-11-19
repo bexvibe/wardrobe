@@ -1874,6 +1874,18 @@
   }
   .field-pick-value{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .field-pick-value.unset{color:var(--ink-soft);}
+  /* Selected tags and capsules sit in the field as chips, wrapping onto more
+     rows so the field grows to show every one. */
+  .field-pick-value.has-chips{
+    white-space:normal;overflow:visible;
+    display:flex;flex-wrap:wrap;gap:6px;
+  }
+  .pick-chip{
+    font-size:13px;font-weight:600;line-height:1;
+    padding:7px 12px;border-radius:999px;
+    background:var(--accent-soft);color:var(--ink);
+    max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
   .field-pick-btn svg{flex:none;color:var(--ink-soft);}
   .form-extra{display:flex;flex-direction:column;gap:12px;}
   /* A search field keeps its icon inside it, at the left. */
@@ -7610,7 +7622,7 @@ function renderFormCapsulesRow(){
   row.style.display = capsulesAvailable && editingItemId ? '' : 'none';
   const ids = formCapsuleSelection();
   const names = capsules.filter(c => ids.has(c.id)).map(c => c.name);
-  setPickValue('form-capsules-summary', names.join(', '), 'Select capsules');
+  setPickValue('form-capsules-summary', names, 'Select capsules');
 }
 
 function openCapsulesFromForm(){
@@ -7645,9 +7657,25 @@ function stageFormCapsules(ids){
 }
 
 // A chosen value says so; nothing chosen says what to do.
-function setPickValue(id, text, placeholder){
+// `value` is a string, or an array of strings shown as chips that wrap so the
+// field grows to fit all of them.
+function setPickValue(id, value, placeholder){
   const el = document.getElementById(id);
   if(!el) return;
+  if(Array.isArray(value) && value.length){
+    el.textContent = '';
+    el.classList.remove('unset');
+    el.classList.add('has-chips');
+    value.forEach(v => {
+      const chip = document.createElement('span');
+      chip.className = 'pick-chip';
+      chip.textContent = v;
+      el.appendChild(chip);
+    });
+    return;
+  }
+  el.classList.remove('has-chips');
+  const text = Array.isArray(value) ? '' : value;
   el.textContent = text || placeholder;
   el.classList.toggle('unset', !text);
 }
@@ -7676,7 +7704,7 @@ function renderFormPhotoRow(item){
 // fields, so saving and the unsaved-changes check read the form as ever.
 function renderFormPickerRows(){
   setPickValue('form-category-summary', document.getElementById('form-category').value.trim(), 'Select category');
-  setPickValue('form-tags-summary', parseTags(document.getElementById('form-tags').value).join(', '), 'Select tags');
+  setPickValue('form-tags-summary', parseTags(document.getElementById('form-tags').value), 'Select tags');
 }
 
 let formPickKind = null;   // 'category' | 'tags' while that page is up
