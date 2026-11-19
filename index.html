@@ -257,11 +257,11 @@
        threshold is the fix — blocking zoom in the viewport tag would take
        away pinch-to-zoom everywhere to solve it in one place. */
     font-size:16px;
-    padding:12px 14px;
-    min-height:44px;
+    padding:15px 16px;
+    min-height:54px;
     box-sizing:border-box;
     border:1px solid var(--line);
-    border-radius:6px;
+    border-radius:8px;
     background:var(--surface);
     color:var(--ink);
     flex:1;
@@ -300,13 +300,13 @@
     /* Same 16px floor as above — every field that can take focus, or the
        add form and the password screen zoom instead. */
     font-size:16px;
-    /* Roomy enough to hit without aiming: 44px is the smallest target a
-       thumb reliably lands on. */
-    padding:12px 14px;
-    min-height:44px;
+    /* Roomy enough to hit without aiming. One size for every field — form,
+       search and sign-in — so they all match. */
+    padding:15px 16px;
+    min-height:54px;
     box-sizing:border-box;
     border:1px solid var(--line);
-    border-radius:6px;
+    border-radius:8px;
     background:var(--page);
     color:var(--ink);
   }
@@ -1270,12 +1270,6 @@
      inputs were white, which made Notes look like a different control. */
   .form-grid input, .form-grid textarea, .form-grid select{
     background:var(--surface);
-    /* Bigger than the 44px global floor: on a phone the form is the one place
-       you type a lot, and the fields read as cramped at that size. Text stays
-       at 16px so iOS still doesn't zoom on focus. */
-    min-height:54px;
-    padding:15px 16px;
-    border-radius:8px;
   }
   .form-grid textarea{min-height:120px;resize:vertical;line-height:1.4;}
   .form-grid{gap:16px;}
