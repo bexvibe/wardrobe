@@ -7712,10 +7712,30 @@ function openFormCategoryPicker(){
   drawFormCategoryPicker();
 }
 
+// Two steps: the main categories first, then the ones inside the one you
+// opened. Searching skips the steps and looks through everything.
+let formCatGroup = null;
+
 function drawFormCategoryPicker(){
   formPickKind = 'category';
+  formCatGroup = null;
   formPickFrame('Select category', 'Search categories', 'renderFormCategoryPicks()', 'addFormCategory()');
   renderFormCategoryPicks();
+}
+
+function openFormCategoryGroup(shelf){
+  formCatGroup = shelf;
+  const input = document.getElementById('form-pick-input');
+  if(input) input.value = '';
+  renderFormCategoryPicks();
+}
+
+// Back from a group's categories goes up to the main list, not out.
+function formCategoryStepBack(){
+  if(formPickKind !== 'category' || !formCatGroup) return false;
+  formCatGroup = null;
+  renderFormCategoryPicks();
+  return true;
 }
 
 // Main categories A to Z, each with its own categories A to Z beneath it:
@@ -7745,6 +7765,33 @@ function renderFormCategoryPicks(){
   if(typed && !CATEGORY_OPTIONS.some(c => c.toLowerCase() === q)){
     rows.push(pickRow('Add “' + typed + '”', false, 'addFormCategory()'));
   }
+  const title = document.querySelector('#modal .modal-name');
+  if(title) title.textContent = (!typed && formCatGroup) ? formCatGroup : 'Select category';
+
+  if(!typed){
+    const groups = categoryGroups();
+    const open = formCatGroup && groups.find(g => g.shelf === formCatGroup);
+    if(open){
+      // Second step: the group itself (when it can be chosen), then its own.
+      if(open.selectable){
+        rows.push(pickRow(open.shelf, open.shelf === chosen, 'pickFormCategory(' + jsArg(open.shelf) + ')', 'group'));
+      }
+      open.kids.forEach(c => rows.push(pickRow(c, c === chosen, 'pickFormCategory(' + jsArg(c) + ')')));
+    }else{
+      // First step: main categories only. One with categories inside opens;
+      // one without is chosen outright.
+      groups.forEach(g => {
+        const inside = g.kids.includes(chosen) || g.shelf === chosen;
+        rows.push(g.kids.length
+          ? `<button type="button" class="capsule-pick ${inside ? 'picked' : ''}" onclick='openFormCategoryGroup(${jsArg(g.shelf)})'>
+               <span>${esc(g.shelf)}</span><span class="capsule-pick-mark">›</span></button>`
+          : pickRow(g.shelf, g.shelf === chosen, 'pickFormCategory(' + jsArg(g.shelf) + ')'));
+      });
+    }
+    list.innerHTML = rows.join('') || '<p class="modal-meta">Nothing matches.</p>';
+    return;
+  }
+
   categoryGroups().forEach(g => {
     // A group whose own name matches shows all of its categories.
     const headMatch = has(g.shelf);
@@ -7871,6 +7918,7 @@ function addFormTag(){
 
 // Back is only ever Back: whatever was ticked is already on the form.
 function closeFormPicker(){
+  if(formCategoryStepBack()) return;
   formPickKind = null;
   goBackFromSheet();
 }
