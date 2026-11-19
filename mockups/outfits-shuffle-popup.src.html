@@ -1,0 +1,274 @@
+<title>Outfits Shuffle Popup</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/*BASECSS*/
+  /* ---------- the popup: the item card's pattern ----------
+     A card floating over the page with margins on every side, the page dimmed
+     and blurred behind it, rising from the bottom on the sheet curve. Its
+     controls sit on a floating bar, like the item card's. */
+  .phone{--ease:cubic-bezier(.32,.72,0,1)}
+  .pop-wrap{position:absolute;inset:0;z-index:30;visibility:hidden;background:rgba(0,0,0,0);
+    -webkit-backdrop-filter:blur(0);backdrop-filter:blur(0);
+    transition:background-color .26s var(--ease),backdrop-filter .26s var(--ease),-webkit-backdrop-filter .26s var(--ease),visibility 0s .26s}
+  .pop-wrap.open{visibility:visible;background:rgba(0,0,0,.2);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);
+    transition:background-color .26s var(--ease),backdrop-filter .26s var(--ease),-webkit-backdrop-filter .26s var(--ease),visibility 0s}
+  .pop{position:absolute;left:10px;right:10px;top:46px;bottom:12px;background:var(--surface);border-radius:24px;
+    box-shadow:0 18px 50px rgba(0,0,0,.28);transform:translateY(110%);transition:transform .26s var(--ease);
+    display:flex;flex-direction:column;padding:12px 12px 82px;overflow:hidden}
+  .pop-wrap.open .pop{transform:translateY(0)}
+  .pop-top{display:flex;align-items:flex-start;gap:8px;padding:0 2px 8px;min-height:44px}
+  .pop-top .why{flex:1;margin:0;padding-top:8px;line-height:1.3}
+  .pop-x{flex:none;width:38px;height:38px;border-radius:50%;background:var(--surface);box-shadow:var(--btn);display:grid;place-items:center}
+  .pop-x svg{width:16px;height:16px}
+  .stage{flex:1;min-height:0;background:var(--page);border-radius:18px;padding:8px;display:grid;grid-template-rows:1.25fr 1fr .5fr;position:relative}
+  .stage .up{display:flex;min-height:0}
+  .stage .up .pc{width:50%;height:100%} .stage .up.n1 .pc{width:100%}
+  .stage .lo,.stage .ft{min-height:0}
+  .stage .lo .pc,.stage .ft .pc{height:100%;margin:0}
+  .stage .pc{border-radius:12px}
+  .stage .pc img{padding:4px}
+  .stage.fresh .pc img{animation:drop .3s var(--ease)}
+  @keyframes drop{from{opacity:0;transform:translateY(-8px) scale(.96)}to{opacity:1;transform:none}}
+  .pop .chips{margin:8px -12px 0;padding:2px 12px}
+  .pop .legend{margin-top:6px}
+  .pop-bar{position:absolute;left:10px;right:10px;bottom:10px;display:flex;gap:8px;align-items:center;background:var(--surface);
+    border:1px solid var(--line);border-radius:16px;padding:8px;box-shadow:0 6px 24px rgba(0,0,0,.11)}
+  .pop-bar .shuf{min-height:46px}
+  .lock{width:32px;height:32px}
+  /* the page behind: a small hero that opens the popup */
+  .hc.small .up .pc{height:92px} .hc.small .lo .pc{height:80px;margin-top:-6px} .hc.small .ft .pc{height:42px}
+  .tapchip{position:absolute;right:8px;bottom:8px;min-height:30px;padding:0 11px;border-radius:999px;background:var(--surface);box-shadow:var(--btn);display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600}
+  .tapchip svg{width:14px;height:14px}
+  @media (prefers-reduced-motion:reduce){.pop,.pop-wrap{transition:none}.stage.fresh .pc img{animation:none}}
+</style>
+
+<div class="wrap">
+  <div class="eyebrow">Outfits page</div>
+  <h1>Shuffle and locks in a popup</h1>
+  <p class="lead">The same idea as before, with the controls moved off the page and into the focused card the item view already uses: a floating card, the page dimmed and blurred behind it, rising from the bottom. The page stays a calm grid. Every phone is live: tap Shuffle or the hero to open the card, then use the locks, the bar and the chips. Tap outside the card or the cross to close it.</p>
+
+  <div class="principles">
+    <div><b>One pattern, not two</b>Pieces open in a floating card. Shuffle would too, so the card means "focus on one thing" everywhere.</div>
+    <div><b>The page stays calm</b>The grid does not carry locks, undo and a bar. They appear only when you are shuffling.</div>
+    <div><b>One tap gives a result</b>Tapping Shuffle on the page deals a fresh outfit as the card opens. You get a result and the controls together.</div>
+    <div><b>Closing keeps it</b>Whatever you stopped on becomes the hero on the page, so nothing you liked is lost.</div>
+  </div>
+
+  <section id="a">
+    <div class="eyebrow">Version 1</div>
+    <h2>Hero on the page, card to steer</h2>
+    <p class="sec-note">The page keeps its hero outfit at the top. Tap the hero, or the floating Shuffle, to open the card. The hero is where you see the result and the card is where you steer.</p>
+    <div class="row">
+      <figure><figcaption>All, page</figcaption><div data-phone='{"mode":"all","page":"hero"}'></div></figure>
+      <figure><figcaption>All, card open</figcaption><div data-phone='{"mode":"all","page":"hero","open":true}'></div></figure>
+      <figure><figcaption>Faves, card open</figcaption><div data-phone='{"mode":"faves","page":"hero","open":true}'></div></figure>
+      <div class="meta">
+        <div><b>Good</b>Matches your first idea: a hero at the top of both pages, tied to Shuffle. The hero is a compact preview, so the grid starts sooner than before.</div>
+        <div><b>Trade-off</b>Two places show the outfit, the hero and the card. They always agree, but there is a little duplication.</div>
+        <div><b>Faves</b>The card has no locks, since a fave is a finished outfit. The button reads Show another.</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="b">
+    <div class="eyebrow">Version 2</div>
+    <h2>No hero, popup only</h2>
+    <p class="sec-note">The most minimal page. Just the grid and the floating Shuffle. The card is the only place a single outfit is shown large.</p>
+    <div class="row">
+      <figure><figcaption>All, page</figcaption><div data-phone='{"mode":"all","page":"grid"}'></div></figure>
+      <figure><figcaption>All, card open</figcaption><div data-phone='{"mode":"all","page":"grid","open":true}'></div></figure>
+      <figure><figcaption>Faves, page</figcaption><div data-phone='{"mode":"faves","page":"grid"}'></div></figure>
+      <div class="meta">
+        <div><b>Good</b>Least to build and the calmest page. The grid shows the most outfits at once.</div>
+        <div><b>Trade-off</b>The page loses the hero you asked for, and closing the card leaves no trace of what you dealt. You would need to fave it to keep it.</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="c">
+    <div class="eyebrow">Version 3, my pick</div>
+    <h2>Version 1 with lenses inside the card</h2>
+    <p class="sec-note">The lens chips live in the card, beside the locks, because that is where you are deciding what to look at. The page behind stays free of chips. The card has a line saying why you are seeing this outfit, and the grid follows whichever lens you leave on.</p>
+    <div class="row">
+      <figure><figcaption>All, card open</figcaption><div data-phone='{"mode":"all","page":"hero","lenses":true,"open":true}'></div></figure>
+      <figure><figcaption>All, New in, card open</figcaption><div data-phone='{"mode":"all","page":"hero","lenses":true,"lens":"new","open":true}'></div></figure>
+      <figure><figcaption>Faves, card open</figcaption><div data-phone='{"mode":"faves","page":"hero","lenses":true,"open":true}'></div></figure>
+      <div class="meta pick">
+        <div><b>Why this one</b>It fixes the unfiltered All page without adding anything to it. Discovery is a choice you make inside the card, and the page is the calm result.</div>
+        <div><b>Faves</b>The chips there are your fave levels, so Show another can stay within Love or All-time.</div>
+        <div><b>Needs</b>Only data the app has: fave levels, when a piece was added and which pieces are in your faves.</div>
+      </div>
+    </div>
+    <p class="hint">In the real app the card would also unfold to full screen when scrolled, like the item card does. It is left fixed here.</p>
+  </section>
+</div>
+
+<script>
+const P = /*PHOTOS*/;
+const SLOTS = {top:[],over:[],bottom:[],shoes:[]};
+const slotOf = id => ({t:'top',o:'over',b:'bottom',s:'shoes'})[id[0]];
+Object.keys(P).forEach(id => SLOTS[slotOf(id)].push(id));
+const NEW = ['o_waverly','b_lola','t_green'];
+const OVERLOOK = ['t_pink','b_gingham','s_birk','o_quilt','t_stripe'];
+const FAVES = [
+  {top:'t_indigo',over:'o_chore',bottom:'b_jeans',shoes:'s_blunt',lv:3},
+  {top:'t_white',over:'o_denim',bottom:'b_cargo',shoes:'s_nb',lv:2},
+  {top:'t_turtle',over:null,bottom:'b_black',shoes:'s_west',lv:3},
+  {top:'t_stripe',over:'o_quilt',bottom:'b_linen',shoes:'s_nb',lv:1},
+  {top:'t_green',over:null,bottom:'b_jeans',shoes:'s_birk',lv:2},
+  {top:'t_white',over:'o_waverly',bottom:'b_black',shoes:'s_blunt',lv:3},
+  {top:'t_pink',over:null,bottom:'b_cargo',shoes:'s_nb',lv:1},
+  {top:'t_indigo',over:null,bottom:'b_linen',shoes:'s_birk',lv:2},
+];
+const LV = ['','Like','Love','All-time'];
+const pick = a => a[Math.floor(Math.random()*a.length)];
+const nm = id => P[id].n;
+const lc = s => s.charAt(0).toLowerCase()+s.slice(1);
+const WAND = '<svg viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true"><path d="m176-120-56-56 301-302-181-45 198-123-17-234 179 151 216-88-87 217 151 178-234-16-124 198-45-181-301 301Zm24-520-80-80 80-80 80 80-80 80Zm355 197 48-79 93 7-60-71 35-86-86 35-71-59 7 92-79 49 90 22 23 90Zm165 323-80-80 80-80 80 80-80 80ZM569-570Z"/></svg>';
+const HEART = (on,c='#E4607F') => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21c-.5 0-9-5.6-9-11.2C3 6.6 5.2 4.5 7.9 4.5c1.7 0 3.1.8 4.1 2.3 1-1.5 2.4-2.3 4.1-2.3C18.8 4.5 21 6.6 21 9.8 21 15.4 12.5 21 12 21z" fill="${on?c:'none'}" stroke="${on?c:'#9A9A9A'}" stroke-width="2" stroke-linejoin="round"/></svg>`;
+const LOCK = on => on
+  ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2" fill="currentColor"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>'
+  : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 7.5-2"/></svg>';
+const UNDO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg>';
+const CLOSE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
+
+function fillRest(c){
+  ['top','over','bottom','shoes'].forEach(s => {
+    if(c[s] !== undefined) return;
+    c[s] = s === 'over' ? (Math.random() < .55 ? pick(SLOTS.over) : null) : pick(SLOTS[s]);
+  });
+  return c;
+}
+function gen(lens){
+  if(lens === 'new' || lens === 'overlooked'){
+    const id = lens === 'new' ? pick(NEW) : pick(OVERLOOK);
+    const c = {}; c[slotOf(id)] = id; fillRest(c);
+    c.badge = lens === 'new' ? 'New: ' + nm(id) : 'Not in a fave';
+    c.why = lens === 'new' ? `Built around your new <b>${lc(nm(id))}</b>` : `Built around your <b>${lc(nm(id))}</b>, which is in none of your faves`;
+    c.tagTxt = lens === 'new' ? 'New' : '';
+    return c;
+  }
+  if(lens === 'remix'){
+    const f = pick(FAVES); const c = {top:f.top,over:f.over,bottom:f.bottom,shoes:f.shoes};
+    const slot = pick(['top','bottom','shoes']);
+    const was = c[slot]; let now = pick(SLOTS[slot]); let n = 0;
+    while(now === was && n++ < 9) now = pick(SLOTS[slot]);
+    c[slot] = now; c.badge = '1 swap';
+    c.why = `Your fave, with the <b>${lc(nm(now))}</b> instead of the ${lc(nm(was))}`;
+    return c;
+  }
+  const c = fillRest({});
+  c.why = `Dealt at random <b>·</b> lock a piece to keep it`;
+  return c;
+}
+
+function pc(slot, c, S, big){
+  const id = c[slot]; if(!id) return '';
+  const locked = S.locks[slot];
+  const canLock = big && S.cfg.mode === 'all';
+  return `<div class="pc ${locked?'lk':''}"><img src="${P[id].u}" alt="${nm(id)}">${canLock?`<button class="lock" data-act="lock" data-slot="${slot}" aria-pressed="${!!locked}" aria-label="${locked?'Unlock':'Lock'} ${nm(id)}">${LOCK(locked)}</button>`:''}</div>`;
+}
+function body(c, S, big){
+  return `<div class="up ${c.over?'':'n1'}">${c.over?pc('over',c,S,big):''}${pc('top',c,S,big)}</div><div class="lo">${pc('bottom',c,S,big)}</div><div class="ft">${pc('shoes',c,S,big)}</div>`;
+}
+function whyLine(S){
+  const c = S.hero;
+  if(S.cfg.mode === 'faves') return `<div class="why"><i>${LV[c.lv]}</i> One of your ${S.pool.length} ${S.lvl?lc(LV[S.lvl])+' ':''}faves</div>`;
+  return `<div class="why">${c.tagTxt?`<i>${c.tagTxt}</i>`:''}<span>${c.why}</span></div>`;
+}
+function gridCard(c, S){ return `<div class="gc">${c.badge?`<span class="bd">${c.badge}</span>`:''}${body(c,S,false)}</div>`; }
+
+function deal(S){
+  if(S.cfg.mode === 'faves'){
+    S.pool = FAVES.filter(f => !S.lvl || f.lv === S.lvl);
+    const others = S.pool.filter(f => f !== S.hero);
+    S.hero = pick(others.length ? others : S.pool);
+    S.grid = S.pool.filter(f => f !== S.hero).sort(() => Math.random() - .5);
+    return;
+  }
+  const lens = S.lens === 'surprise' ? null : S.lens;
+  const h = gen(lens);
+  if(!lens) ['top','over','bottom','shoes'].forEach(s => { if(S.locks[s] && S.hero) h[s] = S.hero[s]; });
+  S.hero = h;
+  S.grid = Array.from({length:6}, () => gen(lens));
+}
+const LENSES = [['surprise','Surprise me'],['new','New in'],['overlooked','Overlooked'],['remix','Remix a fave']];
+function lensRow(S){
+  if(!S.cfg.lenses) return '';
+  if(S.cfg.mode === 'faves') return `<div class="chips" role="group" aria-label="Fave level">${[[0,'All faves'],[2,'Love'],[3,'All-time'],[1,'Like']].map(([v,l]) =>
+    `<button class="chip ${S.lvl===v?'on':''}" data-act="lvl" data-v="${v}" aria-pressed="${S.lvl===v}">${l}</button>`).join('')}</div>`;
+  return `<div class="chips" role="group" aria-label="Lens">${LENSES.map(([v,l]) =>
+    `<button class="chip ${S.lens===v?'on':''}" data-act="lens" data-v="${v}" aria-pressed="${S.lens===v}">${v==='surprise'?WAND:''}${l}</button>`).join('')}</div>`;
+}
+function popHtml(S, fresh){
+  const faves = S.cfg.mode === 'faves';
+  const on = faves || S.hearted;
+  const hint = S.cfg.mode === 'all' && !S.cfg.lenses ? '<div class="legend">Lock a piece to keep it. Shuffle deals the rest.</div>' : '';
+  return `<div class="pop-top">${whyLine(S)}<button class="pop-x" data-act="close" aria-label="Close">${CLOSE}</button></div>
+    <div class="stage ${fresh?'fresh':''}">${body(S.hero,S,true)}</div>
+    ${lensRow(S)}${S.cfg.mode==='all'&&S.cfg.lenses?'<div class="legend">Lock a piece to keep it. Shuffle deals the rest.</div>':hint}
+    <div class="pop-bar">
+      <button class="sq" data-act="undo" aria-label="Back to the last outfit" ${S.hist.length?'':'disabled'}>${UNDO}</button>
+      <button class="shuf" data-act="shuffle">${WAND}${faves?'Show another':'Shuffle'}</button>
+      <button class="sq" data-act="heart" aria-label="Fave this outfit" aria-pressed="${on}">${HEART(on)}</button>
+    </div>`;
+}
+function pageHero(S){
+  const faves = S.cfg.mode === 'faves';
+  return `${whyLine(S)}<div class="hc small" data-act="open" role="button" tabindex="0" aria-label="Open this outfit to shuffle">${body(S.hero,S,false)}<span class="tapchip">${WAND.replace('<svg','<svg')}${faves?'Pick':'Style it'}</span></div>`;
+}
+function pageBody(S){
+  if(S.cfg.mode === 'faves') return `<div class="sec-h"><h5>More faves</h5><span>${S.grid.length} more</span></div><div class="grid">${S.grid.map(f => gridCard(Object.assign({},f,{badge:LV[f.lv]}),S)).join('') || '<div class="empty">No other faves at this level</div>'}</div>`;
+  const t = {surprise:'More outfits',new:'Around your new pieces',overlooked:'Around overlooked pieces',remix:'Fave remixes'}[S.lens];
+  return `<div class="sec-h"><h5>${t}</h5><span>${S.lens==='surprise'?'Dealt fresh':''}</span></div><div class="grid">${S.grid.map(c => gridCard(c,S)).join('')}</div>`;
+}
+function subText(S){
+  if(S.cfg.mode === 'faves') return `${FAVES.length} outfits you kept`;
+  return {surprise:'Dealt fresh each visit',new:'Around what you just added',overlooked:'Pieces you have not styled',remix:'Your faves, one swap away'}[S.lens];
+}
+function navHtml(S){
+  const f = S.cfg.mode === 'faves';
+  return `<div class="nav"><div class="nb">Wardrobe</div><div class="nb act"><div class="seg ${f?'':'on'}">All</div><div class="seg ${f?'on':''}">${HEART(f,'#E4607F')}</div></div><div class="nb">Capsules</div></div>`;
+}
+function render(S, fresh){
+  const q = s => S.el.querySelector(s);
+  q('.sub').textContent = subText(S);
+  q('.page-hero').innerHTML = S.cfg.page === 'hero' ? pageHero(S) : '';
+  q('.body-zone').innerHTML = pageBody(S);
+  q('.pop-in').innerHTML = popHtml(S, fresh);
+}
+function flick(S){ S.el.querySelectorAll('.shuf,.fab').forEach(b => { b.classList.remove('flick'); void b.offsetWidth; b.classList.add('flick'); }); }
+function shuffle(S){ S.hist.push(S.hero); if(S.hist.length > 12) S.hist.shift(); deal(S); S.hearted = false; render(S, true); flick(S); }
+function setOpen(S, v){ S.el.querySelector('.pop-wrap').classList.toggle('open', v); }
+
+function mount(host){
+  const cfg = JSON.parse(host.dataset.phone);
+  const S = {cfg, lens: cfg.lens || 'surprise', lvl: 0, locks:{}, hist:[], hearted:false};
+  host.innerHTML = `<div class="phone"><div class="scr">
+      <div class="ph-top"><div><h4>Outfits</h4><div class="sub"></div></div><button class="build" aria-label="Build an outfit">+</button></div>
+      <div class="page-hero"></div><div class="body-zone"></div></div>
+    <div class="float"><button class="fab" data-act="fab" aria-label="Shuffle">${WAND}Shuffle</button><div class="pill">Filters</div></div>
+    ${navHtml(S)}
+    <div class="pop-wrap" data-act="backdrop"><div class="pop" role="dialog" aria-label="Shuffle outfits"><div class="pop-in" style="display:contents"></div></div></div></div>`;
+  S.el = host.firstElementChild;
+  deal(S); render(S);
+  if(cfg.open) setTimeout(() => setOpen(S, true), 50);
+  S.el.addEventListener('click', e => {
+    const b = e.target.closest('[data-act]'); if(!b || b.disabled) return;
+    const a = b.dataset.act;
+    if(a === 'backdrop'){ if(e.target === b) setOpen(S, false); return; }
+    if(a === 'fab'){ shuffle(S); setOpen(S, true); }
+    else if(a === 'open') setOpen(S, true);
+    else if(a === 'close') setOpen(S, false);
+    else if(a === 'shuffle') shuffle(S);
+    else if(a === 'undo'){ if(S.hist.length){ S.hero = S.hist.pop(); render(S); } }
+    else if(a === 'lock'){ S.locks[b.dataset.slot] = !S.locks[b.dataset.slot]; render(S); }
+    else if(a === 'heart'){ S.hearted = !S.hearted; render(S); }
+    else if(a === 'lens'){ S.lens = b.dataset.v; S.locks = {}; S.hist = []; deal(S); render(S, true); }
+    else if(a === 'lvl'){ S.lvl = +b.dataset.v; S.hist = []; deal(S); render(S, true); }
+  });
+  S.el.addEventListener('keydown', e => { if((e.key === 'Enter' || e.key === ' ') && e.target.matches('.hc')){ e.preventDefault(); setOpen(S, true); } if(e.key === 'Escape') setOpen(S, false); });
+}
+document.querySelectorAll('[data-phone]').forEach(mount);
+</script>
