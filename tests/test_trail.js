@@ -117,7 +117,7 @@ async function keepOne(p){
     check('one step left on the trail',
       JSON.stringify(await trail(p))===JSON.stringify(['item']));
 
-    await p.click('#item-page-edit'); await p.waitForTimeout(500); await p.click('#form-capsules-row');
+    await p.click('#item-page-edit'); await p.waitForTimeout(500); await p.click('#form-capsules-row button');
     await p.waitForTimeout(700);
     check('Add to capsule is another step',
       JSON.stringify(await trail(p))===JSON.stringify(['item','form','capsules']),

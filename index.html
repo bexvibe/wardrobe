@@ -613,6 +613,16 @@
     border-radius:0;
     box-shadow:none;
   }
+  /* A new piece has no front to turn over from, so its card rises into
+     place the way a piece's card does when it opens. */
+  .modal-backdrop.item-card-back.card-enter .modal{
+    transform:translateY(110%);
+    transition:transform var(--sheet-ease-ms) var(--sheet-ease),
+               top .28s var(--sheet-ease), left .28s var(--sheet-ease),
+               right .28s var(--sheet-ease), bottom .28s var(--sheet-ease),
+               border-radius .28s var(--sheet-ease), box-shadow .28s ease;
+  }
+  .modal-backdrop.open.item-card-back.card-enter .modal{transform:translateY(0);}
   /* The turn. Perspective is in the transform itself so each half is
      self-contained; a card is turned about its own vertical middle. Ease in
      going edge-on and out coming round, so it speeds into the middle of the
@@ -1335,7 +1345,6 @@
 
   /* Tag chips inside the add/edit form sit under their input */
   .form-grid .tag-chips{margin-top:8px;}
-  .form-grid .form-nav-row{margin-top:0;}
   .form-grid > .btn.small{align-self:flex-start;}
   /* The matches under a field you type into. A row that scrolls sideways,
      like every other row of chips here, rather than a list that pushes the
@@ -1832,18 +1841,34 @@
     background:var(--surface);color:var(--ink);
     cursor:pointer;
   }
-  .form-nav-row{
-    display:flex;align-items:center;gap:10px;width:100%;margin-top:14px;
-    font-family:'Figtree',sans-serif;font-size:14px;font-weight:600;text-align:left;
-    min-height:52px;padding:0 14px 0 16px;
-    border:1px solid transparent;border-radius:10px;
-    box-shadow:var(--shadow-btn);
+  /* A field that opens a page of choices (category, tags, capsules). It is
+     dressed as every other field in the form: a label above it, the same
+     fill and outline as an input, no shadow. A chevron says it opens a page
+     rather than taking typing. */
+  .field-pick{
+    display:flex;flex-direction:column;gap:6px;
+    font-family:'Figtree',sans-serif;
+    font-size:13px;font-weight:600;color:var(--ink-soft);
+  }
+  .field-pick-btn{
+    display:flex;align-items:center;gap:10px;width:100%;
+    font-family:'Figtree',sans-serif;font-size:16px;font-weight:400;text-align:left;
+    min-height:44px;padding:12px 14px;box-sizing:border-box;
+    border:1px solid var(--line);border-radius:6px;
     background:var(--surface);color:var(--ink);cursor:pointer;
   }
-  .form-nav-label{flex:none;}
-  .form-nav-value{flex:1;min-width:0;text-align:right;font-weight:400;color:var(--ink-soft);
-    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .form-nav-row svg{flex:none;color:var(--ink-soft);}
+  .field-pick-value{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .field-pick-value.empty{color:var(--ink-soft);}
+  .field-pick-btn svg{flex:none;color:var(--ink-soft);}
+  .form-extra{display:flex;flex-direction:column;gap:12px;}
+  /* A search field keeps its icon inside it, at the left. */
+  .search-box{position:relative;}
+  .search-box svg{position:absolute;left:14px;top:50%;transform:translateY(-50%);
+    width:18px;height:18px;color:var(--ink-soft);pointer-events:none;}
+  .search-box input[type=text]{width:100%;padding-left:42px;background:var(--surface);}
+  /* Categories sit under the main category they belong to. */
+  .capsule-pick.group{font-weight:700;}
+  .capsule-pick.child{margin-left:20px;min-height:46px;font-weight:500;}
   .capsule-pick.picked{border-color:var(--accent);background:var(--accent-soft);}
   .capsule-pick-mark{flex:none;font-size:15px;color:var(--ink);width:18px;text-align:right;}
 
@@ -2184,36 +2209,46 @@
            the way to change it, before any of the fields. It used to be a
            bare button at the foot of the form with nothing to show you. -->
       <div id="form-photo-row"></div>
-      <button type="button" class="form-nav-row" id="form-capsules-row" style="display:none;margin-top:12px"
-              onclick="openCapsulesFromForm()">
-        <span class="form-nav-label">Add to capsules</span>
-        <span class="form-nav-value" id="form-capsules-summary"></span>
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"
-             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
-      </button>
       <div class="form-grid">
-        <label>Name<input type="text" id="form-name"></label>
-        <label>Brand<input type="text" id="form-brand"></label>
-        <!-- Category and tags are picked on a page of their own, the way
-             capsules are, and kept in these two hidden fields so the form
-             still saves and compares itself the same way. -->
-        <button type="button" class="form-nav-row" id="form-category-field" onclick="openFormCategoryPicker()">
-          <span class="form-nav-label">Category</span>
-          <span class="form-nav-value" id="form-category-summary"></span>
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"
-             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
-        </button>
+        <label>Name<input type="text" id="form-name" autocomplete="off" oninput="onFormNameInput()"></label>
+        <!-- Category, tags and capsules are picked on pages of their own and
+             kept in hidden fields, so the form still saves and compares
+             itself the same way. Nothing on those pages is saved until
+             Save piece here. -->
+        <div class="field-pick" id="form-category-field">
+          <span>Category</span>
+          <button type="button" class="field-pick-btn" onclick="openFormCategoryPicker()">
+            <span class="field-pick-value" id="form-category-summary"></span>
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+          </button>
+        </div>
         <input type="hidden" id="form-category">
-        <label>Size<input type="text" id="form-size"></label>
-        <label>Price<input type="text" id="form-price"></label>
-        <label>Source<input type="text" id="form-source"></label>
-        <button type="button" class="form-nav-row" id="form-tags-field" onclick="openFormTagsPicker()">
-          <span class="form-nav-label">Tags</span>
-          <span class="form-nav-value" id="form-tags-summary"></span>
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"
-             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
-        </button>
+        <div class="field-pick" id="form-tags-field">
+          <span>Tags</span>
+          <button type="button" class="field-pick-btn" onclick="openFormTagsPicker()">
+            <span class="field-pick-value" id="form-tags-summary"></span>
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+          </button>
+        </div>
         <input type="hidden" id="form-tags">
+        <div class="field-pick" id="form-capsules-row" style="display:none">
+          <span>Capsules</span>
+          <button type="button" class="field-pick-btn" onclick="openCapsulesFromForm()">
+            <span class="field-pick-value" id="form-capsules-summary"></span>
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+          </button>
+        </div>
+        <!-- The rest only matter once the piece exists: a new piece is
+             an image, a name, a category and tags. -->
+        <div class="form-extra" id="form-extra">
+          <label>Brand<input type="text" id="form-brand"></label>
+          <label>Size<input type="text" id="form-size"></label>
+          <label>Price<input type="text" id="form-price"></label>
+          <label>Source<input type="text" id="form-source"></label>
+        </div>
       </div>
       <div class="form-error" id="form-error"></div>
     </div>
@@ -2736,7 +2771,7 @@ const SHEETS = {
   item:      { backdrop: 'modal-backdrop', draw: id => drawItemSheet(id) },
   capsules:  { backdrop: 'modal-backdrop', draw: id => drawItemCapsulePicker(id) },
   form:      { backdrop: 'form-backdrop',  draw: id => drawItemForm(id) },
-  // Picked on a page of their own, then handed back to the form as staged.
+  // Picked on a page of their own; ticks land on the form as you make them.
   formcategory: { backdrop: 'modal-backdrop', draw: null },
   formtags:     { backdrop: 'modal-backdrop', draw: null },
   // Drawn into its own layer, not the sheet frame: nothing else is on a
@@ -6156,26 +6191,23 @@ function openItemCapsulePicker(itemId){
   drawItemCapsulePicker(itemId);
 }
 
-// Staged, like the accessories picker: tick a few, then say so. New
+// Opened from the piece's form. Ticks go to the form (stageFormCapsules)
+// and are written when the piece is saved there; Back just goes back. New
 // capsule asks for a name and nothing else — you are already holding the
 // piece that is going in it, so a whole editor to choose pieces with would
 // be answering a question you did not ask.
-let capsulePicksDraft = null;   // { itemId, ids:Set, baseline }
+let capsulePicksDraft = null;   // { itemId, ids:Set }
 
 function drawItemCapsulePicker(itemId){
   const item = ITEMS.find(i => i.id === itemId);
   if(!item) return;
-  capsulePicksDraft = {
-    itemId,
-    ids: new Set(capsules.filter(c => c.itemIds.includes(itemId)).map(c => c.id)),
-  };
-  capsulePicksDraft.baseline = capsulePicksSnapshot();
+  capsulePicksDraft = { itemId, ids: new Set(formCapsuleSelection()) };
 
   const modal = document.getElementById('modal');
   modal.innerHTML = `
     <div class="sheet-grip"></div>
     <div class="modal-body has-footer">
-      <div class="modal-name" style="margin-bottom:14px;">Add to capsules</div>
+      <div class="modal-name" style="margin-bottom:14px;">Select capsules</div>
       <div class="capsule-picks" id="capsule-picks"></div>
       <div class="form-error" id="capsule-pick-error"></div>
       <div class="modal-actions">
@@ -6185,65 +6217,24 @@ function drawItemCapsulePicker(itemId){
     </div>
     <div class="sheet-footer split pagebar">
       <div class="sheet-footer-inner">
-        <button class="btn secondary" type="button" onclick="closeCapsulePicker()">Back</button>
-        <div class="sheet-footer-actions"><button class="btn" type="button" id="capsule-picks-save"
-                onclick="saveItemCapsules()">Save</button></div>
+        <button class="btn secondary" type="button" onclick="closeCapsulePicker()">${BACK_BTN_SVG}Back</button>
       </div>
     </div>
   `;
   renderItemCapsulePicks(itemId);
-  allowSheetDrag(closeCapsulePicker, capsulePicksDirty);
+  allowSheetDrag(closeCapsulePicker);
   // Opened over the edit form as often as over the piece: only one backdrop up.
   showSheetBackdrop('modal-backdrop');
 }
 
-function capsulePicksSnapshot(){
-  return capsulePicksDraft
-    ? JSON.stringify(Array.from(capsulePicksDraft.ids).sort()) : null;
-}
-
-function capsulePicksDirty(){
-  return Boolean(capsulePicksDraft) && capsulePicksSnapshot() !== capsulePicksDraft.baseline;
-}
-
 function closeCapsulePicker(){
-  if(capsulePicksDirty()){
-    askToLeave('capsule changes', discardCapsulePicker);
-    return;
-  }
-  discardCapsulePicker();
-}
-
-function discardCapsulePicker(){
   capsulePicksDraft = null;
-  goBackFromSheet();
-}
-
-async function saveItemCapsules(){
-  if(!capsulePicksDraft) return;
-  const { itemId, ids } = capsulePicksDraft;
-  const btn = document.getElementById('capsule-picks-save');
-  if(btn) btn.disabled = true;
-
-  // Only what changed: a capsule you did not touch is not rewritten.
-  let ok = true;
-  for(const c of capsules){
-    const was = c.itemIds.includes(itemId);
-    const now = ids.has(c.id);
-    if(was === now) continue;
-    if(!await setItemInCapsule(c.id, itemId, now)){ ok = false; break; }
-  }
-  if(btn) btn.disabled = false;
-  if(!ok) return;                 // setItemInCapsule has said why
-
-  capsulePicksDraft = null;
-  renderCapsules();
   goBackFromSheet();
 }
 
 // A name, and that is the whole question. The piece you came from goes in
-// it, and the capsule is saved straight away — there is no draft here to
-// lose, so the ticks behind it are safe.
+// it, and the capsule is saved straight away, since it did not exist until
+// you asked for it.
 function startNewCapsuleForPiece(){
   if(!capsulePicksDraft) return;
   promptForText({
@@ -6255,7 +6246,7 @@ function startNewCapsuleForPiece(){
       if(!saved) return false;
       // It exists and the piece is in it, so it arrives already ticked.
       capsulePicksDraft.ids.add(saved.id);
-      capsulePicksDraft.baseline = capsulePicksSnapshot();
+      stageFormCapsules(capsulePicksDraft.ids);
       renderItemCapsulePicks(capsulePicksDraft.itemId);
       renderCapsules();
       return true;
@@ -6281,12 +6272,13 @@ function renderItemCapsulePicks(itemId){
   }).join('');
 }
 
-// The row ticks and unticks where you tapped it, and nothing is written
-// until the bar says so.
+// The row ticks and unticks where you tapped it, on the form; the piece's
+// capsules change when the form is saved.
 function toggleItemCapsule(capsuleId, itemId){
   if(!capsulePicksDraft) return;
   if(capsulePicksDraft.ids.has(capsuleId)) capsulePicksDraft.ids.delete(capsuleId);
   else capsulePicksDraft.ids.add(capsuleId);
+  stageFormCapsules(capsulePicksDraft.ids);
   renderItemCapsulePicks(itemId);
 }
 
@@ -7365,14 +7357,8 @@ function dropSheetTrail(){
 }
 
 // ---- Add / edit a piece ------------------------------------
-// Grouped by the shelf each lands on, the specific ones before the catch-all
-// that shares its name, so the list reads Shirts, Singlets, Tees... Tops.
-const CATEGORY_OPTIONS = Object.keys(CATEGORY_TO_TAB).sort((a, b) => {
-  const shelves = Object.values(CATEGORY_TO_TAB);
-  const rank = c => shelves.indexOf(CATEGORY_TO_TAB[c]);
-  const generic = c => c === CATEGORY_TO_TAB[c];
-  return rank(a) - rank(b) || generic(a) - generic(b) || a.localeCompare(b);
-});
+// Alphabetical, all of it. The picker nests them under their main category.
+const CATEGORY_OPTIONS = Object.keys(CATEGORY_TO_TAB).sort((a, b) => a.localeCompare(b));
 let editingItemId = null;
 // A new piece has no id to attach a photo to yet, so the one chosen in the
 // form waits here and is uploaded once the piece is saved.
@@ -7506,10 +7492,14 @@ function takeCarriedFull(){ const v = cardCarryFull; cardCarryFull = false; retu
 // it is the card — and, like a tall sheet, it unfolds to the whole screen as
 // soon as you scroll it, since scrolling is asking for room.
 function setFormCardLook(){
-  const asCard = formIsCardBack();
+  // Editing from a piece's card is its back. A new piece is the same card,
+  // rising into place, rather than a bottom sheet.
+  const turned = formIsCardBack();
+  const asCard = turned || !editingItemId;
   const backdrop = document.getElementById('form-backdrop');
   const modal = formModalEl();
   backdrop.classList.toggle('item-card-back', asCard);
+  backdrop.classList.toggle('card-enter', asCard && !turned);
   if(!asCard){ modal.classList.remove('card-full'); modal.onscroll = null; return asCard; }
   cardUnfoldsOnScroll(modal);
   return asCard;
@@ -7539,6 +7529,13 @@ function drawItemForm(id){
   document.getElementById('form-source').value = item ? item.source : '';
   document.getElementById('form-tags').value = item ? (item.tags || []).join(', ') : '';
   document.getElementById('form-tags-field').style.display = tagsAvailable ? '' : 'none';
+  // A new piece is an image, a name, a category and tags; the rest is for
+  // an edit.
+  document.getElementById('form-extra').style.display = item ? '' : 'none';
+  // A category you have not chosen follows the name; one you have, or one
+  // the piece already has, stays put.
+  formCategoryTouched = Boolean(item && item.category);
+  formCapsuleIds = null;
   renderFormCapsulesRow();
 
   // A piece that does not exist yet has nowhere to be archived to, but it
@@ -7561,7 +7558,7 @@ function drawItemForm(id){
   showSheetBackdrop('form-backdrop');
   // On the back of a card the keyboard would jump up mid-turn; you tap the
   // field you mean instead.
-  if(!asCard) setTimeout(() => document.getElementById('form-name').focus(), 50);
+  if(!formIsCardBack()) setTimeout(() => document.getElementById('form-name').focus(), 50);
 }
 
 // A piece that is not saved yet cannot be in a capsule, so only an edit
@@ -7570,8 +7567,9 @@ function renderFormCapsulesRow(){
   const row = document.getElementById('form-capsules-row');
   if(!row) return;
   row.style.display = capsulesAvailable && editingItemId ? '' : 'none';
-  const names = editingItemId ? capsulesForItem(editingItemId).map(c => c.name) : [];
-  document.getElementById('form-capsules-summary').textContent = names.join(', ');
+  const ids = formCapsuleSelection();
+  const names = capsules.filter(c => ids.has(c.id)).map(c => c.name);
+  setPickValue('form-capsules-summary', names.join(', '), 'Select capsules');
 }
 
 function openCapsulesFromForm(){
@@ -7587,7 +7585,30 @@ const ITEM_FORM_FIELDS = ['form-name','form-brand','form-category','form-size',
 let itemFormBaseline = null;
 
 function itemFormSnapshot(){
-  return JSON.stringify(ITEM_FORM_FIELDS.map(id => document.getElementById(id).value));
+  return JSON.stringify(ITEM_FORM_FIELDS.map(id => document.getElementById(id).value)
+    .concat([formCapsuleIds ? Array.from(formCapsuleIds).sort() : null]));
+}
+
+// Capsules chosen on the form's capsule page, waiting for Save piece. Null
+// means untouched; the piece's real memberships are then what shows.
+let formCapsuleIds = null;
+function formCapsuleSelection(){
+  if(formCapsuleIds) return formCapsuleIds;
+  return new Set(editingItemId ? capsulesForItem(editingItemId).map(c => c.id) : []);
+}
+// Called as ticks change. Putting them back as they were is no change.
+function stageFormCapsules(ids){
+  const was = new Set(capsulesForItem(editingItemId).map(c => c.id));
+  const same = ids.size === was.size && Array.from(ids).every(id => was.has(id));
+  formCapsuleIds = same ? null : new Set(ids);
+}
+
+// A chosen value says so; nothing chosen says what to do.
+function setPickValue(id, text, placeholder){
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.textContent = text || placeholder;
+  el.classList.toggle('empty', !text);
 }
 
 function itemFormIsDirty(){
@@ -7607,45 +7628,52 @@ function renderFormPhotoRow(item){
     </button>`;
 }
 
-// Category and tags are chosen on pages of their own, like capsules: the
-// form shows what is picked and a row to change it, and the pick is staged
-// until Done. The values live in two hidden fields, so saving and the
-// unsaved-changes check read the form exactly as they always did.
+// Category, tags and capsules are chosen on pages of their own: the form
+// shows what is picked and a field to change it. Ticking on those pages
+// changes the form's own fields straight away; nothing is kept until Save
+// piece, and Cancel there throws it all away. The values live in two hidden
+// fields, so saving and the unsaved-changes check read the form as ever.
 function renderFormPickerRows(){
-  const cat = document.getElementById('form-category').value.trim();
-  const catEl = document.getElementById('form-category-summary');
-  if(catEl) catEl.textContent = cat;
-  const tags = parseTags(document.getElementById('form-tags').value);
-  const tagEl = document.getElementById('form-tags-summary');
-  if(tagEl) tagEl.textContent = tags.join(', ');
+  setPickValue('form-category-summary', document.getElementById('form-category').value.trim(), 'Select category');
+  setPickValue('form-tags-summary', parseTags(document.getElementById('form-tags').value).join(', '), 'Select tags');
 }
 
-let formPickDraft = null;   // { kind:'category'|'tags', value, baseline }
+let formPickKind = null;   // 'category' | 'tags' while that page is up
+let formCategoryTouched = false;
 
-function formPickFrame(title, intro, inputHtml, kind){
+const BACK_BTN_SVG = `<svg class="back-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>`;
+const SEARCH_ICON_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>`;
+
+function formPickFrame(title, placeholder, onInput, onEnter){
   const modal = document.getElementById('modal');
   document.getElementById('modal-backdrop').classList.add('as-page');
   modal.innerHTML = `
     <div class="modal-body has-footer">
       <div class="modal-name" style="margin-bottom:14px;">${title}</div>
-      <div class="form-grid">${inputHtml}</div>
+      <div class="search-box">${SEARCH_ICON_SVG}
+        <input type="text" id="form-pick-input" autocomplete="off" placeholder="${placeholder}"
+               oninput="${onInput}"
+               onkeydown="if(event.key==='Enter'){event.preventDefault();${onEnter};}">
+      </div>
       <div class="capsule-picks" id="form-pick-list"></div>
     </div>
     <div class="sheet-footer split pagebar">
       <div class="sheet-footer-inner">
-        <button class="btn secondary" type="button" onclick="closeFormPicker()">Back</button>
-        <div class="sheet-footer-actions"><button class="btn" type="button" id="form-pick-done" onclick="commitFormPicker()">Done</button></div>
+        <button class="btn secondary" type="button" onclick="closeFormPicker()">${BACK_BTN_SVG}Back</button>
       </div>
     </div>`;
   allowSheetDrag(null);
   showSheetBackdrop('modal-backdrop');
 }
 
-const pickRow = (label, picked, onclick, extra) =>
-  `<button type="button" class="capsule-pick ${picked ? 'picked' : ''}" onclick='${onclick}'>
-     <span>${esc(label)}${extra || ''}</span>
+const pickRow = (label, picked, onclick, cls) =>
+  `<button type="button" class="capsule-pick ${cls || ''} ${picked ? 'picked' : ''}" onclick='${onclick}'>
+     <span>${esc(label)}</span>
      <span class="capsule-pick-mark">${picked ? '✓' : ''}</span>
    </button>`;
+const jsArg = v => JSON.stringify(v).replace(/'/g, '&#39;');
 
 // -- Category: one of the list, or a word nothing has used yet.
 function openFormCategoryPicker(){
@@ -7654,55 +7682,108 @@ function openFormCategoryPicker(){
 }
 
 function drawFormCategoryPicker(){
-  const current = document.getElementById('form-category').value.trim();
-  formPickDraft = { kind: 'category', value: current, baseline: current };
-  formPickFrame('Category', '',
-    `<label>Find, or type a new one
-       <input type="text" id="form-pick-input" autocomplete="off" oninput="renderFormCategoryPicks()"
-              onkeydown="if(event.key==='Enter'){event.preventDefault();addFormCategory();}">
-     </label>`);
+  formPickKind = 'category';
+  formPickFrame('Select category', 'Search categories', 'renderFormCategoryPicks()', 'addFormCategory()');
   renderFormCategoryPicks();
 }
 
-// The group each category goes into is shown beside it, so a specific name
-// like Singlets still says it is a top.
+// Main categories A to Z, each with its own categories A to Z beneath it:
+// Tops, then Blouses and Singlets under it.
+function categoryGroups(){
+  const byShelf = {};
+  CATEGORY_OPTIONS.forEach(c => (byShelf[CATEGORY_TO_TAB[c]] = byShelf[CATEGORY_TO_TAB[c]] || []).push(c));
+  return Object.keys(byShelf).sort((a, b) => a.localeCompare(b)).map(shelf => ({
+    shelf,
+    selectable: byShelf[shelf].includes(shelf),
+    kids: byShelf[shelf].filter(c => c !== shelf),
+  }));
+}
+
 function renderFormCategoryPicks(){
   const list = document.getElementById('form-pick-list');
-  if(!list || !formPickDraft) return;
+  if(!list || formPickKind !== 'category') return;
   const typed = (document.getElementById('form-pick-input').value || '').trim();
   const q = typed.toLowerCase();
-  const chosen = formPickDraft.value;
-  const matches = CATEGORY_OPTIONS.filter(c => c.toLowerCase().includes(q));
-  const known = CATEGORY_OPTIONS.some(c => c.toLowerCase() === q);
+  const chosen = document.getElementById('form-category').value.trim();
+  const has = c => c.toLowerCase().includes(q);
   const rows = [];
   // A category you made up and chose stays on the list, ticked.
-  if(chosen && !CATEGORY_OPTIONS.includes(chosen) && chosen.toLowerCase().includes(q)){
-    rows.push(pickRow(chosen, true, 'pickFormCategory(' + JSON.stringify(chosen).replace(/'/g,'&#39;') + ')'));
+  if(chosen && !CATEGORY_OPTIONS.includes(chosen) && has(chosen)){
+    rows.push(pickRow(chosen, true, 'pickFormCategory(' + jsArg(chosen) + ')'));
   }
-  if(typed && !known){
-    rows.push(pickRow('Add “' + typed + '”', false, 'addFormCategory()', ''));
+  if(typed && !CATEGORY_OPTIONS.some(c => c.toLowerCase() === q)){
+    rows.push(pickRow('Add “' + typed + '”', false, 'addFormCategory()'));
   }
-  matches.forEach(c => rows.push(pickRow(c, c === chosen,
-    'pickFormCategory(' + JSON.stringify(c).replace(/'/g,'&#39;') + ')',
-    CATEGORY_TO_TAB[c] !== c ? ` <span class="picker-option-group">${esc(CATEGORY_TO_TAB[c])}</span>` : '')));
+  categoryGroups().forEach(g => {
+    // A group whose own name matches shows all of its categories.
+    const headMatch = has(g.shelf);
+    const kids = headMatch ? g.kids : g.kids.filter(has);
+    if(!headMatch && !kids.length) return;
+    rows.push(g.selectable
+      ? pickRow(g.shelf, g.shelf === chosen, 'pickFormCategory(' + jsArg(g.shelf) + ')', 'group')
+      : `<div class="modal-meta" style="font-weight:700;">${esc(g.shelf)}</div>`);
+    kids.forEach(c => rows.push(pickRow(c, c === chosen, 'pickFormCategory(' + jsArg(c) + ')', 'child')));
+  });
   list.innerHTML = rows.join('') || '<p class="modal-meta">Nothing matches.</p>';
 }
 
+function setFormCategory(c){
+  document.getElementById('form-category').value = c;
+  formCategoryTouched = true;
+}
+
 function pickFormCategory(c){
-  if(!formPickDraft) return;
-  formPickDraft.value = c;
+  setFormCategory(c);
   renderFormCategoryPicks();
 }
 
 function addFormCategory(){
   const input = document.getElementById('form-pick-input');
   const typed = (input.value || '').trim();
-  if(!typed || !formPickDraft) return;
+  if(!typed) return;
   // Said the way the list says it when it is a category already.
   const same = CATEGORY_OPTIONS.find(c => c.toLowerCase() === typed.toLowerCase());
-  formPickDraft.value = same || typed;
+  setFormCategory(same || typed);
   input.value = '';
   renderFormCategoryPicks();
+}
+
+// -- Guessing the category from the name. The last word that names a category
+// wins, since the name ends in what the thing is: a "shirt dress" is a dress.
+let categoryMatchers = null;
+function guessCategory(name){
+  if(!categoryMatchers){
+    categoryMatchers = CATEGORY_OPTIONS.map(c => {
+      const lc = c.toLowerCase();
+      const forms = new Set([lc]);
+      if(lc !== 'shorts'){
+        if(lc.endsWith('es')) forms.add(lc.slice(0, -2));
+        if(lc.endsWith('s')) forms.add(lc.slice(0, -1));
+      }
+      return { c, res: Array.from(forms).map(f =>
+        new RegExp('(^|[^a-z])(' + f.replace(/-/g, '[- ]?') + ')(?![a-z])', 'g')) };
+    });
+  }
+  const text = (name || '').toLowerCase();
+  let best = null;
+  categoryMatchers.forEach(({ c, res }) => res.forEach(re => {
+    re.lastIndex = 0;
+    let m;
+    while((m = re.exec(text))){
+      const at = m.index + m[1].length;
+      if(!best || at > best.at || (at === best.at && m[2].length > best.len)){
+        best = { c, at, len: m[2].length };
+      }
+      re.lastIndex = m.index + 1;
+    }
+  }));
+  return best ? best.c : '';
+}
+
+function onFormNameInput(){
+  if(formCategoryTouched) return;
+  document.getElementById('form-category').value = guessCategory(document.getElementById('form-name').value);
+  renderFormPickerRows();
 }
 
 // -- Tags: any number of the ones you have used, and new ones as you think
@@ -7713,73 +7794,53 @@ function openFormTagsPicker(){
 }
 
 function drawFormTagsPicker(){
-  const current = parseTags(document.getElementById('form-tags').value);
-  formPickDraft = { kind: 'tags', value: new Set(current), baseline: JSON.stringify(current.slice().sort()) };
-  formPickFrame('Tags', '',
-    `<label>Add a new tag
-       <input type="text" id="form-pick-input" autocomplete="off" placeholder="e.g. summer, work"
-              onkeydown="if(event.key==='Enter'){event.preventDefault();addFormTag();}">
-     </label>
-     <button type="button" class="btn small" id="form-pick-add" onclick="addFormTag()">Add tag</button>`);
+  formPickKind = 'tags';
+  formPickFrame('Select tags', 'Search or add tags', 'renderFormTagPicks()', 'addFormTag()');
   renderFormTagPicks();
 }
 
+function formTagSet(){ return new Set(parseTags(document.getElementById('form-tags').value)); }
+function setFormTagSet(set){ document.getElementById('form-tags').value = Array.from(set).join(', '); }
+
 function renderFormTagPicks(){
   const list = document.getElementById('form-pick-list');
-  if(!list || !formPickDraft) return;
+  if(!list || formPickKind !== 'tags') return;
+  const typed = (document.getElementById('form-pick-input').value || '').trim();
+  const q = typed.toLowerCase();
+  const chosen = formTagSet();
   const used = tagsByUse();
   // Tags you have just made are not on the list yet; they lead it, ticked.
-  const fresh = Array.from(formPickDraft.value).filter(t => !used.includes(t));
-  const all = fresh.concat(used);
-  list.innerHTML = all.length
-    ? all.map(t => pickRow(t, formPickDraft.value.has(t), 'toggleFormTag(' + JSON.stringify(t).replace(/'/g,'&#39;') + ')')).join('')
-    : '<p class="modal-meta">No tags yet. Add the first one above.</p>';
+  const all = Array.from(chosen).filter(t => !used.includes(t)).concat(used)
+    .filter(t => t.toLowerCase().includes(q));
+  const rows = [];
+  if(typed && !all.some(t => t.toLowerCase() === q)){
+    rows.push(pickRow('Add “' + typed + '”', false, 'addFormTag()'));
+  }
+  all.forEach(t => rows.push(pickRow(t, chosen.has(t), 'toggleFormTag(' + jsArg(t) + ')')));
+  list.innerHTML = rows.join('') || '<p class="modal-meta">No tags yet. Type one to add it.</p>';
 }
 
 function toggleFormTag(tag){
-  if(!formPickDraft) return;
-  if(formPickDraft.value.has(tag)) formPickDraft.value.delete(tag);
-  else formPickDraft.value.add(tag);
+  const set = formTagSet();
+  if(set.has(tag)) set.delete(tag); else set.add(tag);
+  setFormTagSet(set);
   renderFormTagPicks();
 }
 
 function addFormTag(){
   const input = document.getElementById('form-pick-input');
-  if(!input || !formPickDraft) return;
-  parseTags(input.value).forEach(t => formPickDraft.value.add(t));
+  if(!input) return;
+  const set = formTagSet();
+  parseTags(input.value).forEach(t => set.add(t));
+  setFormTagSet(set);
   input.value = '';
   renderFormTagPicks();
   input.focus();
 }
 
-// -- Shared: Done stages it into the form, Back asks if there is a change.
-function formPickDirty(){
-  if(!formPickDraft) return false;
-  if(formPickDraft.kind === 'category') return formPickDraft.value !== formPickDraft.baseline;
-  return JSON.stringify(Array.from(formPickDraft.value).sort()) !== formPickDraft.baseline;
-}
-
+// Back is only ever Back: whatever was ticked is already on the form.
 function closeFormPicker(){
-  if(formPickDirty()){
-    askToLeave(formPickDraft.kind === 'category' ? 'category choice' : 'tag changes', discardFormPicker);
-    return;
-  }
-  discardFormPicker();
-}
-
-function discardFormPicker(){
-  formPickDraft = null;
-  goBackFromSheet();
-}
-
-function commitFormPicker(){
-  if(!formPickDraft) return;
-  if(formPickDraft.kind === 'category'){
-    document.getElementById('form-category').value = formPickDraft.value;
-  } else {
-    document.getElementById('form-tags').value = Array.from(formPickDraft.value).join(', ');
-  }
-  formPickDraft = null;
+  formPickKind = null;
   goBackFromSheet();
 }
 
@@ -7796,6 +7857,7 @@ function closeItemForm(){
 
 function discardItemForm(){
   itemFormBaseline = null;
+  formCapsuleIds = null;
   clearStagedPhoto();
   editingItemId = null;
   // Back to the piece you were editing if that is where you came from,
@@ -7844,6 +7906,16 @@ async function submitItemForm(){
   button.disabled = false;
   button.textContent = 'Save';
   if(!saved) return;
+
+  // Capsule ticks from the form's capsule page are applied with the rest.
+  if(editingItemId && formCapsuleIds){
+    const pieceId = editingItemId, want = formCapsuleIds;
+    for(const c of capsules){
+      const was = c.itemIds.includes(pieceId), now = want.has(c.id);
+      if(was !== now && !await setItemInCapsule(c.id, pieceId, now)) break;
+    }
+    renderCapsules();
+  }
 
   const wasEditing = Boolean(editingItemId);
   const staged = stagedPhoto && stagedPhoto.file;

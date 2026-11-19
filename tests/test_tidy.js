@@ -403,7 +403,7 @@ const foldedCount = p => p.evaluate(()=>
     check('and the piece page itself has no capsule button',
       !(await p.isVisible('.modal button:has-text("Add to capsule")')));
 
-    await p.click('#item-page-edit'); await p.waitForTimeout(500); await p.click('#form-capsules-row'); await p.waitForTimeout(500);
+    await p.click('#item-page-edit'); await p.waitForTimeout(500); await p.click('#form-capsules-row button'); await p.waitForTimeout(500);
     const picks = await p.evaluate(()=>
       Array.from(document.querySelectorAll('.capsule-pick'))
         .map(x=>({name:x.textContent.trim().replace(/\s*✓$/,''), picked:x.classList.contains('picked')})));
@@ -423,16 +423,17 @@ const foldedCount = p => p.evaluate(()=>
     check('and says nothing about it, because the row already did',
       await p.evaluate(()=>!document.querySelector('.toast.show')));
     await leaveSheet(p, {settle:700});
+    await p.click('#form-save-btn'); await p.waitForTimeout(700);   // the form is what saves it
     check('tapping takes it out', await p.evaluate(()=>!capsules[0].itemIds.includes('seed_0')));
     check('the membership row goes with it',
       await p.evaluate(()=>!window.__WARDROBE_STATE.capsule_items
         .some(r=>r.capsule_id==='cap_a' && r.item_id==='seed_0')));
 
     // Save lands on the edit form the list was opened from; back to the piece.
-    await p.evaluate(()=>closeItemForm()); await p.waitForTimeout(500);
-    await p.click('#item-page-edit'); await p.waitForTimeout(500); await p.click('#form-capsules-row'); await p.waitForTimeout(500);
+    await p.click('#item-page-edit'); await p.waitForTimeout(500); await p.click('#form-capsules-row button'); await p.waitForTimeout(500);
     await p.click('.capsule-pick'); await p.waitForTimeout(500);
     await leaveSheet(p, {settle:700});
+    await p.click('#form-save-btn'); await p.waitForTimeout(700);
     check('tapping again puts it back in',
       await p.evaluate(()=>capsules[0].itemIds.includes('seed_0')));
 
@@ -441,7 +442,8 @@ const foldedCount = p => p.evaluate(()=>
     // Through the piece, which is the only way there in the app — and the
     // only way Save has a piece to return to.
     await p.evaluate(()=>{ closeModal(); openModal('seed_0'); }); await p.waitForTimeout(400);
-    await p.evaluate(()=>openItemCapsulePicker('seed_0')); await p.waitForTimeout(500);
+    await p.click('#item-page-edit'); await p.waitForTimeout(500);
+    await p.click('#form-capsules-row button'); await p.waitForTimeout(500);
     check('a second capsule shows up as another row',
       (await p.locator('.capsule-pick').count()) === 2);
     await p.locator('.capsule-pick').nth(1).click(); await p.waitForTimeout(500);
@@ -449,6 +451,7 @@ const foldedCount = p => p.evaluate(()=>
       await p.evaluate(()=>document.querySelectorAll('.capsule-pick.picked').length) === 2);
 
     await leaveSheet(p, {settle:700});
+    await p.click('#form-save-btn'); await p.waitForTimeout(800);
     check('a piece can be in both at once',
       await p.evaluate(()=>capsulesForItem('seed_0').length) === 2,
       String(await p.evaluate(()=>capsulesForItem('seed_0').map(c=>c.name).join(','))));

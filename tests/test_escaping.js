@@ -30,7 +30,6 @@ const seed=fs.readFileSync(REPO + '/supabase/seed-items.json','utf8');
   const NASTY = `Levi's 6" <b>heel</b> & co`;
   await p.click('#add-item-btn'); await p.waitForTimeout(200);
   await p.fill('#form-name', NASTY);
-  await p.fill('#form-brand', '<img src=x onerror=window.__XSS=1>');
   await chooseCategory(p, 'Shoes');
   await p.click('#form-save-btn'); await p.waitForTimeout(400);
 

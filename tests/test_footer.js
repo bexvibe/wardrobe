@@ -142,13 +142,14 @@ async function assertPattern(p, scope, label, name, outWord, inset = 0){
   {
     const p=await open(b);
     await p.click('#add-item-btn'); await p.waitForTimeout(500);
-    await assertPattern(p, '#form-backdrop', 'Save piece', 'new piece');
+    // A new piece is a card like the back of a piece's, 14px in each side.
+    await assertPattern(p, '#form-backdrop', 'Save piece', 'new piece', undefined, 14);
 
     // It has to still be reachable after scrolling to the end of a long form.
     await scrollSheetToEnd(p, '#form-backdrop');
     const after = await footer(p, '#form-backdrop');
     check('it stays put when the form is scrolled',
-      after.bottom >= after.fold - 1, `${after.top}–${after.bottom}`);
+      after.bottom >= after.fold - 14 - 1, `${after.top}–${after.bottom}`);
 
     // And it saves.
     await p.fill('#form-name', 'Footer Test Piece');

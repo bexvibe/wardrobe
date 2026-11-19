@@ -194,7 +194,7 @@ const tiles = p => p.evaluate(()=>document.querySelectorAll('#gallery .tile').le
   {
     const p=await open(b);
     await p.click('#add-item-btn'); await p.waitForTimeout(500);
-    await p.click('#form-category-field'); await p.waitForTimeout(400);
+    await p.click('#form-category-field button'); await p.waitForTimeout(400);
     await p.fill('#form-pick-input', 'sho'); await p.waitForTimeout(300);
     const opts = await p.evaluate(()=>Array.from(
       document.querySelectorAll('#form-pick-list .capsule-pick')).map(e=>e.textContent.trim()));

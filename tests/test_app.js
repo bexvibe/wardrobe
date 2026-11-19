@@ -175,7 +175,6 @@ async function login(page) {
     await page.click('#add-item-btn');
     await page.waitForTimeout(250);
     await page.fill('#form-name', 'Test Trench');
-    await page.fill('#form-brand', 'Testwear');
     await chooseCategory(page, 'Jackets');
     await page.click('#form-save-btn');
     await page.waitForTimeout(400);

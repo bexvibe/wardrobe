@@ -236,14 +236,15 @@ const sheetOpen = p => p.evaluate(()=>
   }
 
   // ---- 6. A sheet holding a draft answers the gesture only until it is edited ----
+  // (the tag editor: the capsule picker applies as you tick now, so it holds no draft)
   {
     const p=await open(b);
-    await p.evaluate(()=>openItemCapsulePicker('seed_0')); await p.waitForTimeout(600);
+    await p.evaluate(()=>openTagEditor('winter')); await p.waitForTimeout(600);
     await touchDrag(p, '#modal', await pointIn(p, '#modal', 40), 0, 170);
     check('an untouched draft sheet comes down', !(await sheetOpen(p)));
 
-    await p.evaluate(()=>openItemCapsulePicker('seed_0')); await p.waitForTimeout(600);
-    await p.evaluate(()=>capsulePicksDraft.ids.add('__edited__'));
+    await p.evaluate(()=>openTagEditor('winter')); await p.waitForTimeout(600);
+    await p.fill('#tag-edit-input', 'winter2'); await p.waitForTimeout(150);
     const rest = await where(p, '#modal');
     const {seen} = await touchDrag(p, '#modal', await pointIn(p, '#modal', 40), 0, 170);
     check('an edited draft sheet does not come down', seen.every(s => s.top === rest.top),
@@ -273,11 +274,11 @@ const sheetOpen = p => p.evaluate(()=>
       await sheetOpen(p));
     check('and springs back', (await where(p, '#modal')).top === rest.top);
 
-    await p.evaluate(()=>openItemCapsulePicker('seed_0')); await p.waitForTimeout(600);
-    await p.evaluate(()=>capsulePicksDraft.ids.add('__edited__'));
+    await p.evaluate(()=>openTagEditor('winter')); await p.waitForTimeout(600);
+    await p.fill('#tag-edit-input', 'winter2'); await p.waitForTimeout(150);
     await flick(p, await pointIn(p, '#modal', 40), 90);
     check('a flick on a sheet holding an edited draft does nothing', await sheetOpen(p) &&
-      await p.evaluate(()=>Boolean(document.getElementById('capsule-picks-save'))));
+      await p.evaluate(()=>Boolean(document.getElementById('tag-edit-input'))));
     await p.context().close();
   }
 

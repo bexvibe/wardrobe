@@ -116,7 +116,7 @@ const confirmText = p => p.evaluate(()=>({
   {
     const p=await open(b);
     await p.click('#add-item-btn'); await p.waitForTimeout(500);
-    await p.fill('#form-brand', 'Toteme'); await p.waitForTimeout(150);
+    await p.fill('#form-name', 'Toteme'); await p.waitForTimeout(150);
     await p.click('#form-backdrop .sheet-footer .btn.secondary'); await p.waitForTimeout(400);
     check('one field filled in is enough to be asked', await confirmOpen(p));
     const t = await confirmText(p);
@@ -141,7 +141,7 @@ const confirmText = p => p.evaluate(()=>({
     await p.click('#confirm-stay'); await p.waitForTimeout(400);
     check('Keep editing puts you back in the form',
       !(await confirmOpen(p)) &&
-      (await p.inputValue('#form-brand')) === 'Toteme');
+      (await p.inputValue('#form-name')) === 'Toteme');
 
     await p.click('#form-backdrop .sheet-footer .btn.secondary'); await p.waitForTimeout(300);
     await p.click('#confirm-go'); await p.waitForTimeout(400);
@@ -149,7 +149,7 @@ const confirmText = p => p.evaluate(()=>({
       !(await confirmOpen(p)) &&
       !(await p.evaluate(()=>document.getElementById('form-backdrop').classList.contains('open'))));
     check('and nothing was written',
-      await p.evaluate(()=>!ITEMS.some(i=>i.brand === 'Toteme')));
+      await p.evaluate(()=>!ITEMS.some(i=>i.name === 'Toteme')));
     await p.close();
   }
 
@@ -246,38 +246,28 @@ const confirmText = p => p.evaluate(()=>({
     // than an arrow in a corner, it needs a word: Cancel.
     const p=await open(b);
     await p.evaluate(()=>openModal('seed_0')); await p.waitForTimeout(500);
-    await p.click('#item-page-edit'); await p.waitForTimeout(500); await p.click('#form-capsules-row'); await p.waitForTimeout(600);
+    await p.click('#item-page-edit'); await p.waitForTimeout(500); await p.click('#form-capsules-row button'); await p.waitForTimeout(600);
     const bar = await p.evaluate(()=>{
       const f = document.querySelector('#modal .sheet-footer');
       const btns = Array.from(f.querySelectorAll('.btn'));
-      const l = btns[0].getBoundingClientRect(), r = btns[1].getBoundingClientRect();
+      const l = btns[0].getBoundingClientRect();
       return {
-        split: f.classList.contains('split'),
         labels: btns.map(x=>x.textContent.trim()),
         quiet: btns[0].classList.contains('secondary'),
-        order: Math.round(l.left) < Math.round(r.left),
-        gap: Math.round(r.left - l.right),
-        leftW: Math.round(l.width), rightW: Math.round(r.width),
-        rightEnd: Math.round(r.right),
-        innerEnd: Math.round(f.querySelector('.sheet-footer-inner').getBoundingClientRect().right),
-        lowest: Math.round(Math.min(l.top, r.top)),
+        chevron: Boolean(btns[0].querySelector('svg.back-glyph')),
+        lowest: Math.round(l.top),
         fold: window.innerHeight,
         backArrow: Boolean(document.querySelector('#modal .sheet-back')),
       };
     });
-    check('a sheet holding a draft leaves by its own bar', bar.split, bar.labels.join(' / '));
-    check('and the way out is called Back', bar.labels[0] === 'Back', bar.labels.join(' / '));
-    check('drawn quieter than the thing you came to do', bar.quiet);
-    check('on the left, so a right thumb falls on the side that keeps your work',
-      bar.order);
-    check('Cancel kept small, the save filling the rest of the bar',
-      bar.leftW * 2 < bar.rightW && bar.rightEnd === bar.innerEnd,
-      `${bar.leftW}px / ${bar.rightW}px, save ends at ${bar.rightEnd} of ${bar.innerEnd}`);
-    check('both of them down where a thumb is',
-      bar.lowest > bar.fold * 0.6, `${bar.lowest} of ${bar.fold}`);
-    check('and nothing left in the top corner to reach for instead',
-      !bar.backArrow);
-    await p.evaluate(()=>discardCapsulePicker()); await p.waitForTimeout(400);
+    // The picker applies as you tick, to the form, which is what saves: so
+    // its bar is Back and nothing else.
+    check('a capsule page leaves by one button, Back, with a chevron',
+      bar.labels.length === 1 && bar.labels[0] === 'Back' && bar.chevron, bar.labels.join(' / '));
+    check('drawn quiet, as a way out is', bar.quiet);
+    check('and down where a thumb is', bar.lowest > bar.fold * 0.6, `${bar.lowest} of ${bar.fold}`);
+    check('and nothing left in the top corner to reach for instead', !bar.backArrow);
+    await p.evaluate(()=>closeCapsulePicker()); await p.waitForTimeout(400);
 
     // A sheet with nothing to commit has nothing to cancel. The filter sheet
     // changes the page behind it as you tap, so its foot is one button that
@@ -361,11 +351,11 @@ const confirmText = p => p.evaluate(()=>({
 
     await p.evaluate(()=>closeModal()); await p.waitForTimeout(400);
     await p.evaluate(()=>openItemForm(null)); await p.waitForTimeout(600);
-    check('a new piece form, untouched, answers it',
-      await p.evaluate(()=>formSheetIsUp()));
-    await p.evaluate(()=>{ document.getElementById('form-name').value = 'Scarf'; });
-    check('but not once a field has been filled',
-      await p.evaluate(()=>!formSheetIsUp()));
+    // A new piece is a card, like the back of a piece's: it has no
+    // pull-down, and Cancel is how you leave it, asking first if need be.
+    check('a new piece form is a card, and has no pull-down',
+      await p.evaluate(()=>document.getElementById('form-backdrop').classList.contains('item-card-back') &&
+        !formSheetIsUp()));
     await p.evaluate(()=>{ itemFormBaseline = null; closeModal(); }); await p.waitForTimeout(400);
 
     await p.evaluate(()=>openTagEditor('winter')); await p.waitForTimeout(600);

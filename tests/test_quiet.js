@@ -81,7 +81,7 @@ const hush = p => p.evaluate(()=>{
     await p.evaluate(async()=>{ await saveCapsule({ id:null, name:'Winter', itemIds:[] }); });
     await p.waitForTimeout(500);
     await p.evaluate(()=>{ openModal('seed_0'); }); await p.waitForTimeout(600);
-    await p.click('#item-page-edit'); await p.waitForTimeout(500); await p.click('#form-capsules-row'); await p.waitForTimeout(700);
+    await p.click('#item-page-edit'); await p.waitForTimeout(500); await p.click('#form-capsules-row button'); await p.waitForTimeout(700);
 
     await p.click('.capsule-pick'); await p.waitForTimeout(600);
     check('ticking a capsule raises no toast', !(await toastUp(p)).shown);
@@ -95,6 +95,8 @@ const hush = p => p.evaluate(()=>{
 
     await p.click('.capsule-pick'); await p.waitForTimeout(500);
     await leaveSheet(p, {settle:800});
+    // Ticks are on the form; Save piece is what moves the piece.
+    await p.click('#form-save-btn'); await p.waitForTimeout(800);
     check('and the piece really is in it',
       await p.evaluate(()=>capsules[0].itemIds.includes('seed_0')));
     await p.close();

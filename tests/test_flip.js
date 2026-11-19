@@ -292,9 +292,9 @@ const box = (p, sel) => p.evaluate(s=>{ const r=document.querySelector(s).getBou
     isButton('Save piece', await look('#form-save-btn'));
     isButton('Cancel', await look('#form-backdrop .sheet-footer .btn.secondary'));
     isButton('Replace photo', await look('.form-photo'));
-    await p.click('#form-category-field'); await p.waitForTimeout(400);
+    await p.click('#form-category-field button'); await p.waitForTimeout(400);
     isSelector('a category option', await look('#form-pick-list .capsule-pick'));
-    isButton('Done on the category page', await look('#form-pick-done'));
+    isButton('Back on the category page', await look('#modal .sheet-footer .btn.secondary'));
     await p.close();
   }
 
@@ -311,48 +311,66 @@ const box = (p, sel) => p.evaluate(s=>{ const r=document.querySelector(s).getBou
     check('category and tags are rows showing their value, like capsules',
       rows.cat.length>0 && rows.tags==='summer, work' && !rows.oldFields, JSON.stringify(rows));
 
-    // Category: find, pick, Done.
-    await p.click('#form-category-field'); await p.waitForTimeout(400);
+    // Category: find, pick; it is on the form as soon as it is ticked.
+    await p.click('#form-category-field button'); await p.waitForTimeout(400);
     check('the category page is a full page',
       await p.evaluate(()=>document.getElementById('modal-backdrop').classList.contains('as-page')));
+    check('there is no Done on it, only Back',
+      !(await p.$('#form-pick-done')) &&
+      (await p.locator('#modal .sheet-footer .btn').allTextContents()).map(t=>t.trim()).join()==='Back');
+    check('Back has a chevron, like the other back buttons',
+      await p.evaluate(()=>Boolean(document.querySelector('#modal .sheet-footer .btn svg.back-glyph'))));
+    check('the search field has its icon inside it',
+      await p.evaluate(()=>Boolean(document.querySelector('.search-box svg')) &&
+        document.querySelector('.search-box svg').getBoundingClientRect().left >
+        document.querySelector('.search-box input').getBoundingClientRect().left));
     await p.fill('#form-pick-input','sho'); await p.waitForTimeout(200);
     const opts = await p.evaluate(()=>Array.from(document.querySelectorAll('#form-pick-list .capsule-pick')).map(e=>e.textContent.trim()));
     check('typing filters it, and offers to add what you typed',
       opts.some(o=>o.startsWith('Shorts')) && opts.some(o=>o.startsWith('Add')), opts.join(' | '));
     await p.locator('#form-pick-list .capsule-pick', {hasText:'Shorts'}).first().click();
-    await p.click('#form-pick-done'); await p.waitForTimeout(500);
-    check('Done puts it on the form', (await p.textContent('#form-category-summary')).trim()==='Shorts' &&
-      await p.inputValue('#form-category')==='Shorts');
+    check('ticking puts it on the form straight away', await p.inputValue('#form-category')==='Shorts');
+    await p.click('#modal .sheet-footer .btn.secondary'); await p.waitForTimeout(500);
+    check('Back shows it in the field', (await p.textContent('#form-category-summary')).trim()==='Shorts');
     check('and back on the card, not a new sheet',
       await p.evaluate(()=>document.getElementById('form-backdrop').classList.contains('item-card-back')));
 
+    // The list nests categories under their main category, A to Z.
+    await p.click('#form-category-field button'); await p.waitForTimeout(400);
+    const nest = await p.evaluate(()=>Array.from(document.querySelectorAll('#form-pick-list .capsule-pick'))
+      .map(e=>({t:e.querySelector('span').textContent.trim(), child:e.classList.contains('child'), group:e.classList.contains('group')})));
+    const groups = nest.filter(r=>r.group).map(r=>r.t);
+    check('main categories are in alphabetical order',
+      JSON.stringify(groups)===JSON.stringify(groups.slice().sort((a,b)=>a.localeCompare(b))), groups.join(','));
+    const tops = nest.slice(nest.findIndex(r=>r.t==='Tops')+1).filter((r,i,arr)=>!arr.slice(0,i).some(x=>x.group)).map(r=>r.t);
+    const kids = []; for(let i=nest.findIndex(r=>r.t==='Tops')+1;i<nest.length&&nest[i].child;i++) kids.push(nest[i].t);
+    check('Blouses sits under Tops, and what is under it is A to Z',
+      kids.includes('Blouses') && JSON.stringify(kids)===JSON.stringify(kids.slice().sort((a,b)=>a.localeCompare(b))), kids.join(','));
+    await p.click('#modal .sheet-footer .btn.secondary'); await p.waitForTimeout(500);
+
     // A brand new category, by typing it.
-    await p.click('#form-category-field'); await p.waitForTimeout(400);
+    await p.click('#form-category-field button'); await p.waitForTimeout(400);
     await p.fill('#form-pick-input','Kimonos'); await p.press('#form-pick-input','Enter');
     check('a new category is added and ticked',
       await p.evaluate(()=>Array.from(document.querySelectorAll('#form-pick-list .capsule-pick.picked')).some(e=>e.textContent.includes('Kimonos'))));
-    await p.click('#form-pick-done'); await p.waitForTimeout(500);
+    await p.click('#modal .sheet-footer .btn.secondary'); await p.waitForTimeout(500);
     check('and lands on the form', await p.inputValue('#form-category')==='Kimonos');
 
     // Tags: tick, untick, add new.
-    await p.click('#form-tags-field'); await p.waitForTimeout(400);
+    await p.click('#form-tags-field button'); await p.waitForTimeout(400);
     const picked = () => p.evaluate(()=>Array.from(document.querySelectorAll('#form-pick-list .capsule-pick.picked')).map(e=>e.textContent.replace('✓','').trim()));
     check('the piece\'s tags are ticked', JSON.stringify((await picked()).sort())==='["summer","work"]', (await picked()).join(','));
     await p.locator('#form-pick-list .capsule-pick', {hasText:'work'}).first().click();
-    await p.fill('#form-pick-input','Linen, Brand New'); await p.click('#form-pick-add');
+    await p.fill('#form-pick-input','Linen, Brand New'); await p.press('#form-pick-input','Enter');
     check('untick one, add two new: new tags lead the list, ticked',
       JSON.stringify((await picked()).sort())==='["brand new","linen","summer"]', (await picked()).join(','));
-    await p.click('#form-pick-done'); await p.waitForTimeout(500);
-    check('Done stages them in the form, in order',
+    check('they are on the form already, in order',
       await p.inputValue('#form-tags')==='summer, linen, brand new');
-    // Back with a change asks first.
-    await p.click('#form-tags-field'); await p.waitForTimeout(400);
-    await p.locator('#form-pick-list .capsule-pick', {hasText:'summer'}).first().click();
-    await p.click('#modal .sheet-footer .btn.secondary'); await p.waitForTimeout(300);
-    check('Back with a change asks first',
-      await p.evaluate(()=>document.getElementById('confirm-backdrop').classList.contains('open')));
-    await p.click('#confirm-go'); await p.waitForTimeout(500);
-    check('and Discard leaves the form as it was', await p.inputValue('#form-tags')==='summer, linen, brand new');
+    await p.click('#modal .sheet-footer .btn.secondary'); await p.waitForTimeout(500);
+    check('and Back does not ask',
+      !(await p.evaluate(()=>document.getElementById('confirm-backdrop').classList.contains('open'))));
+    check('the tags field says what is picked',
+      (await p.textContent('#form-tags-summary')).trim()==='summer, linen, brand new');
     // Save writes it.
     await p.click('#form-save-btn'); await p.waitForTimeout(600);
     const saved = await p.evaluate(()=>{const r=window.__WARDROBE_STATE.items.find(x=>x.id==='seed_0');return {c:r.category,t:r.tags};});
@@ -429,9 +447,36 @@ const box = (p, sel) => p.evaluate(s=>{ const r=document.querySelector(s).getBou
   {
     const p=await open(b);
     await p.click('#add-item-btn'); await p.waitForTimeout(500);
-    check('a new piece is the ordinary sheet',
+    check('a new piece is a card too, rising into place, with nothing to turn',
       await up(p,'form-backdrop') &&
-      !(await p.evaluate(()=>document.getElementById('form-backdrop').classList.contains('item-card-back'))));
+      await p.evaluate(()=>{ const c=document.getElementById('form-backdrop').classList;
+        return c.contains('item-card-back') && c.contains('card-enter'); }));
+    check('and it is short: image, name, category, tags',
+      await p.evaluate(()=>{
+        const vis = id => { const e=document.getElementById(id); return e && e.offsetParent !== null; };
+        return vis('form-name') && vis('form-category-summary') && vis('form-tags-summary') &&
+               !vis('form-brand') && !vis('form-size') && !vis('form-price') && !vis('form-source') &&
+               Boolean(document.querySelector('#form-photo-row .form-photo'));
+      }));
+    // The category follows the name until you choose one yourself.
+    await p.fill('#form-name', 'Black linen blouse'); await p.waitForTimeout(150);
+    check('typing a name picks the category it names',
+      await p.inputValue('#form-category')==='Blouses' &&
+      (await p.textContent('#form-category-summary')).trim()==='Blouses');
+    await p.fill('#form-name', 'Shirt dress'); await p.waitForTimeout(150);
+    check('the last word wins: a shirt dress is a dress', await p.inputValue('#form-category')==='Dresses');
+    await p.fill('#form-name', 'Something unnamed'); await p.waitForTimeout(150);
+    check('a name that names nothing leaves it empty, saying Select category',
+      await p.inputValue('#form-category')==='' &&
+      (await p.textContent('#form-category-summary')).trim()==='Select category');
+    await p.fill('#form-name', 'Linen shorts');
+    await p.click('#form-category-field button'); await p.waitForTimeout(400);
+    await p.locator('#form-pick-list .capsule-pick', {hasText:'Skirts'}).first().click();
+    await p.click('#modal .sheet-footer .btn.secondary'); await p.waitForTimeout(500);
+    await p.fill('#form-name', 'Linen trousers'); await p.waitForTimeout(150);
+    check('once you choose, the name no longer changes it', await p.inputValue('#form-category')==='Skirts');
+    check('the empty fields say what to do',
+      (await p.textContent('#form-tags-summary')).trim()==='Select tags');
     await p.close();
   }
   {
