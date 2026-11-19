@@ -257,11 +257,11 @@
        threshold is the fix — blocking zoom in the viewport tag would take
        away pinch-to-zoom everywhere to solve it in one place. */
     font-size:16px;
-    padding:12px 14px;
-    min-height:44px;
+    padding:15px 16px;
+    min-height:54px;
     box-sizing:border-box;
     border:1px solid var(--line);
-    border-radius:6px;
+    border-radius:8px;
     background:var(--surface);
     color:var(--ink);
     flex:1;
@@ -300,13 +300,13 @@
     /* Same 16px floor as above — every field that can take focus, or the
        add form and the password screen zoom instead. */
     font-size:16px;
-    /* Roomy enough to hit without aiming: 44px is the smallest target a
-       thumb reliably lands on. */
-    padding:12px 14px;
-    min-height:44px;
+    /* Roomy enough to hit without aiming. One size for every field — form,
+       search and sign-in — so they all match. */
+    padding:15px 16px;
+    min-height:54px;
     box-sizing:border-box;
     border:1px solid var(--line);
-    border-radius:6px;
+    border-radius:8px;
     background:var(--page);
     color:var(--ink);
   }
@@ -1271,7 +1271,9 @@
   .form-grid input, .form-grid textarea, .form-grid select{
     background:var(--surface);
   }
-  .form-grid textarea{min-height:88px;resize:vertical;}
+  .form-grid textarea{min-height:120px;resize:vertical;line-height:1.4;}
+  .form-grid{gap:16px;}
+  .form-grid label{font-size:14px;gap:8px;}
   .form-error{font-size:12px;color:var(--ink);min-height:16px;}
 
   /* Archive */
@@ -1855,17 +1857,29 @@
   .field-pick{
     display:flex;flex-direction:column;gap:6px;
     font-family:'Figtree',sans-serif;
-    font-size:13px;font-weight:600;color:var(--ink-soft);
+    font-size:14px;font-weight:600;color:var(--ink-soft);
   }
   .field-pick-btn{
     display:flex;align-items:center;gap:10px;width:100%;
     font-family:'Figtree',sans-serif;font-size:16px;font-weight:400;text-align:left;
-    min-height:44px;padding:12px 14px;box-sizing:border-box;
-    border:1px solid var(--line);border-radius:6px;
+    min-height:54px;padding:15px 16px;box-sizing:border-box;
+    border:1px solid var(--line);border-radius:8px;
     background:var(--surface);color:var(--ink);cursor:pointer;
   }
   .field-pick-value{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .field-pick-value.unset{color:var(--ink-soft);}
+  /* Selected tags and capsules sit in the field as chips, wrapping onto more
+     rows so the field grows to show every one. */
+  .field-pick-value.has-chips{
+    white-space:normal;overflow:visible;
+    display:flex;flex-wrap:wrap;gap:6px;
+  }
+  .pick-chip{
+    font-size:13px;font-weight:600;line-height:1;
+    padding:7px 12px;border-radius:999px;
+    background:var(--accent-soft);color:var(--ink);
+    max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
   .field-pick-btn svg{flex:none;color:var(--ink-soft);}
   .form-extra{display:flex;flex-direction:column;gap:12px;}
   /* A search field keeps its icon inside it, at the left. */
@@ -7583,7 +7597,7 @@ function renderFormCapsulesRow(){
   row.style.display = capsulesAvailable && editingItemId ? '' : 'none';
   const ids = formCapsuleSelection();
   const names = capsules.filter(c => ids.has(c.id)).map(c => c.name);
-  setPickValue('form-capsules-summary', names.join(', '), 'Select capsules');
+  setPickValue('form-capsules-summary', names, 'Select capsules');
 }
 
 function openCapsulesFromForm(){
@@ -7618,9 +7632,25 @@ function stageFormCapsules(ids){
 }
 
 // A chosen value says so; nothing chosen says what to do.
-function setPickValue(id, text, placeholder){
+// `value` is a string, or an array of strings shown as chips that wrap so the
+// field grows to fit all of them.
+function setPickValue(id, value, placeholder){
   const el = document.getElementById(id);
   if(!el) return;
+  if(Array.isArray(value) && value.length){
+    el.textContent = '';
+    el.classList.remove('unset');
+    el.classList.add('has-chips');
+    value.forEach(v => {
+      const chip = document.createElement('span');
+      chip.className = 'pick-chip';
+      chip.textContent = v;
+      el.appendChild(chip);
+    });
+    return;
+  }
+  el.classList.remove('has-chips');
+  const text = Array.isArray(value) ? '' : value;
   el.textContent = text || placeholder;
   el.classList.toggle('unset', !text);
 }
@@ -7649,7 +7679,7 @@ function renderFormPhotoRow(item){
 // fields, so saving and the unsaved-changes check read the form as ever.
 function renderFormPickerRows(){
   setPickValue('form-category-summary', document.getElementById('form-category').value.trim(), 'Select category');
-  setPickValue('form-tags-summary', parseTags(document.getElementById('form-tags').value).join(', '), 'Select tags');
+  setPickValue('form-tags-summary', parseTags(document.getElementById('form-tags').value), 'Select tags');
 }
 
 let formPickKind = null;   // 'category' | 'tags' while that page is up
