@@ -1,0 +1,527 @@
+<title>Outfits Hero and Discovery</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* Layout: a reading column of options. Every option is one or two live phones beside a short note. */
+  :root{
+    --bg:#EFEDE9; --fg:#171717; --muted:#66625C; --rule:#D9D5CE; --card:#F8F6F2; --brand:#756694; --tint:#E9E4F2;
+    --serif:'Fraunces',Georgia,serif; --sans:'Work Sans',system-ui,sans-serif;
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#141415;--fg:#ECEAE6;--muted:#A19D96;--rule:#2B2A2D;--card:#1D1C1F;--tint:#2A2535;color-scheme:dark}}
+  :root[data-theme="dark"]{--bg:#141415;--fg:#ECEAE6;--muted:#A19D96;--rule:#2B2A2D;--card:#1D1C1F;--tint:#2A2535;color-scheme:dark}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.55 var(--sans);
+    padding-block:40px 80px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+  .wrap{max-width:1080px;margin:0 auto}
+  h1,h2,h3{font-family:var(--serif);font-weight:400;margin:0;text-wrap:balance}
+  h1{font-size:36px;line-height:1.15} h2{font-size:25px} h3{font-size:19px}
+  p{margin:0}
+  .lead{color:var(--muted);max-width:62ch;margin:10px 0 0}
+  section{margin-top:56px;padding-top:24px;border-top:1px solid var(--rule)}
+  .eyebrow{font-size:12px;letter-spacing:.09em;text-transform:uppercase;font-weight:600;color:var(--muted);margin-bottom:6px}
+  .sec-note{color:var(--muted);max-width:64ch;margin:8px 0 22px}
+  .opt{margin-top:34px}
+  .opt-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+  .tag{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;padding:3px 9px;border-radius:999px;background:var(--tint);color:var(--brand)}
+  .row{display:flex;flex-wrap:wrap;gap:22px;align-items:flex-start;margin-top:14px}
+  figure{margin:0;min-width:0}
+  figcaption{font-size:12px;letter-spacing:.08em;text-transform:uppercase;font-weight:600;color:var(--muted);margin-bottom:8px}
+  .meta{flex:1 1 260px;max-width:380px;min-width:0;background:var(--card);border:1px solid var(--rule);border-radius:14px;padding:16px 18px;display:grid;gap:12px;font-size:14px}
+  .meta b{display:block;font-size:12px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:2px}
+  .pick{border-color:var(--brand)}
+  .principles{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-top:20px}
+  .principles div{background:var(--card);border:1px solid var(--rule);border-radius:14px;padding:14px 16px;font-size:14px}
+  .principles b{display:block;margin-bottom:3px;font-weight:600}
+  .hint{font-size:13px;color:var(--muted);margin-top:10px;max-width:64ch}
+
+  /* ---------- The phone: the app's own tokens, always light ---------- */
+  .phone{--page:#E3E0DB;--surface:#F7F5F1;--line:#D2CFC9;--ink:#121212;--soft:#6E6E6E;--brand:#756694;--brand-deep:#655885;--chip:#D5D2CC;
+    --btn:0 1px 2px rgba(18,18,18,.07),0 2px 7px rgba(18,18,18,.09);
+    width:304px;height:640px;background:var(--page);border-radius:30px;border:1px solid var(--line);position:relative;overflow:hidden;color:var(--ink);
+    box-shadow:0 10px 30px rgba(0,0,0,.14);font:13px/1.4 var(--sans);flex:none}
+  :where(.phone) button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;padding:0}
+  .phone img{display:block}
+  .scr{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;padding:26px 14px 150px;scrollbar-width:none}
+  .scr::-webkit-scrollbar{display:none}
+  .ph-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px}
+  .ph-top h4{font-family:var(--serif);font-weight:400;font-size:26px;line-height:1.1;margin:0}
+  .ph-top .sub{font-size:12px;color:var(--soft);margin-top:2px}
+  .build{width:36px;height:36px;border-radius:50%;background:var(--surface);box-shadow:var(--btn);display:grid;place-items:center;font-size:20px;line-height:1}
+  /* selectors: outline, no shadow, filled when on */
+  .chips{display:flex;gap:6px;overflow-x:auto;margin:0 -14px 10px;padding:2px 14px;scrollbar-width:none}
+  .chips::-webkit-scrollbar{display:none}
+  .chip{flex:none;min-height:34px;padding:0 12px;border-radius:999px;border:1px solid var(--line);font-size:12px;font-weight:500;color:var(--ink);display:flex;align-items:center;gap:5px;white-space:nowrap;background:transparent}
+  .chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .chip svg{width:14px;height:14px}
+  .why{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--soft);margin:2px 2px 8px;min-height:18px}
+  .why b{color:var(--ink);font-weight:600}
+  .why i{font-style:normal;font-size:10px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;padding:2px 7px;border-radius:999px;background:#E6E1EF;color:var(--brand-deep);flex:none}
+
+  /* the hero card: pieces laid out as worn, like the app's outfit card */
+  .hc{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:8px;position:relative}
+  .hc .up{display:flex}
+  .hc .up .pc{width:50%;height:116px}
+  .hc .up.n1 .pc{width:100%}
+  .hc .lo .pc{height:104px;margin-top:-6px}
+  .hc .ft .pc{height:54px;margin-top:-2px}
+  .pc{position:relative;display:grid;place-items:center;border-radius:10px;transition:box-shadow .2s}
+  .pc img{max-width:100%;max-height:100%;object-fit:contain}
+  .pc.sw{box-shadow:0 0 0 2px var(--brand);background:#EFEAF5}
+  .pc .was{position:absolute;left:3px;top:3px;display:flex;align-items:center;gap:3px;font-size:9px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--soft);background:var(--surface);border-radius:8px;padding:2px 5px 2px 2px;box-shadow:var(--btn)}
+  .pc .was img{width:20px;height:20px}
+  .lock{position:absolute;bottom:2px;right:4px;width:28px;height:28px;border-radius:50%;background:var(--surface);box-shadow:var(--btn);display:grid;place-items:center;color:var(--soft)}
+  .lock svg{width:14px;height:14px}
+  .pc.lk .lock{background:var(--ink);color:#fff}
+  .heart{position:absolute;top:6px;right:6px;width:30px;height:30px;display:grid;place-items:center;z-index:2}
+  .heart svg{width:20px;height:20px}
+  .lv{position:absolute;top:8px;left:8px;display:flex;gap:2px;z-index:2}
+  .lv svg{width:13px;height:13px}
+
+  .actions{display:flex;gap:8px;margin-top:10px}
+  .shuf{flex:1;min-height:46px;border-radius:999px;background:var(--brand);color:#fff;box-shadow:var(--btn);display:flex;align-items:center;justify-content:center;gap:8px;font-weight:600;font-size:14px;transition:transform .12s}
+  .shuf:hover{background:var(--brand-deep)} .shuf:active{transform:scale(.97)}
+  .shuf svg,.fab svg{width:20px;height:20px;flex:none}
+  .shuf.flick svg,.fab.flick svg{animation:flick .32s cubic-bezier(.32,.72,0,1)}
+  @keyframes flick{0%{transform:rotate(0)}50%{transform:rotate(-28deg) scale(1.15)}100%{transform:rotate(0)}}
+  .sq{width:46px;height:46px;border-radius:50%;background:var(--surface);box-shadow:var(--btn);display:grid;place-items:center;flex:none}
+  .sq svg{width:19px;height:19px}
+  .sq[disabled]{opacity:.4;cursor:default}
+  .legend{font-size:11.5px;color:var(--soft);text-align:center;margin-top:8px}
+
+  /* deck */
+  .deck{position:relative;margin:0 6px}
+  .deck::before,.deck::after{content:"";position:absolute;inset:0;border:1px solid var(--line);border-radius:12px;background:var(--surface);z-index:0}
+  .deck::before{transform:translate(8px,8px) rotate(2deg);opacity:.7}
+  .deck::after{transform:translate(-6px,5px) rotate(-1.6deg);opacity:.85}
+  .deck .hc{z-index:1;touch-action:pan-y;cursor:grab;transition:transform .22s cubic-bezier(.32,.72,0,1),opacity .22s}
+  .deck .hc.out{transform:translateX(130%) rotate(10deg);opacity:0}
+  .deck-wand{position:absolute;right:-8px;bottom:-14px;z-index:3;width:54px;height:54px;border-radius:50%;background:var(--brand);color:#fff;box-shadow:0 4px 14px rgba(60,40,100,.35);display:grid;place-items:center}
+  .deck-wand svg{width:24px;height:24px}
+  .deck-meta{display:flex;align-items:center;justify-content:space-between;margin:22px 4px 0;font-size:12px;color:var(--soft)}
+  .deck-meta .chip{min-height:30px}
+
+  /* grid and shelves */
+  .sec-h{display:flex;align-items:baseline;justify-content:space-between;margin:20px 2px 8px}
+  .sec-h h5{font-family:var(--serif);font-weight:400;font-size:17px;margin:0}
+  .sec-h span{font-size:11.5px;color:var(--soft)}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .gc{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:5px;position:relative;cursor:pointer}
+  .gc .up{display:flex}
+  .gc .up .pc{width:50%;height:62px} .gc .up.n1 .pc{width:100%}
+  .gc .lo .pc{height:54px;margin-top:-5px}
+  .gc .ft .pc{height:28px;margin-top:-2px}
+  .gc .bd{position:absolute;left:5px;top:5px;z-index:2;font-size:9px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:2px 6px;border-radius:999px;background:#E6E1EF;color:var(--brand-deep);max-width:calc(100% - 28px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .gc .mini{position:absolute;right:4px;top:4px;width:18px;height:18px;z-index:2}
+  .shelf{display:flex;gap:8px;overflow-x:auto;margin:0 -14px;padding:2px 14px 6px;scrollbar-width:none}
+  .shelf::-webkit-scrollbar{display:none}
+  .shelf .gc{flex:none;width:122px}
+  .shelf .gc .up .pc{height:54px} .shelf .gc .lo .pc{height:48px}
+
+  /* piece picker strip */
+  .strip{display:flex;gap:7px;overflow-x:auto;margin:0 -14px 10px;padding:3px 14px;scrollbar-width:none}
+  .strip::-webkit-scrollbar{display:none}
+  .pp{flex:none;width:52px;height:52px;border-radius:12px;border:1px solid var(--line);display:grid;place-items:center;background:var(--surface);position:relative}
+  .pp img{max-width:40px;max-height:40px;object-fit:contain}
+  .pp.on{outline:2px solid var(--ink);outline-offset:1px}
+  .pp.any{width:auto;padding:0 12px;font-size:12px;font-weight:500;gap:5px;display:flex;background:transparent}
+  .pp.any.on{background:var(--ink);color:#fff;outline:none}
+  .pp.any svg{width:14px;height:14px}
+  .strip-h{font-size:12px;color:var(--soft);margin:0 2px 5px}
+
+  /* floating layer */
+  .float{position:absolute;left:0;right:0;bottom:88px;display:flex;justify-content:center;gap:8px;pointer-events:none}
+  .float > *{pointer-events:auto}
+  .fab{min-height:42px;padding:0 16px 0 13px;border-radius:999px;background:var(--brand);color:#fff;box-shadow:var(--btn);display:flex;align-items:center;gap:7px;font-weight:600;font-size:13px;
+    transition:opacity .2s,transform .2s}
+  .fab.hide{opacity:0;transform:translateY(8px);pointer-events:none}
+  .pill{min-height:42px;padding:0 16px;border-radius:999px;background:var(--surface);box-shadow:var(--btn);display:flex;align-items:center;font-weight:600;font-size:13px}
+  .nav{position:absolute;left:50%;transform:translateX(-50%);bottom:14px;display:flex;gap:4px;padding:5px;background:var(--surface);border:1px solid var(--line);border-radius:999px;box-shadow:0 6px 24px rgba(0,0,0,.11);font-size:12px;font-weight:600;white-space:nowrap}
+  .nb{min-height:44px;padding:0 10px;display:flex;align-items:center;border-radius:999px;color:var(--soft)}
+  .nb.act{background:var(--chip);color:var(--ink);padding:4px;gap:2px}
+  .seg{min-height:36px;min-width:36px;padding:0 11px;display:flex;align-items:center;justify-content:center;border-radius:999px;color:var(--soft)}
+  .seg.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.14)}
+  .seg svg{width:17px;height:17px}
+  .empty{padding:26px 14px;text-align:center;color:var(--soft)}
+  @media (prefers-reduced-motion:reduce){.shuf.flick svg,.fab.flick svg{animation:none}.deck .hc{transition:none}}
+  :focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+</style>
+
+<div class="wrap">
+  <div class="eyebrow">Outfits page</div>
+  <h1>A hero outfit, tied to Shuffle</h1>
+  <p class="lead">One big outfit at the top of both Outfits pages, driven by the Shuffle button, with the grid of others below it. Then four ways to make the unfiltered All page worth opening. Every phone below is live. Tap Shuffle, the locks and the chips, and scroll inside the phone.</p>
+
+  <div class="principles">
+    <div><b>Give every deal a reason</b>One line above the hero says why you are looking at it. Random with a reason reads as a suggestion.</div>
+    <div><b>Control without effort</b>Locking a piece keeps what you love and rerolls the rest. One tap, no filter sheet.</div>
+    <div><b>Start from what you trust</b>Your faves and your newest pieces are better starting points than a blank shuffle.</div>
+    <div><b>Always a way back</b>Shuffle can lose an outfit you liked. An undo keeps it safe to keep tapping.</div>
+  </div>
+
+  <section id="rec">
+    <div class="eyebrow">My pick</div>
+    <h2>Locks, a Shuffle bar and lenses</h2>
+    <p class="sec-note">Layout C below, combined with the Lenses from Discovery 1. All gets lenses that explain the deal. Faves gets the fave levels you already have, and Shuffle picks among outfits you already trust. When the hero scrolls away, Shuffle floats back as the wand you have now.</p>
+    <div class="row">
+      <figure><figcaption>All</figcaption><div data-phone='{"mode":"all","hero":"lock","lenses":true}'></div></figure>
+      <figure><figcaption>Faves</figcaption><div data-phone='{"mode":"faves","hero":"lock","lenses":true}'></div></figure>
+      <div class="meta pick">
+        <div><b>Why this one</b>The hero is the one place that answers "what do I wear?". Shuffle sits directly under it, so cause and effect are next to each other.</div>
+        <div><b>Locks</b>Tap a padlock on any piece, then Shuffle. Only the unlocked pieces change. This is the fastest way to ask "what goes with this jacket?".</div>
+        <div><b>Lenses</b>Surprise me is the default and works like today. The others give the unfiltered page a purpose. Filters still sit in their pill for precise control.</div>
+        <div><b>Faves</b>No locks there, because a fave is a finished outfit. Shuffle just picks another one, and the chips narrow it by fave level.</div>
+      </div>
+    </div>
+    <p class="hint">Scroll the phone down to see the grid, and the floating Shuffle returns once the hero is out of view.</p>
+  </section>
+
+  <section id="layout">
+    <div class="eyebrow">Part one</div>
+    <h2>How the hero and Shuffle fit together</h2>
+    <p class="sec-note">Three ways to attach Shuffle to the hero. Each is shown on All and on Faves. On Faves, Shuffle picks another outfit you have kept.</p>
+
+    <div class="opt">
+      <div class="opt-head"><span class="tag">Layout A</span><h3>Shuffle bar under the hero</h3></div>
+      <p class="sec-note" style="margin:0">The simplest change. The hero is large, a wide Shuffle button sits directly under it, and an undo arrow sits beside it.</p>
+      <div class="row">
+        <figure><figcaption>All</figcaption><div data-phone='{"mode":"all","hero":"bar"}'></div></figure>
+        <figure><figcaption>Faves</figcaption><div data-phone='{"mode":"faves","hero":"bar"}'></div></figure>
+        <div class="meta">
+          <div><b>Good</b>Biggest tap target on the page, right under your thumb's resting place. Undo makes it safe to keep dealing.</div>
+          <div><b>Trade-off</b>Takes a row of height from the grid. Nothing lets you hold a piece you like.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="opt">
+      <div class="opt-head"><span class="tag">Layout B</span><h3>Card deck with a corner wand</h3></div>
+      <p class="sec-note" style="margin:0">The hero is the top of a deck. Swipe it away or tap the wand on its corner. Cards behind it say there is more. Try dragging the card sideways.</p>
+      <div class="row">
+        <figure><figcaption>All</figcaption><div data-phone='{"mode":"all","hero":"deck"}'></div></figure>
+        <figure><figcaption>Faves</figcaption><div data-phone='{"mode":"faves","hero":"deck"}'></div></figure>
+        <div class="meta">
+          <div><b>Good</b>Most playful. Swiping is the natural gesture for "next", and the wand badge keeps your existing Shuffle identity.</div>
+          <div><b>Trade-off</b>Swipe is hidden, so the wand has to do the teaching. A sideways swipe also competes with the chip row if lenses are added.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="opt">
+      <div class="opt-head"><span class="tag">Layout C</span><h3>Lockable pieces</h3></div>
+      <p class="sec-note" style="margin:0">Layout A plus a padlock on each piece. Locked pieces stay put when you Shuffle, like holds on a slot machine. On Faves the locks are not offered.</p>
+      <div class="row">
+        <figure><figcaption>All</figcaption><div data-phone='{"mode":"all","hero":"lock"}'></div></figure>
+        <figure><figcaption>Faves</figcaption><div data-phone='{"mode":"faves","hero":"lock"}'></div></figure>
+        <div class="meta">
+          <div><b>Good</b>Turns Shuffle from a lottery into a conversation: keep the piece you want to wear, reroll the rest. This is where the creativity is.</div>
+          <div><b>Trade-off</b>Four small padlocks on the card. They need a first-use hint: the line under Shuffle covers it.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="discovery">
+    <div class="eyebrow">Part two</div>
+    <h2>Making unfiltered All worth opening</h2>
+    <p class="sec-note">With no filters, All is a stream of random combinations with no reason to look at any one of them. The value is finding new ways to wear what you own, so each option below gives the stream a point of view. They only use what the app already stores: fave levels, when a piece was added, and which pieces appear in your faves. None of them needs wear tracking.</p>
+
+    <div class="opt">
+      <div class="opt-head"><span class="tag">Discovery 1</span><h3>Lenses</h3></div>
+      <p class="sec-note" style="margin:0">A row of chips under the title. Each one changes how the hero and the grid are dealt, and the line above the hero says what you are looking at.</p>
+      <div class="row">
+        <figure><figcaption>Surprise me</figcaption><div data-phone='{"mode":"all","hero":"bar","lenses":true,"lens":"surprise"}'></div></figure>
+        <figure><figcaption>New in</figcaption><div data-phone='{"mode":"all","hero":"bar","lenses":true,"lens":"new"}'></div></figure>
+        <div class="meta">
+          <div><b>New in</b>Outfits built around pieces you added recently, so a new purchase gets worn with everything else.</div>
+          <div><b>Overlooked</b>Built around pieces that are in none of your faves. The point is to give them a chance.</div>
+          <div><b>Remix a fave</b>One of your faves with a single piece swapped. Familiar, with one new idea.</div>
+          <div><b>Trade-off</b>Four chips is the limit before it becomes a menu. Surprise me stays first, so the page still works with zero decisions.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="opt">
+      <div class="opt-head"><span class="tag">Discovery 2</span><h3>Shelves</h3></div>
+      <p class="sec-note" style="margin:0">With no filters, the page below the hero becomes a few labelled shelves you scroll sideways, then the open grid. Turn a filter on and it collapses back to the plain grid.</p>
+      <div class="row">
+        <figure><figcaption>All, scrolled to shelves</figcaption><div data-phone='{"mode":"all","hero":"bar","shelves":true,"scroll":330}'></div></figure>
+        <div class="meta">
+          <div><b>Good</b>Browsing, not choosing. You see three kinds of idea at once with no taps, the way a streaming app shows rows.</div>
+          <div><b>Trade-off</b>More to build. Shelves also dilute Shuffle: it rerolls the hero and every shelf, which is a lot to change at once.</div>
+          <div><b>Fits with</b>Lenses. The shelf titles are the same ideas, and "See all" can open that lens.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="opt">
+      <div class="opt-head"><span class="tag">Discovery 3</span><h3>Start from a piece</h3></div>
+      <p class="sec-note" style="margin:0">A strip of your pieces under the title. Tap one and every outfit is built around it, hero and grid. Tap it again, or Anything, to go back.</p>
+      <div class="row">
+        <figure><figcaption>All</figcaption><div data-phone='{"mode":"all","hero":"bar","picker":true,"pin":"o_waverly"}'></div></figure>
+        <div class="meta">
+          <div><b>Good</b>Answers the most common real question: "what do I wear with this?". It is also the best way to use something you forgot you owned.</div>
+          <div><b>Trade-off</b>Needs a decision from you, so it is a poor default. Works best as a fifth lens that reveals the strip, rather than a bar that is always open.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="opt">
+      <div class="opt-head"><span class="tag">Discovery 4</span><h3>Remix a fave</h3></div>
+      <p class="sec-note" style="margin:0">The hero is one of your faves with a single piece swapped. The new piece is ringed, and the one it replaced sits in its corner. Shuffle swaps something else. Keep it with the heart.</p>
+      <div class="row">
+        <figure><figcaption>All</figcaption><div data-phone='{"mode":"all","hero":"bar","lenses":false,"lens":"remix","remixHero":true}'></div></figure>
+        <div class="meta">
+          <div><b>Good</b>Low risk, because 7 of 8 pieces are things you already trust. A tiny change is easy to judge, and it teaches you which swaps work.</div>
+          <div><b>Trade-off</b>Needs faves to exist, so a new wardrobe falls back to Surprise me. It also only finds neighbours of what you already like.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="notes">
+    <div class="eyebrow">What each needs</div>
+    <h2>Built from data the app already has</h2>
+    <div class="principles">
+      <div><b>Hero and Shuffle</b>The app already has a hero card and a Shuffle that rerolls it. Layouts A to C change where the button lives and add holds. The hero pick is already kept for the visit.</div>
+      <div><b>New in</b>Uses each piece's created date. No new column.</div>
+      <div><b>Overlooked and Remix</b>Uses saved outfits and fave levels. No new column.</div>
+      <div><b>Not possible yet</b>"Haven't worn lately" needs wear tracking, which does not exist. It would be the strongest lens, so it is worth a separate conversation.</div>
+    </div>
+    <p class="hint">The photos are real cut-outs from the wardrobe. The outfits, the "new" pieces and the faves are made up for the mockup.</p>
+  </section>
+</div>
+
+<script>
+const P = /*PHOTOS*/;
+const SLOTS = {top:[],over:[],bottom:[],shoes:[]};
+const slotOf = id => ({t:'top',o:'over',b:'bottom',s:'shoes'})[id[0]];
+Object.keys(P).forEach(id => SLOTS[slotOf(id)].push(id));
+const NEW = ['o_waverly','b_lola','t_green'];
+const OVERLOOK = ['t_pink','b_gingham','s_birk','o_quilt','t_stripe'];
+const FAVES = [
+  {top:'t_indigo',over:'o_chore',bottom:'b_jeans',shoes:'s_blunt',lv:3},
+  {top:'t_white',over:'o_denim',bottom:'b_cargo',shoes:'s_nb',lv:2},
+  {top:'t_turtle',over:null,bottom:'b_black',shoes:'s_west',lv:3},
+  {top:'t_stripe',over:'o_quilt',bottom:'b_linen',shoes:'s_nb',lv:1},
+  {top:'t_green',over:null,bottom:'b_jeans',shoes:'s_birk',lv:2},
+  {top:'t_white',over:'o_waverly',bottom:'b_black',shoes:'s_blunt',lv:3},
+  {top:'t_pink',over:null,bottom:'b_cargo',shoes:'s_nb',lv:1},
+  {top:'t_indigo',over:null,bottom:'b_linen',shoes:'s_birk',lv:2},
+];
+const LV = ['','Like','Love','All-time'];
+const pick = a => a[Math.floor(Math.random()*a.length)];
+const nm = id => P[id].n;
+const lc = s => s.charAt(0).toLowerCase()+s.slice(1);
+
+const WAND = '<svg viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true"><path d="m176-120-56-56 301-302-181-45 198-123-17-234 179 151 216-88-87 217 151 178-234-16-124 198-45-181-301 301Zm24-520-80-80 80-80 80 80-80 80Zm355 197 48-79 93 7-60-71 35-86-86 35-71-59 7 92-79 49 90 22 23 90Zm165 323-80-80 80-80 80 80-80 80ZM569-570Z"/></svg>';
+const HEART = (on,c='#E4607F') => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21c-.5 0-9-5.6-9-11.2C3 6.6 5.2 4.5 7.9 4.5c1.7 0 3.1.8 4.1 2.3 1-1.5 2.4-2.3 4.1-2.3C18.8 4.5 21 6.6 21 9.8 21 15.4 12.5 21 12 21z" fill="${on?c:'none'}" stroke="${on?c:'#9A9A9A'}" stroke-width="2" stroke-linejoin="round"/></svg>`;
+const LOCK = on => on
+  ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2" fill="currentColor"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>'
+  : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 7.5-2"/></svg>';
+const UNDO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg>';
+
+/* ---------- dealing ---------- */
+function fillRest(c, anchor){
+  ['top','over','bottom','shoes'].forEach(s => {
+    if(c[s] !== undefined) return;
+    c[s] = s === 'over' ? (Math.random() < .55 ? pick(SLOTS.over) : null) : pick(SLOTS[s]);
+  });
+  return c;
+}
+function gen(lens, pin){
+  if(lens === 'new' || lens === 'overlooked' || lens === 'pin'){
+    const id = lens === 'new' ? pick(NEW) : lens === 'overlooked' ? pick(OVERLOOK) : pin;
+    const c = {}; c[slotOf(id)] = id; fillRest(c);
+    c.badge = lens === 'new' ? 'New: ' + nm(id) : lens === 'overlooked' ? 'Not in a fave' : nm(id);
+    c.why = lens === 'new' ? `Built around your new <b>${lc(nm(id))}</b>` : lens === 'overlooked' ? `Built around your <b>${lc(nm(id))}</b>, which is in none of your faves` : `Styled around your <b>${lc(nm(id))}</b>`;
+    c.chipTxt = lens === 'new' ? 'New' : '';
+    return c;
+  }
+  if(lens === 'remix'){
+    const f = pick(FAVES); const c = {top:f.top,over:f.over,bottom:f.bottom,shoes:f.shoes};
+    const slot = pick(['top','bottom','shoes','over']);
+    const was = c[slot]; let now = pick(SLOTS[slot]); let n = 0;
+    while(now === was && n++ < 9) now = pick(SLOTS[slot]);
+    if(slot === 'over' && !was) now = pick(SLOTS.over);
+    c[slot] = now; c.swap = {slot, was};
+    c.badge = '1 swap';
+    c.why = was ? `Your fave, with the <b>${lc(nm(now))}</b> instead of the ${lc(nm(was))}` : `Your fave, with a <b>${lc(nm(now))}</b> added`;
+    return c;
+  }
+  const c = fillRest({});
+  c.why = `Dealt at random <b>·</b> lock a piece to keep it`;
+  return c;
+}
+
+/* ---------- drawing ---------- */
+function pc(slot, c, S, hero){
+  const id = c[slot]; if(!id) return '';
+  const locked = S.locks[slot];
+  const sw = c.swap && c.swap.slot === slot;
+  const canLock = hero && S.cfg.hero === 'lock' && S.cfg.mode === 'all';
+  return `<div class="pc ${locked?'lk':''} ${sw&&hero&&S.cfg.remixHero?'sw':''}" style="${hero?'':''}">
+    <img src="${P[id].u}" alt="${nm(id)}">
+    ${canLock?`<button class="lock" data-act="lock" data-slot="${slot}" aria-pressed="${!!locked}" aria-label="${locked?'Unlock':'Lock'} ${nm(id)}">${LOCK(locked)}</button>`:''}
+    ${sw&&hero&&S.cfg.remixHero&&c.swap.was?`<span class="was"><img src="${P[c.swap.was].u}" alt="">was</span>`:''}
+  </div>`;
+}
+function body(c, S, hero){
+  const one = !c.over;
+  return `<div class="up ${one?'n1':''}">${c.over?pc('over',c,S,hero):''}${pc('top',c,S,hero)}</div>
+    <div class="lo">${pc('bottom',c,S,hero)}</div><div class="ft">${pc('shoes',c,S,hero)}</div>`;
+}
+function heroCard(c, S){
+  const faves = S.cfg.mode === 'faves';
+  const on = faves || S.hearted;
+  return `<div class="hc" data-hero>
+    ${faves?`<div class="lv" aria-label="${LV[c.lv]}">${'<span></span>'.repeat(0)}${Array.from({length:c.lv},()=>HEART(true,'#B3124A')).join('')}</div>`:''}
+    <button class="heart" data-act="heart" aria-label="Fave this outfit" aria-pressed="${on}">${HEART(on)}</button>
+    ${body(c, S, true)}
+  </div>`;
+}
+function gridCard(c, S, extra){
+  return `<div class="gc">${c.badge?`<span class="bd">${c.badge}</span>`:''}${body(c, S, false)}</div>`;
+}
+function whyLine(S){
+  const c = S.hero;
+  if(S.cfg.mode === 'faves') return `<div class="why"><i>${LV[c.lv]}</i> One of your ${S.pool.length} ${S.lens==='all'?'faves':lc(LV[S.lvl])+' faves'}</div>`;
+  return `<div class="why">${c.chipTxt?`<i>${c.chipTxt}</i>`:''}<span>${c.why}</span></div>`;
+}
+
+/* ---------- state ---------- */
+function facePool(S){ return FAVES.filter(f => !S.lvl || f.lv === S.lvl); }
+function deal(S, first){
+  const cfg = S.cfg;
+  if(cfg.mode === 'faves'){
+    S.pool = facePool(S);
+    const others = S.pool.filter(f => f !== S.hero);
+    S.hero = pick(others.length ? others : S.pool);
+    S.grid = S.pool.filter(f => f !== S.hero);
+    S.grid = S.grid.slice().sort(() => Math.random() - .5);
+    return;
+  }
+  const lens = S.lens === 'surprise' ? null : S.lens;
+  const make = () => gen(lens, S.pin);
+  let h = make();
+  ['top','over','bottom','shoes'].forEach(s => { if(S.locks[s] && S.hero && !(h.swap || lens)){ h[s] = S.hero[s]; }});
+  S.hero = h;
+  S.grid = Array.from({length:6}, make);
+  S.shelves = {
+    new: Array.from({length:4}, () => gen('new')),
+    fave: Array.from({length:4}, () => gen('remix')),
+    over: Array.from({length:4}, () => gen('overlooked')),
+  };
+}
+function push(S){ S.hist.push(S.hero); if(S.hist.length > 12) S.hist.shift(); }
+
+const LENSES = [['surprise','Surprise me'],['new','New in'],['overlooked','Overlooked'],['remix','Remix a fave']];
+function lensRow(S){
+  if(S.cfg.mode === 'faves'){
+    return `<div class="chips" role="group" aria-label="Fave level">${[[0,'All faves'],[2,'Love'],[3,'All-time'],[1,'Like']].map(([v,l]) =>
+      `<button class="chip ${S.lvl===v?'on':''}" data-act="lvl" data-v="${v}" aria-pressed="${S.lvl===v}">${l}</button>`).join('')}</div>`;
+  }
+  return `<div class="chips" role="group" aria-label="Lens">${LENSES.map(([v,l]) =>
+    `<button class="chip ${S.lens===v?'on':''}" data-act="lens" data-v="${v}" aria-pressed="${S.lens===v}">${v==='surprise'?WAND:''}${l}</button>`).join('')}</div>`;
+}
+function picker(S){
+  const ids = ['o_waverly','b_lola','t_green','o_chore','b_gingham','s_birk','t_stripe','o_quilt','b_jeans','t_indigo','s_blunt'];
+  return `<div class="strip-h">Build around a piece</div><div class="strip" role="group" aria-label="Pieces">
+    <button class="pp any ${!S.pin?'on':''}" data-act="pin" data-v="" aria-pressed="${!S.pin}">${WAND}Anything</button>
+    ${ids.map(id => `<button class="pp ${S.pin===id?'on':''}" data-act="pin" data-v="${id}" aria-label="${nm(id)}" aria-pressed="${S.pin===id}"><img src="${P[id].u}" alt=""></button>`).join('')}</div>`;
+}
+function heroZone(S){
+  const c = S.hero, cfg = S.cfg;
+  const undo = `<button class="sq" data-act="undo" aria-label="Back to the last outfit" ${S.hist.length?'':'disabled'}>${UNDO}</button>`;
+  const label = cfg.mode === 'faves' ? 'Show another' : 'Shuffle';
+  if(cfg.hero === 'deck'){
+    return `${whyLine(S)}<div class="deck">${heroCard(c,S)}<button class="deck-wand" data-act="shuffle" aria-label="${label}">${WAND}</button></div>
+      <div class="deck-meta"><span>Swipe the card or tap the wand</span><button class="chip" data-act="undo" ${S.hist.length?'':'disabled style="opacity:.4"'}>${UNDO.replace('<svg','<svg width="14" height="14"')} Last one</button></div>`;
+  }
+  const hint = cfg.hero === 'lock' && cfg.mode === 'all' ? `<div class="legend">Lock a piece to keep it. Shuffle deals the rest.</div>` : '';
+  return `${whyLine(S)}${heroCard(c,S)}
+    <div class="actions"><button class="shuf" data-act="shuffle">${WAND}${label}</button>${undo}</div>${hint}`;
+}
+function bodyZone(S){
+  const cfg = S.cfg;
+  if(cfg.mode === 'faves'){
+    return `<div class="sec-h"><h5>More faves</h5><span>${S.grid.length} more</span></div>
+      <div class="grid">${S.grid.map(f => gridCard(Object.assign({},f,{badge:LV[f.lv]}),S)).join('') || '<div class="empty">No other faves at this level</div>'}</div>`;
+  }
+  if(cfg.shelves){
+    const shelf = (t,s,a) => `<div class="sec-h"><h5>${t}</h5><span>${s}</span></div><div class="shelf">${a.map(c => gridCard(c,S)).join('')}</div>`;
+    return shelf('Fresh with your new pieces','See all',S.shelves.new) + shelf('One swap from a fave','See all',S.shelves.fave)
+      + shelf('Pieces not in a fave yet','See all',S.shelves.over)
+      + `<div class="sec-h"><h5>Surprise me</h5><span>Dealt fresh</span></div><div class="grid">${S.grid.slice(0,4).map(c => gridCard(Object.assign({},c,{badge:''}),S)).join('')}</div>`;
+  }
+  const t = {surprise:['More outfits','Dealt fresh'],new:['Around your new pieces',''],overlooked:['Around overlooked pieces',''],remix:['Fave remixes',''],pin:['Around this piece','']}[S.lens] || ['More outfits',''];
+  return `<div class="sec-h"><h5>${t[0]}</h5><span>${t[1]}</span></div><div class="grid">${S.grid.map(c => gridCard(c,S)).join('')}</div>`;
+}
+function navHtml(S){
+  const f = S.cfg.mode === 'faves';
+  return `<div class="nav"><div class="nb">Wardrobe</div><div class="nb act"><div class="seg ${f?'':'on'}">All</div><div class="seg ${f?'on':''}">${HEART(f,'#E4607F')}</div></div><div class="nb">Capsules</div></div>`;
+}
+function subText(S){
+  if(S.cfg.mode === 'faves') return `${S.pool.length} outfits you kept`;
+  if(S.cfg.shelves) return 'A few ways in';
+  if(S.cfg.picker) return S.pin ? 'Styled around ' + lc(nm(S.pin)) : 'Dealt fresh';
+  if(S.cfg.lenses || S.cfg.remixHero) return {surprise:'Dealt fresh each visit',new:'Around what you just added',overlooked:'Pieces you have not styled',remix:'Your faves, one swap away'}[S.lens];
+  return 'Dealt fresh each visit';
+}
+function render(S){
+  const q = s => S.el.querySelector(s);
+  q('.sub').textContent = subText(S);
+  q('.lens-zone').innerHTML = (S.cfg.lenses ? lensRow(S) : '') + (S.cfg.picker ? picker(S) : '');
+  q('.hero-zone').innerHTML = heroZone(S);
+  q('.body-zone').innerHTML = bodyZone(S);
+  q('.float .fab').firstElementChild && 0;
+  wireDeck(S);
+}
+function flick(S){
+  S.el.querySelectorAll('.shuf,.fab').forEach(b => { b.classList.remove('flick'); void b.offsetWidth; b.classList.add('flick'); });
+}
+function shuffle(S){
+  push(S);
+  const prev = S.hero;
+  deal(S);
+  render(S); flick(S);
+  S.hearted = false;
+}
+function wireDeck(S){
+  const card = S.el.querySelector('.deck .hc'); if(!card) return;
+  let x0 = null;
+  card.addEventListener('pointerdown', e => { x0 = e.clientX; card.setPointerCapture(e.pointerId); });
+  card.addEventListener('pointerup', e => {
+    if(x0 === null) return; const dx = e.clientX - x0; x0 = null;
+    if(Math.abs(dx) > 50){ card.classList.add('out'); setTimeout(() => shuffle(S), 200); }
+  });
+}
+
+/* ---------- mount ---------- */
+function mount(host){
+  const cfg = JSON.parse(host.dataset.phone);
+  const S = {cfg, lens: cfg.pin ? 'pin' : (cfg.lens || 'surprise'), pin: cfg.pin || '', lvl: 0, locks:{}, hist:[], hearted:false};
+  host.innerHTML = `<div class="phone"><div class="scr">
+      <div class="ph-top"><div><h4>Outfits</h4><div class="sub"></div></div><button class="build" aria-label="Build an outfit">+</button></div>
+      <div class="lens-zone"></div><div class="hero-zone"></div><div class="body-zone"></div></div>
+    <div class="float"><button class="fab hide" data-act="shuffle" aria-label="Shuffle">${WAND}Shuffle</button><div class="pill">Filters</div></div>
+    ${navHtml(S)}</div>`;
+  S.el = host.firstElementChild;
+  deal(S, true); S.hist = []; render(S);
+  const scr = S.el.querySelector('.scr'), fab = S.el.querySelector('.fab');
+  const sync = () => { const past = scr.scrollTop > (cfg.hero === 'deck' ? 380 : 400) - 40; fab.classList.toggle('hide', !past); };
+  scr.addEventListener('scroll', sync);
+  if(cfg.scroll) setTimeout(() => { scr.scrollTop = cfg.scroll; sync(); }, 30);
+  S.el.addEventListener('click', e => {
+    const b = e.target.closest('[data-act]'); if(!b || b.disabled) return;
+    const a = b.dataset.act;
+    if(a === 'shuffle'){ shuffle(S); if(scr.scrollTop > 40) scr.scrollTo({top:0,behavior:'smooth'}); }
+    else if(a === 'undo'){ if(S.hist.length){ S.hero = S.hist.pop(); render(S); } }
+    else if(a === 'lock'){ S.locks[b.dataset.slot] = !S.locks[b.dataset.slot]; S.el.querySelector('.hero-zone').innerHTML = heroZone(S); }
+    else if(a === 'heart'){ S.hearted = !S.hearted; S.el.querySelector('.hero-zone').innerHTML = heroZone(S); }
+    else if(a === 'lens'){ S.lens = b.dataset.v; S.locks = {}; S.hist = []; deal(S); render(S); }
+    else if(a === 'lvl'){ S.lvl = +b.dataset.v; S.hist = []; deal(S); render(S); }
+    else if(a === 'pin'){ S.pin = b.dataset.v; S.lens = S.pin ? 'pin' : 'surprise'; S.hist = []; deal(S); render(S); }
+  });
+}
+document.querySelectorAll('[data-phone]').forEach(mount);
+</script>
