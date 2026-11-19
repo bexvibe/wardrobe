@@ -161,6 +161,10 @@
     margin-left:-18px;margin-right:-18px;
     padding-left:18px;padding-right:18px;
   }
+  /* A category inside the chosen tab: quieter than the tab it opens from,
+     and set slightly apart from it. */
+  .tab.subtab{background:var(--page);font-weight:500;}
+  .tab.subtab.sub-first{margin-left:8px;}
   .tab{
     flex:none;
     display:inline-flex;align-items:center;
@@ -5692,7 +5696,8 @@ function openCapsuleEditor(id, seedItemIds){
     // seedItemIds lets "new capsule with this piece" start from the piece
     // you were looking at rather than from nothing.
     itemIds: new Set(capsule ? capsule.itemIds : (seedItemIds || [])),
-    tab: 'All'
+    tab: 'All',
+    sub: null   // a category within the chosen tab; only offered once a tab is chosen
   };
   // What it looked like on arrival, so backing out of an untouched draft
   // does not stop to ask. A capsule started from a piece counts that piece
@@ -5765,7 +5770,7 @@ function renderCapsuleEditorTabs(){
     .filter(t => (t === 'All' && ITEMS.length) || counts[t])
     .map(t => `<button class="tab ${capsuleDraft.tab === t ? 'active' : ''}" data-key="${t}" onclick="setCapsuleEditorTab('${t}')">
       ${t}
-    </button>`).join(''));
+    </button>` + (capsuleDraft.tab === t ? capsuleSubTabsHtml(t) : '')).join(''));
 
   stickCapsuleEditorTabs();
 }
@@ -5776,8 +5781,32 @@ function renderCapsuleEditorTabs(){
 // stick behind it.
 function stickCapsuleEditorTabs(){ stickSheetTabs('capsule-tabs'); }
 
+// The second level stays folded away until its tab is chosen, then opens
+// out beside it: Tops, and Blouses, Shirts, Singlets after it. Only the
+// categories you have a piece in, A to Z, and only when there is more than
+// one to tell apart.
+function capsuleSubTabs(tab){
+  if(tab === 'All') return [];
+  const cats = Array.from(new Set(ITEMS.filter(i => tabForItem(i) === tab && i.category)
+    .map(i => i.category))).sort((a, b) => a.localeCompare(b));
+  return cats.length > 1 ? cats : [];
+}
+
+function capsuleSubTabsHtml(tab){
+  return capsuleSubTabs(tab).map((c, i) =>
+    `<button class="tab subtab ${i === 0 ? 'sub-first' : ''} ${capsuleDraft.sub === c ? 'active' : ''}" data-key="sub:${esc(c)}"
+             onclick='setCapsuleEditorSub(${JSON.stringify(c).replace(/'/g, '&#39;')})'>${esc(c)}</button>`).join('');
+}
+
+function setCapsuleEditorSub(cat){
+  capsuleDraft.sub = capsuleDraft.sub === cat ? null : cat;
+  renderCapsuleEditorTabs();
+  renderCapsuleEditorGallery();
+}
+
 function setCapsuleEditorTab(tab){
   capsuleDraft.tab = tab;
+  capsuleDraft.sub = null;
   renderCapsuleEditorTabs();
   renderCapsuleEditorGallery();
 }
@@ -5788,7 +5817,8 @@ function renderCapsuleEditorGallery(){
 
   const pool = capsuleDraft.tab === 'All'
     ? ITEMS
-    : ITEMS.filter(i => tabForItem(i) === capsuleDraft.tab);
+    : ITEMS.filter(i => tabForItem(i) === capsuleDraft.tab &&
+                        (!capsuleDraft.sub || i.category === capsuleDraft.sub));
 
   // No count and no instruction: the tiles tick where you tap them, and
   // that is the same news said once instead of twice.
