@@ -117,7 +117,7 @@ const rect = (p, sel) => p.evaluate(s=>{
     const row = await p.evaluate(()=>{
       const h=document.querySelector('#inventory-view .page-head');
       const t=h.querySelector('h1').getBoundingClientRect();
-      const btns=Array.from(h.querySelectorAll('.icon-btn'))
+      const btns=Array.from(h.querySelectorAll('.icon-btn, .btn'))
         .filter(x=>x.offsetParent!==null)
         .map(x=>({id:x.id, r:x.getBoundingClientRect()}));
       return {
