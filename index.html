@@ -6235,74 +6235,55 @@ function drawItemCapsulePicker(itemId){
   const item = ITEMS.find(i => i.id === itemId);
   if(!item) return;
   capsulePicksDraft = { itemId, ids: new Set(formCapsuleSelection()) };
-
-  const modal = document.getElementById('modal');
-  modal.innerHTML = `
-    <div class="sheet-grip"></div>
-    <div class="modal-body has-footer">
-      <div class="modal-name" style="margin-bottom:14px;">Select capsules</div>
-      <div class="capsule-picks" id="capsule-picks"></div>
-      <div class="form-error" id="capsule-pick-error"></div>
-      <div class="modal-actions">
-        <button class="btn small secondary" type="button"
-                onclick='startNewCapsuleForPiece()'>New capsule</button>
-      </div>
-    </div>
-    <div class="sheet-footer split pagebar">
-      <div class="sheet-footer-inner">
-        <button class="btn secondary" type="button" onclick="closeCapsulePicker()">${BACK_BTN_SVG}Back</button>
-      </div>
-    </div>
-  `;
+  // The same page as Select tags: a search box that also adds, then rows.
+  formPickKind = 'capsules';
+  formPickFrame('Select capsules', 'Search or add capsules', 'renderItemCapsulePicks()', 'addCapsuleFromPicker()');
   renderItemCapsulePicks(itemId);
-  allowSheetDrag(closeCapsulePicker);
-  // Opened over the edit form as often as over the piece: only one backdrop up.
-  showSheetBackdrop('modal-backdrop');
 }
 
 function closeCapsulePicker(){
   capsulePicksDraft = null;
+  formPickKind = null;
   goBackFromSheet();
 }
 
-// A name, and that is the whole question. The piece you came from goes in
-// it, and the capsule is saved straight away, since it did not exist until
-// you asked for it.
-function startNewCapsuleForPiece(){
+// Typing a name and choosing Add is the whole of making one, as with a tag.
+// The piece you came from goes in it, and it is saved straight away, since
+// it did not exist until you asked for it. A name that is already a capsule
+// is just ticked.
+async function addCapsuleFromPicker(){
   if(!capsulePicksDraft) return;
-  promptForText({
-    title: 'New capsule',
-    label: 'Name',
-    confirm: 'Create',
-    onConfirm: async (name) => {
-      const saved = await saveCapsule({ id: null, name, itemIds: [capsulePicksDraft.itemId] });
-      if(!saved) return false;
-      // It exists and the piece is in it, so it arrives already ticked.
-      capsulePicksDraft.ids.add(saved.id);
-      stageFormCapsules(capsulePicksDraft.ids);
-      renderItemCapsulePicks(capsulePicksDraft.itemId);
-      renderCapsules();
-      return true;
-    },
-  });
+  const input = document.getElementById('form-pick-input');
+  const name = ((input && input.value) || '').trim();
+  if(!name) return;
+  const same = capsules.find(c => c.name.toLowerCase() === name.toLowerCase());
+  let id = same && same.id;
+  if(!id){
+    const saved = await saveCapsule({ id: null, name, itemIds: [capsulePicksDraft.itemId] });
+    if(!saved || !capsulePicksDraft) return;
+    id = saved.id;
+    renderCapsules();
+  }
+  capsulePicksDraft.ids.add(id);
+  stageFormCapsules(capsulePicksDraft.ids);
+  if(input){ input.value = ''; }
+  renderItemCapsulePicks(capsulePicksDraft.itemId);
+  if(input) input.focus();
 }
 
 function renderItemCapsulePicks(itemId){
-  const el = document.getElementById('capsule-picks');
-  if(!el) return;
-  if(!capsules.length){
-    el.innerHTML = `<p class="modal-meta">No capsules yet.</p>`;
-    return;
+  const list = document.getElementById('form-pick-list');
+  if(!list || formPickKind !== 'capsules' || !capsulePicksDraft) return;
+  const typed = (document.getElementById('form-pick-input').value || '').trim();
+  const q = typed.toLowerCase();
+  const rows = [];
+  if(typed && !capsules.some(c => c.name.toLowerCase() === q)){
+    rows.push(pickRow('Add \u201c' + typed + '\u201d', false, 'addCapsuleFromPicker()'));
   }
-  el.innerHTML = capsules.map(c => {
-    const inIt = capsulePicksDraft
-      ? capsulePicksDraft.ids.has(c.id) : c.itemIds.includes(itemId);
-    return `<button class="capsule-pick ${inIt ? 'picked' : ''}"
-                    onclick='toggleItemCapsule(${JSON.stringify(c.id)}, ${JSON.stringify(itemId)})'>
-      <span>${esc(c.name)}</span>
-      <span class="capsule-pick-mark">${inIt ? '✓' : ''}</span>
-    </button>`;
-  }).join('');
+  capsules.filter(c => c.name.toLowerCase().includes(q)).forEach(c =>
+    rows.push(pickRow(c.name, capsulePicksDraft.ids.has(c.id),
+      'toggleItemCapsule(' + jsArg(c.id) + ', ' + jsArg(capsulePicksDraft.itemId) + ')')));
+  list.innerHTML = rows.join('') || '<p class="modal-meta">No capsules yet. Type one to add it.</p>';
 }
 
 // The row ticks and unticks where you tapped it, on the form; the piece's
@@ -7921,6 +7902,7 @@ function addFormTag(){
 // Back is only ever Back: whatever was ticked is already on the form.
 function closeFormPicker(){
   if(formCategoryStepBack()) return;
+  if(formPickKind === 'capsules'){ closeCapsulePicker(); return; }
   formPickKind = null;
   goBackFromSheet();
 }

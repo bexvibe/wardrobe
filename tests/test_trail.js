@@ -122,22 +122,19 @@ async function keepOne(p){
     check('Add to capsule is another step',
       JSON.stringify(await trail(p))===JSON.stringify(['item','form','capsules']),
       (await trail(p)).join(' > '));
-    // New capsule from here does not go deeper: you are holding a piece
-    // and the only thing missing is a name, so it asks for one over the
-    // picker rather than opening the whole editor.
-    await p.click('.modal .modal-actions .btn:has-text("New capsule")');
-    await p.waitForTimeout(500);
-    check('and a new capsule from there only asks for a name',
-      await p.evaluate(()=>document.getElementById('prompt-backdrop').classList.contains('open')));
-    check('without going a step deeper',
+    // Adding a capsule from here does not go deeper: type a name and choose
+    // Add, as with a tag, and you stay on the picker.
+    await p.fill('#form-pick-input', 'Trail Capsule');
+    await p.click('#form-pick-list button:has-text("Add")');
+    await p.waitForTimeout(800);
+    check('adding one from there does not go a step deeper',
       JSON.stringify(await trail(p))===JSON.stringify(['item','form','capsules']),
       (await trail(p)).join(' > '));
-    await p.fill('#prompt-input', 'Trail Capsule');
-    await p.click('#prompt-confirm'); await p.waitForTimeout(800);
-    check('naming it makes it, with the piece already in it',
-      await p.evaluate(()=>capsules.some(c=>c.name==='Trail Capsule')));
-    check('and leaves you on the picker',
-      Boolean(await p.evaluate(()=>document.getElementById('capsule-picks'))));
+    check('it makes the capsule, with the piece already in it',
+      await p.evaluate(()=>capsules.some(c=>c.name==='Trail Capsule' && c.itemIds.length===1)));
+    check('and leaves you on the picker, with it ticked',
+      await p.evaluate(()=>Boolean(document.getElementById('form-pick-list')) &&
+        document.querySelector('#form-pick-list .picked') !== null));
 
     await back(p);
     check('back from the capsules lands on the edit form it was opened from',

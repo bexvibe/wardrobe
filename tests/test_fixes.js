@@ -282,20 +282,16 @@ const dbTags = (p, id) => p.evaluate(i =>
       !/possible combinations/.test(await p.textContent('#modal')));
     await p.evaluate(()=>closeModal()); await p.waitForTimeout(300);
 
-    // "New capsule", not "New capsule with this piece".
+    // Capsules are made the way tags are: type a name into the search box
+    // and choose Add. No separate button, no prompt.
     await p.evaluate(()=>openModal('seed_0')); await p.waitForTimeout(450);
     await p.click('#item-page-edit'); await p.waitForTimeout(500); await p.click('#form-capsules-row button'); await p.waitForTimeout(500);
-    const label = await p.evaluate(()=>Array.from(document.querySelectorAll('#modal .modal-actions button'))
-      .map(x=>x.textContent.trim()));
-    check('the button is just "New capsule"',
-      label.includes('New capsule') && !label.some(l=>/with this piece/.test(l)),
-      label.join(', '));
-    // It asks for a name and nothing else: you are already holding the
-    // piece, so being asked to choose pieces would be asking twice.
+    check('the capsules page has a search box and no New capsule button',
+      await p.evaluate(()=>Boolean(document.getElementById('form-pick-input')) &&
+        !Array.from(document.querySelectorAll('#modal button')).some(x=>/New capsule/.test(x.textContent))));
     check('and it still starts the capsule off with the piece in it', await (async()=>{
-      await p.click('#modal button:has-text("New capsule")'); await p.waitForTimeout(500);
-      await p.fill('#prompt-input', 'Fixes Capsule');
-      await p.click('#prompt-confirm'); await p.waitForTimeout(800);
+      await p.fill('#form-pick-input', 'Fixes Capsule');
+      await p.click('#form-pick-list button:has-text("Add")'); await p.waitForTimeout(800);
       return p.evaluate(()=>{
         const made = capsules.find(c=>c.name==='Fixes Capsule');
         return Boolean(made) && made.itemIds.includes('seed_0');
