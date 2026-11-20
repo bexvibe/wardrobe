@@ -1417,9 +1417,7 @@
 
   /* The featured outfit is an ordinary outfit card — same border, same
      radius, same layout — only larger and lifted by a deeper shadow. The
-     whole card is one way into the popup, locks included. It takes its
-     height from its bands (each sized by its own ratio) so it can neither
-     spill past its border nor push the filters off a small screen. */
+     whole card is one way into the popup, locks included. */
   .hero-feature{
     position:relative;display:block;width:100%;margin:4px 0 0;
     padding:8px;cursor:pointer;touch-action:manipulation;
@@ -1428,16 +1426,16 @@
   }
   .hero-feature:active{transform:scale(0.99);}
   .hero-feature:focus-visible{outline:2px solid var(--brand);outline-offset:2px;}
-  .hero-feature .outfit-thumbs{flex:none;}
-  .hero-feature .outfit-lower{flex:none;min-height:0;}
-  .hero-feature .outfit-upper > *,
-  .hero-feature .outfit-lower > *{
-    max-height:min(22vh, 210px);
-    max-height:min(22svh, 210px);
+  /* Big, and the same height whatever is dealt: the pieces grow to fill it
+     rather than the card shrinking to hug them. Laid out as the popup is —
+     jacket and jumper, then the top, then the bottom. */
+  .hero-feature{
+    display:flex;flex-direction:column;
+    height:min(58vh, 700px);
+    height:min(58svh, 700px);
+    min-height:340px;
   }
-  .hero-feature .outfit-lower > *{width:100%;height:auto;aspect-ratio:3/2;}
-  .hero-feature .hero-cell{position:relative;}
-  .hero-feature .hero-cell img{width:100%;height:100%;display:block;object-fit:contain;}
+  .hero-feature .hero-spaces{flex:1;min-height:0;}
   /* The padlock on the card shows state only; tapping it opens the popup
      like the rest of the card. */
   .hero-badge{
@@ -1448,6 +1446,7 @@
     box-shadow:var(--shadow-btn);
   }
   .hero-badge svg{width:14px;height:14px;display:block;}
+  .hero-slot .hero-badge{right:4px;bottom:4px;}
   .hero-badge.on{background:var(--ink);color:#fff;}
   /* The rule between the two halves of the page. */
   .gallery-title{
@@ -4832,7 +4831,7 @@ function renderHero(){
          aria-label="Try this outfit. Tap to shuffle and lock items"
          onclick="openHeroPopup()"
          onkeydown="if(event.key === 'Enter' || event.key === ' '){ event.preventDefault(); openHeroPopup(); }">
-      ${heroFeatureThumbsHtml(c)}
+      <div class="hero-spaces">${heroRowsHtml(c, true)}</div>
     </div>`);
   // In the popup the spaces are live.
   const body = document.getElementById('hero-pop-body');
@@ -4844,28 +4843,9 @@ function renderHero(){
   renderShuffleFab();
 }
 
-// The same layout as any outfit card, with a padlock badge on each space.
-function heroFeatureThumbsHtml(combo){
-  const { hats, upper, lower, extras } = outfitLayout(combo);
-  const slotOf = p => p === combo.jacket ? 'jacket' : p === combo.jumper ? 'jumper'
-    : p === combo.dress ? 'dress' : p === combo.bottom ? 'bottom' : p === combo.top ? 'top' : null;
-  const plain = p => p.photo
-    ? `<img src="${esc(p.photo)}" alt="${esc(p.name)}" referrerpolicy="no-referrer" loading="lazy" decoding="async">`
-    : `<div class="no-photo-mini">${esc(p.name)}</div>`;
-  const cell = p => {
-    const slot = slotOf(p);
-    const badge = slot ? `<span class="hero-badge ${heroSlotLocked(slot, combo) ? 'on' : ''}" aria-hidden="true">${lockGlyph(heroSlotLocked(slot, combo))}</span>` : '';
-    return `<div class="hero-cell">${plain(p)}${badge}</div>`;
-  };
-  return `<div class="outfit-thumbs">${[
-    hats.length ? `<div class="outfit-extras outfit-hats n${Math.min(hats.length, 4)}">${hats.map(plain).join('')}</div>` : '',
-    upper.length ? `<div class="outfit-upper n${upper.length}">${upper.map(cell).join('')}</div>` : '',
-    lower ? `<div class="outfit-lower">${cell(lower)}</div>` : '',
-    extras.length ? `<div class="outfit-extras n${Math.min(extras.length, 4)}">${extras.map(plain).join('')}</div>` : ''
-  ].join('')}</div>`;
-}
-
-function heroRowsHtml(c){
+// `flat` is the card on the page: the same spaces, read-only, with a padlock
+// that only shows state. The card as a whole is the way into the popup.
+function heroRowsHtml(c, flat){
   // Jacket and jumper share the first layer, then the top, then the bottom —
   // or the dress, where the top and bottom would be.
   // An optional layer the outfit doesn't have is left out rather than shown
@@ -4873,11 +4853,11 @@ function heroRowsHtml(c){
   // the filters button counts it and Clear lets go of it.
   const layerSlots = ['jacket','jumper'].filter(s => heroSlotPieces(s, c).length);
   const layers = layerSlots.length
-    ? `<div class="hero-row ${layerSlots.length === 2 ? 'n2' : ''}">${layerSlots.map(s => heroSlotHtml(s, c)).join('')}</div>`
+    ? `<div class="hero-row ${layerSlots.length === 2 ? 'n2' : ''}">${layerSlots.map(s => heroSlotHtml(s, c, flat)).join('')}</div>`
     : '';
   return c.base === 'dress'
-    ? layers + heroSlotHtml('dress', c)
-    : layers + heroSlotHtml('top', c) + heroSlotHtml('bottom', c);
+    ? layers + heroSlotHtml('dress', c, flat)
+    : layers + heroSlotHtml('top', c, flat) + heroSlotHtml('bottom', c, flat);
 }
 
 // ---- The popup ---------------------------------------------
@@ -5097,7 +5077,7 @@ function lockGlyph(on){
     ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2" fill="currentColor"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>'
     : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 7.5-2"/></svg>';
 }
-function heroSlotHtml(slot, c){
+function heroSlotHtml(slot, c, flat){
   const pieces = heroSlotPieces(slot, c);
   const locked = heroSlotLocked(slot, c);
   const noun = slot;
@@ -5109,11 +5089,11 @@ function heroSlotHtml(slot, c){
     : `<span class="hero-none">No ${noun}</span>`;
   return `<div class="hero-slot ${slot} ${pieces.length ? '' : 'empty'} ${pieces.length > 1 ? 'pair' : ''} ${locked ? 'locked' : ''}">
     ${imgs}
-    <button class="hero-slot-open" type="button" onclick="openHeroSlot('${slot}')"
+    ${flat ? `<span class="hero-badge ${locked ? 'on' : ''}" aria-hidden="true">${lockGlyph(locked)}</span>` : `<button class="hero-slot-open" type="button" onclick="openHeroSlot('${slot}')"
             aria-label="Choose ${noun}${names ? ', now ' + esc(names) : ', now none'}"></button>
     <button class="hero-lock" type="button" aria-pressed="${locked}"
             aria-label="${locked ? 'Unlock' : 'Lock'} ${noun}"
-            onclick="lockHeroSlot('${slot}')">${lockGlyph(locked)}</button>
+            onclick="lockHeroSlot('${slot}')">${lockGlyph(locked)}</button>`}
   </div>`;
 }
 
