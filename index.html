@@ -1418,7 +1418,7 @@
      height from its bands (each sized by its own ratio) so it can neither
      spill past its border nor push the filters off a small screen. */
   .hero-feature{
-    position:relative;display:block;width:min(100%, 300px);margin:4px auto 0;
+    position:relative;display:block;width:100%;margin:4px 0 0;
     padding:8px;cursor:pointer;touch-action:manipulation;
     box-shadow:0 14px 34px rgba(0,0,0,0.20), 0 3px 8px rgba(0,0,0,0.08);
     transition:transform 0.12s ease;
@@ -1451,7 +1451,6 @@
     display:flex;align-items:center;gap:12px;margin-top:6px;
     font-size:15px;color:var(--ink-soft);
   }
-  .gallery-title::after{content:"";flex:1;height:1px;background:var(--line);}
 
   /* The popup is the item card's pattern: a card in the page's colour,
      floating with margins on every side over the dimmed, blurred page, with
@@ -1769,7 +1768,11 @@
     color:var(--ink-soft);
     margin-bottom:9px;
   }
-  .filter-section{margin-bottom:18px;}
+  .filter-section{
+    margin-bottom:12px;padding:14px;
+    background:#fff;border-radius:14px;
+    box-shadow:0 1px 3px rgba(0,0,0,0.08);
+  }
   .filter-section:last-child{margin-bottom:0;}
 
   /* Outfit filters */
