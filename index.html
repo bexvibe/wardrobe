@@ -62,7 +62,10 @@
   @media (prefers-reduced-motion: reduce){
     :root{ --sheet-ease-ms:0ms; }
   }
-  *{box-sizing:border-box;}
+  /* No double-tap-to-zoom anywhere: buttons here get tapped twice fast and
+     the page must not lurch. `manipulation` allows pan and pinch-zoom only,
+     so pinch-to-zoom stays available. It is not inherited, hence the star. */
+  *{box-sizing:border-box;touch-action:manipulation;}
   /* Item photos are never stretched or squashed: any <img> keeps its own
      proportions. (Inspo tiles opt into cover explicitly, which is more specific.) */
   img{object-fit:contain;}
