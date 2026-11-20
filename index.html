@@ -7628,14 +7628,15 @@ function renderTabs(){
 
   // Photos or names is a choice about how the shelf below is drawn, so it
   // sits with the shelves: the first thing in the row, scrolling away with
-  // it. Selecting has no use for it, so it stands down there.
+  // it. Selecting has no use for it, so it stands down there. The icons are
+  // small targets, so a tap anywhere on the track flips to the other view.
   const seg = (mode, label, icon) => `
       <button type="button" id="view-${mode === 'photos' ? 'grid' : 'list'}-btn"
               class="view-seg-btn ${viewMode === mode ? 'active' : ''}"
-              aria-pressed="${viewMode === mode}" aria-label="${label}" title="${label}"
-              onclick="setViewMode('${mode}')">${icon}</button>`;
+              aria-pressed="${viewMode === mode}" aria-label="${label}" title="${label}">${icon}</button>`;
   const viewToggle = editMode ? '' : `
-    <div class="view-seg" id="view-toggle-btn" role="group" aria-label="View">
+    <div class="view-seg" id="view-toggle-btn" role="group" aria-label="View"
+         onclick="setViewMode(viewMode === 'photos' ? 'names' : 'photos')">
       ${seg('photos', 'Photo view', ICONS.grid)}${seg('names', 'List view', ICONS.list)}
     </div>`;
 
