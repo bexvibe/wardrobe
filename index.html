@@ -1447,7 +1447,11 @@
     position:absolute;inset:6px;width:calc(100% - 12px);height:calc(100% - 12px);
     object-fit:contain;pointer-events:none;
   }
-  .hero-slot img.under{transform:translateY(14%) scale(.86);}
+  /* A shirt worn over a tee is two pieces in one space: side by side, shirt
+     then tee, as they are laid out on the grid's cards. */
+  .hero-slot.pair img{width:calc(50% - 9px);}
+  .hero-slot.pair img:first-of-type{left:6px;}
+  .hero-slot.pair img:last-of-type{left:auto;right:6px;}
   .hero-slot-open{
     position:absolute;inset:0;border:0;padding:0;background:transparent;
     border-radius:10px;cursor:pointer;z-index:1;touch-action:manipulation;
@@ -4764,10 +4768,12 @@ function heroSlotHtml(slot, c){
   const locked = heroSlotLocked(slot, c);
   const noun = slot;
   const names = pieces.map(p => p.name).join(' over ');
-  const imgs = pieces.length
-    ? pieces.map((p, i) => `<img class="${pieces.length > 1 ? (i === 0 ? 'under' : 'over') : ''}" src="${esc(p.photo)}" alt="" referrerpolicy="no-referrer" decoding="async">`).join('')
+  // The outer layer first, as the grid's cards put it.
+  const shown = pieces.length > 1 ? pieces.slice().reverse() : pieces;
+  const imgs = shown.length
+    ? shown.map(p => `<img src="${esc(p.photo)}" alt="" referrerpolicy="no-referrer" decoding="async">`).join('')
     : `<span class="hero-none">No ${noun}</span>`;
-  return `<div class="hero-slot ${slot} ${pieces.length ? '' : 'empty'} ${locked ? 'locked' : ''}">
+  return `<div class="hero-slot ${slot} ${pieces.length ? '' : 'empty'} ${pieces.length > 1 ? 'pair' : ''} ${locked ? 'locked' : ''}">
     ${imgs}
     <button class="hero-slot-open" type="button" onclick="openHeroSlot('${slot}')"
             aria-label="Choose ${noun}${names ? ', now ' + esc(names) : ', now none'}"></button>

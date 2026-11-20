@@ -57,6 +57,13 @@ async function dealUntil(p, test, tries=200){
       (await dealUntil(p, ()=>heroCombo.base === 'dress')) &&
       await p.evaluate(()=>!document.querySelector('.hero-slot.top') && !document.querySelector('.hero-slot.bottom') &&
                            !!document.querySelector('.hero-slot.dress')));
+    // a shirt over a tee: two pieces in the top space, side by side
+    check('a shirt over a tee sits side by side, not on top of each other',
+      (await dealUntil(p, ()=>heroCombo.base !== 'dress' && heroCombo.overtop, 400)) &&
+      await p.evaluate(()=>{
+        const imgs = [...document.querySelectorAll('.hero-slot.top img')].map(i => i.getBoundingClientRect());
+        return imgs.length === 2 && imgs[0].right <= imgs[1].left + 1;
+      }));
     check('and nothing is captioned', await p.evaluate(()=>!document.querySelector('.hero-slot .cap, .hero-caption')));
 
     // an empty optional space says what it is
