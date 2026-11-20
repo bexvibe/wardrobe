@@ -1443,40 +1443,35 @@
     font-family:'Bricolage Grotesque',sans-serif;font-weight:600;font-size:19px;
     letter-spacing:-0.01em;line-height:1.2;color:var(--ink);margin:0 2px 10px;
   }
-  .hero-sub{margin:2px 0 0;font-size:13px;line-height:1.3;color:var(--ink-soft);}
+  .hero-sub{margin:4px 0 0;font-size:13px;line-height:1.3;color:var(--ink-soft);}
   .hero-title{margin-bottom:0;}
 
   /* The top of the page is a different kind of thing from the grid under it:
      one outfit you steer, then the rest you browse. So it is a tinted panel
-     with its own label and a way in, and the grid starts below a rule. */
+     with its own label, and the grid starts below a rule. The outfit in it
+     is an ordinary card, the same size as the ones below — the panel grows
+     out past the page's edge by its own padding so the columns line up. */
   .hero-panel{
     position:relative;cursor:pointer;touch-action:manipulation;
-    padding:14px 12px 12px;border-radius:18px;
+    margin:0 -11.5px;padding:10px;border-radius:18px;
     background:linear-gradient(180deg, rgba(117,102,148,0.16), rgba(117,102,148,0.07));
     border:1.5px solid rgba(117,102,148,0.42);
     box-shadow:0 4px 14px rgba(117,102,148,0.12);
+    display:grid;grid-template-columns:repeat(auto-fill, minmax(160px, 1fr));gap:12px;
     transition:transform 0.12s ease;
   }
   .hero-panel:active{transform:scale(0.992);}
   .hero-panel:focus-visible{outline:2px solid var(--brand);outline-offset:2px;}
-  .hero-panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 2px 10px;}
-  .hero-panel .hero-title{color:var(--brand-deep);}
+  .hero-panel .outfit-card{pointer-events:none;}
+  .hero-panel-text{display:flex;flex-direction:column;justify-content:center;align-items:flex-start;padding:4px 6px;}
+  .hero-panel .hero-title{color:var(--brand-deep);font-size:22px;}
   .hero-panel-go{
-    flex:none;width:40px;height:40px;border-radius:50%;
-    display:grid;place-items:center;background:var(--brand);color:#fff;
+    margin-top:14px;display:inline-flex;align-items:center;gap:7px;
+    min-height:40px;padding:0 16px 0 13px;border-radius:999px;
+    background:var(--brand);color:#fff;font-size:13px;font-weight:600;
     box-shadow:var(--shadow-btn);
   }
-  .hero-panel-go svg{width:21px;height:21px;display:block;}
-  .hero-panel .hero-card{cursor:pointer;}
-  .hero-panel .hero-slot{height:min(8svh, 70px);}
-  .hero-panel .hero-slot.top{height:min(9svh, 78px);}
-  .hero-panel .hero-slot.bottom{height:min(13svh, 108px);}
-  .hero-panel .hero-slot.dress{height:min(20svh, 160px);}
-  .hero-static-lock{
-    position:absolute;right:4px;bottom:4px;width:22px;height:22px;border-radius:50%;
-    display:grid;place-items:center;background:var(--ink);color:#fff;pointer-events:none;
-  }
-  .hero-static-lock svg{width:12px;height:12px;display:block;}
+  .hero-panel-go svg{width:19px;height:19px;display:block;}
   /* The rule between the two halves of the page. */
   .gallery-title{
     display:flex;align-items:center;gap:12px;margin-top:6px;
@@ -1484,51 +1479,42 @@
   }
   .gallery-title::after{content:"";flex:1;height:1px;background:var(--line);}
 
-  /* The popup: the outfit, large, with its locks and the way to deal again.
-     It rises over the page and over the floating buttons, but under the
-     filters, so a piece tapped in it opens Filters on top and Back returns
-     here. */
+  /* The popup is the item card's pattern: a card in the page's colour,
+     floating with margins on every side over the dimmed, blurred page, with
+     its controls on the same floating bar — Back, then the one action. It
+     sits in the middle of the screen, over the floating buttons and under
+     Filters, so a piece tapped in it opens Filters on top and Back there
+     returns here. */
   .hero-pop-wrap{
     position:fixed;inset:0;z-index:108;
-    display:flex;align-items:flex-end;justify-content:center;
-    padding:calc(env(safe-area-inset-top, 0px) + 24px) 12px calc(env(safe-area-inset-bottom, 0px) + 12px);
-    visibility:hidden;background:rgba(0,0,0,0);
-    -webkit-backdrop-filter:blur(0);backdrop-filter:blur(0);
-    transition:background-color var(--sheet-ease-ms) var(--sheet-ease),
-               backdrop-filter var(--sheet-ease-ms) var(--sheet-ease),
-               -webkit-backdrop-filter var(--sheet-ease-ms) var(--sheet-ease),
-               visibility 0s var(--sheet-ease-ms);
+    display:flex;align-items:center;justify-content:center;
+    padding:calc(env(safe-area-inset-top, 0px) + 14px) 14px calc(env(safe-area-inset-bottom, 0px) + 14px);
+    visibility:hidden;opacity:0;background:rgba(0,0,0,0.2);
+    -webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);
+    transition:opacity var(--sheet-ease-ms) ease, visibility 0s linear var(--sheet-ease-ms);
   }
   .hero-pop-wrap.open{
-    visibility:visible;background:rgba(0,0,0,0.3);
-    -webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);
-    transition:background-color var(--sheet-ease-ms) var(--sheet-ease),
-               backdrop-filter var(--sheet-ease-ms) var(--sheet-ease),
-               -webkit-backdrop-filter var(--sheet-ease-ms) var(--sheet-ease),
-               visibility 0s;
+    visibility:visible;opacity:1;
+    transition:opacity var(--sheet-ease-ms) ease, visibility 0s;
   }
   .hero-pop{
     width:100%;max-width:520px;max-height:100%;
     display:flex;flex-direction:column;overflow:hidden;
-    background:var(--surface);border-radius:24px;
+    background:var(--page);border-radius:26px;
     box-shadow:0 18px 50px rgba(0,0,0,0.28);
-    transform:translateY(108%);
+    transform:translateY(40px) scale(0.96);
     transition:transform var(--sheet-ease-ms) var(--sheet-ease);
   }
-  .hero-pop-wrap.open .hero-pop{transform:translateY(0);}
-  .hero-pop-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:16px 14px 6px 18px;}
-  .hero-pop-x{
-    flex:none;width:38px;height:38px;padding:0;border:0;border-radius:50%;
-    display:grid;place-items:center;background:var(--page);color:var(--ink);
-    cursor:pointer;touch-action:manipulation;
-  }
-  .hero-pop-x svg{width:16px;height:16px;display:block;}
-  .hero-pop-body{flex:1;min-height:0;overflow-y:auto;padding:8px 12px;overscroll-behavior:contain;}
-  .hero-pop-bar{display:flex;align-items:center;gap:8px;padding:8px 12px 12px;}
-  .hero-pop-bar .shuffle-fab{flex:1;justify-content:center;min-height:50px;}
-  .hero-pop-bar .btn{min-height:50px;padding:0 22px;}
+  .hero-pop-wrap.open .hero-pop{transform:none;}
+  .hero-pop-body{flex:1;min-height:0;overflow-y:auto;padding:14px 14px 12px;overscroll-behavior:contain;}
+  .hero-pop .sheet-footer{position:static;padding-top:0;}
+  .sheet-footer.pagebar .btn.hero-shuffle{background:var(--brand);color:#fff;gap:8px;}
+  .sheet-footer.pagebar .btn.hero-shuffle:hover{background:var(--brand-deep);}
+  .hero-shuffle .wand{width:20px;height:20px;display:block;flex:none;}
+  .hero-shuffle.casting .wand{animation:wand-flick 320ms var(--sheet-ease);}
   @media (prefers-reduced-motion: reduce){
     .hero-pop,.hero-pop-wrap{transition:none;}
+    .hero-shuffle.casting .wand{animation:none;}
   }
   .hero-spaces{display:flex;flex-direction:column;gap:6px;}
   .hero-row{display:grid;gap:6px;}
@@ -1585,16 +1571,6 @@
 
   /* On All, Shuffle is the big button over the nav: it deals the featured
      outfit, wherever you are on the page. */
-  .float-row.big{width:min(calc(100vw - 32px), 358px);}
-  .float-row.big .shuffle-fab{
-    flex:1;min-width:0;
-    min-height:56px;font-size:15px;gap:9px;padding:0 20px;
-    justify-content:center;
-    box-shadow:0 6px 20px rgba(0,0,0,0.18);
-  }
-  .float-row.big .filters-fab{min-height:56px;}
-  .float-row.big .shuffle-fab .wand{width:22px;height:22px;}
-
   /* The filters, collapsed into a pill. Centred on the nav bar rather than
      off to one side, so the two floating objects read as a stack. */
   /* The floating pair: shuffle, then filters. One row so the two are laid
@@ -2358,22 +2334,18 @@
      a lock, and Shuffle on the bar. Over the floating buttons, under Filters. -->
 <div class="hero-pop-wrap" id="hero-pop-wrap" onclick="if(event.target === this) closeHeroPopup()">
   <div class="hero-pop" id="hero-pop" role="dialog" aria-label="Try this outfit" inert>
-    <div class="hero-pop-top">
-      <div>
-        <h2 class="hero-title">Try this</h2>
-        <p class="hero-sub">Tap a piece to change it, lock the ones you like</p>
-      </div>
-      <button class="hero-pop-x" type="button" aria-label="Close" onclick="closeHeroPopup()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
-      </button>
-    </div>
     <div class="hero-pop-body" id="hero-pop-body"></div>
-    <div class="hero-pop-bar">
-      <button class="shuffle-fab hero-shuffle" id="hero-pop-shuffle" type="button" onclick="shuffleHero()">
-        <svg class="wand" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true"><path d="m176-120-56-56 301-302-181-45 198-123-17-234 179 151 216-88-87 217 151 178-234-16-124 198-45-181-301 301Zm24-520-80-80 80-80 80 80-80 80Zm355 197 48-79 93 7-60-71 35-86-86 35-71-59 7 92-79 49 90 22 23 90Zm165 323-80-80 80-80 80 80-80 80ZM569-570Z"/></svg>
-        Shuffle
-      </button>
-      <button class="btn" type="button" onclick="closeHeroPopup()">Done</button>
+    <div class="sheet-footer split pagebar">
+      <div class="sheet-footer-inner">
+        <button class="btn secondary" type="button" id="hero-pop-back" onclick="closeHeroPopup()">
+          <svg class="back-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>Back</button>
+        <div class="sheet-footer-actions">
+          <button class="btn hero-shuffle" id="hero-pop-shuffle" type="button" onclick="shuffleHero()">
+            <svg class="wand" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true"><path d="m176-120-56-56 301-302-181-45 198-123-17-234 179 151 216-88-87 217 151 178-234-16-124 198-45-181-301 301Zm24-520-80-80 80-80 80 80-80 80Zm355 197 48-79 93 7-60-71 35-86-86 35-71-59 7 92-79 49 90 22 23 90Zm165 323-80-80 80-80 80 80-80 80ZM569-570Z"/></svg>
+            Shuffle</button>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -2847,9 +2819,9 @@ function renderShuffleFab(){
   const fab = document.getElementById('shuffle-fab');
   if(!fab) return;
   const row = document.getElementById('float-row');
-  if(row) row.classList.toggle('big', appMode === 'outfits');
-  const dealt = (appMode === 'outfits' && outfitDisplayed.length > 0)
-    || (appMode === 'saved' && savedShownCount > 0);
+  if(row) row.classList.remove('big');
+  // On All, Shuffle lives in the Try this popup; only Faves floats it.
+  const dealt = appMode === 'saved' && savedShownCount > 0;
   fab.style.display = dealt ? 'flex' : 'none';
 }
 
@@ -4807,21 +4779,18 @@ function renderHero(){
     gt.style.display = 'flex';
   }
   const wand = '<svg viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true"><path d="m176-120-56-56 301-302-181-45 198-123-17-234 179 151 216-88-87 217 151 178-234-16-124 198-45-181-301 301Zm24-520-80-80 80-80 80 80-80 80Zm355 197 48-79 93 7-60-71 35-86-86 35-71-59 7 92-79 49 90 22 23 90Zm165 323-80-80 80-80 80 80-80 80ZM569-570Z"/></svg>';
-  // On the page it is a preview: the whole panel is one way in to the popup.
+  // On the page it is a preview: an ordinary outfit card, the size of the
+  // ones below, and the whole panel is one way in to the popup.
   morphHtml(host, `
     <div class="hero-panel" role="button" tabindex="0" aria-haspopup="dialog"
          aria-label="Try this outfit. Tap to shuffle and lock items"
          onclick="openHeroPopup()"
          onkeydown="if(event.key === 'Enter' || event.key === ' '){ event.preventDefault(); openHeroPopup(); }">
-      <div class="hero-panel-head">
-        <div>
-          <h2 class="hero-title">Try this</h2>
-          <p class="hero-sub">Tap to shuffle and lock items</p>
-        </div>
-        <span class="hero-panel-go" aria-hidden="true">${wand}</span>
-      </div>
-      <div class="outfit-card hero-card" data-key="hero">
-        <div class="hero-spaces">${heroRowsHtml(c, false)}</div>
+      <div class="outfit-card" data-key="hero">${outfitThumbsHtml(c)}</div>
+      <div class="hero-panel-text">
+        <h2 class="hero-title">Try this</h2>
+        <p class="hero-sub">Tap to shuffle and lock items</p>
+        <span class="hero-panel-go" aria-hidden="true">${wand}Shuffle</span>
       </div>
     </div>`);
   // In the popup the spaces are live.
@@ -4829,11 +4798,11 @@ function renderHero(){
   if(body) morphHtml(body, `
     <div class="outfit-card hero-card" data-key="hero-pop">
       ${faveHeartHtml(key)}
-      <div class="hero-spaces">${heroRowsHtml(c, true)}</div>
+      <div class="hero-spaces">${heroRowsHtml(c)}</div>
     </div>`);
 }
 
-function heroRowsHtml(c, live){
+function heroRowsHtml(c){
   // Jacket and jumper share the first layer, then the top, then the bottom —
   // or the dress, where the top and bottom would be.
   // An optional layer the outfit doesn't have is left out rather than shown
@@ -4841,11 +4810,11 @@ function heroRowsHtml(c, live){
   // the filters button counts it and Clear lets go of it.
   const layerSlots = ['jacket','jumper'].filter(s => heroSlotPieces(s, c).length);
   const layers = layerSlots.length
-    ? `<div class="hero-row ${layerSlots.length === 2 ? 'n2' : ''}">${layerSlots.map(s => heroSlotHtml(s, c, live)).join('')}</div>`
+    ? `<div class="hero-row ${layerSlots.length === 2 ? 'n2' : ''}">${layerSlots.map(s => heroSlotHtml(s, c)).join('')}</div>`
     : '';
   return c.base === 'dress'
-    ? layers + heroSlotHtml('dress', c, live)
-    : layers + heroSlotHtml('top', c, live) + heroSlotHtml('bottom', c, live);
+    ? layers + heroSlotHtml('dress', c)
+    : layers + heroSlotHtml('top', c) + heroSlotHtml('bottom', c);
 }
 
 // ---- The popup ---------------------------------------------
@@ -5063,7 +5032,7 @@ function lockGlyph(on){
     ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2" fill="currentColor"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>'
     : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 7.5-2"/></svg>';
 }
-function heroSlotHtml(slot, c, live = true){
+function heroSlotHtml(slot, c){
   const pieces = heroSlotPieces(slot, c);
   const locked = heroSlotLocked(slot, c);
   const noun = slot;
@@ -5075,12 +5044,11 @@ function heroSlotHtml(slot, c, live = true){
     : `<span class="hero-none">No ${noun}</span>`;
   return `<div class="hero-slot ${slot} ${pieces.length ? '' : 'empty'} ${pieces.length > 1 ? 'pair' : ''} ${locked ? 'locked' : ''}">
     ${imgs}
-    ${live ? `<button class="hero-slot-open" type="button" onclick="openHeroSlot('${slot}')"
+    <button class="hero-slot-open" type="button" onclick="openHeroSlot('${slot}')"
             aria-label="Choose ${noun}${names ? ', now ' + esc(names) : ', now none'}"></button>
     <button class="hero-lock" type="button" aria-pressed="${locked}"
             aria-label="${locked ? 'Unlock' : 'Lock'} ${noun}"
-            onclick="lockHeroSlot('${slot}')">${lockGlyph(locked)}</button>`
-      : (locked ? `<span class="hero-static-lock" aria-hidden="true">${lockGlyph(true)}</span>` : '')}
+            onclick="lockHeroSlot('${slot}')">${lockGlyph(locked)}</button>
   </div>`;
 }
 

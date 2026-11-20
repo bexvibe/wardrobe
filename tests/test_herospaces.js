@@ -156,24 +156,25 @@ async function dealUntil(p, test, tries=200){
       !heroPopOpen && !document.getElementById('hero-pop-wrap').classList.contains('open')));
     await p.click('#outfit-hero .hero-panel'); await p.waitForTimeout(500);
     check('tapping the hero opens it', await p.evaluate(()=>heroPopOpen));
-    check('and it covers the floating buttons', await p.evaluate(()=>{
-      const r = document.getElementById('shuffle-fab').getBoundingClientRect();
-      const el = document.elementFromPoint(r.left + r.width/2, r.top + r.height/2);
-      return !!el.closest('#hero-pop-wrap');
+    check('it has no title, subtitle or Done', await p.evaluate(()=>
+      !document.querySelector('#hero-pop .hero-title, #hero-pop .hero-sub') &&
+      ![...document.querySelectorAll('#hero-pop button')].some(b => b.textContent.trim() === 'Done')));
+    check('it sits in the middle of the screen', await p.evaluate(()=>{
+      const r = document.getElementById('hero-pop').getBoundingClientRect();
+      return Math.abs((r.top + r.bottom)/2 - innerHeight/2) <= 6 && Math.abs((r.left + r.right)/2 - innerWidth/2) <= 2;
+    }));
+    check('and Back and Shuffle share the bar', await p.evaluate(()=>{
+      const b = document.getElementById('hero-pop-back').getBoundingClientRect();
+      const s2 = document.getElementById('hero-pop-shuffle').getBoundingClientRect();
+      return Math.abs(b.top - s2.top) <= 2 && b.right <= s2.left;
     }));
     await p.keyboard.press('Escape'); await p.waitForTimeout(500);
     check('Escape puts it away', await p.evaluate(()=>!heroPopOpen));
-    const before = await heroKey(p);
-    let changed = false;
-    for(let i=0;i<6 && !changed;i++){
-      await p.click('#shuffle-fab'); await p.waitForTimeout(500);
-      check('the floating Shuffle opens the popup with a fresh deal', await p.evaluate(()=>heroPopOpen));
-      changed = (await heroKey(p)) !== before;
-      await p.click('.hero-pop-x'); await p.waitForTimeout(500);
-    }
-    check('and it dealt a different outfit', changed);
+    await p.click('#outfit-hero .hero-panel'); await p.waitForTimeout(500);
+    await p.click('#hero-pop-back'); await p.waitForTimeout(500);
+    check('Back closes it', await p.evaluate(()=>!heroPopOpen));
     await p.click('#outfit-hero .hero-panel'); await p.waitForTimeout(400);
-    await p.mouse.click(195, 30); await p.waitForTimeout(500);
+    await p.mouse.click(195, 12); await p.waitForTimeout(500);
     check('tapping outside closes it', await p.evaluate(()=>!heroPopOpen));
     await p.close();
   }
@@ -181,10 +182,15 @@ async function dealUntil(p, test, tries=200){
   // ---- where Filters and Shuffle live ----
   {
     const p=await open(b, false);
-    check('on All Filters and Shuffle float together', await p.evaluate(()=>{
+    check('on All Filters floats alone, with no Shuffle over the page', await p.evaluate(()=>{
       const f = document.getElementById('filters-fab'), row = document.getElementById('float-row');
-      return f.parentElement === row && row.classList.contains('big') &&
-             getComputedStyle(f).display !== 'none' && getComputedStyle(document.getElementById('shuffle-fab')).display !== 'none';
+      return f.parentElement === row && getComputedStyle(f).display !== 'none' &&
+             getComputedStyle(document.getElementById('shuffle-fab')).display === 'none';
+    }));
+    check('the outfit card on the page is the same size as the grid cards', await p.evaluate(()=>{
+      const a = document.querySelector('#outfit-hero .outfit-card').getBoundingClientRect();
+      const g = document.querySelector('#outfit-gallery .outfit-card').getBoundingClientRect();
+      return Math.abs(a.width - g.width) <= 1;
     }));
     // Filters stays in view with focus on it while its sheet is up, so keys
     // that scroll must not move the page behind.
@@ -195,9 +201,9 @@ async function dealUntil(p, test, tries=200){
       (await p.evaluate(()=>Math.round(scrollY))) === y0);
     await p.keyboard.press('Escape'); await p.waitForTimeout(700);
     await toFaves(p, 1100);
-    check('on Faves Filters floats without the Outfits-page shuffle bar', await p.evaluate(()=>{
+    check('on Faves Filters floats too', await p.evaluate(()=>{
       const f = document.getElementById('filters-fab');
-      return f.parentElement.id === 'float-row' && !document.getElementById('float-row').classList.contains('big');
+      return f.parentElement.id === 'float-row';
     }));
     await p.close();
   }
