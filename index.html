@@ -1702,7 +1702,7 @@
        screen, less a sliver of page at the top (and the phone's status bar,
        if there is one) so there is still something to tap or pull on. */
     max-height:calc(100% - max(12px, env(safe-area-inset-top, 0px)));
-    background:#fff;
+    background:var(--page);
     border-radius:18px 18px 0 0;
     display:flex;flex-direction:column;
     overflow-y:auto;
@@ -1771,8 +1771,11 @@
     color:var(--ink-soft);
     margin-bottom:9px;
   }
-  /* The sheet itself is white, so the groups need no boxes of their own. */
-  .filter-section{margin-bottom:22px;padding:0;}
+  .filter-section{
+    margin-bottom:12px;padding:14px;
+    background:#fff;border-radius:14px;
+    box-shadow:0 1px 3px rgba(0,0,0,0.08);
+  }
   .filter-section:last-child{margin-bottom:0;}
 
   /* Outfit filters */
