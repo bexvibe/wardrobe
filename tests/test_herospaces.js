@@ -142,6 +142,14 @@ async function dealUntil(p, test, tries=200){
     }));
     check('and Shuffle is alone in the floating row', await p.evaluate(()=>
       document.getElementById('float-row').children.length === 1));
+    // Filters stays in view with focus on it while its sheet is up, so keys
+    // that scroll must not move the page behind.
+    await p.click('#filters-fab'); await p.waitForTimeout(700);
+    const y0 = await p.evaluate(()=>Math.round(scrollY));
+    await p.keyboard.press('PageDown'); await p.waitForTimeout(300);
+    check('with Filters focused and its sheet up, PageDown leaves the page where it is',
+      (await p.evaluate(()=>Math.round(scrollY))) === y0);
+    await p.keyboard.press('Escape'); await p.waitForTimeout(700);
     await toFaves(p, 1100);
     check('on Faves Filters floats again, without the icon', await p.evaluate(()=>{
       const f = document.getElementById('filters-fab');

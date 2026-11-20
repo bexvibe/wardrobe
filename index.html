@@ -3704,8 +3704,13 @@ window.addEventListener('wheel', e => {
 window.addEventListener('keydown', e => {
   if(!filterSheetHoldsPage() || !SCROLL_KEYS.includes(e.key)) return;
   const t = e.target;
-  // Space on a button is a press, and arrows in a field move the caret.
-  if(t && t.closest && t.closest('button, a, input, textarea, select, [contenteditable], .modal, .outfit-page-layer, #filter-sheet')) return;
+  // Arrows in a field move the caret, and a sheet scrolls itself.
+  if(t && t.closest && t.closest('input, textarea, select, [contenteditable], .modal, .outfit-page-layer, #filter-sheet')) return;
+  // Space on a button is a press. The other keys do nothing to a button, so
+  // they would scroll the page behind — which matters now that the Filters
+  // button stays in view, with focus on it, while its sheet is up.
+  const isSpace = e.key === ' ' || e.key === 'Spacebar';
+  if(isSpace && t && t.closest && t.closest('button, a')) return;
   e.preventDefault();
 });
 
