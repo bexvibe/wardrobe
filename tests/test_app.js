@@ -119,7 +119,7 @@ async function login(page) {
     check('archived row is soft-deleted, not removed', dbState.archived === 1 && !dbState.hardDeleted,
       `archived=${dbState.archived} rowsIntact=${!dbState.hardDeleted}`);
 
-    await page.click('#archive-link');
+    await page.click('#archive-tab');
     await page.waitForTimeout(250);
     check('archive tab lists the archived piece',
       (await page.textContent('#archive-count-line')).includes('1 archived'));

@@ -1300,7 +1300,6 @@
   .archive-row-sub{font-size:12px;color:var(--ink-soft);}
 
   /* Quiet secondary destinations — the archive, and its way back */
-  .quiet-link-row{margin-top:26px;text-align:center;}
   .quiet-link{
     font-family:'Figtree',sans-serif;font-variant-numeric:tabular-nums;
     font-size:11px;letter-spacing:0.08em;text-transform:uppercase;
@@ -2116,12 +2115,6 @@
     </div>
 
     <div class="bulk-bar" id="bulk-bar" style="display:none;"></div>
-
-    <!-- Archive is rare, so it sits at the end of the wardrobe rather than
-         taking permanent space in the navigation. -->
-    <div class="quiet-link-row">
-      <button class="quiet-link" id="archive-link" onclick="setMode('archive')"></button>
-    </div>
   </div>
 
   <div id="outfits-view" style="display:none;">
@@ -7358,6 +7351,12 @@ function renderTabs(){
     <button class="tab ${activeTab === t ? 'active' : ''}" onclick="setTab('${t}')">${t}</button>
   `).join('');
 
+  // Archive is rare, so it is the last tab in the row rather than a link at the
+  // foot of every page. It is only there once something is archived, and it
+  // opens the archive page, which has its own way back.
+  const archiveTab = (ARCHIVED.length && !editMode)
+    ? `<button class="tab" id="archive-tab" onclick="setMode('archive')">Archive</button>` : '';
+
   // Photos or names is a choice about how the shelf below is drawn, so it
   // sits with the shelves: the first thing in the row, scrolling away with
   // it. Selecting has no use for it, so it stands down there.
@@ -7373,16 +7372,7 @@ function renderTabs(){
 
   // Tags used to sit in a row here; they now live in the filter sheet, so the
   // wardrobe shows categories alone.
-  document.getElementById('tabs').innerHTML = viewToggle + categories;
-}
-
-// Shows the count so the archive is discoverable without being loud, and
-// hides itself entirely when there is nothing in there.
-function renderArchiveLink(){
-  const el = document.getElementById('archive-link');
-  if(!el) return;
-  el.textContent = `Archive (${ARCHIVED.length})`;
-  el.parentElement.style.display = ARCHIVED.length ? 'block' : 'none';
+  document.getElementById('tabs').innerHTML = viewToggle + categories + archiveTab;
 }
 
 function setTab(t){
@@ -8729,7 +8719,6 @@ function visibleFilteredItems(search){
 
 function render(){
   renderTabs();
-  renderArchiveLink();
   renderFiltersFab();
   renderToolbarIcons();
 

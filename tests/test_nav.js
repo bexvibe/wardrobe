@@ -60,17 +60,22 @@ const vis=(p,s)=>p.isVisible(s);
   check('and the sheet has nothing to offer there',
     await p.evaluate(()=>!filterSheetHasContent() && !filterSheetOpen()));
 
-  // --- archive is a link, not a destination ---
-  check('archive link stays out of the way when nothing is archived',
-    !(await vis(p,'#archive-link')));
+  // --- archive is the last tab, not a link at the foot of the page ---
+  check('no archive link at the foot of the wardrobe', !(await vis(p,'#archive-link')));
+  check('the archive tab stays out of the way when nothing is archived',
+    !(await vis(p,'#archive-tab')));
 
   await p.evaluate(async ()=>{ await archiveItems([ITEMS[0].id]); render(); });
   await p.waitForTimeout(400);
-  check('archive link appears once something is archived, with a count',
-    await vis(p,'#archive-link') && (await p.textContent('#archive-link')).includes('Archive (1)'),
-    (await p.textContent('#archive-link')).trim());
+  check('the archive tab appears once something is archived',
+    await vis(p,'#archive-tab') && (await p.textContent('#archive-tab')).trim() === 'Archive',
+    (await p.textContent('#archive-tab')).trim());
+  check('and it is the last tab in the row', await p.evaluate(()=>{
+    const tabs = [...document.querySelectorAll('#tabs .tab')];
+    return tabs.length > 1 && tabs[tabs.length - 1].id === 'archive-tab';
+  }));
 
-  await p.click('#archive-link'); await p.waitForTimeout(400);
+  await p.click('#archive-tab'); await p.waitForTimeout(400);
   check('archive opens as its own view', await vis(p,'#archive-view') && !(await vis(p,'#inventory-view')));
   check('wardrobe stays highlighted while in the archive',
     await p.evaluate(()=>document.getElementById('nav-inventory-btn').classList.contains('active')));
