@@ -45,8 +45,8 @@ async function dealUntil(p, test, tries=200){
     const p=await open(b);
     check('the hero has a title', (await p.textContent('#outfit-hero .hero-title')).trim() === 'Try this');
     check('and the grid has one', (await p.textContent('#gallery-title')).trim() === 'More combos');
-    check('and a dress-free hero has jacket, jumper, top and bottom spaces',
-      (await dealUntil(p, ()=>heroCombo.base !== 'dress')) &&
+    check('and a dress-free hero with both layers has jacket, jumper, top and bottom spaces',
+      (await dealUntil(p, ()=>heroCombo.base !== 'dress' && heroCombo.jacket && heroCombo.jumper, 600)) &&
       await p.evaluate(()=>['jacket','jumper','top','bottom'].every(s=>document.querySelector('.hero-slot.'+s))));
     check('jacket and jumper share the first layer, then top, then bottom', await p.evaluate(()=>{
       const y = s => Math.round(document.querySelector('.hero-slot.'+s).getBoundingClientRect().top);
@@ -66,10 +66,10 @@ async function dealUntil(p, test, tries=200){
       }));
     check('and nothing is captioned', await p.evaluate(()=>!document.querySelector('.hero-slot .cap, .hero-caption')));
 
-    // an empty optional space says what it is
-    check('a space with nothing in it says so',
+    // an optional layer the outfit doesn't have is not shown at all
+    check('an empty optional space is left out',
       (await dealUntil(p, ()=>!heroCombo.jumper)) &&
-      (await p.textContent('.hero-slot.jumper .hero-none')).trim() === 'No jumper');
+      await p.evaluate(()=>!document.querySelector('.hero-slot.jumper')));
     await p.close();
   }
 
@@ -101,7 +101,7 @@ async function dealUntil(p, test, tries=200){
     check('the filters button counts it', (await p.textContent('#filters-fab .filters-fab-count')).trim() === '1');
 
     // locking the empty jumper locks it as none
-    await p.click('.hero-slot.jumper .hero-lock'); await p.waitForTimeout(500);
+    await p.evaluate(()=>lockHeroSlot('jumper')); await p.waitForTimeout(500);
     check('locking an empty space locks it as none',
       await p.evaluate(()=>outfitFilters['Jumpers'].type === 'none'));
     check('and the count follows', (await p.textContent('#filters-fab .filters-fab-count')).trim() === '2');
