@@ -4883,25 +4883,60 @@ function drawHeroCombo(){
   const f = generatorFilters();
   const fams = outfitFamilies();
   if(!fams.length) return null;
-  const family = fams.length === 2 ? (Math.random() < 0.3 ? 'dress' : 'topbottom') : fams[0];
+  const pick = list => list[Math.floor(Math.random() * list.length)];
+  // A tag is judged on the finished outfit, so drawing blind and testing
+  // misses when few pieces carry it. Instead start from a piece that does:
+  // pick one carrier among the places it can go, put it there, and fill the
+  // rest freely. Which family is used follows from where carriers exist.
+  const wanted = tagsInPlay();
+  const carry = p => !!p && carriesAny(p, wanted);
+  const tops = slotList(f, 'top');
+  const carriers = { dress: [], topbottom: [] };
+  if(wanted.length){
+    for(const fam of fams){
+      const out = carriers[fam];
+      if(fam === 'dress'){
+        slotList(f, 'dress').filter(carry).forEach(p => out.push({slot:'dress', piece:p}));
+      } else {
+        tops.filter(carry).forEach(p => out.push({slot:'top', piece:p}));
+        slotList(f, 'bottom').filter(carry).forEach(p => out.push({slot:'bottom', piece:p}));
+        tops.filter(o => carry(o) && tops.some(t => canLayerOver(o, t))).forEach(p => out.push({slot:'overtop', piece:p}));
+      }
+      slotList(f, 'jumper').filter(carry).forEach(p => out.push({slot:'jumper', piece:p}));
+      slotList(f, 'jacket').filter(carry).forEach(p => out.push({slot:'jacket', piece:p}));
+    }
+  }
+  let family, forced = null;
+  // With no clothing carrying the tag it can only come from an accessory put
+  // on by hand, which the finished-outfit test still catches: draw blind.
+  const live = wanted.length ? fams.filter(fam => carriers[fam].length) : fams;
+  const from = live.length ? live : fams;
+  family = from.length === 2 ? (Math.random() < 0.3 ? 'dress' : 'topbottom') : from[0];
+  if(wanted.length && live.length) forced = pick(carriers[family]);
+  const force = (slot, free) => forced && forced.slot === slot ? forced.piece : free;
   // An optional layer is usually left off, as it is at the head of the grid.
   // Pinned pieces mean you asked for them, so then it is always worn.
   const optional = (slot, bare) => {
     const list = slotList(f, slot);
     const worn = list.filter(Boolean);
     if(!worn.length) return null;
-    return list.includes(null) && Math.random() < bare ? null : worn[Math.floor(Math.random() * worn.length)];
+    return list.includes(null) && Math.random() < bare ? null : pick(worn);
   };
-  const one = list => list.length ? list[Math.floor(Math.random() * list.length)] : null;
-  const jumper = optional('jumper', 0.65);
-  const jacket = optional('jacket', 0.5);
+  const one = list => list.length ? pick(list) : null;
+  const jumper = force('jumper', optional('jumper', 0.65));
+  const jacket = force('jacket', optional('jacket', 0.5));
   const shoe = shoeSlotList()[0] || null;
-  if(family === 'dress') return {base:'dress', dress: one(slotList(f, 'dress')), jumper, jacket, shoe};
-  const tops = slotList(f, 'top');
-  const top = one(tops);
-  const over = tops.filter(o => canLayerOver(o, top));
-  const overtop = over.length && Math.random() < 0.3 ? one(over) : null;
-  return {base:'topbottom', top, overtop, bottom: one(slotList(f, 'bottom')), jumper, jacket, shoe};
+  if(family === 'dress') return {base:'dress', dress: force('dress', one(slotList(f, 'dress'))), jumper, jacket, shoe};
+  let top, overtop = null;
+  if(forced && forced.slot === 'overtop'){
+    overtop = forced.piece;
+    top = one(tops.filter(t => canLayerOver(overtop, t)));
+  } else {
+    top = force('top', one(tops));
+    const over = tops.filter(o => canLayerOver(o, top));
+    overtop = over.length && Math.random() < 0.3 ? one(over) : null;
+  }
+  return {base:'topbottom', top, overtop, bottom: force('bottom', one(slotList(f, 'bottom'))), jumper, jacket, shoe};
 }
 // The piece filters shape the draw itself; tags and fave levels are judged on
 // the finished outfit, as they are for the grid, so the dealt outfit has to
