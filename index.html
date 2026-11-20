@@ -8326,6 +8326,10 @@ function drawFormCategoryPicker(){
 
 function openFormCategoryGroup(shelf){
   formCatGroup = shelf;
+  // Opening a main category chooses it, so it is already ticked inside —
+  // unless the piece already has one of this group's own categories.
+  const cur = document.getElementById('form-category').value.trim();
+  if(CATEGORY_TO_TAB[shelf] === shelf && CATEGORY_TO_TAB[cur] !== shelf) setFormCategory(shelf);
   const input = document.getElementById('form-pick-input');
   if(input) input.value = '';
   renderFormCategoryPicks();
