@@ -1,4 +1,4 @@
-// Capsules: named collections of pieces, one large card per row.
+// Capsules: named collections of pieces, two cards per row.
 const { chromium } = require('playwright');
 const fs=require('fs'), path=require('path');
 const REPO = require('path').join(__dirname, '..');
@@ -137,9 +137,9 @@ const db = p => p.evaluate(()=>({
       const cs=Array.from(document.querySelectorAll('#capsule-gallery .outfit-card'));
       return cs.map(c=>{const r=c.getBoundingClientRect();return {top:Math.round(r.top),width:Math.round(r.width)};});
     });
-    check('one capsule per row on a phone', rows[0].top !== rows[1].top,
+    check('two capsules to a row on a phone', rows[0].top === rows[1].top && rows[0].width < 200,
       `tops ${rows.map(r=>r.top).join(', ')}`);
-    check('a card spans the full content width', rows[0].width > 300, `${rows[0].width}px`);
+    check('and each takes half the content width', rows[0].width > 150 && rows[0].width < 200, `${rows[0].width}px`);
 
     check('a piece can sit in more than one capsule',
       await p.evaluate(()=>capsules.filter(c=>c.itemIds.includes('seed_0')).length)===2);
