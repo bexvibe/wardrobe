@@ -182,20 +182,19 @@
     cursor:pointer;
     white-space:nowrap;
   }
-  /* The photos/names switch, first in the row: two buttons side by side,
-     the current view filled in, so both choices are always visible. */
+  /* The photos/names switch, first in the row. Same pattern as the All /
+     Faves switch: a soft track with the current choice lifted onto a white
+     segment, both choices always visible. */
   .view-seg{
-    flex:none;display:inline-flex;margin-right:6px;
-    border:1px solid var(--line);border-radius:999px;
-    background:var(--surface);overflow:hidden;
+    flex:none;display:inline-flex;gap:2px;padding:3px;margin-right:6px;
+    background:var(--accent-soft);border-radius:999px;
   }
   .view-seg-btn{
-    width:44px;min-height:44px;padding:0;
+    width:44px;min-height:38px;padding:0;border:none;background:none;border-radius:999px;
     display:inline-flex;align-items:center;justify-content:center;
-    border:0;background:transparent;color:var(--ink-soft);cursor:pointer;
+    color:var(--ink-soft);cursor:pointer;
   }
-  .view-seg-btn + .view-seg-btn{border-left:1px solid var(--line);}
-  .view-seg-btn.active{background:var(--accent-soft);color:var(--ink);}
+  .view-seg-btn.active{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,0.14);}
   .view-seg-btn svg{width:18px;height:18px;display:block;}
   .tab.active{
     /* Grey like the active bottom-nav tab, not black. */
