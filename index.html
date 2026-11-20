@@ -182,10 +182,21 @@
     cursor:pointer;
     white-space:nowrap;
   }
-  /* The photos/names switch, first in the row. A chip-sized square of icon
-     rather than a word; it shows the view you would switch to. */
-  .tab.view-tab{width:44px;padding:0;justify-content:center;margin-right:2px;}
-  .tab.view-tab svg{width:18px;height:18px;display:block;}
+  /* The photos/names switch, first in the row: two buttons side by side,
+     the current view filled in, so both choices are always visible. */
+  .view-seg{
+    flex:none;display:inline-flex;margin-right:6px;
+    border:1px solid var(--line);border-radius:999px;
+    background:var(--surface);overflow:hidden;
+  }
+  .view-seg-btn{
+    width:44px;min-height:44px;padding:0;
+    display:inline-flex;align-items:center;justify-content:center;
+    border:0;background:transparent;color:var(--ink-soft);cursor:pointer;
+  }
+  .view-seg-btn + .view-seg-btn{border-left:1px solid var(--line);}
+  .view-seg-btn.active{background:var(--accent-soft);color:var(--ink);}
+  .view-seg-btn svg{width:18px;height:18px;display:block;}
   .tab.active{
     /* Grey like the active bottom-nav tab, not black. */
     background:var(--accent-soft);
@@ -7082,11 +7093,15 @@ function renderTabs(){
   // Photos or names is a choice about how the shelf below is drawn, so it
   // sits with the shelves: the first thing in the row, scrolling away with
   // it. Selecting has no use for it, so it stands down there.
-  const toList = viewMode === 'photos';
+  const seg = (mode, label, icon) => `
+      <button type="button" id="view-${mode === 'photos' ? 'grid' : 'list'}-btn"
+              class="view-seg-btn ${viewMode === mode ? 'active' : ''}"
+              aria-pressed="${viewMode === mode}" aria-label="${label}" title="${label}"
+              onclick="setViewMode('${mode}')">${icon}</button>`;
   const viewToggle = editMode ? '' : `
-    <button class="tab view-tab" id="view-toggle-btn" type="button" onclick="toggleViewMode()"
-            aria-label="${toList ? 'Switch to list view' : 'Switch to photo view'}"
-            title="${toList ? 'List view' : 'Photo view'}">${toList ? ICONS.list : ICONS.grid}</button>`;
+    <div class="view-seg" id="view-toggle-btn" role="group" aria-label="View">
+      ${seg('photos', 'Photo view', ICONS.grid)}${seg('names', 'List view', ICONS.list)}
+    </div>`;
 
   // Tags used to sit in a row here; they now live in the filter sheet, so the
   // wardrobe shows categories alone.
@@ -8294,8 +8309,9 @@ function closeSearch(){
   render();
 }
 
-function toggleViewMode(){
-  viewMode = viewMode === 'photos' ? 'names' : 'photos';
+function setViewMode(mode){
+  if(viewMode === mode) return;
+  viewMode = mode;
   render();
 }
 
