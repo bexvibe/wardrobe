@@ -1,0 +1,291 @@
+<title>Outfits Start From What You Know</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/*BASECSS*/
+/*POPCSS*/
+  /* ---------- intent: tags, pinned pieces, recents ---------- */
+  .pc.pinned{box-shadow:0 0 0 2px var(--ink);background:var(--surface)}
+  .pc.ghost img{opacity:.32}
+  .choose{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);min-height:30px;padding:0 12px;border-radius:999px;background:var(--surface);box-shadow:var(--btn);font-size:12px;font-weight:600;display:flex;align-items:center;gap:4px;white-space:nowrap}
+  .tile{position:absolute;inset:0;border-radius:12px;cursor:pointer}
+  .stage .pc{cursor:pointer}
+  .row-h{font-size:11.5px;color:var(--soft);margin:8px 2px 3px;display:flex;justify-content:space-between}
+  .pop .strip{margin:0 -12px;padding:2px 12px 2px}
+  .pp{width:48px;height:48px}
+  .pp img{max-width:38px;max-height:38px}
+  .sepc{flex:none;align-self:center;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--soft);writing-mode:vertical-rl;transform:rotate(180deg)}
+  .rdot{position:absolute;top:3px;right:3px;width:7px;height:7px;border-radius:50%;background:var(--brand)}
+  .slotpick{position:absolute;left:10px;right:10px;top:58px;bottom:80px;z-index:5;background:var(--surface);border-radius:18px;box-shadow:0 10px 34px rgba(0,0,0,.22);border:1px solid var(--line);display:flex;flex-direction:column;padding:12px;transform:translateY(8px);opacity:0;visibility:hidden;transition:opacity .2s,transform .2s var(--ease),visibility 0s .2s}
+  .slotpick.open{opacity:1;transform:none;visibility:visible;transition:opacity .2s,transform .2s var(--ease)}
+  .slotpick h6{font-family:var(--serif);font-weight:400;font-size:17px;margin:0}
+  .sp-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+  .sp-head button{min-height:34px;padding:0 12px;border-radius:999px;background:var(--surface);box-shadow:var(--btn);font-size:12px;font-weight:600}
+  .sp-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;overflow-y:auto;flex:1;min-height:0;align-content:start;padding:2px}
+  .sp-grid .it{min-width:0;aspect-ratio:1;border-radius:12px;border:1px solid var(--line);background:var(--page);display:grid;place-items:center;position:relative;padding:6px}
+  .sp-grid .it img{position:absolute;inset:6px;width:calc(100% - 12px);height:calc(100% - 12px);object-fit:contain}
+  .sp-grid .it.on{outline:2px solid var(--ink);outline-offset:1px}
+  .sp-grid .it.auto{background:transparent;border-style:dashed;font-size:11.5px;font-weight:600;text-align:center;line-height:1.25}
+  .sp-sub{font-size:11.5px;color:var(--soft);margin:2px 0 6px}
+  /* the page-level bar (option 2) */
+  .today{margin:0 0 6px}
+  .today .lab{font-size:11.5px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--soft);margin:2px 2px 5px}
+  .pins{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 8px}
+  .pinchip{min-height:34px;padding:3px 10px 3px 4px;border-radius:999px;background:var(--ink);color:#fff;font-size:12px;font-weight:500;display:flex;align-items:center;gap:6px}
+  .pinchip img{width:26px;height:26px;object-fit:contain;background:var(--surface);border-radius:50%;padding:2px}
+  .pinchip svg{width:12px;height:12px}
+  .addp{min-height:34px;padding:0 12px;border-radius:999px;border:1px dashed var(--soft);font-size:12px;font-weight:500;display:flex;align-items:center;gap:5px;background:transparent}
+  .addp svg{width:13px;height:13px}
+  .today .strip{margin:0 -14px 6px}
+</style>
+
+<div class="wrap">
+  <div class="eyebrow">Outfits page</div>
+  <h1>Start from what you know</h1>
+  <p class="lead">You usually know one or two pieces, or a tag like work or dinner, before you open the app. These three options make telling the app that the fastest thing on the page, and let Shuffle fill in the rest. Every phone is live and starts with a realistic day already set. Tap a tag, add or remove a piece, and shuffle.</p>
+
+  <div class="principles">
+    <div><b>Your input comes first</b>The app guesses only when you have nothing to say. If you know the jacket or the occasion, that leads.</div>
+    <div><b>Pieces become locks</b>A piece you choose is a locked piece. One idea instead of two: Shuffle deals around whatever you pinned.</div>
+    <div><b>Tags narrow the deal</b>Tags are the same tags you already have. Tap one and only matching pieces are dealt. Several tags widen it.</div>
+    <div><b>Recents save repeat taps</b>Pieces you used lately are first in every list, so a repeat week costs one tap.</div>
+  </div>
+
+  <section id="o1">
+    <div class="eyebrow">Option 1</div>
+    <h2>Tags and pieces in the card</h2>
+    <p class="sec-note">The shuffle card from last time, with the two things you know directly under the outfit. Tags first, then a strip of your pieces with the recent ones at the front. Tap a piece to pin it, and it locks into its slot.</p>
+    <div class="row">
+      <figure><figcaption>All, page</figcaption><div data-phone='{"v":1,"tags":["Work"],"pins":{"over":"o_waverly"}}'></div></figure>
+      <figure><figcaption>All, card open</figcaption><div data-phone='{"v":1,"tags":["Work"],"pins":{"over":"o_waverly"},"open":true}'></div></figure>
+      <div class="meta">
+        <div><b>Good</b>Everything is in one place: the outfit, what you told it, and Shuffle. It builds on the card you already liked.</div>
+        <div><b>Trade-off</b>The card gets busier, and the outfit gets smaller to make room. You have to open the card before you can say anything.</div>
+        <div><b>Best for</b>Mornings where you know one piece and want to see it with different things.</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="o2">
+    <div class="eyebrow">Option 2</div>
+    <h2>A Today bar on the page</h2>
+    <p class="sec-note">No popup at all. A bar under the title where you set the day: tag chips, and pieces you have pinned with an Add a piece button. The hero and the grid respond straight away, so the page itself stops being random.</p>
+    <div class="row">
+      <figure><figcaption>Nothing set, same as today</figcaption><div data-phone='{"v":2}'></div></figure>
+      <figure><figcaption>Work, with a pinned jacket</figcaption><div data-phone='{"v":2,"tags":["Work"],"pins":{"over":"o_waverly"}}'></div></figure>
+      <div class="meta">
+        <div><b>Good</b>The fastest way in: no extra tap to open anything. What you set is visible all the time, so you always know why the page looks as it does.</div>
+        <div><b>Trade-off</b>It is a second Filters, and it uses the top of the page. It would need to replace the Filters pill for tags and pieces, or the two will compete.</div>
+        <div><b>Best for</b>People who use the page all day and change their mind. The state is always there.</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="o3">
+    <div class="eyebrow">Option 3</div>
+    <h2>Slots you can fill</h2>
+    <p class="sec-note">The card shows four slots: jacket, top, bottom and shoes. A slot you have chosen is solid and locked. A slot you have not chosen is faded and says Choose. Tap any slot to open a picker for that slot, with recents first and your tags applied. Shuffle deals only the faded slots.</p>
+    <div class="row">
+      <figure><figcaption>All, page</figcaption><div data-phone='{"v":3,"tags":["Work"],"pins":{"over":"o_waverly"}}'></div></figure>
+      <figure><figcaption>All, card open</figcaption><div data-phone='{"v":3,"tags":["Work"],"pins":{"over":"o_waverly"},"open":true}'></div></figure>
+      <figure><figcaption>Slot picker</figcaption><div data-phone='{"v":3,"tags":["Work"],"pins":{"over":"o_waverly"},"open":true,"picker":"bottom"}'></div></figure>
+      <div class="meta pick">
+        <div><b>Good</b>It matches how you actually decide: "jacket is the Waverly, shoes are the Blundstones, sort out the rest". Choosing a piece and locking it are one action.</div>
+        <div><b>Good</b>The picker only lists pieces that fit the slot, so it is much shorter than scrolling the wardrobe.</div>
+        <div><b>Trade-off</b>Most to build, and a piece takes two taps (slot, then piece) instead of one.</div>
+        <div><b>Best for</b>Knowing two or three pieces for the day.</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="notes">
+    <div class="eyebrow">Notes</div>
+    <h2>What carries over and what is open</h2>
+    <div class="principles">
+      <div><b>Tags</b>The mockup uses made-up tags (Work, Dinner, Weekend, Beach). In the app these are your existing tags.</div>
+      <div><b>Recents</b>Needs a small remembered list of the last pieces and tags you used. It can live on the device and does not need a new column.</div>
+      <div><b>Lenses</b>New in, Overlooked and Remix are left out here. They could sit as a last chip for the days you know nothing.</div>
+      <div><b>Faves</b>Left out too. Faves is already a short list you pick from, so the problem is mostly on All.</div>
+    </div>
+    <p class="hint">Photos are real cut-outs from the wardrobe. Tags, recents and outfits are made up for the mockup.</p>
+  </section>
+</div>
+
+<script>
+const P = /*PHOTOS*/;
+const SLOTS = {top:[],over:[],bottom:[],shoes:[]};
+const slotOf = id => ({t:'top',o:'over',b:'bottom',s:'shoes'})[id[0]];
+Object.keys(P).forEach(id => SLOTS[slotOf(id)].push(id));
+const SLOT_NAME = {over:'jacket',top:'top',bottom:'bottom',shoes:'shoes'};
+const TAGS = ['Work','Dinner','Weekend','Beach'];
+const PT = {t_indigo:'Work Weekend',t_white:'Work Weekend Beach',t_green:'Dinner Work',t_turtle:'Work Dinner',t_stripe:'Weekend Beach',t_pink:'Weekend Dinner',
+  o_chore:'Weekend Work',o_denim:'Weekend Dinner',o_waverly:'Work Dinner',o_quilt:'Weekend',
+  b_jeans:'Weekend Work Dinner',b_linen:'Work Beach Dinner',b_cargo:'Weekend Beach',b_gingham:'Beach Dinner Weekend',b_lola:'Work Dinner',b_black:'Work Dinner',
+  s_nb:'Weekend Work',s_blunt:'Weekend Work',s_birk:'Beach Weekend',s_west:'Dinner Weekend'};
+const RECENT = ['o_waverly','b_jeans','t_white','s_blunt'];
+const pick = a => a[Math.floor(Math.random()*a.length)];
+const nm = id => P[id].n;
+const lc = s => s.charAt(0).toLowerCase()+s.slice(1);
+const WAND = '<svg viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true"><path d="m176-120-56-56 301-302-181-45 198-123-17-234 179 151 216-88-87 217 151 178-234-16-124 198-45-181-301 301Zm24-520-80-80 80-80 80 80-80 80Zm355 197 48-79 93 7-60-71 35-86-86 35-71-59 7 92-79 49 90 22 23 90Zm165 323-80-80 80-80 80 80-80 80ZM569-570Z"/></svg>';
+const HEART = (on,c='#E4607F') => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21c-.5 0-9-5.6-9-11.2C3 6.6 5.2 4.5 7.9 4.5c1.7 0 3.1.8 4.1 2.3 1-1.5 2.4-2.3 4.1-2.3C18.8 4.5 21 6.6 21 9.8 21 15.4 12.5 21 12 21z" fill="${on?c:'none'}" stroke="${on?c:'#9A9A9A'}" stroke-width="2" stroke-linejoin="round"/></svg>`;
+const LOCK = on => on
+  ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2" fill="currentColor"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>'
+  : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 7.5-2"/></svg>';
+const UNDO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg>';
+const CLOSE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
+const PLUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
+
+/* ---------- dealing: pins win, tags narrow the rest ---------- */
+function pool(S, slot){
+  if(!S.tags.size) return SLOTS[slot];
+  const m = SLOTS[slot].filter(id => PT[id].split(' ').some(t => S.tags.has(t)));
+  return m.length ? m : SLOTS[slot];
+}
+function combo(S){
+  const c = {};
+  ['top','over','bottom','shoes'].forEach(s => {
+    if(S.locks[s]) c[s] = S.locks[s];
+    else if(s === 'over') c[s] = Math.random() < .6 ? pick(pool(S,'over')) : null;
+    else c[s] = pick(pool(S,s));
+  });
+  return c;
+}
+function deal(S){ S.hero = combo(S); S.grid = Array.from({length:6}, () => combo(S)); }
+function why(S){
+  const tags = [...S.tags], pins = Object.values(S.locks);
+  if(!tags.length && !pins.length) return `Dealt at random <b>·</b> tell it what you know`;
+  const a = tags.length ? `For <b>${tags.join(' or ').toLowerCase()}</b>` : 'Dealt';
+  const b = pins.length ? ` around your <b>${pins.map(i => lc(nm(i))).join(' and ')}</b>` : '';
+  return a + b;
+}
+
+/* ---------- drawing ---------- */
+function pc(slot, c, S, ctx){
+  const id = c[slot]; if(!id) return '';
+  const locked = !!S.locks[slot];
+  let inner = `<img src="${P[id].u}" alt="${nm(id)}">`;
+  let cls = '';
+  if(ctx === 'stage1'){
+    if(locked) inner += `<button class="lock" data-act="unpin" data-slot="${slot}" aria-pressed="true" aria-label="Unlock ${nm(id)}">${LOCK(true)}</button>`;
+    else inner += `<button class="lock" data-act="pinnow" data-slot="${slot}" aria-pressed="false" aria-label="Lock ${nm(id)}">${LOCK(false)}</button>`;
+    cls = locked ? 'lk' : '';
+  } else if(ctx === 'stage3'){
+    cls = locked ? 'lk' : 'ghost';
+    inner += `<button class="tile" data-act="choose" data-slot="${slot}" aria-label="Choose ${SLOT_NAME[slot]}"></button>`;
+    inner += locked ? `<button class="lock" data-act="unpin" data-slot="${slot}" aria-pressed="true" aria-label="Unlock ${nm(id)}">${LOCK(true)}</button>`
+                    : `<span class="choose" style="pointer-events:none">${PLUS.replace('<svg','<svg width="12" height="12"')}Choose</span>`;
+  } else if(locked) cls = 'pinned';
+  return `<div class="pc ${cls}">${inner}</div>`;
+}
+function body(c, S, ctx){
+  // In option 3 the jacket slot is always there, so a jacket can be chosen even when none was dealt.
+  const empty = `<div class="pc ghost"><button class="tile" data-act="choose" data-slot="over" aria-label="Choose jacket"></button><span class="choose" style="pointer-events:none">${PLUS.replace('<svg','<svg width="12" height="12"')}Jacket?</span></div>`;
+  const two = c.over || ctx === 'stage3';
+  return `<div class="up ${two?'':'n1'}">${c.over?pc('over',c,S,ctx):(ctx==='stage3'?empty:'')}${pc('top',c,S,ctx)}</div><div class="lo">${pc('bottom',c,S,ctx)}</div><div class="ft">${pc('shoes',c,S,ctx)}</div>`;
+}
+function gridCard(c, S){ return `<div class="gc">${body(c,S,'grid')}</div>`; }
+function tagRow(S){
+  const order = TAGS;
+  return `<div class="chips" role="group" aria-label="Tags">${order.map(t =>
+    `<button class="chip ${S.tags.has(t)?'on':''}" data-act="tag" data-v="${t}" aria-pressed="${S.tags.has(t)}">${t}</button>`).join('')}</div>`;
+}
+function pieceStrip(S){
+  const rec = RECENT, rest = Object.keys(P).filter(i => !rec.includes(i));
+  const item = id => `<button class="pp ${S.locks[slotOf(id)]===id?'on':''}" data-act="pinpiece" data-v="${id}" aria-label="${nm(id)}" aria-pressed="${S.locks[slotOf(id)]===id}"><img src="${P[id].u}" alt="">${rec.includes(id)?'<span class="rdot"></span>':''}</button>`;
+  return `<div class="strip" role="group" aria-label="Your pieces">${rec.map(item).join('')}<span class="sepc">All</span>${rest.map(item).join('')}</div>`;
+}
+
+/* option 1 + 3 card */
+function popHtml(S, fresh){
+  const v = S.cfg.v;
+  const ctx = v === 3 ? 'stage3' : 'stage1';
+  const head = `<div class="pop-top"><div class="why"><span>${why(S)}</span></div><button class="pop-x" data-act="close" aria-label="Close">${CLOSE}</button></div>
+    <div class="stage ${fresh?'fresh':''}">${body(S.hero,S,ctx)}</div>`;
+  const bar = `<div class="pop-bar"><button class="sq" data-act="undo" aria-label="Back to the last outfit" ${S.hist.length?'':'disabled'}>${UNDO}</button>
+      <button class="shuf" data-act="shuffle">${WAND}Shuffle</button>
+      <button class="sq" data-act="heart" aria-label="Fave this outfit" aria-pressed="${S.hearted}">${HEART(S.hearted)}</button></div>`;
+  if(v === 1){
+    return head + tagRow(S) + `<div class="row-h"><span>Wearing something already?</span><span>Recent first</span></div>` + pieceStrip(S) + bar;
+  }
+  const slot = S.picker;
+  let pick3 = '';
+  if(slot){
+    const ids = [...pool(S,slot)].sort((a,b) => (RECENT.includes(b)?1:0) - (RECENT.includes(a)?1:0));
+    pick3 = `<div class="sp-head"><h6>Choose ${slot==='over'?'a jacket':'a '+SLOT_NAME[slot]}</h6><button data-act="pickback">Done</button></div>
+      <div class="sp-sub">${S.tags.size?'Showing '+[...S.tags].join(' or ').toLowerCase()+' pieces. ':''}Recent first.</div>
+      <div class="sp-grid"><button class="it auto ${!S.locks[slot]?'on':''}" data-act="pinclear" data-slot="${slot}">${WAND.replace('<svg','<svg width="18" height="18"')}<br>Let Shuffle pick</button>
+      ${ids.map(id => `<button class="it ${S.locks[slot]===id?'on':''}" data-act="pinpiece" data-v="${id}" aria-label="${nm(id)}">${RECENT.includes(id)?'<span class="rdot"></span>':''}<img src="${P[id].u}" alt=""></button>`).join('')}</div>`;
+  }
+  return head + tagRow(S) + `<div class="legend">Tap a slot to choose it. Shuffle deals the faded ones.</div>` + bar
+    + `<div class="slotpick ${slot?'open':''}" role="dialog" aria-label="Choose a piece">${pick3}</div>`;
+}
+
+/* page */
+function pageHero(S){
+  if(S.cfg.v === 2){
+    return `<div class="why"><span>${why(S)}</span></div><div class="hc small">${body(S.hero,S,'page')}</div>
+      <div class="actions"><button class="shuf" data-act="shuffle">${WAND}Shuffle</button><button class="sq" data-act="undo" aria-label="Back to the last outfit" ${S.hist.length?'':'disabled'}>${UNDO}</button></div>`;
+  }
+  return `<div class="why"><span>${why(S)}</span></div><div class="hc small" data-act="open" role="button" tabindex="0" aria-label="Open this outfit to shuffle">${body(S.hero,S,'page')}<span class="tapchip">${WAND}Style it</span></div>`;
+}
+function todayBar(S){
+  if(S.cfg.v !== 2) return '';
+  const pins = Object.entries(S.locks).map(([s,id]) => `<button class="pinchip" data-act="unpin" data-slot="${s}" aria-label="Remove ${nm(id)}"><img src="${P[id].u}" alt="">${nm(id)}${CLOSE}</button>`).join('');
+  return `<div class="today"><div class="lab">Today</div>${tagRow(S)}
+    <div class="pins">${pins}<button class="addp" data-act="togglestrip" aria-expanded="${!!S.strip}">${PLUS}${S.strip?'Close':'Add a piece'}</button></div>
+    ${S.strip?pieceStrip(S):''}</div>`;
+}
+function subText(S){ return S.tags.size || Object.keys(S.locks).length ? 'Set for today' : 'Dealt fresh each visit'; }
+function navHtml(){
+  return `<div class="nav"><div class="nb">Wardrobe</div><div class="nb act"><div class="seg on">All</div><div class="seg">${HEART(false)}</div></div><div class="nb">Capsules</div></div>`;
+}
+function render(S, fresh){
+  const q = s => S.el.querySelector(s);
+  q('.sub').textContent = subText(S);
+  q('.today-zone').innerHTML = todayBar(S);
+  q('.page-hero').innerHTML = pageHero(S);
+  q('.body-zone').innerHTML = `<div class="sec-h"><h5>More outfits</h5><span>${S.tags.size?[...S.tags].join(' or '):'Dealt fresh'}</span></div><div class="grid">${S.grid.map(c => gridCard(c,S)).join('')}</div>`;
+  if(S.cfg.v !== 2) q('.pop-in').innerHTML = popHtml(S, fresh);
+}
+function flick(S){ S.el.querySelectorAll('.shuf,.fab').forEach(b => { b.classList.remove('flick'); void b.offsetWidth; b.classList.add('flick'); }); }
+function redeal(S){ S.hist = []; deal(S); render(S, true); }
+function shuffle(S){ S.hist.push(S.hero); if(S.hist.length > 12) S.hist.shift(); deal(S); S.hearted = false; render(S, true); flick(S); }
+function setOpen(S, v){ S.el.querySelector('.pop-wrap').classList.toggle('open', v); if(!v){ S.picker = null; render(S); } }
+
+function mount(host){
+  const cfg = JSON.parse(host.dataset.phone);
+  const S = {cfg, tags:new Set(cfg.tags||[]), locks:Object.assign({}, cfg.pins||{}), hist:[], hearted:false, picker:cfg.picker||null, strip:false};
+  const pop = cfg.v === 2 ? '' : `<div class="pop-wrap" data-act="backdrop"><div class="pop" role="dialog" aria-label="Shuffle outfits"><div class="pop-in" style="display:contents"></div></div></div>`;
+  host.innerHTML = `<div class="phone"><div class="scr">
+      <div class="ph-top"><div><h4>Outfits</h4><div class="sub"></div></div><button class="build" aria-label="Build an outfit">+</button></div>
+      <div class="today-zone"></div><div class="page-hero"></div><div class="body-zone"></div></div>
+    <div class="float"><button class="fab ${cfg.v===2?'hide':''}" data-act="fab" aria-label="Shuffle">${WAND}Shuffle</button><div class="pill">Filters</div></div>
+    ${navHtml()}${pop}</div>`;
+  S.el = host.firstElementChild;
+  deal(S); render(S);
+  const scr = S.el.querySelector('.scr'), fab = S.el.querySelector('.fab');
+  if(cfg.v === 2) scr.addEventListener('scroll', () => fab.classList.toggle('hide', scr.scrollTop < 330));
+  if(cfg.open) setTimeout(() => setOpen(S, true), 50);
+  S.el.addEventListener('click', e => {
+    const b = e.target.closest('[data-act]'); if(!b || b.disabled) return;
+    const a = b.dataset.act, slot = b.dataset.slot;
+    if(a === 'backdrop'){ if(e.target === b) setOpen(S, false); return; }
+    if(a === 'fab'){ shuffle(S); if(cfg.v !== 2) setOpen(S, true); else scr.scrollTo({top:0,behavior:'smooth'}); }
+    else if(a === 'open') setOpen(S, true);
+    else if(a === 'close') setOpen(S, false);
+    else if(a === 'shuffle') shuffle(S);
+    else if(a === 'undo'){ if(S.hist.length){ S.hero = S.hist.pop(); render(S); } }
+    else if(a === 'heart'){ S.hearted = !S.hearted; render(S); }
+    else if(a === 'tag'){ const t = b.dataset.v; S.tags.has(t) ? S.tags.delete(t) : S.tags.add(t); redeal(S); }
+    else if(a === 'pinnow'){ S.locks[slot] = S.hero[slot]; render(S); }
+    else if(a === 'unpin'){ delete S.locks[slot]; redeal(S); }
+    else if(a === 'pinclear'){ delete S.locks[slot]; S.picker = null; redeal(S); }
+    else if(a === 'pinpiece'){ const id = b.dataset.v, s = slotOf(id); if(S.locks[s] === id) delete S.locks[s]; else S.locks[s] = id; if(cfg.v === 3) S.picker = null; redeal(S); }
+    else if(a === 'choose'){ S.picker = slot; render(S); }
+    else if(a === 'pickback'){ S.picker = null; render(S); }
+    else if(a === 'togglestrip'){ S.strip = !S.strip; render(S); }
+  });
+  S.el.addEventListener('keydown', e => { if((e.key === 'Enter' || e.key === ' ') && e.target.matches('.hc[data-act]')){ e.preventDefault(); setOpen(S, true); } if(e.key === 'Escape') setOpen(S, false); });
+}
+document.querySelectorAll('[data-phone]').forEach(mount);
+</script>

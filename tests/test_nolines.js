@@ -65,7 +65,7 @@ async function open(b){
                                       await p.click('#add-item-btn'); }],
     ['outfits',            async()=>{ await p.click('#form-backdrop .sheet-footer .btn.secondary');
                                       await p.click('#nav-outfits-btn'); }],
-    ['an outfit open',     async()=>{ await p.click('.hero-card'); }],
+    ['an outfit open',     async()=>{ await p.click('#outfit-gallery .outfit-card'); }],
     ['the tag editor',     async()=>{ await p.evaluate(()=>closeModal());
                                       const c = await p.locator('#sheet-tag-chips .tag-chip').first().boundingBox();
                                       await p.mouse.move(c.x+c.width/2, c.y+c.height/2);

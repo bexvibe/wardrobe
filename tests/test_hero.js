@@ -38,7 +38,7 @@ const heroKey = p => p.evaluate(()=>heroCombo ? comboKey(heroCombo) : null);
   const fit = await p.evaluate(()=>{
     const card=document.querySelector('#outfit-hero .outfit-card');
     const cr=card.getBoundingClientRect();
-    const kids=Array.from(card.querySelectorAll('.outfit-thumbs img, .outfit-thumbs .no-photo-mini'));
+    const kids=Array.from(card.querySelectorAll('.hero-spaces img'));
     const overflowBottom=kids.filter(k=>k.getBoundingClientRect().bottom > cr.bottom + 1).length;
     const overflowSide=kids.filter(k=>{
       const r=k.getBoundingClientRect();

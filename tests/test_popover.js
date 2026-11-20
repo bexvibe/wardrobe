@@ -45,7 +45,7 @@ const results=[]; const check=(n,p,d)=>{results.push(p);console.log(`${p?'PASS':
   await p.fill('#gate-password','correct-horse'); await p.click('#gate-submit');
   await p.waitForSelector('#app-root',{state:'visible'}); await p.waitForTimeout(700);
   await p.evaluate(()=>setMode('outfits')); await p.waitForTimeout(900);
-  await p.click('#outfits-view .outfit-card'); await p.waitForTimeout(800);
+  await p.click('#outfit-gallery .outfit-card'); await p.waitForTimeout(800);
   await p.screenshot({path:'/tmp/pop-outfit-card.png'});
   const cls=()=>p.evaluate(()=>document.getElementById('outfit-page').classList.contains('expanded'));
   check('outfit opens as a card', !(await cls()));

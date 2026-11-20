@@ -135,7 +135,10 @@ const onSheet = (p, down) => p.evaluate(d=>{
   {
     const p=await open(b);
     check('it says Filters', (await fabText(p)) === 'Filters', await fabText(p));
-    check('and no icon', await p.evaluate(()=>!document.querySelector('#filters-fab .filters-fab-icon')));
+    // On All it is up by New fave and carries its icon; on Faves it still
+    // floats, bare. This suite opens on All.
+    check('and its icon, up in the header', await p.evaluate(()=>
+      !!document.querySelector('#all-icon-row > #filters-fab .filters-fab-icon')));
     check('and no count badge while nothing is filtered',
       await p.evaluate(()=>!document.querySelector('#filters-fab .filters-fab-count')));
     check('not yet expanded to a screen reader',

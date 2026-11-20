@@ -41,6 +41,11 @@ async function scrollBy(p, dy){
 async function reopen(p){
   if(!(await isOpen(p))){ await p.click('#filters-fab'); await p.waitForTimeout(700); }
 }
+// Filters is up beside New fave on All, so it scrolls away with the header.
+// To open the sheet over a page that is scrolled, raise it directly.
+async function raiseHere(p){
+  if(!(await isOpen(p))){ await p.evaluate(()=>openFilterSheet()); await p.waitForTimeout(700); }
+}
 async function pullDown(p, dy){
   const r = await p.evaluate(()=>{ const b=document.querySelector('.filter-sheet-top').getBoundingClientRect();
     return {x:Math.round(b.left+b.width/2), y:Math.round(b.top+14)}; });
@@ -191,7 +196,7 @@ async function pullDown(p, dy){
     // Down the page far enough that narrowing it will make the browser
     // clamp the scroll position.
     await p.evaluate(()=>window.scrollTo({top:1200})); await p.waitForTimeout(700);
-    await reopen(p);
+    await raiseHere(p);
     check('the sheet is up, well down the page',
       (await isOpen(p)) && (await p.evaluate(()=>scrollY)) > 600,
       String(await p.evaluate(()=>Math.round(scrollY))));

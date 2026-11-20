@@ -101,9 +101,11 @@ const foldedCount = p => p.evaluate(()=>
   }
 
   // ---- 2b. The pill: centred on the nav, and it eases away behind the sheet ----
+  // On All it has moved up beside New fave; the floating pair is Faves'.
   {
     const p=await open(b);
     await p.click('#nav-outfits-btn'); await p.waitForTimeout(900);
+    await toFaves(p, 900);
 
     const placed = await p.evaluate(()=>{
       const f = document.getElementById('filters-fab').getBoundingClientRect();

@@ -1,0 +1,245 @@
+<title>Outfits Hero Build</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/*BASECSS*/
+/*SHEETCSS*/
+  /* ---------- the hero: four spaces, as worn ---------- */
+  .hero-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:2px 2px 8px}
+  .hero-head .why{margin:0;flex:1;min-height:34px}
+  .hh{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:8px;position:relative}
+  .hh .r3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+  .hh .r2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}
+  .hh .r3 .cell,.hh .r2 .cell{height:104px}
+  .hh .rb{margin-top:5px}
+  .hh .rb .cell{height:132px}
+  .hh .rb .cell.tall{height:176px}
+  .cell{position:relative;border-radius:10px;display:grid;place-items:center;cursor:pointer;background:transparent;transition:box-shadow .15s}
+  .cell img{position:absolute;inset:14px 4px 4px;width:calc(100% - 8px);height:calc(100% - 18px);object-fit:contain}
+  .cell .hit{position:absolute;inset:0;border-radius:10px}
+  .cell .cap{position:absolute;left:6px;top:4px;font-size:9px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--soft);z-index:1;pointer-events:none}
+  .cell.locked{box-shadow:0 0 0 2px var(--ink)}
+  .cell.empty{border:1.5px dashed var(--line)}
+  .cell.empty .nt{font-size:11px;color:var(--soft);text-align:center;line-height:1.3;pointer-events:none;padding-top:10px}
+  .cell .lock{position:absolute;right:4px;bottom:4px;width:30px;height:30px;top:auto;z-index:2}
+  .cell.empty .lock{opacity:.9}
+  .bar{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--soft);margin:8px 2px 0;justify-content:center;text-align:center}
+  .heart{position:static;width:34px;height:34px;flex:none}
+</style>
+
+<div class="wrap">
+  <div class="eyebrow">Outfits page, All</div>
+  <h1>What I'll build: the hero on All</h1>
+  <p class="lead">The featured outfit at the top of All, with a space for each of jacket, jumper, top and bottom. Tap a space to open Filters at that category. Lock a space to keep it. None is a choice for the layers you can go without. It starts on a random outfit and Shuffle deals a new one around anything you've locked. No shoes, no tags. Every phone is live: tap a space, a padlock, Shuffle, or Filters.</p>
+
+  <section id="phones">
+    <div class="row">
+      <figure><figcaption>1. Opens on a random outfit</figcaption><div data-phone='{}'></div></figure>
+      <figure><figcaption>2. Jacket locked, jumper locked to none</figcaption><div data-phone='{"F":{"Jackets":{"type":"items","ids":["o_waverly"]},"Jumpers":{"type":"none","ids":[]}}}'></div></figure>
+      <figure><figcaption>3. A dress outfit</figcaption><div data-phone='{"start":"dress"}'></div></figure>
+      <figure><figcaption>4. Tapped the jacket</figcaption><div data-phone='{"F":{"Jackets":{"type":"items","ids":["o_waverly","o_chore"]}},"sheet":"Jackets"}'></div></figure>
+    </div>
+  </section>
+
+  <section id="plan">
+    <div class="eyebrow">The plan</div>
+    <h2>What exists, what's new, what I need from you</h2>
+    <div class="principles">
+      <div><b>Already in the app</b>The hero card and its Shuffle. The filters sheet with a category row and piece grid. A "none" choice for jackets and jumpers. Pinning one piece as a filter. The reason line above the hero is new, but the rest of this page is today's.</div>
+      <div><b>New</b>Four labelled spaces in the hero instead of one picture. A padlock on each. Tapping a space opens Filters at that category. An empty jacket or jumper shows as a dashed space you can lock as none. A reason line above the outfit.</div>
+      <div><b>A lock is a pinned piece</b>It sets the same filter as choosing one piece in the sheet, so Filters' badge counts it, Clear removes it, and the grid below follows. Nothing new is stored.</div>
+      <div><b>Shuffle</b>Deals a new outfit from whatever the filters leave. Locked spaces stay, because they are the filters.</div>
+    </div>
+
+    <h3 style="margin-top:34px">Please confirm</h3>
+    <div class="principles">
+      <div><b>None only on jacket and jumper</b>Those are the layers the app already lets you leave off. Top and bottom always have a piece, because every outfit needs a top and bottom, or a dress. Do you want None on Top too?</div>
+      <div><b>Dresses fill two spaces</b>A dress outfit has no separate top or bottom, so the dress takes their place, as in phone 3. Jacket and jumper still show above it. The app's own rule makes dress and top-bottom outfits exclusive.</div>
+      <div><b>Bottom covers three categories</b>Pants, shorts and skirts all feed the bottom space. Tapping it opens the category of the piece showing, for example Skirts. Categories you own nothing in stay hidden, as today (shorts are hidden in this mock).</div>
+      <div><b>Left out for now</b>Back and forward arrows, the tag and capsule rows, and Faves. They stay as they are. The arrows are easy to add afterwards.</div>
+    </div>
+    <p class="hint">Photos are real cut-outs from the wardrobe, and the outfits and counts are made up. The tag and capsule rows in the real sheet are not part of this change and aren't shown here.</p>
+  </section>
+</div>
+
+<script>
+const P = /*PHOTOS*/;
+const SLOT_OF = {t:'top',o:'jacket',b:'bottom',j:'jumper',d:'dress'};
+const slotOf = id => SLOT_OF[id[0]];
+const tabOf = id => id[0]==='t'?'Tops':id[0]==='o'?'Jackets':id[0]==='j'?'Jumpers':id[0]==='d'?'Dresses':id==='b_gingham'?'Skirts':'Pants';
+const TABS = ['Tops','Pants','Skirts','Dresses','Jumpers','Jackets'];   // categories you own something in
+const TAB_SLOT = {Tops:'top',Pants:'bottom',Skirts:'bottom',Dresses:'dress',Jumpers:'jumper',Jackets:'jacket'};
+const SLOT_TABS = {top:['Tops'],bottom:['Pants','Skirts'],dress:['Dresses'],jumper:['Jumpers'],jacket:['Jackets']};
+const OPTIONAL = ['jumper','jacket'];
+const CAP = {jacket:'Jacket',jumper:'Jumper',top:'Top',bottom:'Bottom',dress:'Dress'};
+const NOUN = {jacket:'jacket',jumper:'jumper'};
+const items = tab => Object.keys(P).filter(id => tabOf(id) === tab);
+const nm = id => P[id].n;
+const lc = s => s.charAt(0).toLowerCase()+s.slice(1);
+const pick = a => a[Math.floor(Math.random()*a.length)];
+const WAND = '<svg viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true"><path d="m176-120-56-56 301-302-181-45 198-123-17-234 179 151 216-88-87 217 151 178-234-16-124 198-45-181-301 301Zm24-520-80-80 80-80 80 80-80 80Zm355 197 48-79 93 7-60-71 35-86-86 35-71-59 7 92-79 49 90 22 23 90Zm165 323-80-80 80-80 80 80-80 80ZM569-570Z"/></svg>';
+const HEART = (on,c='#E4607F') => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21c-.5 0-9-5.6-9-11.2C3 6.6 5.2 4.5 7.9 4.5c1.7 0 3.1.8 4.1 2.3 1-1.5 2.4-2.3 4.1-2.3C18.8 4.5 21 6.6 21 9.8 21 15.4 12.5 21 12 21z" fill="${on?c:'none'}" stroke="${on?c:'#9A9A9A'}" stroke-width="2" stroke-linejoin="round"/></svg>`;
+const LOCK = on => on
+  ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2" fill="currentColor"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>'
+  : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 7.5-2"/></svg>';
+const CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"/></svg>';
+
+/* ---------- the app's own filter model: per category, any / items / none ---------- */
+const anyF = () => ({type:'any',ids:[]});
+const fresh = () => { const f = {}; TABS.forEach(t => f[t] = anyF()); return f; };
+function contrib(S, tab){
+  const f = S.F[tab], all = items(tab);
+  if(f.type === 'none') return [];
+  if(f.type === 'items'){ const c = all.filter(i => f.ids.includes(i)); return c.length ? c : all; }
+  return all;
+}
+function slotList(S, slot){
+  const tabs = SLOT_TABS[slot];
+  const pinned = tabs.filter(t => S.F[t].type === 'items');
+  const from = pinned.length ? pinned : tabs;
+  return { list: from.reduce((a,t) => a.concat(contrib(S,t)), []), pinned: pinned.length > 0 };
+}
+function pickSlot(S, slot){
+  const {list, pinned} = slotList(S, slot);
+  if(OPTIONAL.includes(slot)) return list.length ? (!pinned && Math.random() < .6 ? null : pick(list)) : null;
+  return list.length ? pick(list) : null;
+}
+function family(S){
+  const dressPinned = S.F.Dresses.type === 'items';
+  const bodyPinned = ['Tops','Pants','Skirts'].some(t => S.F[t].type === 'items');
+  const dressOut = S.F.Dresses.type === 'none';
+  if(dressPinned) return 'dress';
+  if(bodyPinned || dressOut) return 'topbottom';
+  return Math.random() < .15 ? 'dress' : 'topbottom';
+}
+function newCombo(S, force){
+  const fam = force || family(S);
+  const c = {fam, jacket:pickSlot(S,'jacket'), jumper:pickSlot(S,'jumper')};
+  if(fam === 'dress') c.dress = pickSlot(S,'dress'); else { c.top = pickSlot(S,'top'); c.bottom = pickSlot(S,'bottom'); }
+  return c;
+}
+function deal(S, force){ S.hero = newCombo(S, force); S.grid = Array.from({length:6}, () => newCombo(S)); S.hearted = false; }
+
+/* ---------- locks are pinned pieces ---------- */
+function isLocked(S, slot, id){
+  const tabs = SLOT_TABS[slot];
+  if(!id) return OPTIONAL.includes(slot) && S.F[tabs[0]].type === 'none';
+  const f = S.F[tabOf(id)];
+  return f.type === 'items' && f.ids.length === 1 && f.ids[0] === id;
+}
+function narrowedN(S, slot, id){
+  if(!id) return 0;
+  const f = S.F[tabOf(id)];
+  return f.type === 'items' && f.ids.length > 1 ? f.ids.length : 0;
+}
+function lock(S, slot, id){
+  const tabs = SLOT_TABS[slot];
+  if(isLocked(S, slot, id)){ tabs.forEach(t => S.F[t] = anyF()); return; }
+  tabs.forEach(t => S.F[t] = anyF());
+  if(id) S.F[tabOf(id)] = {type:'items', ids:[id]};
+  else S.F[tabs[0]] = {type:'none', ids:[]};
+}
+const narrowedCount = S => TABS.filter(t => S.F[t].type !== 'any').length;
+function count(S){
+  const n = s => { const {list,pinned} = slotList(S, s); return OPTIONAL.includes(s) ? (list.length + (pinned || !list.length ? 0 : 1)) || 1 : list.length; };
+  const tb = n('top') * n('bottom'), dr = S.F.Dresses.type === 'none' ? 0 : n('dress');
+  const bodyPinned = ['Tops','Pants','Skirts'].some(t => S.F[t].type === 'items');
+  const dressPinned = S.F.Dresses.type === 'items';
+  const body = dressPinned ? 0 : tb, dres = bodyPinned ? 0 : dr;
+  return (body + dres) * n('jumper') * n('jacket');
+}
+
+/* ---------- drawing ---------- */
+function cell(S, slot, id, extra){
+  const locked = isLocked(S, slot, id), nar = narrowedN(S, slot, id);
+  const cap = CAP[slot] + (nar ? ` · ${nar}` : '');
+  const tab = id ? tabOf(id) : SLOT_TABS[slot][0];
+  const lockBtn = `<button class="lock" data-act="lock" data-slot="${slot}" data-id="${id||''}" aria-pressed="${locked}" aria-label="${locked?'Unlock':'Lock'} ${id?nm(id):'no '+(NOUN[slot]||slot)}">${LOCK(locked)}</button>`;
+  if(!id) return `<div class="cell empty ${locked?'locked':''} ${extra||''}"><span class="cap">${cap}</span><button class="hit" data-act="open" data-tab="${tab}" aria-label="Choose a ${NOUN[slot]||slot}"></button><span class="nt">No ${NOUN[slot]||slot}</span>${lockBtn}</div>`;
+  return `<div class="cell ${locked?'locked':''} ${extra||''}"><span class="cap">${cap}</span><img src="${P[id].u}" alt="${nm(id)}"><button class="hit" data-act="open" data-tab="${tab}" aria-label="Choose a ${lc(CAP[slot])}, now ${nm(id)}"></button>${lockBtn}</div>`;
+}
+function heroCard(S){
+  const c = S.hero;
+  if(c.fam === 'dress') return `<div class="hh"><div class="r2">${cell(S,'jacket',c.jacket)}${cell(S,'jumper',c.jumper)}</div><div class="rb">${cell(S,'dress',c.dress,'tall')}</div></div>`;
+  return `<div class="hh"><div class="r3">${cell(S,'jacket',c.jacket)}${cell(S,'jumper',c.jumper)}${cell(S,'top',c.top)}</div><div class="rb">${cell(S,'bottom',c.bottom)}</div></div>`;
+}
+function why(S){
+  const c = S.hero, bits = [];
+  ['jacket','jumper','top','bottom','dress'].forEach(s => { if(c[s] && isLocked(S, s, c[s])) bits.push(`<b>${lc(nm(c[s]))}</b>`); });
+  const none = OPTIONAL.filter(s => isLocked(S, s, null)).map(s => 'no ' + s);
+  if(!bits.length && !none.length) return `<span>Dealt at random <b>·</b> lock a space to keep it</span>`;
+  return `<span>Around your ${[...bits, ...none.map(n => `<b>${n}</b>`)].join(' and ')}</span>`;
+}
+function gridCell(S, id, cls){ return id ? `<div class="gcell ${cls||''}"><img src="${P[id].u}" alt=""></div>` : ''; }
+function gridCard(S, c){
+  const g = (id) => id ? `<div class="pc"><img src="${P[id].u}" alt=""></div>` : '';
+  const up = c.fam === 'dress' ? [c.jacket, c.jumper] : [c.jacket, c.jumper, c.top];
+  const upper = up.filter(Boolean);
+  return `<div class="gc"><div class="up ${upper.length===1?'n1':''}" style="${upper.length===3?'':''}">${upper.map(g).join('')}</div><div class="lo">${g(c.fam==='dress'?c.dress:c.bottom)}</div></div>`;
+}
+function sheetHtml(S){
+  const open = S.sheet;
+  const chips = TABS.map(t => { const f = S.F[t], n = f.type==='items' ? f.ids.length : f.type==='none' ? 1 : 0;
+    return `<button class="chip ${open===t?'open':''}" data-act="cat" data-tab="${t}" aria-pressed="${open===t}">${t}${n?`<span class="bd2">${f.type==='none'?'–':n}</span>`:''}</button>`; }).join('');
+  let grid = '';
+  if(open){
+    const f = S.F[open], opt = OPTIONAL.includes(TAB_SLOT[open]);
+    grid = `<div class="ghead"><span>${open}</span><button data-act="clearcat" data-tab="${open}">Clear</button></div><div class="pg3">
+      ${opt?`<button class="ptile none ${f.type==='none'?'sel':''}" data-act="none" data-tab="${open}" aria-pressed="${f.type==='none'}" style="font-size:12px;font-weight:600;color:var(--soft);text-align:center;line-height:1.25;padding:6px"><span class="ck">${CHECK}</span>None</button>`:''}
+      ${items(open).map(id => { const on = f.type==='items' && f.ids.includes(id);
+        return `<button class="ptile ${on?'sel':''}" data-act="piece" data-tab="${open}" data-id="${id}" aria-label="${nm(id)}" aria-pressed="${on}"><span class="ck">${CHECK}</span><img src="${P[id].u}" alt=""></button>`; }).join('')}</div>`;
+  }
+  return `<div class="sh-head"><div class="grip"></div><h5 class="sh-title">Filters</h5></div>
+    <div class="sh-body"><span class="lab">Pieces</span><div class="chips">${chips}</div>${grid}</div>
+    <div class="sh-foot"><button class="btn quiet" data-act="clearall">Clear</button><button class="btn primary" data-act="done">See ${count(S).toLocaleString('en-US')} outfits</button></div>`;
+}
+function navHtml(){ return `<div class="nav"><div class="nb">Wardrobe</div><div class="nb act"><div class="seg on">All</div><div class="seg">${HEART(false)}</div></div><div class="nb">Capsules</div></div>`; }
+function render(S){
+  const q = s => S.el.querySelector(s), n = narrowedCount(S);
+  q('.sub').textContent = n ? 'Narrowed by your filters' : 'Dealt fresh each visit';
+  q('.hero-zone').innerHTML = `<div class="hero-head"><div class="why">${why(S)}</div><button class="heart" data-act="heart" aria-pressed="${S.hearted}" aria-label="Fave this outfit">${HEART(S.hearted)}</button></div>${heroCard(S)}<div class="bar">Tap a space to open its filters. Padlock keeps it.</div>`;
+  q('.body-zone').innerHTML = `<div class="sec-h"><h5>More outfits</h5><span>${count(S).toLocaleString('en-US')} in all</span></div><div class="grid">${S.grid.map(c => gridCard(S,c)).join('')}</div>`;
+  q('.pill').className = 'pill' + (n ? ' active' : '');
+  q('.pill').innerHTML = 'Filters' + (n ? `<span class="fbadge">${n}</span>` : '');
+  q('.sheet').innerHTML = sheetHtml(S);
+}
+function flick(S){ S.el.querySelectorAll('.fab').forEach(b => { b.classList.remove('flick'); void b.offsetWidth; b.classList.add('flick'); }); }
+const sheetOn = S => { S.el.querySelector('.sheet').classList.add('open'); S.el.querySelector('.scrim').classList.add('open'); };
+const sheetOff = S => { S.el.querySelector('.sheet').classList.remove('open'); S.el.querySelector('.scrim').classList.remove('open'); };
+
+function mount(host){
+  const cfg = JSON.parse(host.dataset.phone);
+  const S = {F:fresh(), sheet:null, hearted:false};
+  Object.entries(cfg.F||{}).forEach(([k,v]) => S.F[k] = v);
+  host.innerHTML = `<div class="phone"><div class="scr">
+      <div class="ph-top"><div><h4>Outfits</h4><div class="sub"></div></div><button class="build" aria-label="Build an outfit">+</button></div>
+      <div class="hero-zone"></div><div class="body-zone"></div></div>
+    <div class="float"><button class="fab" data-act="shuffle" aria-label="Shuffle">${WAND}Shuffle</button><button class="pill" data-act="filters"></button></div>
+    ${navHtml()}<div class="scrim" data-act="scrim"></div><div class="sheet" role="dialog" aria-label="Filters"></div></div>`;
+  S.el = host.firstElementChild;
+  deal(S, cfg.start); render(S);
+  if(cfg.sheet){ S.sheet = cfg.sheet; render(S); setTimeout(() => sheetOn(S), 50); }
+  S.el.addEventListener('click', e => {
+    const b = e.target.closest('[data-act]'); if(!b || b.disabled) return;
+    const a = b.dataset.act, tab = b.dataset.tab, keep = () => { render(S); sheetOn(S); };
+    if(a === 'shuffle'){ deal(S); render(S); flick(S); S.el.querySelector('.scr').scrollTo({top:0,behavior:'smooth'}); }
+    else if(a === 'heart'){ S.hearted = !S.hearted; render(S); }
+    else if(a === 'lock'){ lock(S, b.dataset.slot, b.dataset.id || null); S.grid = Array.from({length:6}, () => newCombo(S)); render(S); }
+    else if(a === 'open'){ S.sheet = tab; keep(); }
+    else if(a === 'filters'){ S.sheet = null; keep(); }
+    else if(a === 'scrim' || a === 'done'){ sheetOff(S); deal(S); render(S); }
+    else if(a === 'cat'){ S.sheet = S.sheet === tab ? null : tab; keep(); }
+    else if(a === 'none'){ S.F[tab] = S.F[tab].type === 'none' ? anyF() : {type:'none',ids:[]}; keep(); }
+    else if(a === 'piece'){
+      const f = S.F[tab], id = b.dataset.id;
+      const ids = f.type === 'items' ? f.ids.slice() : [];
+      const i = ids.indexOf(id); i >= 0 ? ids.splice(i,1) : ids.push(id);
+      S.F[tab] = ids.length ? {type:'items', ids} : anyF(); keep();
+    }
+    else if(a === 'clearcat'){ S.F[tab] = anyF(); keep(); }
+    else if(a === 'clearall'){ S.F = fresh(); keep(); }
+  });
+  S.el.addEventListener('keydown', e => { if(e.key === 'Escape') sheetOff(S); });
+}
+document.querySelectorAll('[data-phone]').forEach(mount);
+</script>

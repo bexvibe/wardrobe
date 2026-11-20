@@ -146,44 +146,40 @@ const dbTags = (p, id) => p.evaluate(i =>
     await p.close();
   }
 
-  // ---- 4. The featured outfit opens like any other ----
+  // ---- 4. An outfit opens as a page; the lead card is spaces, not one button ----
   {
     const p=await open(b);
     await p.click('#nav-outfits-btn'); await p.waitForTimeout(900);
     check('nothing is open to start with',
       await p.evaluate(()=>!anySheetShowing()));
 
-    await p.click('.hero-card'); await p.waitForTimeout(500);
-    const hero = await p.evaluate(()=>{
+    // The lead card is a set of spaces: tapping one opens Filters, not a page.
+    await p.click('.hero-slot .hero-slot-open'); await p.waitForTimeout(700);
+    check('a tap on the lead card opens Filters rather than the outfit',
+      await p.evaluate(()=>filterSheetOpen() && !sheetTrail.length));
+    await p.evaluate(()=>closeFilterSheet()); await p.waitForTimeout(600);
+
+    await p.click('#outfit-gallery .outfit-card'); await p.waitForTimeout(500);
+    const card = await p.evaluate(()=>{
       const t = sheetTrail[sheetTrail.length - 1];
+      const combo = t && comboForKey(t.id);
       return {
-        open: Boolean(t) && t.sheet === 'outfit' && t.id === comboKey(heroCombo),
+        open: Boolean(t) && t.sheet === 'outfit',
         rows: document.querySelectorAll('#outfit-page .outfit-piece-row.tappable').length,
-        pieces: comboPieces(heroCombo).length,
+        pieces: combo ? comboPieces(combo).length : -1,
         canGoBack: Boolean(document.getElementById('outfit-page-back')),
       };
     });
-    check('tapping the lead card opens it', hero.open);
+    check('tapping a card in the grid opens it', card.open);
     check('it lists every piece in it, each a way to that piece',
-      hero.rows === hero.pieces && hero.rows > 0, `${hero.rows} of ${hero.pieces}`);
+      card.rows === card.pieces && card.rows > 0, `${card.rows} of ${card.pieces}`);
     check('there is no Hide this combo any more',
       await p.evaluate(()=>!Array.from(document.querySelectorAll('button')).some(x=>/Hide this combo/.test(x.textContent))));
-    check('and there is a way back out', hero.canGoBack);
-
-    check('the lead card does not grow in place',
-      await p.evaluate(()=>!document.querySelector('.hero-card .outfit-piece-row')));
+    check('and there is a way back out', card.canGoBack);
 
     await p.click('#outfit-page-back'); await p.waitForTimeout(450);
     check('Back closes it', await p.evaluate(()=>
       !anySheetShowing()));
-
-    // A card in the grid opens its own page, not the lead card's.
-    await p.click('#outfit-gallery .outfit-card'); await p.waitForTimeout(500);
-    check('a card in the grid opens that outfit instead',
-      await p.evaluate(()=>{
-        const t = sheetTrail[sheetTrail.length - 1];
-        return Boolean(t) && t.sheet === 'outfit' && t.id !== comboKey(heroCombo);
-      }));
     await p.close();
   }
 
@@ -191,7 +187,7 @@ const dbTags = (p, id) => p.evaluate(i =>
   {
     const p=await open(b);
     await p.click('#nav-outfits-btn'); await p.waitForTimeout(900);
-    await p.click('.hero-card'); await p.waitForTimeout(500);
+    await p.click('#outfit-gallery .outfit-card'); await p.waitForTimeout(500);
     const wanted = await p.evaluate(()=>
       document.querySelector('#outfit-page .outfit-piece-row .p-name').textContent.trim());
     await p.locator('#outfit-page .outfit-piece-row').first().click(); await p.waitForTimeout(800);
