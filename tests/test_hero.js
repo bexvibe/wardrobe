@@ -35,9 +35,9 @@ const heroKey = p => p.evaluate(()=>heroCombo ? comboKey(heroCombo) : null);
   await p.click('#nav-outfits-btn'); await p.waitForTimeout(1000);
 
   // --- the container fits its contents ---
-  await p.click('#outfit-hero .hero-panel'); await p.waitForTimeout(600);
+  await p.click('#outfit-hero .hero-feature'); await p.waitForTimeout(600);
   const fit = await p.evaluate(()=>{
-    const card=document.querySelector('#hero-pop .hero-card');
+    const card=document.querySelector('#hero-pop .outfit-card');
     const cr=card.getBoundingClientRect();
     const kids=Array.from(card.querySelectorAll('.hero-spaces img'));
     const overflowBottom=kids.filter(k=>k.getBoundingClientRect().bottom > cr.bottom + 1).length;
@@ -63,7 +63,7 @@ const heroKey = p => p.evaluate(()=>heroCombo ? comboKey(heroCombo) : null);
   // and the filter sheet, raised on demand, is drawn over it
   const dock = await p.evaluate(()=>{
     const sheet=document.getElementById('filter-sheet');
-    const cardOf = () => document.querySelector('#hero-pop .hero-card').getBoundingClientRect();
+    const cardOf = () => document.querySelector('#hero-pop .outfit-card').getBoundingClientRect();
     const wasOpen = filterSheetOpen();
     closeFilterSheet();
     const closedHeight = Math.round(cardOf().height);
@@ -80,7 +80,7 @@ const heroKey = p => p.evaluate(()=>heroCombo ? comboKey(heroCombo) : null);
     return {
       open, wasOpen, cardHeight, closedHeight,
       sheetZ: stack(sheet),
-      cardZ: stack(document.querySelector('#hero-pop .hero-card')),
+      cardZ: stack(document.querySelector('#hero-pop .outfit-card')),
     };
   });
   check('the filter sheet is not up until asked for', !dock.wasOpen);

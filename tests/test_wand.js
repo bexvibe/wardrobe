@@ -53,13 +53,13 @@ const stream = p => p.evaluate(()=>outfitDisplayed.slice(0, 8).map(c=>comboKey(c
     check('nothing to deal on the wardrobe, so no wand', !(await shown(p)));
 
     await p.click('#nav-outfits-btn'); await p.waitForTimeout(1500);
-    // On All the wand lives in the Try this popup, not floating over the page.
-    check('on All there is no floating Shuffle', !(await shown(p)));
-    check('and Filters floats on its own', await p.evaluate(()=>{
+    // On All the wand floats at the bottom and deals the featured card in place.
+    check('on All Shuffle floats at the bottom', await shown(p));
+    check('and Filters floats beside it', await p.evaluate(()=>{
       const f = document.getElementById('filters-fab');
       return f.parentElement.id === 'float-row' && getComputedStyle(f).display !== 'none';
     }));
-    await p.click('#outfit-hero .hero-panel'); await p.waitForTimeout(600);
+    await p.click('#outfit-hero .hero-feature'); await p.waitForTimeout(600);
     check('it says what it is, in the popup',
       (await p.textContent('#hero-pop-shuffle')).trim() === 'Shuffle');
     check('and draws the wand rather than typing one',
@@ -111,7 +111,7 @@ const stream = p => p.evaluate(()=>outfitDisplayed.slice(0, 8).map(c=>comboKey(c
 
     // From further down the page: dealing should bring you to what it dealt.
     await p.evaluate(()=>window.scrollTo(0, 600)); await p.waitForTimeout(300);
-    await p.click('#outfit-hero .hero-panel'); await p.waitForTimeout(600);
+    await p.click('#outfit-hero .hero-feature'); await p.waitForTimeout(600);
     await p.click('#hero-pop-shuffle'); await p.waitForTimeout(800);
 
     check('on All it deals the hero again',
@@ -139,7 +139,7 @@ const stream = p => p.evaluate(()=>outfitDisplayed.slice(0, 8).map(c=>comboKey(c
                            renderFilterControls(); resetOutfitResults(); });
     await p.waitForTimeout(800);
     const narrowed = await p.evaluate(()=>totalComboCount());
-    await p.click('#outfit-hero .hero-panel'); await p.waitForTimeout(600);
+    await p.click('#outfit-hero .hero-feature'); await p.waitForTimeout(600);
     await p.click('#hero-pop-shuffle'); await p.waitForTimeout(1000);
     check('a filter survives the shuffle',
       await p.evaluate(()=>outfitFilters['Jackets'].type === 'none'));

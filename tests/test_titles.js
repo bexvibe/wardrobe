@@ -165,7 +165,7 @@ const rect = (p, sel) => p.evaluate(s=>{
       firstTile.top < FOLD, `first piece starts at ${firstTile.top}`);
 
     await p.click('#nav-outfits-btn'); await p.waitForTimeout(800);
-    const hero = await rect(p, '.hero-card');
+    const hero = await rect(p, '.hero-feature');
     const fab = await rect(p, '#filters-fab');
     check('Outfits keeps the filters reachable: the pill is on screen, above the nav',
       await p.evaluate(()=>!filterSheetOpen() &&

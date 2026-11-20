@@ -50,7 +50,7 @@ const scrollTo = async (p, top) => { await p.evaluate(t=>window.scrollTo({top:t}
     check('and no combination count on the page',
       await p.evaluate(()=>!document.getElementById('outfit-count-line')));
     check('the lead card is still there, it just does not announce itself',
-      await p.evaluate(()=>Boolean(document.querySelector('.hero-card'))));
+      await p.evaluate(()=>Boolean(document.querySelector('.hero-feature'))));
     check('nothing on the page says "possible combinations"',
       !/possible combinations/.test(await p.textContent('#outfits-view')));
     await p.close();

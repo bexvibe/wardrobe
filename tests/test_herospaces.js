@@ -24,7 +24,7 @@ async function open(b, popup = true){
   }
   await p.waitForSelector('#app-root',{state:'visible'}); await p.waitForTimeout(800);
   await p.click('#nav-outfits-btn'); await p.waitForTimeout(1500);
-  if(popup){ await p.click('#outfit-hero .hero-panel'); await p.waitForTimeout(500); }
+  if(popup){ await p.click('#outfit-hero .hero-feature'); await p.waitForTimeout(500); }
   return p;
 }
 const heroKey = p => p.evaluate(()=>comboKey(heroCombo));
@@ -44,9 +44,11 @@ async function dealUntil(p, test, tries=200){
   // ---- the shape ----
   {
     const p=await open(b);
-    check('the hero has a title', (await p.textContent('#outfit-hero .hero-title')).trim() === 'Try this');
-    check('with a line saying what tapping it does',
-      (await p.textContent('#outfit-hero .hero-sub')).trim() === 'Tap to shuffle and lock items');
+    check('the hero is a plain outfit card with no panel text', await p.evaluate(()=>
+      !!document.querySelector('#outfit-hero .outfit-card.hero-feature') &&
+      !document.querySelector('#outfit-hero .hero-title, #outfit-hero .hero-sub')));
+    check('and it shows a padlock on its pieces', await p.evaluate(()=>
+      document.querySelectorAll('#outfit-hero .hero-badge').length >= 2));
     check('and the grid has one', (await p.textContent('#gallery-title')).trim() === 'More combos');
     check('and a dress-free hero with both layers has jacket, jumper, top and bottom spaces',
       (await dealUntil(p, ()=>heroCombo.base !== 'dress' && heroCombo.jacket && heroCombo.jumper, 600)) &&
@@ -150,11 +152,11 @@ async function dealUntil(p, test, tries=200){
   {
     const p=await open(b, false);
     check('the page shows a preview with no live controls', await p.evaluate(()=>
-      !!document.querySelector('#outfit-hero .hero-panel') &&
+      !!document.querySelector('#outfit-hero .hero-feature') &&
       !document.querySelector('#outfit-hero .hero-lock, #outfit-hero .hero-slot-open')));
     check('the popup is shut until asked for', await p.evaluate(()=>
       !heroPopOpen && !document.getElementById('hero-pop-wrap').classList.contains('open')));
-    await p.click('#outfit-hero .hero-panel'); await p.waitForTimeout(500);
+    await p.click('#outfit-hero .hero-feature'); await p.waitForTimeout(500);
     check('tapping the hero opens it', await p.evaluate(()=>heroPopOpen));
     check('it has no title, subtitle or Done', await p.evaluate(()=>
       !document.querySelector('#hero-pop .hero-title, #hero-pop .hero-sub') &&
@@ -170,10 +172,10 @@ async function dealUntil(p, test, tries=200){
     }));
     await p.keyboard.press('Escape'); await p.waitForTimeout(500);
     check('Escape puts it away', await p.evaluate(()=>!heroPopOpen));
-    await p.click('#outfit-hero .hero-panel'); await p.waitForTimeout(500);
+    await p.click('#outfit-hero .hero-feature'); await p.waitForTimeout(500);
     await p.click('#hero-pop-back'); await p.waitForTimeout(500);
     check('Back closes it', await p.evaluate(()=>!heroPopOpen));
-    await p.click('#outfit-hero .hero-panel'); await p.waitForTimeout(400);
+    await p.click('#outfit-hero .hero-feature'); await p.waitForTimeout(400);
     await p.mouse.click(195, 12); await p.waitForTimeout(500);
     check('tapping outside closes it', await p.evaluate(()=>!heroPopOpen));
     await p.close();
@@ -182,16 +184,35 @@ async function dealUntil(p, test, tries=200){
   // ---- where Filters and Shuffle live ----
   {
     const p=await open(b, false);
-    check('on All Filters floats alone, with no Shuffle over the page', await p.evaluate(()=>{
-      const f = document.getElementById('filters-fab'), row = document.getElementById('float-row');
-      return f.parentElement === row && getComputedStyle(f).display !== 'none' &&
-             getComputedStyle(document.getElementById('shuffle-fab')).display === 'none';
-    }));
-    check('the outfit card on the page is the same size as the grid cards', await p.evaluate(()=>{
+    check('on All Shuffle floats at the bottom and deals the card in place', await p.evaluate(()=>
+      getComputedStyle(document.getElementById('shuffle-fab')).display !== 'none'));
+    {
+      const before = await heroKey(p);
+      await p.click('#shuffle-fab'); await p.waitForTimeout(500);
+      check('tapping it deals a new hero without opening the popup',
+        (await heroKey(p)) !== before && await p.evaluate(()=>!heroPopOpen));
+    }
+    check('the outfit card on the page is larger than the grid cards', await p.evaluate(()=>{
       const a = document.querySelector('#outfit-hero .outfit-card').getBoundingClientRect();
       const g = document.querySelector('#outfit-gallery .outfit-card').getBoundingClientRect();
-      return Math.abs(a.width - g.width) <= 1;
+      return a.width > g.width + 20;
     }));
+    check('the popup keeps one height and Back and Shuffle stay put through a deal', await p.evaluate(()=>{
+      openHeroPopup();
+      return true;
+    }) && await (async()=>{
+      await p.waitForTimeout(500);
+      const m = () => p.evaluate(()=>{
+        const r = document.getElementById('hero-pop').getBoundingClientRect();
+        const s = document.getElementById('hero-pop-shuffle').getBoundingClientRect();
+        return [r.height, s.top].map(Math.round).join(',');
+      });
+      const seen = new Set([await m()]);
+      for(let i=0;i<25;i++){ await p.click('#hero-pop-shuffle'); await p.waitForTimeout(60); seen.add(await m()); }
+      const same = seen.size === 1;
+      await p.evaluate(()=>closeHeroPopup()); await p.waitForTimeout(500);
+      return same;
+    })());
     // Filters stays in view with focus on it while its sheet is up, so keys
     // that scroll must not move the page behind.
     await p.click('#filters-fab'); await p.waitForTimeout(700);
