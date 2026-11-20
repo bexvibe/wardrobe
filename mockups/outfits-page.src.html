@@ -1,0 +1,277 @@
+<title>Outfits Page Hero</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/*BASECSS*/
+/*INTENTCSS*/
+/*CARDCSS*/
+  /* ---------- the hero sits on the page; the filters sheet is the app's existing one ---------- */
+  .hero-big{position:relative}
+  .hero-big .hc .up .pc{height:122px} .hero-big .hc .lo .pc{height:108px} .hero-big .hc .ft .pc{height:58px}
+  .hero-big .pc{cursor:pointer}
+  .hero-big .arrow{top:44%}
+  .hero-big .lock{right:auto;left:50%;margin-left:-16px;bottom:2px}
+  .hero-big .pc.pinned{background:var(--surface)}
+  .hero-bar{display:flex;gap:8px;margin-top:10px}
+  .hero-bar .shuf{min-height:50px}
+  .hero-bar .sq{width:50px;height:50px}
+  .hint2{font-size:11.5px;color:var(--soft);text-align:center;margin-top:7px}
+  .fbadge{position:absolute;top:-6px;right:-3px;min-width:20px;height:20px;padding:0 6px;display:grid;place-items:center;border-radius:999px;background:var(--ink);color:#fff;font-size:11px;font-weight:600;box-shadow:0 0 0 2px var(--page)}
+  .pill{position:relative}
+  .pill.active{background:var(--chip)}
+  /* the sheet */
+  .scrim{position:absolute;inset:0;z-index:30;background:rgba(0,0,0,.28);opacity:0;pointer-events:none;transition:opacity .26s var(--ease)}
+  .scrim.open{opacity:1;pointer-events:auto}
+  .sheet{position:absolute;left:0;right:0;bottom:0;z-index:31;max-height:88%;display:flex;flex-direction:column;background:var(--page);border-radius:18px 18px 0 0;
+    box-shadow:0 -10px 34px rgba(0,0,0,.18);transform:translateY(100%);transition:transform .26s var(--ease);visibility:hidden}
+  .sheet.open{transform:none;visibility:visible}
+  .sh-head{padding:0 16px 6px}
+  .grip{display:flex;justify-content:center;padding:8px 0 6px}
+  .grip::before{content:'';width:38px;height:4px;border-radius:999px;background:var(--line)}
+  .sh-title{font-family:var(--serif);font-size:21px;font-weight:500;margin:0}
+  .sh-body{flex:1;min-height:0;overflow-y:auto;padding:4px 16px 14px;scrollbar-width:none}
+  .sh-body::-webkit-scrollbar{display:none}
+  .sh-body .lab{display:block;font-size:10.5px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--soft);margin:12px 0 7px}
+  .sh-body .chips{margin:0;padding:0;flex-wrap:wrap;overflow:visible}
+  .sh-body .chip{min-height:40px;padding:0 14px;position:relative;color:var(--soft)}
+  .sh-body .chip.on{background:var(--chip);color:var(--ink);border-color:transparent}
+  .sh-body .chip.open{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .sh-body .chip .bd2{position:absolute;top:-5px;right:-4px;min-width:17px;height:17px;padding:0 4px;border-radius:999px;background:var(--ink);color:#fff;font-size:10px;font-weight:600;display:grid;place-items:center;box-shadow:0 0 0 2px var(--page)}
+  .sh-body .chip.open .bd2{background:#fff;color:var(--ink);box-shadow:0 0 0 2px var(--ink)}
+  .pg3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-top:4px}
+  .ptile{position:relative;aspect-ratio:1;border-radius:9px;border:1px solid var(--line);background:var(--page);display:grid;place-items:center}
+  .ptile img{position:absolute;inset:8px;width:calc(100% - 16px);height:calc(100% - 16px);object-fit:contain}
+  .ptile.sel{border:2px solid var(--ink)}
+  .ptile .ck{position:absolute;top:4px;right:4px;width:19px;height:19px;border-radius:50%;background:var(--ink);color:#fff;display:none;place-items:center;z-index:2}
+  .ptile.sel .ck{display:grid}
+  .ptile .ck svg{width:11px;height:11px}
+  .ghead{display:flex;align-items:center;justify-content:space-between;margin:12px 0 6px;font-size:12px;color:var(--soft)}
+  .ghead button{font-size:12px;font-weight:600;min-height:32px;padding:0 4px}
+  .sh-foot{flex:none;background:var(--page);box-shadow:0 -6px 20px rgba(0,0,0,.07);padding:10px 14px 18px;display:flex;align-items:center;gap:10px}
+  .btn{min-height:46px;font-size:14px;font-weight:600;border-radius:6px;display:flex;align-items:center;justify-content:center;padding:0 18px}
+  .btn.primary{flex:1;background:var(--ink);color:#fff}
+  .btn.quiet{color:var(--soft)}
+</style>
+
+<div class="wrap">
+  <div class="eyebrow">Outfits page</div>
+  <h1>Hero on the page, filters as they are</h1>
+  <p class="lead">No popup for the featured outfit. It sits at the top of the page with back and forward arrows on the image, a padlock on every piece, and Shuffle and the heart under it. Choosing pieces and tags uses the filters sheet you already have. Every phone is live. Tap the arrows or the padlocks. Tap a piece to open Filters at that slot.</p>
+
+  <div class="principles">
+    <div><b>Locking is filtering</b>A padlock narrows that slot to the one piece, exactly like selecting a single piece in Filters. So the Filters badge counts your locks, and the two never disagree.</div>
+    <div><b>One layer</b>The hero is the page, so the only thing that ever sits over it is the filters sheet.</div>
+    <div><b>Tapping a piece goes to its slot</b>The sheet opens with that slot's pieces already showing, instead of making you find the category.</div>
+    <div><b>Nothing new to learn</b>The sheet, the pill and the "See N outfits" button are the ones in the app today.</div>
+  </div>
+
+  <section id="page">
+    <div class="row">
+      <figure><figcaption>All, nothing set</figcaption><div data-phone='{"mode":"all"}'></div></figure>
+      <figure><figcaption>All, locked and tagged</figcaption><div data-phone='{"mode":"all","tags":["Work"],"sel":{"over":["o_waverly"]}}'></div></figure>
+      <figure><figcaption>Tapped the bottom</figcaption><div data-phone='{"mode":"all","tags":["Work"],"sel":{"over":["o_waverly"]},"sheet":"bottom"}'></div></figure>
+      <figure><figcaption>Faves</figcaption><div data-phone='{"mode":"faves"}'></div></figure>
+    </div>
+  </section>
+
+  <section id="how">
+    <div class="eyebrow">How it behaves</div>
+    <h2>Each control, in one line</h2>
+    <div class="row">
+      <ul class="meta annot" style="max-width:520px">
+        <li><i>1</i><span><b>Arrows.</b>Step back and forward through outfits you have seen. Forward on the newest deals a new one. Dragging the outfit sideways does the same.</span></li>
+        <li><i>2</i><span><b>Padlock.</b>Keeps the piece that is showing. It is the same as selecting that one piece in Filters, so the Filters badge goes up by one.</span></li>
+        <li><i>3</i><span><b>Tap a piece.</b>Opens Filters at that piece's slot, with its pieces showing. Selecting several narrows the slot to those. Selecting one is a lock.</span></li>
+        <li><i>4</i><span><b>Shuffle and heart.</b>Shuffle deals around everything you have locked or filtered. The heart faves the outfit on screen.</span></li>
+        <li><i>5</i><span><b>Filters pill.</b>Where tags live, unchanged. Its badge counts tags plus pieces, and the button at the bottom of the sheet says how many outfits that leaves.</span></li>
+      </ul>
+      <div class="meta">
+        <div><b>Faves</b>Same hero and arrows. No padlocks, since a fave is a finished outfit, and the button reads Show another. Filters works as it does today.</div>
+        <div><b>Cost</b>Choosing a piece takes a trip into the sheet, which is the layer the card version was trying to avoid. The difference is that it is the layer the app already has, and the hero stays one tap behind it.</div>
+        <div><b>Wider effect</b>Because a lock is a filter, the grid below follows it too. Lock the Waverly jacket and every outfit in the grid has it.</div>
+      </div>
+    </div>
+    <p class="hint">Photos are real cut-outs from the wardrobe. Tags and outfits are made up for the mockup. The count in the sheet is worked out from the pieces shown, so it is approximate.</p>
+  </section>
+</div>
+
+<script>
+const P = /*PHOTOS*/;
+const SLOTS = {top:[],over:[],bottom:[],shoes:[]};
+const slotOf = id => ({t:'top',o:'over',b:'bottom',s:'shoes'})[id[0]];
+Object.keys(P).forEach(id => SLOTS[slotOf(id)].push(id));
+const SLOT_NAME = {over:'jacket',top:'top',bottom:'bottom',shoes:'shoes'};
+const CAT = {over:'Jackets',top:'Tops',bottom:'Bottoms',shoes:'Shoes'};
+const TAGS = ['Work','Dinner','Weekend','Beach'];
+const PT = {t_indigo:'Work Weekend',t_white:'Work Weekend Beach',t_green:'Dinner Work',t_turtle:'Work Dinner',t_stripe:'Weekend Beach',t_pink:'Weekend Dinner',
+  o_chore:'Weekend Work',o_denim:'Weekend Dinner',o_waverly:'Work Dinner',o_quilt:'Weekend',
+  b_jeans:'Weekend Work Dinner',b_linen:'Work Beach Dinner',b_cargo:'Weekend Beach',b_gingham:'Beach Dinner Weekend',b_lola:'Work Dinner',b_black:'Work Dinner',
+  s_nb:'Weekend Work',s_blunt:'Weekend Work',s_birk:'Beach Weekend',s_west:'Dinner Weekend'};
+const FAVES = [
+  {top:'t_indigo',over:'o_chore',bottom:'b_jeans',shoes:'s_blunt',lv:3},
+  {top:'t_white',over:'o_denim',bottom:'b_cargo',shoes:'s_nb',lv:2},
+  {top:'t_turtle',over:null,bottom:'b_black',shoes:'s_west',lv:3},
+  {top:'t_stripe',over:'o_quilt',bottom:'b_linen',shoes:'s_nb',lv:1},
+  {top:'t_green',over:null,bottom:'b_jeans',shoes:'s_birk',lv:2},
+  {top:'t_white',over:'o_waverly',bottom:'b_black',shoes:'s_blunt',lv:3},
+  {top:'t_pink',over:null,bottom:'b_cargo',shoes:'s_nb',lv:1},
+  {top:'t_indigo',over:null,bottom:'b_linen',shoes:'s_birk',lv:2},
+];
+const LV = ['','Like','Love','All-time'];
+const pick = a => a[Math.floor(Math.random()*a.length)];
+const nm = id => P[id].n;
+const lc = s => s.charAt(0).toLowerCase()+s.slice(1);
+const WAND = '<svg viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true"><path d="m176-120-56-56 301-302-181-45 198-123-17-234 179 151 216-88-87 217 151 178-234-16-124 198-45-181-301 301Zm24-520-80-80 80-80 80 80-80 80Zm355 197 48-79 93 7-60-71 35-86-86 35-71-59 7 92-79 49 90 22 23 90Zm165 323-80-80 80-80 80 80-80 80ZM569-570Z"/></svg>';
+const HEART = (on,c='#E4607F') => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21c-.5 0-9-5.6-9-11.2C3 6.6 5.2 4.5 7.9 4.5c1.7 0 3.1.8 4.1 2.3 1-1.5 2.4-2.3 4.1-2.3C18.8 4.5 21 6.6 21 9.8 21 15.4 12.5 21 12 21z" fill="${on?c:'none'}" stroke="${on?c:'#9A9A9A'}" stroke-width="2" stroke-linejoin="round"/></svg>`;
+const LOCK = on => on
+  ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2" fill="currentColor"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>'
+  : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 7.5-2"/></svg>';
+const PLUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
+const CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"/></svg>';
+const CHEV = d => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${d==='l'?'M15 5l-7 7 7 7':'M9 5l7 7-7 7'}"/></svg>`;
+
+/* ---------- a lock is a filter of one ---------- */
+const selOf = (S, slot) => S.sel[slot] || (S.sel[slot] = new Set());
+function pool(S, slot){
+  const s = selOf(S, slot);
+  if(s.size) return [...s];
+  if(!S.tags.size) return SLOTS[slot];
+  const m = SLOTS[slot].filter(id => PT[id].split(' ').some(t => S.tags.has(t)));
+  return m.length ? m : SLOTS[slot];
+}
+const isLocked = (S, slot, id) => { const s = selOf(S, slot); return s.size === 1 && s.has(id); };
+function newCombo(S){
+  if(S.cfg.mode === 'faves'){
+    const cur = S.timeline[S.idx];
+    const others = FAVES.filter(f => !cur || f.top !== cur.top || f.bottom !== cur.bottom || f.shoes !== cur.shoes);
+    return Object.assign({}, pick(others), {fav:true});
+  }
+  const c = {};
+  ['top','over','bottom','shoes'].forEach(s => {
+    const p = pool(S, s);
+    c[s] = s === 'over' && !selOf(S,s).size ? (Math.random() < .6 ? pick(p) : null) : pick(p);
+  });
+  return c;
+}
+function restart(S){ S.timeline = [newCombo(S)]; S.idx = 0; fillGrid(S); }
+function fillGrid(S){ S.grid = Array.from({length:6}, () => newCombo(S)); }
+function goNew(S){ S.timeline.push(newCombo(S)); if(S.timeline.length > 30) S.timeline.shift(); S.idx = S.timeline.length - 1; fillGrid(S); }
+const hero = S => S.timeline[S.idx];
+function count(S){
+  const n = s => pool(S, s).length;
+  return n('top') * (n('over') + (selOf(S,'over').size ? 0 : 1)) * n('bottom') * n('shoes');
+}
+function badgeN(S){ return S.tags.size + ['top','over','bottom','shoes'].reduce((a,s) => a + selOf(S,s).size, 0); }
+function why(S){
+  if(S.cfg.mode === 'faves'){ const c = hero(S); return `<i>${LV[c.lv]}</i><span>One of your ${FAVES.length} faves</span>`; }
+  const tags = [...S.tags], pins = ['over','top','bottom','shoes'].filter(s => isLocked(S, s, hero(S)[s])).map(s => hero(S)[s]);
+  if(!tags.length && !badgeN(S)) return `<span>Dealt at random <b>·</b> lock a piece or open Filters</span>`;
+  const a = tags.length ? `For <b>${tags.join(' or ').toLowerCase()}</b>` : 'Dealt';
+  const b = pins.length ? ` around your <b>${pins.map(i => lc(nm(i))).join(' and ')}</b>` : '';
+  return `<span>${a}${b}</span>`;
+}
+
+/* ---------- drawing ---------- */
+const emptyJacket = `<div class="pc empty"><button class="tile" data-act="open" data-slot="over" aria-label="Add a jacket"></button><span class="plus" aria-hidden="true">${PLUS}</span></div>`;
+function pc(slot, c, S, ctx){
+  const id = c[slot]; if(!id) return '';
+  const locked = isLocked(S, slot, id);
+  let inner = `<img src="${P[id].u}" alt="${nm(id)}">`, cls = locked && ctx === 'hero' ? 'pinned' : '';
+  if(ctx === 'hero' && S.cfg.mode === 'all'){
+    inner += `<button class="tile" data-act="open" data-slot="${slot}" aria-label="Choose ${SLOT_NAME[slot]}"></button>`;
+    inner += `<button class="lock" data-act="lock" data-slot="${slot}" data-id="${id}" aria-pressed="${locked}" aria-label="${locked?'Unlock':'Lock'} ${nm(id)}">${LOCK(locked)}</button>`;
+  } else if(locked && ctx === 'grid') cls = 'pinned';
+  return `<div class="pc ${cls}">${inner}</div>`;
+}
+function body(c, S, ctx){
+  const two = c.over || (ctx === 'hero' && S.cfg.mode === 'all');
+  return `<div class="up ${two?'':'n1'}">${c.over?pc('over',c,S,ctx):(ctx==='hero'&&S.cfg.mode==='all'?emptyJacket:'')}${pc('top',c,S,ctx)}</div><div class="lo">${pc('bottom',c,S,ctx)}</div><div class="ft">${pc('shoes',c,S,ctx)}</div>`;
+}
+const gridCard = (c, S) => `<div class="gc">${c.fav?`<span class="bd">${LV[c.lv]}</span>`:''}${body(c,S,'grid')}</div>`;
+function heroZone(S){
+  const c = hero(S), faves = S.cfg.mode === 'faves', on = faves || !!c.hearted;
+  return `<div class="why">${why(S)}</div>
+    <div class="hero-big"><div class="hc" id="herocard">${body(c,S,'hero')}
+      <button class="arrow l" data-act="back" aria-label="Previous outfit" ${S.idx===0?'disabled':''}>${CHEV('l')}</button>
+      <button class="arrow r" data-act="fwd" aria-label="Next outfit">${CHEV('r')}</button></div>
+    <div class="hero-bar"><button class="shuf" data-act="shuffle">${WAND}${faves?'Show another':'Shuffle'}</button>
+      <button class="sq" data-act="heart" aria-label="Fave this outfit" aria-pressed="${on}">${HEART(on)}</button></div>
+    ${faves?'':'<div class="hint2">Lock what you like. Tap a piece to choose it in Filters.</div>'}</div>`;
+}
+function sheetHtml(S){
+  const cat = S.sheet;
+  const catChips = ['over','top','bottom','shoes'].map(s => {
+    const n = selOf(S,s).size;
+    return `<button class="chip ${cat===s?'open':''}" data-act="cat" data-slot="${s}" aria-pressed="${cat===s}">${CAT[s]}${n?`<span class="bd2">${n}</span>`:''}</button>`;
+  }).join('');
+  const grid = cat ? `<div class="ghead"><span>${CAT[cat]}${S.tags.size?' · '+[...S.tags].join(' or ').toLowerCase()+' first':''}</span><button data-act="clearcat" data-slot="${cat}">Clear</button></div>
+    <div class="pg3">${[...SLOTS[cat]].sort((a,b) => (PT[b].split(' ').some(t=>S.tags.has(t))?1:0) - (PT[a].split(' ').some(t=>S.tags.has(t))?1:0)).map(id => {
+      const on = selOf(S,cat).has(id);
+      return `<button class="ptile ${on?'sel':''}" data-act="piece" data-slot="${cat}" data-id="${id}" aria-label="${nm(id)}" aria-pressed="${on}"><span class="ck">${CHECK}</span><img src="${P[id].u}" alt=""></button>`;
+    }).join('')}</div>` : '';
+  return `<div class="sh-head"><div class="grip"></div><h5 class="sh-title">Filters</h5></div>
+    <div class="sh-body"><span class="lab">Tags</span><div class="chips">${TAGS.map(t => `<button class="chip ${S.tags.has(t)?'on':''}" data-act="tag" data-v="${t}" aria-pressed="${S.tags.has(t)}">${t}</button>`).join('')}</div>
+    <span class="lab">Pieces</span><div class="chips">${catChips}</div>${grid}</div>
+    <div class="sh-foot"><button class="btn quiet" data-act="clearall">Clear</button><button class="btn primary" data-act="done">See ${count(S).toLocaleString('en-US')} outfits</button></div>`;
+}
+function navHtml(S){
+  const f = S.cfg.mode === 'faves';
+  return `<div class="nav"><div class="nb">Wardrobe</div><div class="nb act"><div class="seg ${f?'':'on'}">All</div><div class="seg ${f?'on':''}">${HEART(f)}</div></div><div class="nb">Capsules</div></div>`;
+}
+function render(S, fresh){
+  const q = s => S.el.querySelector(s);
+  const n = badgeN(S);
+  q('.sub').textContent = S.cfg.mode === 'faves' ? `${FAVES.length} outfits you kept` : (n ? 'Set for today' : 'Dealt fresh each visit');
+  q('.hero-zone').innerHTML = heroZone(S);
+  q('.body-zone').innerHTML = `<div class="sec-h"><h5>${S.cfg.mode==='faves'?'More faves':'More outfits'}</h5><span>${S.tags.size?[...S.tags].join(' or '):''}</span></div><div class="grid">${S.grid.map(c => gridCard(c,S)).join('')}</div>`;
+  q('.pill').className = 'pill' + (n ? ' active' : '');
+  q('.pill').innerHTML = 'Filters' + (n ? `<span class="fbadge">${n}</span>` : '');
+  q('.sheet').innerHTML = sheetHtml(S);
+}
+function flick(S){ S.el.querySelectorAll('.shuf,.fab').forEach(b => { b.classList.remove('flick'); void b.offsetWidth; b.classList.add('flick'); }); }
+function openSheet(S, cat){ S.sheet = cat || null; render(S); S.el.querySelector('.sheet').classList.add('open'); S.el.querySelector('.scrim').classList.add('open'); }
+function closeSheet(S){ S.el.querySelector('.sheet').classList.remove('open'); S.el.querySelector('.scrim').classList.remove('open'); }
+function step(S, dir){
+  if(dir < 0){ if(S.idx > 0){ S.idx--; render(S); } return; }
+  if(S.idx < S.timeline.length - 1){ S.idx++; render(S); } else { goNew(S); render(S); }
+}
+
+function mount(host){
+  const cfg = JSON.parse(host.dataset.phone);
+  const S = {cfg, tags:new Set(cfg.tags||[]), sel:{}, timeline:[], idx:0, sheet:null};
+  Object.entries(cfg.sel||{}).forEach(([k,v]) => S.sel[k] = new Set(v));
+  host.innerHTML = `<div class="phone"><div class="scr">
+      <div class="ph-top"><div><h4>Outfits</h4><div class="sub"></div></div><button class="build" aria-label="Build an outfit">+</button></div>
+      <div class="hero-zone"></div><div class="body-zone"></div></div>
+    <div class="float"><button class="fab hide" data-act="fab" aria-label="Shuffle">${WAND}Shuffle</button><button class="pill" data-act="filters"></button></div>
+    ${navHtml(S)}<div class="scrim" data-act="scrim"></div><div class="sheet" role="dialog" aria-label="Filters"></div></div>`;
+  S.el = host.firstElementChild;
+  restart(S); render(S);
+  const scr = S.el.querySelector('.scr'), fab = S.el.querySelector('.fab');
+  scr.addEventListener('scroll', () => fab.classList.toggle('hide', scr.scrollTop < 400));
+  if(cfg.sheet) setTimeout(() => openSheet(S, cfg.sheet), 50);
+  S.el.addEventListener('click', e => {
+    const b = e.target.closest('[data-act]'); if(!b || b.disabled) return;
+    const a = b.dataset.act, slot = b.dataset.slot;
+    if(a === 'fab'){ goNew(S); render(S); flick(S); scr.scrollTo({top:0,behavior:'smooth'}); }
+    else if(a === 'shuffle'){ goNew(S); render(S); flick(S); }
+    else if(a === 'back') step(S, -1);
+    else if(a === 'fwd') step(S, 1);
+    else if(a === 'heart'){ const c = hero(S); c.hearted = !c.hearted; render(S); }
+    else if(a === 'lock'){ const s = selOf(S, slot); if(isLocked(S, slot, b.dataset.id)) s.clear(); else { s.clear(); s.add(b.dataset.id); } render(S); }
+    else if(a === 'open') openSheet(S, slot);
+    else if(a === 'filters') openSheet(S, null);
+    else if(a === 'scrim' || a === 'done'){ closeSheet(S); restart(S); render(S); S.el.querySelector('.sheet').classList.remove('open'); }
+    else if(a === 'cat'){ S.sheet = S.sheet === slot ? null : slot; render(S); S.el.querySelector('.sheet').classList.add('open'); S.el.querySelector('.scrim').classList.add('open'); }
+    else if(a === 'piece'){ const s = selOf(S, slot); s.has(b.dataset.id) ? s.delete(b.dataset.id) : s.add(b.dataset.id); render(S); S.el.querySelector('.sheet').classList.add('open'); S.el.querySelector('.scrim').classList.add('open'); }
+    else if(a === 'tag'){ const t = b.dataset.v; S.tags.has(t) ? S.tags.delete(t) : S.tags.add(t); render(S); S.el.querySelector('.sheet').classList.add('open'); S.el.querySelector('.scrim').classList.add('open'); }
+    else if(a === 'clearcat'){ selOf(S, slot).clear(); render(S); S.el.querySelector('.sheet').classList.add('open'); S.el.querySelector('.scrim').classList.add('open'); }
+    else if(a === 'clearall'){ S.tags.clear(); Object.values(S.sel).forEach(s => s.clear()); render(S); S.el.querySelector('.sheet').classList.add('open'); S.el.querySelector('.scrim').classList.add('open'); }
+  });
+  let x0 = null;
+  S.el.addEventListener('pointerdown', e => { if(e.target.closest('#herocard') && !e.target.closest('button')) x0 = e.clientX; });
+  S.el.addEventListener('pointerup', e => { if(x0 === null) return; const dx = e.clientX - x0; x0 = null; if(Math.abs(dx) > 50) step(S, dx < 0 ? 1 : -1); });
+  S.el.addEventListener('keydown', e => { if(e.key === 'Escape') closeSheet(S); });
+}
+document.querySelectorAll('[data-phone]').forEach(mount);
+</script>
