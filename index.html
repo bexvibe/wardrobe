@@ -1628,6 +1628,20 @@
     transition:background 0.12s ease, transform 0.12s ease;
   }
   .shuffle-fab:hover{background:var(--brand-deep);}
+  /* Scrolled down into the outfits: Shuffle folds away and the Filters pill
+     takes its place, so the one thing you can do from deep in the list is
+     narrow it. It shrinks to nothing (width and its half of the gap too)
+     rather than just fading, so Filters glides to the centre. */
+  .shuffle-fab{
+    max-width:140px;overflow:hidden;
+    transition:background 0.12s ease, transform 0.12s ease,
+               max-width 260ms var(--sheet-ease), padding 260ms var(--sheet-ease),
+               margin 260ms var(--sheet-ease), opacity 200ms ease;
+  }
+  .shuffle-fab.tucked{
+    max-width:0;padding-left:0;padding-right:0;margin-right:-8px;border-width:0;
+    opacity:0;transform:scale(0.8);pointer-events:none;
+  }
   .shuffle-fab:active{transform:scale(0.96);}
   /* Material Symbols "wand_stars", Apache 2.0. Inlined rather than pulled
      from the icon font: a font can be missing the glyph and substitute
@@ -2811,6 +2825,10 @@ function renderShuffleFab(){
   // On All it deals the featured outfit; on Faves it reorders what is kept.
   const dealt = appMode === 'outfits' ? !!heroCombo : (appMode === 'saved' && savedShownCount > 0);
   fab.style.display = dealt ? 'flex' : 'none';
+  const tucked = appMode === 'outfits' && filtersDocked;
+  fab.classList.toggle('tucked', tucked);
+  fab.tabIndex = tucked ? -1 : 0;
+  fab.setAttribute('aria-hidden', String(tucked));
 }
 
 function shuffledForSession(list, keyOf){
@@ -3200,23 +3218,58 @@ function activeFilterCount(){
 // On All the button lives up by New fave, with its icon; on Faves it floats
 // above the nav as it always did. It is one button that moves, so there is
 // one thing to keep in step: the count, the wash and aria-expanded.
-function placeFiltersButton(fab){
-  // On All the button sits at the top, in the icon row; on Faves it floats.
+// Scrolled down into the outfits, Filters leaves the header and docks at the
+// bottom where Shuffle was; back at the top it returns. Hysteresis, so it
+// does not flicker at the line.
+let filtersDocked = false;
+
+function placeFiltersButton(fab, animate){
+  // On All the button sits at the top, in the icon row, until you scroll
+  // down into the list; on Faves it floats.
   const row = document.getElementById('all-icon-row');
   const float = document.getElementById('float-row');
-  const inHead = appMode === 'outfits' && !!row;
+  const inHead = appMode === 'outfits' && !!row && !filtersDocked;
   const target = inHead ? row : float;
   if(target && fab.parentElement !== target){
+    const first = animate && fab.offsetParent ? fab.getBoundingClientRect() : null;
     if(inHead) row.insertBefore(fab, row.firstChild); else float.appendChild(fab);
+    fab.classList.toggle('in-head', inHead);
+    // FLIP: it is the same button, so it travels rather than swapping.
+    if(first && !window.matchMedia('(prefers-reduced-motion: reduce)').matches){
+      const last = fab.getBoundingClientRect();
+      const dx = first.left + first.width / 2 - (last.left + last.width / 2);
+      const dy = first.top + first.height / 2 - (last.top + last.height / 2);
+      fab.style.transition = 'none';
+      fab.style.transform = `translate(${dx}px, ${dy}px)`;
+      void fab.offsetWidth;
+      fab.style.transition = 'transform 340ms var(--sheet-ease), opacity var(--sheet-ease-ms) var(--sheet-ease), visibility var(--sheet-ease-ms)';
+      fab.style.transform = '';
+      setTimeout(() => { fab.style.transition = ''; }, 380);
+    }
   }
   fab.classList.toggle('in-head', inHead);
   return inHead;
 }
 
-function renderFiltersFab(){
+function updateFiltersDock(){
+  let next = false;
+  if(appMode === 'outfits'){
+    const gal = document.getElementById('outfit-gallery');
+    if(gal && gal.offsetParent && window.scrollY > 40){
+      const top = gal.getBoundingClientRect().top;
+      next = filtersDocked ? top < window.innerHeight * 0.8 : top < window.innerHeight * 0.45;
+    }
+  }
+  if(next === filtersDocked) return;
+  filtersDocked = next;
+  renderFiltersFab(true);
+}
+
+function renderFiltersFab(animate){
   const fab = document.getElementById('filters-fab');
   if(!fab) return;
-  const inHead = placeFiltersButton(fab);
+  if(appMode !== 'outfits') filtersDocked = false;
+  const inHead = placeFiltersButton(fab, animate === true);
   const relevant = filterSheetHasContent();
   fab.style.display = relevant ? 'flex' : 'none';
 
@@ -3225,7 +3278,7 @@ function renderFiltersFab(){
   fab.classList.toggle('active', n > 0);
   fab.setAttribute('aria-expanded', String(up));
   fab.innerHTML = `
-    ${inHead ? '<svg class="filters-fab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg>' : ''}
+    ${appMode === 'outfits' ? '<svg class="filters-fab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg>' : ''}
     <span class="filters-fab-label">Filters</span>
     ${n ? `<span class="filters-fab-count">${n}</span>` : ''}`;
 
@@ -7403,6 +7456,11 @@ async function boot(){
   window.addEventListener('scroll', () => {
     if(scrollTick) return;
     scrollTick = setTimeout(() => { scrollTick = null; rememberScroll(appMode); }, 250);
+  }, { passive: true });
+  let dockFrame = 0;
+  window.addEventListener('scroll', () => {
+    if(dockFrame) return;
+    dockFrame = requestAnimationFrame(() => { dockFrame = 0; updateFiltersDock(); });
   }, { passive: true });
 
   if(!isConfigured()){
