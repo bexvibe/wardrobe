@@ -98,23 +98,19 @@ const stream = p => p.evaluate(()=>outfitDisplayed.slice(0, 8).map(c=>comboKey(c
       const row = document.getElementById('float-row');
       return !row.classList.contains('away') && parseFloat(getComputedStyle(row).opacity) === 1;
     }));
-    check('level with the filters pill', await p.evaluate(()=>{
-      const fab = document.getElementById('shuffle-fab').getBoundingClientRect();
-      const pill = document.getElementById('filters-fab').getBoundingClientRect();
-      return Math.abs(fab.bottom - pill.bottom) <= 2;
+    // On All it is the one big button over the nav, and Filters is up in
+    // the header beside New fave.
+    check('on All it is the big one: wide and centred', await p.evaluate(()=>{
+      const r = document.getElementById('shuffle-fab').getBoundingClientRect();
+      return r.width >= 300 && r.height >= 52 &&
+             Math.abs((r.left + r.right) / 2 - window.innerWidth / 2) <= 2;
     }));
-    // Measured with the panel shut, because a pill mid-stand-down is
-    // scaled and shifted and its box is not where it lives.
-    check('immediately to the left of the filters pill',
-      await p.evaluate(()=>{
-        const row = document.getElementById('float-row');
-        const kids = Array.from(row.children);
-        const shuffle = document.getElementById('shuffle-fab');
-        const filters = document.getElementById('filters-fab');
-        const gap = Math.round(filters.getBoundingClientRect().left -
-                               shuffle.getBoundingClientRect().right);
-        return kids[0] === shuffle && kids[1] === filters && gap === 8;
-      }));
+    check('and Filters is in the header, left of New fave', await p.evaluate(()=>{
+      const f = document.getElementById('filters-fab');
+      const n = document.getElementById('build-outfit-btn-all');
+      return f.parentElement.id === 'all-icon-row' &&
+             f.getBoundingClientRect().right <= n.getBoundingClientRect().left;
+    }));
 
     check('and clear of the nav', await p.evaluate(()=>{
       const fab = document.getElementById('shuffle-fab').getBoundingClientRect();
@@ -127,6 +123,20 @@ const stream = p => p.evaluate(()=>outfitDisplayed.slice(0, 8).map(c=>comboKey(c
     check('the wand is over what you kept, when there is any',
       (await shown(p)) === (keptCards > 0), `${keptCards} cards`);
     if(keptCards > 0){
+      // Over what you kept it is the small one, level with the Filters pill.
+      check('on Faves it is level with the filters pill', await p.evaluate(()=>{
+        const fab = document.getElementById('shuffle-fab').getBoundingClientRect();
+        const pill = document.getElementById('filters-fab').getBoundingClientRect();
+        return Math.abs(fab.bottom - pill.bottom) <= 2;
+      }));
+      check('immediately to the left of it', await p.evaluate(()=>{
+        const row = document.getElementById('float-row');
+        const kids = Array.from(row.children);
+        const shuffle = document.getElementById('shuffle-fab');
+        const filters = document.getElementById('filters-fab');
+        const gap = Math.round(filters.getBoundingClientRect().left - shuffle.getBoundingClientRect().right);
+        return kids[0] === shuffle && kids[1] === filters && gap === 8;
+      }));
       const seed = await p.evaluate(()=>sessionSeed);
       await p.click('#shuffle-fab'); await p.waitForTimeout(800);
       check('and deals the faves from a new seed',
@@ -148,22 +158,21 @@ const stream = p => p.evaluate(()=>outfitDisplayed.slice(0, 8).map(c=>comboKey(c
     const totalBefore = await p.evaluate(()=>totalComboCount());
     const heroBefore = await p.evaluate(()=>heroCombo && comboKey(heroCombo));
 
-    await p.click('#shuffle-fab'); await p.waitForTimeout(1000);
+    // From further down the page: dealing should bring you to what it dealt.
+    await p.evaluate(()=>window.scrollTo(0, 600)); await p.waitForTimeout(300);
+    await p.click('#shuffle-fab'); await p.waitForTimeout(1200);
 
-    check('it deals a different hand',
-      JSON.stringify(await stream(p)) !== JSON.stringify(before),
-      `${before[0]} -> ${(await stream(p))[0]}`);
-    check('from a new seed', (await p.evaluate(()=>sessionSeed)) !== seedBefore);
-    check('out of the same wardrobe',
-      (await p.evaluate(()=>totalComboCount())) === totalBefore);
-    check('the lead card is dealt again too',
+    check('on All it deals the hero again',
       (await p.evaluate(()=>heroCombo && comboKey(heroCombo))) !== heroBefore,
       `${heroBefore} -> ${await p.evaluate(()=>heroCombo && comboKey(heroCombo))}`);
-    check('and the new hand is kept for the rest of the visit',
-      await p.evaluate(()=>String(sessionSeed) === sessionStorage.getItem('wardrobe-session-seed')));
-
-    // The point of it is the outfits you have not seen.
-    check('it takes you back to the top',
+    check('and leaves the grid where it was',
+      JSON.stringify(await stream(p)) === JSON.stringify(before));
+    check('without reshuffling the whole page', (await p.evaluate(()=>sessionSeed)) === seedBefore);
+    check('out of the same wardrobe',
+      (await p.evaluate(()=>totalComboCount())) === totalBefore);
+    check('and the new hero is kept for the rest of the visit',
+      await p.evaluate(()=>{ const k = readStoredHero(); return !!k && comboKey(k) === comboKey(heroCombo); }));
+    check('it takes you back up to the hero',
       (await p.evaluate(()=>Math.round(window.scrollY))) === 0);
     await p.close();
   }
@@ -183,9 +192,9 @@ const stream = p => p.evaluate(()=>outfitDisplayed.slice(0, 8).map(c=>comboKey(c
     await p.click('#shuffle-fab'); await p.waitForTimeout(1000);
     check('a filter survives the shuffle',
       await p.evaluate(()=>outfitFilters['Jackets'].type === 'none'));
-    check('and still narrows the new hand',
+    check('and the new hero still has no jacket',
       (await p.evaluate(()=>totalComboCount())) === narrowed &&
-      await p.evaluate(()=>outfitDisplayed.every(c=>!c.jacket)));
+      await p.evaluate(()=>!heroCombo.jacket));
 
     // What you kept is untouched by any of it.
     check('nothing was kept or unkept', await p.evaluate(()=>favoriteOutfits.length === 1));

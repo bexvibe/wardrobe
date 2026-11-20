@@ -1418,6 +1418,76 @@
     aspect-ratio:3/2;
   }
 
+
+  /* The featured outfit as spaces: jacket and jumper on the first layer, then
+     the top, then the bottom — or a dress where the top and bottom would be.
+     Each space opens its filters and can be locked. Nothing is captioned: the
+     empty ones say what they are. */
+  .hero{margin-bottom:22px;}
+  /* A name for each half of the page: the one outfit, then the rest. */
+  .hero-title,.gallery-title{
+    font-family:'Bricolage Grotesque',sans-serif;font-weight:600;font-size:19px;
+    letter-spacing:-0.01em;line-height:1.2;color:var(--ink);margin:0 2px 10px;
+  }
+  .hero-spaces{display:flex;flex-direction:column;gap:6px;}
+  .hero-row{display:grid;gap:6px;}
+  .hero-row.n2{grid-template-columns:repeat(2,minmax(0,1fr));}
+  .hero-slot{
+    position:relative;border-radius:10px;
+    height:min(14vh, 116px);height:min(14svh, 116px);
+  }
+  .hero-slot.top{height:min(16vh, 136px);height:min(16svh, 136px);}
+  .hero-slot.bottom{height:min(22vh, 188px);height:min(22svh, 188px);}
+  .hero-slot.dress{height:min(34vh, 290px);height:min(34svh, 290px);}
+  .hero-slot img{
+    position:absolute;inset:6px;width:calc(100% - 12px);height:calc(100% - 12px);
+    object-fit:contain;pointer-events:none;
+  }
+  .hero-slot img.under{transform:translateY(14%) scale(.86);}
+  .hero-slot-open{
+    position:absolute;inset:0;border:0;padding:0;background:transparent;
+    border-radius:10px;cursor:pointer;z-index:1;touch-action:manipulation;
+  }
+  .hero-slot-open:focus-visible,.hero-lock:focus-visible{outline:2px solid var(--brand);outline-offset:2px;}
+  .hero-slot.empty{border:1.5px dashed var(--line);display:flex;align-items:center;justify-content:center;}
+  .hero-none{font-size:13px;color:var(--ink-soft);text-align:center;padding:0 6px;pointer-events:none;}
+  .hero-slot.locked{box-shadow:0 0 0 2px var(--ink);}
+  /* A button, so it is lifted and has no outline — it is a thing you press. */
+  .hero-lock{
+    position:absolute;right:4px;bottom:4px;z-index:2;
+    width:34px;height:34px;padding:0;border:0;border-radius:50%;
+    display:grid;place-items:center;
+    background:var(--surface);color:var(--ink-soft);
+    box-shadow:var(--shadow-btn);cursor:pointer;touch-action:manipulation;
+  }
+  .hero-lock::after{content:"";position:absolute;inset:-5px;}
+  .hero-lock svg{width:16px;height:16px;display:block;}
+  .hero-slot.locked .hero-lock{background:var(--ink);color:#fff;}
+
+  /* Filters, up by New fave. The same button that floats on Faves, moved
+     into the header on All and given its icon, so the page's two controls
+     sit side by side at the top. */
+  .filters-fab.in-head{
+    min-height:44px;padding:0 16px 0 14px;gap:7px;
+    box-shadow:var(--shadow-btn);transform-origin:50% 50%;
+  }
+  .filters-fab-icon{width:18px;height:18px;display:block;flex:none;}
+  .filters-fab.in-head .filters-fab-count{box-shadow:0 0 0 2px var(--page);}
+  .filters-fab.in-head.active .filters-fab-count{box-shadow:0 0 0 2px var(--page);}
+  @media (max-width:370px){
+    .filters-fab.in-head .filters-fab-label{display:none;}
+    .filters-fab.in-head{padding:0 13px;}
+  }
+
+  /* On All, Shuffle is the big button over the nav: it deals the featured
+     outfit, wherever you are on the page. */
+  .float-row.big .shuffle-fab{
+    min-height:56px;font-size:15px;gap:9px;padding:0 28px;
+    width:min(calc(100vw - 32px), 358px);justify-content:center;
+    box-shadow:0 6px 20px rgba(0,0,0,0.18);
+  }
+  .float-row.big .shuffle-fab .wand{width:22px;height:22px;}
+
   /* The filters, collapsed into a pill. Centred on the nav bar rather than
      off to one side, so the two floating objects read as a stack. */
   /* The floating pair: shuffle, then filters. One row so the two are laid
@@ -2021,7 +2091,7 @@
       <h1>Outfits</h1>
       <!-- The same way in as on the other half of the switch. Building one
            by hand is a thing you do to the wardrobe, not to a page. -->
-      <div class="icon-row">
+      <div class="icon-row" id="all-icon-row">
         <button class="btn" id="build-outfit-btn-all" type="button" onclick="openOutfitBuilder()"><svg class="plus-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New fave</button>
       </div>
     </header>
@@ -2034,6 +2104,7 @@
          before you start narrowing anything down. -->
     <div class="hero" id="outfit-hero"></div>
 
+    <h2 class="gallery-title" id="gallery-title" style="display:none;">More combos</h2>
     <div class="outfit-gallery" id="outfit-gallery"></div>
     <div class="empty" id="outfit-empty" style="display:none;">
       <span class="empty-emoji" id="outfit-empty-emoji" aria-hidden="true" style="display:none;">👚👖👟</span>
@@ -2164,7 +2235,7 @@
      Outfits; on faves it only changes the order they are shown in. -->
 <div class="float-row" id="float-row">
   <button class="shuffle-fab" id="shuffle-fab" type="button" style="display:none;"
-          onclick="shuffleOutfits()" title="Deal a new set of outfits">
+          onclick="shuffleFabTap()" title="Deal a new outfit">
     <svg class="wand" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true">
       <!-- Material Symbols "wand_stars", Apache 2.0. -->
       <path d="m176-120-56-56 301-302-181-45 198-123-17-234 179 151 216-88-87 217 151 178-234-16-124 198-45-181-301 301Zm24-520-80-80 80-80 80 80-80 80Zm355 197 48-79 93 7-60-71 35-86-86 35-71-59 7 92-79 49 90 22 23 90Zm165 323-80-80 80-80 80 80-80 80ZM569-570Z"/>
@@ -2630,6 +2701,8 @@ function shuffleOutfits(){
 function renderShuffleFab(){
   const fab = document.getElementById('shuffle-fab');
   if(!fab) return;
+  const row = document.getElementById('float-row');
+  if(row) row.classList.toggle('big', appMode === 'outfits');
   const dealt = (appMode === 'outfits' && outfitDisplayed.length > 0)
     || (appMode === 'saved' && savedShownCount > 0);
   fab.style.display = dealt ? 'flex' : 'none';
@@ -3018,9 +3091,25 @@ function activeFilterCount(){
 // to filter, and carries the count so an active filter is never hidden by a
 // shut sheet. While the sheet is up it covers the pill, which eases down
 // behind it — "See N outfits" at the foot of the sheet is the way back.
+// On All the button lives up by New fave, with its icon; on Faves it floats
+// above the nav as it always did. It is one button that moves, so there is
+// one thing to keep in step: the count, the wash and aria-expanded.
+function placeFiltersButton(fab){
+  const row = document.getElementById('all-icon-row');
+  const float = document.getElementById('float-row');
+  const inHead = appMode === 'outfits' && !!row;
+  const target = inHead ? row : float;
+  if(target && fab.parentElement !== target){
+    if(inHead) row.insertBefore(fab, row.firstChild); else float.appendChild(fab);
+  }
+  fab.classList.toggle('in-head', inHead);
+  return inHead;
+}
+
 function renderFiltersFab(){
   const fab = document.getElementById('filters-fab');
   if(!fab) return;
+  const inHead = placeFiltersButton(fab);
   const relevant = filterSheetHasContent();
   fab.style.display = relevant ? 'flex' : 'none';
 
@@ -3029,6 +3118,7 @@ function renderFiltersFab(){
   fab.classList.toggle('active', n > 0);
   fab.setAttribute('aria-expanded', String(up));
   fab.innerHTML = `
+    ${inHead ? '<svg class="filters-fab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg>' : ''}
     <span class="filters-fab-label">Filters</span>
     ${n ? `<span class="filters-fab-count">${n}</span>` : ''}`;
 
@@ -4538,15 +4628,154 @@ function drawCapsulePage(id){
 function renderHero(){
   const host = document.getElementById('outfit-hero');
   if(!host) return;
-  if(!heroCombo){ host.innerHTML = ''; host.style.display = 'none'; return; }
+  if(!heroCombo){
+    host.innerHTML = ''; host.style.display = 'none';
+    const g = document.getElementById('gallery-title'); if(g) g.style.display = 'none';
+    return;
+  }
   host.style.display = 'block';
 
   const key = comboKey(heroCombo);
+  const c = heroCombo;
+  // Jacket and jumper share the first layer, then the top, then the bottom —
+  // or the dress, where the top and bottom would be.
+  const layers = `<div class="hero-row n2">${heroSlotHtml('jacket', c)}${heroSlotHtml('jumper', c)}</div>`;
+  const rows = c.base === 'dress'
+    ? layers + heroSlotHtml('dress', c)
+    : layers + heroSlotHtml('top', c) + heroSlotHtml('bottom', c);
+  const gt = document.getElementById('gallery-title');
+  if(gt) gt.style.display = 'block';
   morphHtml(host, `
-    <div class="outfit-card hero-card" data-key="hero" onclick='openOutfitPage(${JSON.stringify(key)}, this)'>
+    <h2 class="hero-title">Try this</h2>
+    <div class="outfit-card hero-card" data-key="hero">
       ${faveHeartHtml(key)}
-      <div class="outfit-thumbs">${outfitThumbsHtml(heroCombo)}</div>
+      <div class="hero-spaces">${rows}</div>
     </div>`);
+}
+
+// ---- Dealing the featured outfit on its own -----------------
+// Shuffle on All deals the hero and leaves the grid where it is. It draws
+// from everything the filters leave rather than from the grid's 24, so the
+// outfit you get is a new one and not a card you were already looking at.
+// Locked spaces are filters, so they hold without anything extra here.
+function randomHeroCombo(){
+  const f = generatorFilters();
+  const fams = outfitFamilies();
+  if(!fams.length) return null;
+  const family = fams.length === 2 ? (Math.random() < 0.3 ? 'dress' : 'topbottom') : fams[0];
+  // An optional layer is usually left off, as it is at the head of the grid.
+  // Pinned pieces mean you asked for them, so then it is always worn.
+  const optional = (slot, bare) => {
+    const list = slotList(f, slot);
+    const worn = list.filter(Boolean);
+    if(!worn.length) return null;
+    return list.includes(null) && Math.random() < bare ? null : worn[Math.floor(Math.random() * worn.length)];
+  };
+  const one = list => list.length ? list[Math.floor(Math.random() * list.length)] : null;
+  const jumper = optional('jumper', 0.65);
+  const jacket = optional('jacket', 0.5);
+  const shoe = shoeSlotList()[0] || null;
+  if(family === 'dress') return {base:'dress', dress: one(slotList(f, 'dress')), jumper, jacket, shoe};
+  const tops = slotList(f, 'top');
+  const top = one(tops);
+  const over = tops.filter(o => canLayerOver(o, top));
+  const overtop = over.length && Math.random() < 0.3 ? one(over) : null;
+  return {base:'topbottom', top, overtop, bottom: one(slotList(f, 'bottom')), jumper, jacket, shoe};
+}
+function shuffleHero(){
+  const c = randomHeroCombo();
+  if(!c) return;
+  heroCombo = c;
+  storeHero(c);
+  renderHero();
+  // The hero is at the top, so a Shuffle from further down takes you to it.
+  const far = window.scrollY > window.innerHeight * 1.5;
+  if(window.scrollY > 4) window.scrollTo({ top: 0, behavior: far ? 'instant' : 'smooth' });
+  const fab = document.getElementById('shuffle-fab');
+  if(fab){ fab.classList.remove('casting'); void fab.offsetWidth; fab.classList.add('casting'); }
+}
+// One floating button, two meanings: on All it deals the hero; on Faves it
+// reorders what you kept, as it always did.
+function shuffleFabTap(){
+  if(appMode === 'outfits') shuffleHero(); else shuffleOutfits();
+}
+
+// ---- The spaces in the featured outfit ---------------------
+// A space is a place the outfit has a piece, or can go without one. Tapping
+// it opens that category in Filters; the padlock keeps what is there. A lock
+// is not a new kind of thing: it is the same filter as choosing that one
+// piece in the sheet, so the filters button counts it, Clear removes it, and
+// the grid below follows it.
+function heroSlotPieces(slot, c){
+  return (slot === 'top' ? [c.top, c.overtop] : [c[slot]]).filter(Boolean);
+}
+function heroSlotTab(slot, c){
+  const p = heroSlotPieces(slot, c)[0];
+  return p ? tabForItem(p) : tabsForSlot(slot)[0];
+}
+function heroSlotLocked(slot, c){
+  const pieces = heroSlotPieces(slot, c);
+  if(!pieces.length) return OPTIONAL_SLOTS.includes(slot) && outfitFilters[tabsForSlot(slot)[0]].type === 'none';
+  const f = outfitFilters[tabForItem(pieces[0])];
+  return f.type === 'items' && f.ids.length === pieces.length && pieces.every(p => f.ids.includes(p.id));
+}
+function lockGlyph(on){
+  return on
+    ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2" fill="currentColor"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>'
+    : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 7.5-2"/></svg>';
+}
+function heroSlotHtml(slot, c){
+  const pieces = heroSlotPieces(slot, c);
+  const locked = heroSlotLocked(slot, c);
+  const noun = slot;
+  const names = pieces.map(p => p.name).join(' over ');
+  const imgs = pieces.length
+    ? pieces.map((p, i) => `<img class="${pieces.length > 1 ? (i === 0 ? 'under' : 'over') : ''}" src="${esc(p.photo)}" alt="" referrerpolicy="no-referrer" decoding="async">`).join('')
+    : `<span class="hero-none">No ${noun}</span>`;
+  return `<div class="hero-slot ${slot} ${pieces.length ? '' : 'empty'} ${locked ? 'locked' : ''}">
+    ${imgs}
+    <button class="hero-slot-open" type="button" onclick="openHeroSlot('${slot}')"
+            aria-label="Choose ${noun}${names ? ', now ' + esc(names) : ', now none'}"></button>
+    <button class="hero-lock" type="button" aria-pressed="${locked}"
+            aria-label="${locked ? 'Unlock' : 'Lock'} ${noun}"
+            onclick="lockHeroSlot('${slot}')">${lockGlyph(locked)}</button>
+  </div>`;
+}
+
+// Straight to that category's pieces, as if you had opened Filters and
+// tapped its chip. Back goes to the list, and See N outfits closes it.
+function openHeroSlot(slot){
+  if(!heroCombo) return;
+  const tab = heroSlotTab(slot, heroCombo);
+  if(!openFilterSheet()) return;
+  filterPage = tab;
+  renderFilterControls();
+  const { sheet } = filterSheetEls();
+  sheet.scrollTop = 0;
+}
+
+function lockHeroSlot(slot){
+  const c = heroCombo;
+  if(!c) return;
+  const was = heroSlotLocked(slot, c);
+  const pieces = heroSlotPieces(slot, c);
+  const tabs = tabsForSlot(slot);
+  tabs.forEach(t => { outfitFilters[t] = anyFilter(); });
+  if(!was){
+    if(pieces.length) outfitFilters[tabForItem(pieces[0])] = {type:'items', ids: pieces.map(p => p.id)};
+    else outfitFilters[tabs[0]] = {type:'none', ids:[]};
+  }
+  renderFiltersFab();
+  // The outfit stays: locking is keeping it, not dealing again. Only the
+  // pool behind it is redrawn, so the grid follows.
+  const keep = heroCombo;
+  outfitGen = comboGenerator();
+  outfitDisplayed = [];
+  loadMoreOutfits();
+  heroCombo = keep;
+  storeHero(keep);
+  renderHero();
+  renderOutfits();
 }
 
 // How far to walk looking for a page of outfits before giving up.
