@@ -1982,7 +1982,7 @@
   /* Denser than the wardrobe's own grid: this is an index of what is left
      over, not a gallery to browse, and it can run to most of a wardrobe. */
   .loose-section .gallery{grid-template-columns:repeat(4, 1fr) !important;gap:8px;}
-  .loose-section .tile{border-radius:8px;}
+  .loose-section .tile{border-radius:8px;background:var(--surface);}
   /* A flat-lay of the capsule's pieces, laid out as worn like an outfit
      card: hats and accessories along the top, then layers and tops, then
      bottoms and dresses, with shoes at the foot. Every piece is shown —
@@ -2004,10 +2004,31 @@
     width:calc(33.333% - 2.7px);
     aspect-ratio:1/1;
     object-fit:contain;
-    border-radius:5px;
+    border-radius:8px;
+    background:var(--surface);
+    border:1px solid var(--line);
   }
+  /* The card on the Capsules page shows only a taste: a 2x2 of the first
+     pieces, the last one carrying how many more are inside. */
+  .capsule-preview{display:grid;grid-template-columns:repeat(2, 1fr);gap:4px;}
+  .capsule-preview > .capsule-cell{
+    position:relative;aspect-ratio:1/1;overflow:hidden;
+    background:var(--surface);border:1px solid var(--line);border-radius:8px;
+  }
+  .capsule-preview .capsule-cell img{width:100%;height:100%;object-fit:contain;display:block;}
+  .capsule-preview .no-photo-mini{
+    width:100%;height:100%;display:flex;align-items:center;justify-content:center;
+    font-size:8px;color:var(--ink-soft);
+  }
+  .capsule-more{
+    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    background:rgba(0,0,0,.45);color:#fff;
+    font-family:'Figtree',sans-serif;font-weight:600;font-size:15px;
+  }
+  .capsule-page-flat .capsule-thumbs{margin-bottom:12px;}
+  .capsule-page-flat .capsule-band > *{width:calc(33.333% - 2.7px);}
   .capsule-band .no-photo-mini{
-    background:var(--page);
+    background:var(--surface);
     display:flex;align-items:center;justify-content:center;
     font-family:'Figtree',sans-serif;font-variant-numeric:tabular-nums;
     font-size:8px;color:var(--ink-soft);
@@ -4602,11 +4623,16 @@ function drawCapsulePage(id){
   layer.innerHTML = `
     <div class="outfit-page-inner">
       <div class="modal-body has-footer outfit-page-body">
-        <div class="outfit-page-list">
+        <div class="outfit-page-card capsule-page-flat">
         <div class="capsule-page-head">
           <h2 class="modal-name">${esc(capsule.name)}</h2>
           ${capsule.description ? `<p class="detail-sub">${esc(capsule.description)}</p>` : ''}
         </div>
+        ${pieces.length ? `<div class="capsule-thumbs">${capsuleBands(pieces).map(row =>
+          `<div class="capsule-band">${row.map(p => p.photo
+            ? `<img src="${esc(p.photo)}" alt="${esc(p.name)}" referrerpolicy="no-referrer" decoding="async">`
+            : `<div class="no-photo-mini">No photo</div>`).join('')}</div>`).join('')}</div>` : ''}
+        <div class="outfit-page-list">
         ${pieces.length ? pieces.map(p => `
           <div class="outfit-piece-row tappable"
                onclick='openPieceSheet(${JSON.stringify(p.id)})'>
@@ -4618,6 +4644,7 @@ function drawCapsulePage(id){
             <span class="piece-go" aria-hidden="true">›</span>
           </div>
         `).join('') : `<div class="capsule-empty-note">No pieces yet</div>`}
+        </div>
         </div>
       </div>
       <div class="sheet-footer split pagebar outfit-page-bar">
@@ -5917,11 +5944,13 @@ function renderCapsules(){
       ? `<img src="${esc(p.photo)}" alt="${esc(p.name)}" referrerpolicy="no-referrer" loading="lazy" decoding="async">`
       : `<div class="no-photo-mini">No photo</div>`;
 
+    const PREVIEW = 4;
+    const shown = pieces.slice(0, PREVIEW);
+    const extra = pieces.length - PREVIEW;
+    const pcell = (p, i) => `<div class="capsule-cell">${cell(p)}${
+      extra > 0 && i === PREVIEW - 1 ? `<span class="capsule-more">+${extra + 1}</span>` : ''}</div>`;
     const thumbs = pieces.length
-      ? `<div class="capsule-thumbs">
-           ${capsuleBands(pieces).map(row =>
-             `<div class="capsule-band">${row.map(cell).join('')}</div>`).join('')}
-         </div>`
+      ? `<div class="capsule-preview">${shown.map(pcell).join('')}</div>`
       : `<div class="capsule-empty-note">Tap to add pieces</div>`;
 
     return `<div class="outfit-card" data-key="${esc(capsule.id)}" onclick='openCapsulePage(${JSON.stringify(capsule.id)}, this)'>
