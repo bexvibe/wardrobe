@@ -8590,14 +8590,24 @@ function discardItemForm(){
 
 // Archiving is reached from the edit sheet now, so the sheet has to go with
 // the piece — removeItem only knows about the detail sheet behind it.
-async function archiveFromForm(id){
-  itemFormBaseline = null;
-  editingItemId = null;
-  // The piece is on its way to the archive, so the sheet about it is not
-  // somewhere to go back to. removeItem puts the rest away and lands you
-  // back on the page you came from.
-  sheetTrail = [];
-  await removeItem(id);
+function archiveFromForm(id){
+  const item = itemById(id);
+  const shown = item && (item.name || '').trim();
+  askConfirm({
+    title: 'Delete this piece?',
+    body: `${shown ? `“${shown}”` : 'This piece'} will be moved to your Archive. You can restore it from there.`,
+    stay: 'Keep piece',
+    go: 'Delete',
+    onConfirm: async () => {
+      itemFormBaseline = null;
+      editingItemId = null;
+      // The piece is on its way to the archive, so the sheet about it is not
+      // somewhere to go back to. removeItem puts the rest away and lands you
+      // back on the page you came from.
+      sheetTrail = [];
+      await removeItem(id);
+    }
+  });
 }
 
 async function submitItemForm(){
@@ -8937,9 +8947,20 @@ function selectAllVisible(){
 // Nothing here asks "are you sure". A confirmation you meet every time
 // stops being read, and archiving is already reversible — so the undo on
 // the toast is the safety net, and the tap you meant goes through.
-async function bulkDeleteSelected(){
+function bulkDeleteSelected(){
   const ids = Array.from(selectedIds);
   if(!ids.length) return;
+  const n = ids.length;
+  askConfirm({
+    title: `Delete ${n === 1 ? 'this piece' : `these ${n} pieces`}?`,
+    body: `${n === 1 ? 'It' : 'They'} will be moved to your Archive. You can restore ${n === 1 ? 'it' : 'them'} from there.`,
+    stay: 'Keep',
+    go: 'Delete',
+    onConfirm: () => doBulkDelete(ids)
+  });
+}
+
+async function doBulkDelete(ids){
   if(!await archiveItems(ids)) return;
   selectedIds.clear();
   // The mode is entered by holding a piece and exists to do one thing, so it
