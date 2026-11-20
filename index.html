@@ -2070,15 +2070,17 @@
     aspect-ratio:1/1;
     object-fit:contain;
     border-radius:8px;
-    background:var(--surface);
-    border:1px solid var(--line);
+    background:none;
+    border:none;
   }
+  /* The open capsule page is bare: no card, no tile outlines or fills. */
+  .outfit-page-card.capsule-page-flat{background:none;border:none;padding:0;}
   /* The card on the Capsules page shows only a taste: a 2x2 of the first
      pieces, the last one carrying how many more are inside. */
   .capsule-preview{display:grid;grid-template-columns:repeat(2, 1fr);gap:4px;}
   .capsule-preview > .capsule-cell{
     position:relative;aspect-ratio:1/1;overflow:hidden;
-    background:var(--surface);border:1px solid var(--line);border-radius:8px;
+    background:var(--page);border:none;border-radius:8px;
   }
   .capsule-preview .capsule-cell img{width:100%;height:100%;object-fit:contain;display:block;}
   .capsule-preview .no-photo-mini{
@@ -2093,7 +2095,7 @@
   .capsule-page-flat .capsule-thumbs{margin-bottom:12px;}
   .capsule-page-flat .capsule-band > *{width:calc(33.333% - 2.7px);}
   .capsule-band .no-photo-mini{
-    background:var(--surface);
+    background:none;
     display:flex;align-items:center;justify-content:center;
     font-family:'Figtree',sans-serif;font-variant-numeric:tabular-nums;
     font-size:8px;color:var(--ink-soft);
@@ -6245,7 +6247,6 @@ function renderCapsules(){
       <div class="capsule-head">
         <div>
           <span class="capsule-name">${esc(capsule.name)}</span>
-          ${capsule.description ? `<span class="capsule-desc">${esc(capsule.description)}</span>` : ''}
         </div>
       </div>
       ${thumbs}
