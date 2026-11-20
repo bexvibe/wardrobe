@@ -53,71 +53,21 @@ const stream = p => p.evaluate(()=>outfitDisplayed.slice(0, 8).map(c=>comboKey(c
     check('nothing to deal on the wardrobe, so no wand', !(await shown(p)));
 
     await p.click('#nav-outfits-btn'); await p.waitForTimeout(1500);
-    check('it is there on the half that deals', await shown(p));
-    const r = await box(p);
-    check('a full thumb', r.h >= 44, `${r.w}x${r.h}`);
-    // It carries its word as well as its icon, so it needs no label of its
-    // own — the word is the label.
-    check('it says what it is', (await p.textContent('#shuffle-fab')).trim() === 'Shuffle',
-      (await p.textContent('#shuffle-fab')).trim());
-    check('and draws the wand rather than typing one',
-      await p.evaluate(()=>Boolean(document.querySelector('#shuffle-fab .wand path'))));
-    check('in the one colour the app allows itself',
-      await p.evaluate(()=>{
-        const bg = getComputedStyle(document.getElementById('shuffle-fab')).backgroundColor;
-        const brand = getComputedStyle(document.documentElement)
-          .getPropertyValue('--brand').trim();
-        return bg === 'rgb(117, 102, 148)' && brand === '#756694';
-      }));
-
-    // The filters are a sheet over the page and cover this row, so the row
-    // eases away behind it (#float-row.away) rather than being left poking
-    // out from under it.
-    const bottomBefore = (await box(p)).bottom;
-    await p.evaluate(()=>openFilterSheet()); await p.waitForTimeout(700);
-    const open1 = await p.evaluate(()=>{
-      const sheet = document.getElementById('filter-sheet').getBoundingClientRect();
-      const fab = document.getElementById('shuffle-fab').getBoundingClientRect();
-      const row = document.getElementById('float-row');
-      return {sheetTop: Math.round(sheet.top), fabTop: Math.round(fab.top),
-              fabBottom: Math.round(fab.bottom), open: filterSheetOpen(),
-              away: row.classList.contains('away'),
-              rowVisible: getComputedStyle(row).visibility !== 'hidden' &&
-                          parseFloat(getComputedStyle(row).opacity) > 0};
-    });
-    check('with the filters up the sheet covers it and the row eases away',
-      open1.open && open1.sheetTop <= open1.fabTop && open1.away && !open1.rowVisible,
-      JSON.stringify(open1));
-
-    await p.evaluate(()=>closeFilterSheet()); await p.waitForTimeout(700);
-    const shut = await box(p);
-    check('and when it goes down the row comes back exactly where it was',
-      shut.bottom === bottomBefore,
-      `${shut.bottom} vs ${bottomBefore}`);
-    check('visible again, no longer away', await p.evaluate(()=>{
-      const row = document.getElementById('float-row');
-      return !row.classList.contains('away') && parseFloat(getComputedStyle(row).opacity) === 1;
-    }));
-    // On All it is the one big button over the nav, and Filters is up in
-    // the header beside New fave.
-    check('on All it is the big one: wide and centred', await p.evaluate(()=>{
-      const r = document.getElementById('shuffle-fab').getBoundingClientRect();
-      const row = document.getElementById('float-row').getBoundingClientRect();
-      return r.width >= 200 && r.height >= 52 &&
-             Math.abs((row.left + row.right) / 2 - window.innerWidth / 2) <= 2;
-    }));
-    check('and Filters floats beside it, in the same row', await p.evaluate(()=>{
+    // On All the wand lives in the Try this popup, not floating over the page.
+    check('on All there is no floating Shuffle', !(await shown(p)));
+    check('and Filters floats on its own', await p.evaluate(()=>{
       const f = document.getElementById('filters-fab');
-      const sh = document.getElementById('shuffle-fab');
-      return f.parentElement.id === 'float-row' &&
-             sh.getBoundingClientRect().right <= f.getBoundingClientRect().left;
+      return f.parentElement.id === 'float-row' && getComputedStyle(f).display !== 'none';
     }));
-
-    check('and clear of the nav', await p.evaluate(()=>{
-      const fab = document.getElementById('shuffle-fab').getBoundingClientRect();
-      const bar = document.getElementById('bottom-bar').getBoundingClientRect();
-      return bar.top - fab.bottom >= 8;
-    }));
+    await p.click('#outfit-hero .hero-panel'); await p.waitForTimeout(600);
+    check('it says what it is, in the popup',
+      (await p.textContent('#hero-pop-shuffle')).trim() === 'Shuffle');
+    check('and draws the wand rather than typing one',
+      await p.evaluate(()=>Boolean(document.querySelector('#hero-pop-shuffle .wand path'))));
+    check('in the one colour the app allows itself',
+      await p.evaluate(()=>getComputedStyle(document.getElementById('hero-pop-shuffle')).backgroundColor === 'rgb(117, 102, 148)'));
+    check('a full thumb', await p.evaluate(()=>document.getElementById('hero-pop-shuffle').getBoundingClientRect().height >= 44));
+    await p.evaluate(()=>closeHeroPopup()); await p.waitForTimeout(500);
 
     await toFaves(p, 1100);
     const keptCards = await p.evaluate(()=>document.querySelectorAll('#saved-gallery .outfit-card').length);
@@ -161,7 +111,8 @@ const stream = p => p.evaluate(()=>outfitDisplayed.slice(0, 8).map(c=>comboKey(c
 
     // From further down the page: dealing should bring you to what it dealt.
     await p.evaluate(()=>window.scrollTo(0, 600)); await p.waitForTimeout(300);
-    await p.click('#shuffle-fab'); await p.waitForTimeout(1200);
+    await p.click('#outfit-hero .hero-panel'); await p.waitForTimeout(600);
+    await p.click('#hero-pop-shuffle'); await p.waitForTimeout(800);
 
     check('on All it deals the hero again',
       (await p.evaluate(()=>heroCombo && comboKey(heroCombo))) !== heroBefore,
@@ -173,7 +124,6 @@ const stream = p => p.evaluate(()=>outfitDisplayed.slice(0, 8).map(c=>comboKey(c
       (await p.evaluate(()=>totalComboCount())) === totalBefore);
     check('and the new hero is kept for the rest of the visit',
       await p.evaluate(()=>{ const k = readStoredHero(); return !!k && comboKey(k) === comboKey(heroCombo); }));
-    check('and it opens the popup to steer it', await p.evaluate(()=>heroPopOpen));
     await p.close();
   }
 
@@ -189,7 +139,8 @@ const stream = p => p.evaluate(()=>outfitDisplayed.slice(0, 8).map(c=>comboKey(c
                            renderFilterControls(); resetOutfitResults(); });
     await p.waitForTimeout(800);
     const narrowed = await p.evaluate(()=>totalComboCount());
-    await p.click('#shuffle-fab'); await p.waitForTimeout(1000);
+    await p.click('#outfit-hero .hero-panel'); await p.waitForTimeout(600);
+    await p.click('#hero-pop-shuffle'); await p.waitForTimeout(1000);
     check('a filter survives the shuffle',
       await p.evaluate(()=>outfitFilters['Jackets'].type === 'none'));
     check('and the new hero still has no jacket',
