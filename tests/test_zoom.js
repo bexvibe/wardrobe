@@ -67,6 +67,13 @@ const results=[]; const check=(n,p,d)=>{results.push(p);console.log(`${p?'PASS':
   check('pinch-to-zoom is still allowed',
     !/user-scalable\s*=\s*no/.test(vp) && !/maximum-scale/.test(vp), vp);
 
+  // double-tap zoom is off everywhere, pinch is not
+  const ta = await p.evaluate(()=>{
+    const els = Array.from(document.querySelectorAll('body, button, .outfit-card, .tile, input'));
+    return els.filter(e=>getComputedStyle(e).touchAction !== 'manipulation').map(e=>e.id||e.className||e.tagName).slice(0,5);
+  });
+  check('touch-action: manipulation on every element, so double-tap cannot zoom', ta.length===0, JSON.stringify(ta));
+
   await b.close();
   const failed=results.filter(r=>!r).length;
   console.log(`\n${results.length-failed}/${results.length} checks passed`);
