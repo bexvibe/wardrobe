@@ -1572,7 +1572,7 @@
   }
   /* The filters are up and cover this row. It eases down as they rise. */
   .float-row.away{
-    transform:translateX(-50%) translateY(10px) scale(0.96);
+    transform:translateX(-50%) scale(0.9);
     opacity:0;visibility:hidden;
   }
   .float-row > *{pointer-events:auto;}
@@ -1631,15 +1631,11 @@
      takes its place, so the one thing you can do from deep in the list is
      narrow it. It shrinks to nothing (width and its half of the gap too)
      rather than just fading, so Filters glides to the centre. */
-  .shuffle-fab{
-    max-width:140px;overflow:hidden;
-    transition:background 0.12s ease, transform 0.12s ease,
-               max-width 260ms var(--sheet-ease), padding 260ms var(--sheet-ease),
-               margin 260ms var(--sheet-ease), opacity 200ms ease;
-  }
-  .shuffle-fab.tucked{
-    max-width:0;padding-left:0;padding-right:0;margin-right:-8px;border-width:0;
-    opacity:0;transform:scale(0.8);pointer-events:none;
+  .shuffle-fab:not(.tucked), .filters-fab.fab-pop{animation:fab-pop 200ms var(--sheet-ease);}
+  .shuffle-fab.tucked{display:none;}
+  @keyframes fab-pop{from{opacity:0;transform:scale(0.85);}to{opacity:1;transform:none;}}
+  @media (prefers-reduced-motion: reduce){
+    .shuffle-fab:not(.tucked), .filters-fab.fab-pop{animation:none;}
   }
   .shuffle-fab:active{transform:scale(0.96);}
   /* Material Symbols "wand_stars", Apache 2.0. Inlined rather than pulled
@@ -2297,7 +2293,7 @@
     </button>
     <div class="search-field">
       <svg class="search-field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
-      <input type="text" id="filter-search" placeholder="Search name or brand..."
+      <input type="text" id="filter-search" placeholder="Search name, brand, category, colour..."
              oninput="render()" onkeydown="if(event.key==='Escape') closeSearch()">
       <button class="search-clear" id="search-clear" onclick="clearSearch()"
               aria-label="Clear search" title="Clear search" style="display:none;">
@@ -3210,17 +3206,12 @@ function placeFiltersButton(fab, animate){
     const first = animate && fab.offsetParent ? fab.getBoundingClientRect() : null;
     if(inHead) row.insertBefore(fab, row.firstChild); else float.appendChild(fab);
     fab.classList.toggle('in-head', inHead);
-    // FLIP: it is the same button, so it travels rather than swapping.
-    if(first && !window.matchMedia('(prefers-reduced-motion: reduce)').matches){
-      const last = fab.getBoundingClientRect();
-      const dx = first.left + first.width / 2 - (last.left + last.width / 2);
-      const dy = first.top + first.height / 2 - (last.top + last.height / 2);
-      fab.style.transition = 'none';
-      fab.style.transform = `translate(${dx}px, ${dy}px)`;
+    // It pops in at its new place rather than travelling there.
+    if(first){
+      fab.classList.remove('fab-pop');
       void fab.offsetWidth;
-      fab.style.transition = 'transform 340ms var(--sheet-ease), opacity var(--sheet-ease-ms) var(--sheet-ease), visibility var(--sheet-ease-ms)';
-      fab.style.transform = '';
-      setTimeout(() => { fab.style.transition = ''; }, 380);
+      fab.classList.add('fab-pop');
+      setTimeout(() => fab.classList.remove('fab-pop'), 260);
     }
   }
   fab.classList.toggle('in-head', inHead);
@@ -8999,10 +8990,100 @@ function topsSubRank(item){
   return 3;
 }
 
+// ---- Search: name, brand, category, tags and colour --------------------
+// Colour is read from the photo itself rather than typed in. The cut-outs
+// have transparent backgrounds, so the opaque pixels are the garment; they
+// are bucketed into a handful of named colours and the dominant one or two
+// are kept. Results are cached per photo in localStorage, so each photo is
+// only ever analysed once. A photo that cannot be read (no CORS, no photo)
+// simply has no colour and still matches on everything else.
+const COLOUR_CACHE_KEY = 'wardrobe.colours.v1';
+const COLOUR_SYNONYMS = {
+  grey:['gray','charcoal','silver'], beige:['cream','tan','sand','stone','nude','camel'],
+  brown:['chocolate','coffee','khaki'], blue:['navy','denim','indigo'],
+  red:['burgundy','maroon','wine'], pink:['blush','rose'], green:['olive','sage','khaki'],
+  white:['ivory','off-white'], black:['charcoal'], purple:['lilac','lavender','violet'],
+  yellow:['mustard','gold'], orange:['rust','terracotta']
+};
+let colourCache = {};
+try{ colourCache = JSON.parse(localStorage.getItem(COLOUR_CACHE_KEY) || '{}') || {}; }catch(e){ colourCache = {}; }
+const colourPending = new Set();
+
+function nameColour(r, g, b){
+  const mx = Math.max(r,g,b), mn = Math.min(r,g,b), d = mx - mn;
+  const l = (mx + mn) / 510, sat = d === 0 ? 0 : d / (255 * (1 - Math.abs(2*l - 1)));
+  let h = 0;
+  if(d){
+    if(mx === r) h = ((g - b) / d + 6) % 6;
+    else if(mx === g) h = (b - r) / d + 2;
+    else h = (r - g) / d + 4;
+    h *= 60;
+  }
+  if(l < 0.14) return 'black';
+  if(l > 0.88 && sat < 0.5) return 'white';
+  if(sat < 0.14) return l < 0.35 ? 'black' : l > 0.8 ? 'white' : 'grey';
+  if(h < 15 || h >= 345) return l > 0.7 ? 'pink' : l < 0.3 ? 'brown' : 'red';
+  if(h < 40) return l > 0.75 ? 'beige' : l < 0.4 ? 'brown' : sat < 0.45 ? 'beige' : 'orange';
+  if(h < 65) return l > 0.75 || sat < 0.35 ? 'beige' : l < 0.35 ? 'brown' : 'yellow';
+  if(h < 160) return 'green';
+  if(h < 255) return 'blue';
+  if(h < 290) return 'purple';
+  return l > 0.65 ? 'pink' : 'purple';
+}
+
+function analyseColours(img){
+  const N = 48, c = document.createElement('canvas');
+  c.width = c.height = N;
+  const ctx = c.getContext('2d', { willReadFrequently: true });
+  ctx.drawImage(img, 0, 0, N, N);
+  const px = ctx.getImageData(0, 0, N, N).data, counts = {};
+  let total = 0;
+  for(let k = 0; k < px.length; k += 4){
+    if(px[k+3] < 200) continue;
+    const n = nameColour(px[k], px[k+1], px[k+2]);
+    counts[n] = (counts[n] || 0) + 1; total++;
+  }
+  if(!total) return [];
+  return Object.entries(counts).sort((a, b) => b[1] - a[1])
+    .filter(([, n], idx) => idx === 0 || n / total >= 0.2)
+    .slice(0, 2).map(([n]) => n);
+}
+
+function ensureItemColour(item){
+  if(!item.photo || colourCache[item.id] || colourPending.has(item.id)) return;
+  colourPending.add(item.id);
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.onload = () => {
+    try{
+      colourCache[item.id] = analyseColours(img);
+      localStorage.setItem(COLOUR_CACHE_KEY, JSON.stringify(colourCache));
+    }catch(e){ colourCache[item.id] = []; }
+    colourPending.delete(item.id);
+    if(!colourPending.size && (document.getElementById('filter-search') || {}).value) render();
+  };
+  img.onerror = () => { colourCache[item.id] = []; colourPending.delete(item.id); };
+  img.src = item.photo;
+}
+
+function itemColours(item){ return colourCache[item.id] || []; }
+
+// Every word typed must match something: "black dress" finds black items
+// whose category or name says dress.
+function itemMatchesSearch(item, search){
+  const cols = itemColours(item);
+  const hay = [
+    item.name, item.brand, item.category, CATEGORY_TO_TAB[item.category] || '',
+    ...(item.tags || []), ...cols,
+    ...cols.flatMap(c => COLOUR_SYNONYMS[c] || [])
+  ].join(' ').toLowerCase();
+  return search.split(/\s+/).filter(Boolean).every(w => hay.includes(w));
+}
+
 function visibleFilteredItems(search){
   const filtered = ITEMS.filter(i=>{
     if(activeTab !== 'All' && tabForItem(i) !== activeTab) return false;
-    if(search && !(i.name.toLowerCase().includes(search) || (i.brand||'').toLowerCase().includes(search))) return false;
+    if(search && !itemMatchesSearch(i, search)) return false;
     return true;
   });
 
@@ -9027,7 +9108,8 @@ function render(){
   renderFiltersFab();
   renderToolbarIcons();
 
-  const search = document.getElementById('filter-search').value.toLowerCase();
+  const search = document.getElementById('filter-search').value.toLowerCase().trim();
+  if(search) ITEMS.forEach(ensureItemColour);
   const filtered = visibleFilteredItems(search);
 
   const gallery = document.getElementById('gallery');
