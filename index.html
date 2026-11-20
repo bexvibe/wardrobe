@@ -1439,12 +1439,96 @@
      empty ones say what they are. */
   .hero{margin-bottom:22px;}
   /* A name for each half of the page: the one outfit, then the rest. */
-  .hero-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 2px 10px;}
-  .hero-head .hero-title{margin:0;}
-  .hero-shuffle{min-height:40px;}
   .hero-title,.gallery-title{
     font-family:'Bricolage Grotesque',sans-serif;font-weight:600;font-size:19px;
     letter-spacing:-0.01em;line-height:1.2;color:var(--ink);margin:0 2px 10px;
+  }
+  .hero-sub{margin:2px 0 0;font-size:13px;line-height:1.3;color:var(--ink-soft);}
+  .hero-title{margin-bottom:0;}
+
+  /* The top of the page is a different kind of thing from the grid under it:
+     one outfit you steer, then the rest you browse. So it is a tinted panel
+     with its own label and a way in, and the grid starts below a rule. */
+  .hero-panel{
+    position:relative;cursor:pointer;touch-action:manipulation;
+    padding:14px 12px 12px;border-radius:18px;
+    background:linear-gradient(180deg, rgba(117,102,148,0.16), rgba(117,102,148,0.07));
+    border:1.5px solid rgba(117,102,148,0.42);
+    box-shadow:0 4px 14px rgba(117,102,148,0.12);
+    transition:transform 0.12s ease;
+  }
+  .hero-panel:active{transform:scale(0.992);}
+  .hero-panel:focus-visible{outline:2px solid var(--brand);outline-offset:2px;}
+  .hero-panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 2px 10px;}
+  .hero-panel .hero-title{color:var(--brand-deep);}
+  .hero-panel-go{
+    flex:none;width:40px;height:40px;border-radius:50%;
+    display:grid;place-items:center;background:var(--brand);color:#fff;
+    box-shadow:var(--shadow-btn);
+  }
+  .hero-panel-go svg{width:21px;height:21px;display:block;}
+  .hero-panel .hero-card{cursor:pointer;}
+  .hero-panel .hero-slot{height:min(8svh, 70px);}
+  .hero-panel .hero-slot.top{height:min(9svh, 78px);}
+  .hero-panel .hero-slot.bottom{height:min(13svh, 108px);}
+  .hero-panel .hero-slot.dress{height:min(20svh, 160px);}
+  .hero-static-lock{
+    position:absolute;right:4px;bottom:4px;width:22px;height:22px;border-radius:50%;
+    display:grid;place-items:center;background:var(--ink);color:#fff;pointer-events:none;
+  }
+  .hero-static-lock svg{width:12px;height:12px;display:block;}
+  /* The rule between the two halves of the page. */
+  .gallery-title{
+    display:flex;align-items:center;gap:12px;margin-top:6px;
+    font-size:15px;color:var(--ink-soft);
+  }
+  .gallery-title::after{content:"";flex:1;height:1px;background:var(--line);}
+
+  /* The popup: the outfit, large, with its locks and the way to deal again.
+     It rises over the page and over the floating buttons, but under the
+     filters, so a piece tapped in it opens Filters on top and Back returns
+     here. */
+  .hero-pop-wrap{
+    position:fixed;inset:0;z-index:108;
+    display:flex;align-items:flex-end;justify-content:center;
+    padding:calc(env(safe-area-inset-top, 0px) + 24px) 12px calc(env(safe-area-inset-bottom, 0px) + 12px);
+    visibility:hidden;background:rgba(0,0,0,0);
+    -webkit-backdrop-filter:blur(0);backdrop-filter:blur(0);
+    transition:background-color var(--sheet-ease-ms) var(--sheet-ease),
+               backdrop-filter var(--sheet-ease-ms) var(--sheet-ease),
+               -webkit-backdrop-filter var(--sheet-ease-ms) var(--sheet-ease),
+               visibility 0s var(--sheet-ease-ms);
+  }
+  .hero-pop-wrap.open{
+    visibility:visible;background:rgba(0,0,0,0.3);
+    -webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);
+    transition:background-color var(--sheet-ease-ms) var(--sheet-ease),
+               backdrop-filter var(--sheet-ease-ms) var(--sheet-ease),
+               -webkit-backdrop-filter var(--sheet-ease-ms) var(--sheet-ease),
+               visibility 0s;
+  }
+  .hero-pop{
+    width:100%;max-width:520px;max-height:100%;
+    display:flex;flex-direction:column;overflow:hidden;
+    background:var(--surface);border-radius:24px;
+    box-shadow:0 18px 50px rgba(0,0,0,0.28);
+    transform:translateY(108%);
+    transition:transform var(--sheet-ease-ms) var(--sheet-ease);
+  }
+  .hero-pop-wrap.open .hero-pop{transform:translateY(0);}
+  .hero-pop-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:16px 14px 6px 18px;}
+  .hero-pop-x{
+    flex:none;width:38px;height:38px;padding:0;border:0;border-radius:50%;
+    display:grid;place-items:center;background:var(--page);color:var(--ink);
+    cursor:pointer;touch-action:manipulation;
+  }
+  .hero-pop-x svg{width:16px;height:16px;display:block;}
+  .hero-pop-body{flex:1;min-height:0;overflow-y:auto;padding:8px 12px;overscroll-behavior:contain;}
+  .hero-pop-bar{display:flex;align-items:center;gap:8px;padding:8px 12px 12px;}
+  .hero-pop-bar .shuffle-fab{flex:1;justify-content:center;min-height:50px;}
+  .hero-pop-bar .btn{min-height:50px;padding:0 22px;}
+  @media (prefers-reduced-motion: reduce){
+    .hero-pop,.hero-pop-wrap{transition:none;}
   }
   .hero-spaces{display:flex;flex-direction:column;gap:6px;}
   .hero-row{display:grid;gap:6px;}
@@ -1501,11 +1585,14 @@
 
   /* On All, Shuffle is the big button over the nav: it deals the featured
      outfit, wherever you are on the page. */
+  .float-row.big{width:min(calc(100vw - 32px), 358px);}
   .float-row.big .shuffle-fab{
-    min-height:56px;font-size:15px;gap:9px;padding:0 28px;
-    width:min(calc(100vw - 32px), 358px);justify-content:center;
+    flex:1;min-width:0;
+    min-height:56px;font-size:15px;gap:9px;padding:0 20px;
+    justify-content:center;
     box-shadow:0 6px 20px rgba(0,0,0,0.18);
   }
+  .float-row.big .filters-fab{min-height:56px;}
   .float-row.big .shuffle-fab .wand{width:22px;height:22px;}
 
   /* The filters, collapsed into a pill. Centred on the nav bar rather than
@@ -2267,6 +2354,30 @@
 <!-- The two things floating over the page, in the order you reach for
      them: deal again, then narrow. Shuffle appears on both halves of
      Outfits; on faves it only changes the order they are shown in. -->
+<!-- Try this, opened up: the outfit large, each space a way into Filters and
+     a lock, and Shuffle on the bar. Over the floating buttons, under Filters. -->
+<div class="hero-pop-wrap" id="hero-pop-wrap" onclick="if(event.target === this) closeHeroPopup()">
+  <div class="hero-pop" id="hero-pop" role="dialog" aria-label="Try this outfit" inert>
+    <div class="hero-pop-top">
+      <div>
+        <h2 class="hero-title">Try this</h2>
+        <p class="hero-sub">Tap a piece to change it, lock the ones you like</p>
+      </div>
+      <button class="hero-pop-x" type="button" aria-label="Close" onclick="closeHeroPopup()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+    <div class="hero-pop-body" id="hero-pop-body"></div>
+    <div class="hero-pop-bar">
+      <button class="shuffle-fab hero-shuffle" id="hero-pop-shuffle" type="button" onclick="shuffleHero()">
+        <svg class="wand" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true"><path d="m176-120-56-56 301-302-181-45 198-123-17-234 179 151 216-88-87 217 151 178-234-16-124 198-45-181-301 301Zm24-520-80-80 80-80 80 80-80 80Zm355 197 48-79 93 7-60-71 35-86-86 35-71-59 7 92-79 49 90 22 23 90Zm165 323-80-80 80-80 80 80-80 80ZM569-570Z"/></svg>
+        Shuffle
+      </button>
+      <button class="btn" type="button" onclick="closeHeroPopup()">Done</button>
+    </div>
+  </div>
+</div>
+
 <div class="float-row" id="float-row">
   <button class="shuffle-fab" id="shuffle-fab" type="button" style="display:none;"
           onclick="shuffleFabTap()" title="Deal a new outfit">
@@ -2736,9 +2847,9 @@ function renderShuffleFab(){
   const fab = document.getElementById('shuffle-fab');
   if(!fab) return;
   const row = document.getElementById('float-row');
-  if(row) row.classList.remove('big');
-  // On All, Shuffle lives in the hero and scrolls with it; only Faves floats it.
-  const dealt = appMode === 'saved' && savedShownCount > 0;
+  if(row) row.classList.toggle('big', appMode === 'outfits');
+  const dealt = (appMode === 'outfits' && outfitDisplayed.length > 0)
+    || (appMode === 'saved' && savedShownCount > 0);
   fab.style.display = dealt ? 'flex' : 'none';
 }
 
@@ -2826,6 +2937,7 @@ function setMode(mode){
   // Leaving a page: note where you had got to on it.
   if(appMode && appMode !== mode) rememberScroll(appMode);
   appMode = mode;
+  closeHeroPopup();
   favePinned.clear(); faveLingering.clear();
   writeFaveUrl();
   // Search belongs to the wardrobe; leaving it open over another page would
@@ -3295,6 +3407,7 @@ function syncSheetReach(){
 // main page of filters.
 let filterPage = null;
 let filterMainScroll = 0;
+let filterFromHero = false;
 
 function filterSheetEls(){
   return {
@@ -3307,6 +3420,7 @@ function openFilterSheet(){
   if(!filterSheetHasContent()){ closeFilterSheet(); return false; }
   const { backdrop, sheet } = filterSheetEls();
   filterPage = null;
+  filterFromHero = false;
   sheet.style.height = '';
   renderFilterControls();
   sheet.scrollTop = 0;
@@ -3324,6 +3438,7 @@ function closeFilterSheet(){
   // It reopens on its main page. The page it was on stays drawn until it has
   // gone, so it does not change under the sheet as it leaves.
   filterPage = null;
+  filterFromHero = false;
   renderFiltersFab();
   // After the pill, so there is somewhere for focus to land.
   syncSheetReach();
@@ -3379,6 +3494,8 @@ function openFilterPage(slotKey){
 }
 
 function closeFilterPage(){
+  // Reached from a space in the popup: Back goes back to the popup.
+  if(filterFromHero){ closeFilterSheet(); return; }
   const { sheet } = filterSheetEls();
   morphFilterSheet(() => {
     filterPage = null;
@@ -4672,24 +4789,13 @@ function renderHero(){
   if(!heroCombo){
     host.innerHTML = ''; host.style.display = 'none';
     const g = document.getElementById('gallery-title'); if(g) g.style.display = 'none';
+    closeHeroPopup();
     return;
   }
   host.style.display = 'block';
 
   const key = comboKey(heroCombo);
   const c = heroCombo;
-  // Jacket and jumper share the first layer, then the top, then the bottom —
-  // or the dress, where the top and bottom would be.
-  // An optional layer the outfit doesn't have is left out rather than shown
-  // as an empty box, locked to none or not. A none lock is still a filter, so
-  // the filters button counts it and Clear lets go of it.
-  const layerSlots = ['jacket','jumper'].filter(s => heroSlotPieces(s, c).length);
-  const layers = layerSlots.length
-    ? `<div class="hero-row ${layerSlots.length === 2 ? 'n2' : ''}">${layerSlots.map(s => heroSlotHtml(s, c)).join('')}</div>`
-    : '';
-  const rows = c.base === 'dress'
-    ? layers + heroSlotHtml('dress', c)
-    : layers + heroSlotHtml('top', c) + heroSlotHtml('bottom', c);
   const gt = document.getElementById('gallery-title');
   if(gt){
     // With filters on and nothing but the featured outfit left, a bare
@@ -4698,21 +4804,75 @@ function renderHero(){
     gt.textContent = activeFilterCount() > 0 && others === 0
       ? 'No other combos match your filters'
       : 'More combos';
-    gt.style.display = 'block';
+    gt.style.display = 'flex';
   }
+  const wand = '<svg viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true"><path d="m176-120-56-56 301-302-181-45 198-123-17-234 179 151 216-88-87 217 151 178-234-16-124 198-45-181-301 301Zm24-520-80-80 80-80 80 80-80 80Zm355 197 48-79 93 7-60-71 35-86-86 35-71-59 7 92-79 49 90 22 23 90Zm165 323-80-80 80-80 80 80-80 80ZM569-570Z"/></svg>';
+  // On the page it is a preview: the whole panel is one way in to the popup.
   morphHtml(host, `
-    <div class="hero-head">
-      <h2 class="hero-title">Try this</h2>
-      <button class="shuffle-fab hero-shuffle" type="button" onclick="shuffleHero()" title="Deal a new outfit">
-        <svg class="wand" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true"><path d="m176-120-56-56 301-302-181-45 198-123-17-234 179 151 216-88-87 217 151 178-234-16-124 198-45-181-301 301Zm24-520-80-80 80-80 80 80-80 80Zm355 197 48-79 93 7-60-71 35-86-86 35-71-59 7 92-79 49 90 22 23 90Zm165 323-80-80 80-80 80 80-80 80ZM569-570Z"/></svg>
-        Shuffle
-      </button>
-    </div>
-    <div class="outfit-card hero-card" data-key="hero">
+    <div class="hero-panel" role="button" tabindex="0" aria-haspopup="dialog"
+         aria-label="Try this outfit. Tap to shuffle and lock items"
+         onclick="openHeroPopup()"
+         onkeydown="if(event.key === 'Enter' || event.key === ' '){ event.preventDefault(); openHeroPopup(); }">
+      <div class="hero-panel-head">
+        <div>
+          <h2 class="hero-title">Try this</h2>
+          <p class="hero-sub">Tap to shuffle and lock items</p>
+        </div>
+        <span class="hero-panel-go" aria-hidden="true">${wand}</span>
+      </div>
+      <div class="outfit-card hero-card" data-key="hero">
+        <div class="hero-spaces">${heroRowsHtml(c, false)}</div>
+      </div>
+    </div>`);
+  // In the popup the spaces are live.
+  const body = document.getElementById('hero-pop-body');
+  if(body) morphHtml(body, `
+    <div class="outfit-card hero-card" data-key="hero-pop">
       ${faveHeartHtml(key)}
-      <div class="hero-spaces">${rows}</div>
+      <div class="hero-spaces">${heroRowsHtml(c, true)}</div>
     </div>`);
 }
+
+function heroRowsHtml(c, live){
+  // Jacket and jumper share the first layer, then the top, then the bottom —
+  // or the dress, where the top and bottom would be.
+  // An optional layer the outfit doesn't have is left out rather than shown
+  // as an empty box, locked to none or not. A none lock is still a filter, so
+  // the filters button counts it and Clear lets go of it.
+  const layerSlots = ['jacket','jumper'].filter(s => heroSlotPieces(s, c).length);
+  const layers = layerSlots.length
+    ? `<div class="hero-row ${layerSlots.length === 2 ? 'n2' : ''}">${layerSlots.map(s => heroSlotHtml(s, c, live)).join('')}</div>`
+    : '';
+  return c.base === 'dress'
+    ? layers + heroSlotHtml('dress', c, live)
+    : layers + heroSlotHtml('top', c, live) + heroSlotHtml('bottom', c, live);
+}
+
+// ---- The popup ---------------------------------------------
+let heroPopOpen = false;
+function openHeroPopup(deal){
+  const pop = document.getElementById('hero-pop');
+  const wrap = document.getElementById('hero-pop-wrap');
+  if(!pop || !wrap || !heroCombo) return;
+  if(deal) shuffleHero();
+  heroPopOpen = true;
+  pop.removeAttribute('inert');
+  wrap.classList.add('open');
+  const body = document.getElementById('hero-pop-body');
+  if(body) body.scrollTop = 0;
+}
+function closeHeroPopup(){
+  const pop = document.getElementById('hero-pop');
+  const wrap = document.getElementById('hero-pop-wrap');
+  heroPopOpen = false;
+  if(!pop || !wrap) return;
+  if(pop.contains(document.activeElement)) document.activeElement.blur();
+  pop.setAttribute('inert', '');
+  wrap.classList.remove('open');
+}
+document.addEventListener('keydown', e => {
+  if(e.key === 'Escape' && heroPopOpen && !filterSheetOpen() && !sheetOverTheTop()) closeHeroPopup();
+});
 
 // ---- Dealing the featured outfit on its own -----------------
 // Shuffle on All deals the hero and leaves the grid where it is. It draws
@@ -4768,16 +4928,13 @@ function shuffleHero(){
   heroCombo = c;
   storeHero(c);
   renderHero();
-  // The hero is at the top, so a Shuffle from further down takes you to it.
-  const far = window.scrollY > window.innerHeight * 1.5;
-  if(window.scrollY > 4) window.scrollTo({ top: 0, behavior: far ? 'instant' : 'smooth' });
-  const fab = document.querySelector('#outfit-hero .hero-shuffle');
+  const fab = document.getElementById('hero-pop-shuffle');
   if(fab){ fab.classList.remove('casting'); void fab.offsetWidth; fab.classList.add('casting'); }
 }
-// One floating button, two meanings: on All it deals the hero; on Faves it
-// reorders what you kept, as it always did.
+// One floating button, two meanings: on All it deals the hero and opens it
+// up to steer; on Faves it reorders what you kept, as it always did.
 function shuffleFabTap(){
-  if(appMode === 'outfits') shuffleHero(); else shuffleOutfits();
+  if(appMode === 'outfits') openHeroPopup(true); else shuffleOutfits();
 }
 
 // ---- The spaces in the featured outfit ---------------------
@@ -4804,7 +4961,7 @@ function lockGlyph(on){
     ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2" fill="currentColor"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>'
     : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 7.5-2"/></svg>';
 }
-function heroSlotHtml(slot, c){
+function heroSlotHtml(slot, c, live = true){
   const pieces = heroSlotPieces(slot, c);
   const locked = heroSlotLocked(slot, c);
   const noun = slot;
@@ -4816,11 +4973,12 @@ function heroSlotHtml(slot, c){
     : `<span class="hero-none">No ${noun}</span>`;
   return `<div class="hero-slot ${slot} ${pieces.length ? '' : 'empty'} ${pieces.length > 1 ? 'pair' : ''} ${locked ? 'locked' : ''}">
     ${imgs}
-    <button class="hero-slot-open" type="button" onclick="openHeroSlot('${slot}')"
+    ${live ? `<button class="hero-slot-open" type="button" onclick="openHeroSlot('${slot}')"
             aria-label="Choose ${noun}${names ? ', now ' + esc(names) : ', now none'}"></button>
     <button class="hero-lock" type="button" aria-pressed="${locked}"
             aria-label="${locked ? 'Unlock' : 'Lock'} ${noun}"
-            onclick="lockHeroSlot('${slot}')">${lockGlyph(locked)}</button>
+            onclick="lockHeroSlot('${slot}')">${lockGlyph(locked)}</button>`
+      : (locked ? `<span class="hero-static-lock" aria-hidden="true">${lockGlyph(true)}</span>` : '')}
   </div>`;
 }
 
@@ -4831,6 +4989,9 @@ function openHeroSlot(slot){
   const tab = heroSlotTab(slot, heroCombo);
   if(!openFilterSheet()) return;
   filterPage = tab;
+  // Opened from the popup, so Back returns to the popup rather than to the
+  // list of every filter.
+  filterFromHero = heroPopOpen;
   renderFilterControls();
   const { sheet } = filterSheetEls();
   sheet.scrollTop = 0;

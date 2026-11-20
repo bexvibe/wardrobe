@@ -153,11 +153,13 @@ const dbTags = (p, id) => p.evaluate(i =>
     check('nothing is open to start with',
       await p.evaluate(()=>!anySheetShowing()));
 
-    // The lead card is a set of spaces: tapping one opens Filters, not a page.
-    await p.click('.hero-slot .hero-slot-open'); await p.waitForTimeout(700);
+    // The lead card opens a popup of spaces: tapping one opens Filters, not a page.
+    await p.click('#outfit-hero .hero-panel'); await p.waitForTimeout(600);
+    await p.click('#hero-pop .hero-slot .hero-slot-open'); await p.waitForTimeout(700);
     check('a tap on the lead card opens Filters rather than the outfit',
       await p.evaluate(()=>filterSheetOpen() && !sheetTrail.length));
     await p.evaluate(()=>closeFilterSheet()); await p.waitForTimeout(600);
+    await p.evaluate(()=>closeHeroPopup()); await p.waitForTimeout(500);
 
     await p.click('#outfit-gallery .outfit-card'); await p.waitForTimeout(500);
     const card = await p.evaluate(()=>{
