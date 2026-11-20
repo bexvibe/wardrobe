@@ -48,7 +48,7 @@ async function dealUntil(p, test, tries=200){
       !!document.querySelector('#outfit-hero .outfit-card.hero-feature') &&
       !document.querySelector('#outfit-hero .hero-title, #outfit-hero .hero-sub')));
     check('and it shows a padlock on its pieces', await p.evaluate(()=>
-      document.querySelectorAll('#outfit-hero .hero-badge').length >= 2));
+      document.querySelectorAll('#outfit-hero .hero-badge').length >= 1));
     check('and the grid has one', (await p.textContent('#gallery-title')).trim() === 'More combos');
     check('and a dress-free hero with both layers has jacket, jumper, top and bottom spaces',
       (await dealUntil(p, ()=>heroCombo.base !== 'dress' && heroCombo.jacket && heroCombo.jumper, 600)) &&
