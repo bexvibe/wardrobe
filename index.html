@@ -4914,12 +4914,37 @@ function nextHeroCombo(){
   // The random draws keep missing, so the unseen ones are few or none. Count
   // what is really there.
   const pool = new Map();
-  const gen = comboGenerator();
-  for(let n = 0; n < 5000; n++){
-    const next = gen.next();
-    if(next.done) break;
-    if(!heroPasses(next.value)) continue;
-    pool.set(comboKey(next.value), next.value);
+  // With a fave filter on, the matches are the kept outfits themselves. They
+  // are a handful among millions of combinations, so walking the generator
+  // from the top would stop at its cap long before finding them and report
+  // "no more" while plenty remain. Read them directly instead.
+  const wantFave = currentFave();
+  if(wantFave.length){
+    const f = generatorFilters();
+    const fits = (piece, slot) => !piece || slotList(f, slot).includes(piece);
+    for(const rec of favoriteOutfits){
+      if(!faveMatches(rec.level || 0, wantFave)) continue;
+      const c = favoriteRecordToCombo(rec);
+      const whole = c.base === 'dress' ? c.dress : (c.top && c.bottom);
+      if(!whole) continue;
+      const ok = c.base === 'dress'
+        ? fits(c.dress, 'dress')
+        : fits(c.top, 'top') && fits(c.bottom, 'bottom') && (!c.overtop || (fits(c.overtop, 'top') && canLayerOver(c.overtop, c.top)));
+      if(!ok || !fits(c.jumper, 'jumper') || !fits(c.jacket, 'jacket')) continue;
+      if(!c.jumper && !slotList(f, 'jumper').includes(null)) continue;
+      if(!c.jacket && !slotList(f, 'jacket').includes(null)) continue;
+      if(!heroPasses(c)) continue;
+      pool.set(comboKey(c), c);
+    }
+  } else {
+    // Same ceiling the grid uses, so shuffle can find whatever the grid can.
+    const gen = comboGenerator();
+    for(let n = 0; n < OUTFIT_SCAN_LIMIT; n++){
+      const next = gen.next();
+      if(next.done) break;
+      if(!heroPasses(next.value)) continue;
+      pool.set(comboKey(next.value), next.value);
+    }
   }
   if(current) pool.delete(current);
   if(!pool.size) return null;                       // only one option
