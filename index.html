@@ -4681,7 +4681,13 @@ function renderHero(){
   const c = heroCombo;
   // Jacket and jumper share the first layer, then the top, then the bottom —
   // or the dress, where the top and bottom would be.
-  const layers = `<div class="hero-row n2">${heroSlotHtml('jacket', c)}${heroSlotHtml('jumper', c)}</div>`;
+  // An optional layer the outfit doesn't have is left out rather than shown
+  // as an empty box — unless it is locked to none, which must stay visible so
+  // it can be unlocked.
+  const layerSlots = ['jacket','jumper'].filter(s => heroSlotPieces(s, c).length || heroSlotLocked(s, c));
+  const layers = layerSlots.length
+    ? `<div class="hero-row ${layerSlots.length === 2 ? 'n2' : ''}">${layerSlots.map(s => heroSlotHtml(s, c)).join('')}</div>`
+    : '';
   const rows = c.base === 'dress'
     ? layers + heroSlotHtml('dress', c)
     : layers + heroSlotHtml('top', c) + heroSlotHtml('bottom', c);
