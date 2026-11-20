@@ -3196,11 +3196,16 @@ function activeFilterCount(){
 // above the nav as it always did. It is one button that moves, so there is
 // one thing to keep in step: the count, the wash and aria-expanded.
 function placeFiltersButton(fab){
-  // Always floating, on All as on Faves, so it stays put while you scroll.
+  // On All the button sits at the top, in the icon row; on Faves it floats.
+  const row = document.getElementById('all-icon-row');
   const float = document.getElementById('float-row');
-  if(float && fab.parentElement !== float) float.appendChild(fab);
-  fab.classList.remove('in-head');
-  return false;
+  const inHead = appMode === 'outfits' && !!row;
+  const target = inHead ? row : float;
+  if(target && fab.parentElement !== target){
+    if(inHead) row.insertBefore(fab, row.firstChild); else float.appendChild(fab);
+  }
+  fab.classList.toggle('in-head', inHead);
+  return inHead;
 }
 
 function renderFiltersFab(){
