@@ -63,6 +63,9 @@
     :root{ --sheet-ease-ms:0ms; }
   }
   *{box-sizing:border-box;}
+  /* Item photos are never stretched or squashed: any <img> keeps its own
+     proportions. (Inspo tiles opt into cover explicitly, which is more specific.) */
+  img{object-fit:contain;}
   html{color-scheme: light;}
   body{
     margin:0;
@@ -1431,7 +1434,7 @@
   }
   .hero-feature .outfit-lower > *{width:100%;height:auto;aspect-ratio:3/2;}
   .hero-feature .hero-cell{position:relative;}
-  .hero-feature .hero-cell img{width:100%;height:100%;display:block;}
+  .hero-feature .hero-cell img{width:100%;height:100%;display:block;object-fit:contain;}
   /* The padlock on the card shows state only; tapping it opens the popup
      like the rest of the card. */
   .hero-badge{
