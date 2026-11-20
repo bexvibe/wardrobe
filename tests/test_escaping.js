@@ -35,7 +35,7 @@ const seed=fs.readFileSync(REPO + '/supabase/seed-items.json','utf8');
   await leaveSheet(p);   // a new piece opens
 
   // switch to list view so the name is rendered as text
-  await p.click('#view-toggle-btn'); await p.waitForTimeout(300);
+  await p.click('#view-list-btn'); await p.waitForTimeout(300);
   await typeSearch(p, 'Levi');
 
   const titles = await p.$$eval('.name-row-title', els=>els.map(e=>e.textContent));

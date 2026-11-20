@@ -41,7 +41,7 @@ const check=(n,p,d)=>{results.push(p);console.log(`${p?'PASS':'FAIL'}  ${n}${d?'
   const NEW_NAME = 'Favourite Black Shirt';
 
   // open that item's detail sheet from the list view (easier to target by name)
-  await p.click('#view-toggle-btn'); await p.waitForTimeout(300);
+  await p.click('#view-list-btn'); await p.waitForTimeout(300);
   await p.evaluate(()=>openModal('seed_22')); await p.waitForTimeout(400);
   await p.click('#item-page-edit'); await p.waitForTimeout(400);
 

@@ -155,7 +155,7 @@ const selected = p => p.evaluate(()=>Array.from(selectedIds));
   // ---- 4. It works in list view too ----
   {
     const p=await open(b);
-    await p.click('#view-toggle-btn'); await p.waitForTimeout(500);
+    await p.click('#view-list-btn'); await p.waitForTimeout(500);
     await press(p, '#name-list .name-row', 700);
     check('holding a row in list view selects it too',
       (await inEdit(p)) && (await selected(p)).length===1);
