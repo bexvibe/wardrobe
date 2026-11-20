@@ -59,7 +59,7 @@ const tiles = p => p.evaluate(()=>document.querySelectorAll('#gallery .tile').le
     const pants = await p.evaluate(()=>
       Array.from(document.querySelectorAll('#gallery .tile'))
         .map(t=>ITEMS.find(i=>i.id===t.dataset.id).category));
-    check('Pants holds jeans and pants', pants.length === 17 &&
+    check('Pants holds jeans and pants', pants.length === 18 &&
       pants.every(c=>['Jeans','Pants','Skirts'].includes(c)),
       `${pants.length}: ${[...new Set(pants)].join(', ')}`);
 
@@ -84,7 +84,7 @@ const tiles = p => p.evaluate(()=>document.querySelectorAll('#gallery .tile').le
       };
     });
     check('the bottom slot draws from Pants and Shorts together',
-      pool.n === 18 && pool.hasShorts, `${pool.n}: ${pool.cats.join(', ')}`);
+      pool.n === 19 && pool.hasShorts, `${pool.n}: ${pool.cats.join(', ')}`);
 
     await p.click('#nav-outfits-btn'); await p.waitForTimeout(1100);
     check('and outfits are generated with shorts among them',

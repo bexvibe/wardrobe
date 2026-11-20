@@ -90,7 +90,7 @@ const ticked = p => p.evaluate(()=>Array.from(document.querySelectorAll('#builde
     check('one tab per place an outfit has something, no All',
       JSON.stringify(await p.evaluate(()=>Array.from(
         document.querySelectorAll('#builder-tabs .tab')).map(e=>e.textContent.trim())))
-        === JSON.stringify(['Tops','Pants','Dresses','Jumpers','Jackets']),
+        === JSON.stringify(['Tops','Pants','Shorts','Dresses','Jumpers','Jackets']),
       (await p.evaluate(()=>Array.from(document.querySelectorAll('#builder-tabs .tab'))
         .map(e=>e.textContent.trim()))).join(', '));
     check('and the row sticks under the header as you scroll',

@@ -42,7 +42,7 @@ const results=[]; const check=(n,p,d)=>{results.push(p);console.log(`${p?'PASS':
     out.upper = outfitLayout(combo).upper.map(x => x.id);
     let seen = 0, layered = 0, bad = 0, shirtAlone = 0;
     const g = comboGenerator();
-    for(let i = 0; i < 200000; i++){
+    for(let i = 0; i < 1000000; i++){
       const n = g.next(); if(n.done) break;
       const c = n.value; seen++;
       if(c.top && c.top.category === 'Shirts' && !c.overtop) shirtAlone++;

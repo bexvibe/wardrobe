@@ -1996,7 +1996,7 @@
   .capsule-pick{
     display:flex;align-items:center;justify-content:space-between;gap:10px;
     font-family:'Figtree',sans-serif;
-    font-size:16px;font-weight:600;text-align:left;
+    font-size:16px;font-weight:500;text-align:left;
     min-height:48px;padding:0 16px;
     border:1px solid var(--line);border-radius:8px;
     background:var(--surface);color:var(--ink);
@@ -2036,13 +2036,13 @@
   .field-pick-btn svg{flex:none;color:var(--ink-soft);}
   .form-extra{display:flex;flex-direction:column;gap:12px;}
   /* A search field keeps its icon inside it, at the left. */
-  .search-box{position:relative;}
-  .search-box svg{position:absolute;left:14px;top:50%;transform:translateY(-50%);
+  .search-box{position:sticky;top:0;z-index:5;background:var(--page);padding:6px 0 8px;margin-top:-6px;}
+  .search-box svg{position:absolute;left:14px;top:calc(50% - 1px);transform:translateY(-50%);
     width:18px;height:18px;color:var(--ink-soft);pointer-events:none;}
   .search-box input[type=text]{width:100%;padding-left:42px;background:var(--surface);}
   /* Categories sit under the main category they belong to. */
-  .capsule-pick.group{font-weight:700;}
-  .capsule-pick.child{margin-left:20px;min-height:48px;font-weight:500;}
+  .capsule-pick.group{font-weight:600;}
+  .capsule-pick.child{margin-left:20px;min-height:48px;font-weight:400;}
   .capsule-pick.picked{border-color:var(--accent);background:var(--accent-soft);}
   .capsule-pick-mark{flex:none;font-size:15px;color:var(--ink);width:18px;text-align:right;}
 
@@ -2511,53 +2511,30 @@ let selectedIds = new Set();
 
 const TAB_ORDER = ['All','Tops','Pants','Shorts','Skirts','Dresses','Jumpsuits',
                    'Jumpers','Jackets','Shoes','Hats','Accessories','Swimwear',
-                   'Other','No Image'];
+                   'Other'];
 
 // The word you type on a piece, and the shelf it goes on. Several words can
 // share a shelf — jeans and chinos are both pants — so you can be as
 // specific as you like when adding a piece without splitting the wardrobe
 // into shelves of one.
+// Fixed list: nobody makes their own. Each word sits on one shelf.
 const CATEGORY_TO_TAB = {
-  'Tops':'Tops','Shirts':'Tops','Blouses':'Tops','T-shirts':'Tops','Tees':'Tops',
-  'Vests':'Tops','Camisoles':'Tops','Bodysuits':'Tops',
-  'Singlets':'Tops','Tank tops':'Tops',
-
-  // The bottom half used to be one tab called Bottoms. Pants, shorts and
-  // skirts are worn in different weather and wanted at different times, so
-  // they are three things to browse and filter — but an outfit wears one of
-  // them, never one of each, so they all feed the one bottom slot.
-  'Pants':'Pants','Jeans':'Pants','Trousers':'Pants','Chinos':'Pants','Leggings':'Pants',
-  'Shorts':'Shorts',
-  'Skirts':'Skirts',
-
-  // A jumpsuit is a whole outfit in one piece, the way a dress is, so it
-  // fills the same place — but it is its own thing to go looking for.
-  'Dresses':'Dresses',
-  'Jumpsuits':'Jumpsuits','Playsuits':'Jumpsuits','Overalls':'Jumpsuits',
-
-  'Jumpers':'Jumpers','Knitwear':'Jumpers','Sweaters':'Jumpers',
-  'Cardigans':'Jumpers','Hoodies':'Jumpers','Sweatshirts':'Jumpers',
-  'Jackets':'Jackets','Coats':'Jackets','Blazers':'Jackets',
-
-  'Shoes':'Shoes','Boots':'Shoes','Sneakers':'Shoes','Sandals':'Shoes',
-  'Heels':'Shoes','Flats':'Shoes',
-
-  // Hats are their own tab: there are enough of them to be worth finding on
-  // their own, and in a capsule they belong at the top of the flat-lay
-  // rather than lumped in with bags and scarves.
-  'Hats':'Hats','Beanies':'Hats','Caps':'Hats',
-
-  'Accessories':'Accessories','Bags':'Accessories','Sets':'Accessories',
-  'Jewellery':'Accessories','Sunglasses':'Accessories','Scarves':'Accessories',
-  'Belts':'Accessories','Gloves':'Accessories','Socks':'Accessories','Tights':'Accessories',
-
-  'Swimwear':'Swimwear'
+  'Tops':'Tops','Shirts':'Tops','Blouses':'Tops','T-shirts':'Tops','Tees':'Tops','Vests':'Tops','Camisoles':'Tops','Bodysuits':'Tops','Singlets':'Tops','Tank tops':'Tops','Crop tops':'Tops','Tube tops':'Tops','Halter tops':'Tops','Polo shirts':'Tops','Button-ups':'Tops','Long sleeves':'Tops','Corsets':'Tops','Bralettes':'Tops','Tunics':'Tops','Wrap tops':'Tops','Knit tops':'Tops','Shells':'Tops',
+  'Pants':'Pants','Jeans':'Pants','Trousers':'Pants','Chinos':'Pants','Leggings':'Pants','Joggers':'Pants','Track pants':'Pants','Cargo pants':'Pants','Wide-leg pants':'Pants','Culottes':'Pants','Flares':'Pants','Cigarette pants':'Pants','Tailored pants':'Pants','Capris':'Pants','Sweatpants':'Pants',
+  'Shorts':'Shorts','Denim shorts':'Shorts','Bike shorts':'Shorts','Tailored shorts':'Shorts','Cargo shorts':'Shorts','Board shorts':'Shorts',
+  'Skirts':'Skirts','Mini skirts':'Skirts','Midi skirts':'Skirts','Maxi skirts':'Skirts','Denim skirts':'Skirts','Pleated skirts':'Skirts','Wrap skirts':'Skirts','Skorts':'Skirts',
+  'Dresses':'Dresses','Mini dresses':'Dresses','Midi dresses':'Dresses','Maxi dresses':'Dresses','Slip dresses':'Dresses','Shirt dresses':'Dresses','Wrap dresses':'Dresses','Bodycon dresses':'Dresses','Cocktail dresses':'Dresses','Evening gowns':'Dresses','Sundresses':'Dresses','Knit dresses':'Dresses','Denim dresses':'Dresses','Smock dresses':'Dresses','Pinafores':'Dresses',
+  'Jumpsuits':'Jumpsuits','Playsuits':'Jumpsuits','Overalls':'Jumpsuits','Rompers':'Jumpsuits','Dungarees':'Jumpsuits','Boilersuits':'Jumpsuits',
+  'Jumpers':'Jumpers','Knitwear':'Jumpers','Sweaters':'Jumpers','Cardigans':'Jumpers','Hoodies':'Jumpers','Sweatshirts':'Jumpers','Pullovers':'Jumpers','Turtlenecks':'Jumpers','Knit vests':'Jumpers','Fleeces':'Jumpers',
+  'Jackets':'Jackets','Coats':'Jackets','Blazers':'Jackets','Puffer jackets':'Jackets','Trench coats':'Jackets','Denim jackets':'Jackets','Leather jackets':'Jackets','Bomber jackets':'Jackets','Gilets':'Jackets','Raincoats':'Jackets','Parkas':'Jackets','Capes':'Jackets','Kimonos':'Jackets','Shackets':'Jackets',
+  'Shoes':'Shoes','Boots':'Shoes','Sneakers':'Shoes','Sandals':'Shoes','Heels':'Shoes','Flats':'Shoes','Loafers':'Shoes','Ankle boots':'Shoes','Knee-high boots':'Shoes','Ballet flats':'Shoes','Slides':'Shoes','Mules':'Shoes','Platforms':'Shoes','Wedges':'Shoes','Pumps':'Shoes','Oxfords':'Shoes','Slippers':'Shoes','Thongs':'Shoes','Espadrilles':'Shoes','Running shoes':'Shoes',
+  'Hats':'Hats','Beanies':'Hats','Caps':'Hats','Bucket hats':'Hats','Sun hats':'Hats','Berets':'Hats','Headbands':'Hats','Hair clips':'Hats','Scrunchies':'Hats','Hair accessories':'Hats','Headscarves':'Hats','Visors':'Hats','Fedoras':'Hats',
+  'Accessories':'Accessories','Bags':'Accessories','Sets':'Accessories','Jewellery':'Accessories','Sunglasses':'Accessories','Scarves':'Accessories','Belts':'Accessories','Gloves':'Accessories','Socks':'Accessories','Tights':'Accessories','Rings':'Accessories','Earrings':'Accessories','Necklaces':'Accessories','Bracelets':'Accessories','Watches':'Accessories','Anklets':'Accessories','Brooches':'Accessories','Handbags':'Accessories','Tote bags':'Accessories','Backpacks':'Accessories','Clutches':'Accessories','Crossbody bags':'Accessories','Wallets':'Accessories','Purses':'Accessories','Pearls':'Accessories','Chokers':'Accessories','Pendants':'Accessories','Cufflinks':'Accessories','Ties':'Accessories','Bow ties':'Accessories','Hair ties':'Accessories','Stockings':'Accessories','Shawls':'Accessories','Keyrings':'Accessories','Umbrellas':'Accessories','Glasses':'Accessories',
+  'Swimwear':'Swimwear','Bikinis':'Swimwear','One-piece swimsuits':'Swimwear','Bikini tops':'Swimwear','Bikini bottoms':'Swimwear','Rashies':'Swimwear','Cover-ups':'Swimwear','Sarongs':'Swimwear','Swim shorts':'Swimwear',
+  'Other':'Other','Activewear':'Other','Sports bras':'Other','Gym sets':'Other','Sleepwear':'Other','Pyjamas':'Other','Robes':'Other','Loungewear':'Other','Underwear':'Other','Bras':'Other','Lingerie':'Other','Costumes':'Other','Uniforms':'Other','Workwear':'Other'
 };
 
-function tabForItem(item){
-  if(!item.photo) return 'No Image';
-  return shelfForItem(item);
-}
+function tabForItem(item){ return shelfForItem(item); }
 
 // Where a piece belongs by what it is, whether or not it has a photo yet.
 // The wardrobe sends photoless pieces to their own tab so they are easy to
@@ -8352,7 +8329,7 @@ let formCatGroup = null;
 function drawFormCategoryPicker(){
   formPickKind = 'category';
   formCatGroup = null;
-  formPickFrame('Select category', 'Search categories', 'renderFormCategoryPicks()', 'addFormCategory()');
+  formPickFrame('Select category', 'Search categories', 'renderFormCategoryPicks()', 'void 0');
   renderFormCategoryPicks();
 }
 
@@ -8394,9 +8371,6 @@ function renderFormCategoryPicks(){
   // A category you made up and chose stays on the list, ticked.
   if(chosen && !CATEGORY_OPTIONS.includes(chosen) && has(chosen)){
     rows.push(pickRow(chosen, true, 'pickFormCategory(' + jsArg(chosen) + ')'));
-  }
-  if(typed && !CATEGORY_OPTIONS.some(c => c.toLowerCase() === q)){
-    rows.push(pickRow('Add “' + typed + '”', false, 'addFormCategory()'));
   }
   const title = document.querySelector('#modal .modal-name');
   if(title) title.textContent = (!typed && formCatGroup) ? formCatGroup : 'Select category';
@@ -8448,17 +8422,6 @@ function pickFormCategory(c){
   renderFormCategoryPicks();
 }
 
-function addFormCategory(){
-  const input = document.getElementById('form-pick-input');
-  const typed = (input.value || '').trim();
-  if(!typed) return;
-  // Said the way the list says it when it is a category already.
-  const same = CATEGORY_OPTIONS.find(c => c.toLowerCase() === typed.toLowerCase());
-  setFormCategory(same || typed);
-  input.value = '';
-  renderFormCategoryPicks();
-}
-
 // -- Guessing the category from the name. The last word that names a category
 // wins, since the name ends in what the thing is: a "shirt dress" is a dress.
 let categoryMatchers = null;
@@ -8482,8 +8445,8 @@ function guessCategory(name){
     let m;
     while((m = re.exec(text))){
       const at = m.index + m[1].length;
-      if(!best || at > best.at || (at === best.at && m[2].length > best.len)){
-        best = { c, at, len: m[2].length };
+      if(!best || at + m[2].length > best.end || (at + m[2].length === best.end && m[2].length > best.len)){
+        best = { c, at, end: at + m[2].length, len: m[2].length };
       }
       re.lastIndex = m.index + 1;
     }
