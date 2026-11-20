@@ -229,6 +229,10 @@
   .arrow[disabled]{opacity:.35;cursor:default}
   .slotpick{left:0;right:0;border-radius:22px 22px 0 0;bottom:78px}
   .stage{touch-action:pan-y}
+  .pc.empty{border:1.5px dashed var(--soft);background:transparent;margin:6px}
+  .pc.empty .plus{display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:var(--surface);box-shadow:var(--btn);pointer-events:none}
+  .pc.empty .plus svg{width:16px;height:16px}
+  .pc.ghost .lock{background:rgba(247,245,241,.96)}
   .stage.swipe-l .pc,.stage.swipe-r .pc{opacity:.2;transition:opacity .15s}
   .pop-bar{justify-content:space-between}
   .pop-bar .sq{width:50px;height:50px}
@@ -242,13 +246,13 @@
 <div class="wrap">
   <div class="eyebrow">Outfits page</div>
   <h1>The shuffle card</h1>
-  <p class="lead">Slots you can fill, in the floating card, with back and forward arrows on the outfit and Shuffle and the heart in the bar. Every phone is live. Tap the arrows, or drag the outfit sideways. Tap a slot to choose a piece. Tap outside the card to close it.</p>
+  <p class="lead">The floating card, with back and forward arrows on the outfit and Shuffle and the heart in the bar. Every slot has the same two gestures: the padlock keeps what is showing, and tapping the piece swaps it. Every phone is live. Tap the arrows, or drag the outfit sideways. Tap outside the card to close it.</p>
 
   <section id="card">
     <div class="row">
       <figure><figcaption>All, page</figcaption><div data-phone='{"mode":"all","tags":["Work"],"pins":{"over":"o_waverly"}}'></div></figure>
       <figure><figcaption>All, card open</figcaption><div data-phone='{"mode":"all","tags":["Work"],"pins":{"over":"o_waverly"},"open":true}'></div></figure>
-      <figure><figcaption>All, choosing a slot</figcaption><div data-phone='{"mode":"all","tags":["Work"],"pins":{"over":"o_waverly"},"open":true,"picker":"bottom"}'></div></figure>
+      <figure><figcaption>All, swapping a piece</figcaption><div data-phone='{"mode":"all","tags":["Work"],"pins":{"over":"o_waverly"},"open":true,"picker":"bottom"}'></div></figure>
       <figure><figcaption>Faves, card open</figcaption><div data-phone='{"mode":"faves","open":true}'></div></figure>
     </div>
   </section>
@@ -259,7 +263,7 @@
     <div class="row">
       <ul class="meta annot" style="max-width:520px">
         <li><i>1</i><span><b>Arrows.</b>Back and forward step through outfits you have already seen, so a good one is never lost. Forward on the newest outfit deals a new one. Back is dimmed on the first.</span></li>
-        <li><i>2</i><span><b>Slots.</b>A solid slot is chosen and locked. A faded slot is dealt for you, and says Choose. Tap either to open the picker. The padlock unlocks it.</span></li>
+        <li><i>2</i><span><b>Slots.</b>Two gestures on every slot. The padlock keeps the piece that is showing. Tapping the piece opens the picker to swap it, and the piece you pick is locked. Solid means locked and faded means it will be dealt again. The empty jacket slot is a dashed tile with a plus.</span></li>
         <li><i>3</i><span><b>Tags.</b>Narrow what is dealt to pieces with that tag. Choosing a tag restarts the run of outfits.</span></li>
         <li><i>4</i><span><b>Shuffle.</b>Deals a new outfit around your locked pieces. It works the same whatever the arrows are showing, and the wand keeps the app's one purple.</span></li>
         <li><i>5</i><span><b>Heart.</b>Faves the outfit on screen, the same heart as everywhere else in the app.</span></li>
@@ -345,7 +349,7 @@ function why(S){
 }
 
 /* ---------- drawing ---------- */
-const emptyJacket = `<div class="pc ghost"><button class="tile" data-act="choose" data-slot="over" aria-label="Choose jacket"></button><span class="choose" style="pointer-events:none">${PLUS.replace('<svg','<svg width="12" height="12"')}Jacket?</span></div>`;
+const emptyJacket = `<div class="pc empty"><button class="tile" data-act="choose" data-slot="over" aria-label="Add a jacket"></button><span class="plus" aria-hidden="true">${PLUS}</span></div>`;
 function pc(slot, c, S, ctx){
   const id = c[slot]; if(!id) return '';
   const locked = !!S.locks[slot] && S.locks[slot] === id;
@@ -353,9 +357,8 @@ function pc(slot, c, S, ctx){
   if(ctx === 'stage'){
     if(S.cfg.mode === 'faves') return `<div class="pc">${inner}</div>`;
     cls = locked ? 'lk' : 'ghost';
-    inner += `<button class="tile" data-act="choose" data-slot="${slot}" aria-label="Choose ${SLOT_NAME[slot]}"></button>`;
-    inner += locked ? `<button class="lock" data-act="unpin" data-slot="${slot}" aria-pressed="true" aria-label="Unlock ${nm(id)}">${LOCK(true)}</button>`
-                    : `<span class="choose" style="pointer-events:none">${PLUS.replace('<svg','<svg width="12" height="12"')}Choose</span>`;
+    inner += `<button class="tile" data-act="choose" data-slot="${slot}" aria-label="Swap ${nm(id)}"></button>`;
+    inner += `<button class="lock" data-act="${locked?'unpin':'pinnow'}" data-slot="${slot}" aria-pressed="${locked}" aria-label="${locked?'Unlock':'Lock'} ${nm(id)}">${LOCK(locked)}</button>`;
   } else if(locked) cls = 'pinned';
   return `<div class="pc ${cls}">${inner}</div>`;
 }
@@ -389,7 +392,7 @@ function popHtml(S, fresh){
       <button class="arrow r" data-act="fwd" aria-label="Next outfit">${CHEV('r')}</button>
     </div>
     ${chipRow(S)}
-    ${faves?'':'<div class="legend">Tap a slot to choose it. Shuffle deals the faded ones.</div>'}
+    ${faves?'':'<div class="legend">Lock what you like. Tap a piece to swap it. Shuffle deals the unlocked ones.</div>'}
     <div class="pop-bar">
       <button class="shuf" data-act="shuffle">${WAND}${faves?'Show another':'Shuffle'}</button>
       <button class="sq" data-act="heart" aria-label="Fave this outfit" aria-pressed="${on}">${HEART(on)}</button>
@@ -444,6 +447,7 @@ function mount(host){
     else if(a === 'tag'){ const t = b.dataset.v; S.tags.has(t) ? S.tags.delete(t) : S.tags.add(t); restart(S); render(S, true); }
     else if(a === 'lvl'){ S.lvl = +b.dataset.v; restart(S); render(S, true); }
     else if(a === 'unpin'){ delete S.locks[slot]; render(S); }
+    else if(a === 'pinnow'){ S.locks[slot] = hero(S)[slot]; render(S); }
     else if(a === 'pinclear'){ delete S.locks[slot]; S.picker = null; render(S); }
     else if(a === 'pinpiece'){ const id = b.dataset.v, s = slotOf(id); if(S.locks[s] === id) delete S.locks[s]; else { S.locks[s] = id; hero(S)[s] = id; } S.picker = null; render(S, true); }
     else if(a === 'choose'){ S.picker = slot; render(S); }
