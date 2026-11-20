@@ -4707,7 +4707,7 @@ function renderHero(){
 // from everything the filters leave rather than from the grid's 24, so the
 // outfit you get is a new one and not a card you were already looking at.
 // Locked spaces are filters, so they hold without anything extra here.
-function randomHeroCombo(){
+function drawHeroCombo(){
   const f = generatorFilters();
   const fams = outfitFamilies();
   if(!fams.length) return null;
@@ -4730,6 +4730,25 @@ function randomHeroCombo(){
   const over = tops.filter(o => canLayerOver(o, top));
   const overtop = over.length && Math.random() < 0.3 ? one(over) : null;
   return {base:'topbottom', top, overtop, bottom: one(slotList(f, 'bottom')), jumper, jacket, shoe};
+}
+// The piece filters shape the draw itself; tags and fave levels are judged on
+// the finished outfit, as they are for the grid, so the dealt outfit has to
+// pass the same tests or it would ignore the filters below it.
+function heroPasses(c){
+  if(!c || !comboMatchesTag(c) || !comboInCapsules(c)) return false;
+  const wantFave = currentFave();
+  return faveMatches(faveLevel(comboKey(c)), wantFave);
+}
+function randomHeroCombo(){
+  for(let i = 0; i < 200; i++){
+    const c = drawHeroCombo();
+    if(!c) return null;
+    if(heroPasses(c)) return c;
+  }
+  // A narrow filter can make random draws miss; fall back to what the grid
+  // already found for these filters.
+  const pool = outfitDisplayed.filter(heroPasses);
+  return pool.length ? pool[Math.floor(Math.random() * pool.length)] : null;
 }
 function shuffleHero(){
   const c = randomHeroCombo();
