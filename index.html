@@ -4692,7 +4692,15 @@ function renderHero(){
     ? layers + heroSlotHtml('dress', c)
     : layers + heroSlotHtml('top', c) + heroSlotHtml('bottom', c);
   const gt = document.getElementById('gallery-title');
-  if(gt) gt.style.display = 'block';
+  if(gt){
+    // With filters on and nothing but the featured outfit left, a bare
+    // "More combos" over an empty grid reads as broken, so say why.
+    const others = outfitDisplayed.filter(o => comboKey(o) !== key).length;
+    gt.textContent = activeFilterCount() > 0 && others === 0
+      ? 'No other combos match your filters'
+      : 'More combos';
+    gt.style.display = 'block';
+  }
   morphHtml(host, `
     <h2 class="hero-title">Try this</h2>
     <div class="outfit-card hero-card" data-key="hero">
