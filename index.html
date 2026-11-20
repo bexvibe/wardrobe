@@ -8779,7 +8779,9 @@ const ICONS = {
   // Shows what tapping switches TO, not the view you are in — a toggle that
   // pictures its current state reads as a label and gets tapped by mistake.
   list:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01"/></svg>',
-  grid:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg>',
+  // A picture frame, not four boxes: this view is the photos, and a frame
+  // with a hill and a sun is lighter and reads as that at a glance.
+  grid:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="15" rx="3.5"/><circle cx="9" cy="10" r="1.6"/><path d="M4.5 17.5l4.5-4.2 3.5 3.2 2.5-2.3 5 4"/></svg>',
 };
 
 function renderToolbarIcons(){
