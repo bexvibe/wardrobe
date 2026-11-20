@@ -13,6 +13,14 @@
   .arrow[disabled]{opacity:.35;cursor:default}
   .slotpick{left:0;right:0;border-radius:22px 22px 0 0;bottom:78px}
   .stage{touch-action:pan-y}
+  .pc.swapping{box-shadow:0 0 0 2px var(--brand);background:#EFEAF5}
+  .pc.swapping.empty{border-color:var(--brand)}
+  .tray{margin-top:8px}
+  .tray-h{display:flex;align-items:center;justify-content:space-between;margin:0 2px 5px;font-size:13px}
+  .tray-h .chip{min-height:30px;background:var(--surface);box-shadow:var(--btn);border:0;font-weight:600}
+  .tray .strip{margin:0 -12px;padding:3px 12px}
+  .tray-f{font-size:11.5px;color:var(--soft);margin:3px 2px 0}
+  .pp.any{height:48px}
   .pc.empty{border:1.5px dashed var(--soft);background:transparent;margin:6px}
   .pc.empty .plus{display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:var(--surface);box-shadow:var(--btn);pointer-events:none}
   .pc.empty .plus svg{width:16px;height:16px}
@@ -30,13 +38,13 @@
 <div class="wrap">
   <div class="eyebrow">Outfits page</div>
   <h1>The shuffle card</h1>
-  <p class="lead">The floating card, with back and forward arrows on the outfit and Shuffle and the heart in the bar. Every slot has the same two gestures: the padlock keeps what is showing, and tapping the piece swaps it. Every phone is live. Tap the arrows, or drag the outfit sideways. Tap outside the card to close it.</p>
+  <p class="lead">The floating card, with back and forward arrows on the outfit and Shuffle and the heart in the bar. Every slot has the same two gestures: the padlock keeps what is showing, and tapping the piece opens a tray of alternatives under the outfit. There is no second popup. Every phone is live. Tap the arrows, or drag the outfit sideways. Tap outside the card to close it.</p>
 
   <section id="card">
     <div class="row">
       <figure><figcaption>All, page</figcaption><div data-phone='{"mode":"all","tags":["Work"],"pins":{"over":"o_waverly"}}'></div></figure>
       <figure><figcaption>All, card open</figcaption><div data-phone='{"mode":"all","tags":["Work"],"pins":{"over":"o_waverly"},"open":true}'></div></figure>
-      <figure><figcaption>All, swapping a piece</figcaption><div data-phone='{"mode":"all","tags":["Work"],"pins":{"over":"o_waverly"},"open":true,"picker":"bottom"}'></div></figure>
+      <figure><figcaption>All, swapping the bottom</figcaption><div data-phone='{"mode":"all","tags":["Work"],"pins":{"over":"o_waverly"},"open":true,"picker":"bottom"}'></div></figure>
       <figure><figcaption>Faves, card open</figcaption><div data-phone='{"mode":"faves","open":true}'></div></figure>
     </div>
   </section>
@@ -47,7 +55,7 @@
     <div class="row">
       <ul class="meta annot" style="max-width:520px">
         <li><i>1</i><span><b>Arrows.</b>Back and forward step through outfits you have already seen, so a good one is never lost. Forward on the newest outfit deals a new one. Back is dimmed on the first.</span></li>
-        <li><i>2</i><span><b>Slots.</b>Two gestures on every slot. The padlock keeps the piece that is showing. Tapping the piece opens the picker to swap it, and the piece you pick is locked. Solid means locked and faded means it will be dealt again. The empty jacket slot is a dashed tile with a plus.</span></li>
+        <li><i>2</i><span><b>Slots.</b>Two gestures on every slot. The padlock keeps the piece that is showing. Tapping the piece opens a swap tray under the outfit, in place of the tags. The outfit stays in view and updates as you tap, and the piece you pick is locked. Solid means locked and faded means it will be dealt again. The empty jacket slot is a dashed tile with a plus.</span></li>
         <li><i>3</i><span><b>Tags.</b>Narrow what is dealt to pieces with that tag. Choosing a tag restarts the run of outfits.</span></li>
         <li><i>4</i><span><b>Shuffle.</b>Deals a new outfit around your locked pieces. It works the same whatever the arrows are showing, and the wand keeps the app's one purple.</span></li>
         <li><i>5</i><span><b>Heart.</b>Faves the outfit on screen, the same heart as everywhere else in the app.</span></li>
@@ -133,14 +141,14 @@ function why(S){
 }
 
 /* ---------- drawing ---------- */
-const emptyJacket = `<div class="pc empty"><button class="tile" data-act="choose" data-slot="over" aria-label="Add a jacket"></button><span class="plus" aria-hidden="true">${PLUS}</span></div>`;
+const emptyJacket = (S) => `<div class="pc empty ${S.picker==='over'?'swapping':''}"><button class="tile" data-act="choose" data-slot="over" aria-label="Add a jacket"></button><span class="plus" aria-hidden="true">${PLUS}</span></div>`;
 function pc(slot, c, S, ctx){
   const id = c[slot]; if(!id) return '';
   const locked = !!S.locks[slot] && S.locks[slot] === id;
   let inner = `<img src="${P[id].u}" alt="${nm(id)}">`, cls = '';
   if(ctx === 'stage'){
     if(S.cfg.mode === 'faves') return `<div class="pc">${inner}</div>`;
-    cls = locked ? 'lk' : 'ghost';
+    cls = (locked ? 'lk' : 'ghost') + (S.picker === slot ? ' swapping' : '');
     inner += `<button class="tile" data-act="choose" data-slot="${slot}" aria-label="Swap ${nm(id)}"></button>`;
     inner += `<button class="lock" data-act="${locked?'unpin':'pinnow'}" data-slot="${slot}" aria-pressed="${locked}" aria-label="${locked?'Unlock':'Lock'} ${nm(id)}">${LOCK(locked)}</button>`;
   } else if(locked) cls = 'pinned';
@@ -148,7 +156,7 @@ function pc(slot, c, S, ctx){
 }
 function body(c, S, ctx){
   const two = c.over || (ctx === 'stage' && S.cfg.mode === 'all');
-  return `<div class="up ${two?'':'n1'}">${c.over?pc('over',c,S,ctx):(ctx==='stage'&&S.cfg.mode==='all'?emptyJacket:'')}${pc('top',c,S,ctx)}</div><div class="lo">${pc('bottom',c,S,ctx)}</div><div class="ft">${pc('shoes',c,S,ctx)}</div>`;
+  return `<div class="up ${two?'':'n1'}">${c.over?pc('over',c,S,ctx):(ctx==='stage'&&S.cfg.mode==='all'?emptyJacket(S):'')}${pc('top',c,S,ctx)}</div><div class="lo">${pc('bottom',c,S,ctx)}</div><div class="ft">${pc('shoes',c,S,ctx)}</div>`;
 }
 const gridCard = (c, S) => `<div class="gc">${c.fav?`<span class="bd">${LV[c.lv]}</span>`:''}${body(c,S,'grid')}</div>`;
 function chipRow(S){
@@ -157,31 +165,31 @@ function chipRow(S){
   return `<div class="chips" role="group" aria-label="Tags">${TAGS.map(t =>
     `<button class="chip ${S.tags.has(t)?'on':''}" data-act="tag" data-v="${t}" aria-pressed="${S.tags.has(t)}">${t}</button>`).join('')}</div>`;
 }
+function trayHtml(S){
+  const slot = S.picker;
+  const ids = [...pool(S,slot)].sort((a,b) => (RECENT.includes(b)?1:0) - (RECENT.includes(a)?1:0));
+  const label = slot === 'over' ? 'jacket' : SLOT_NAME[slot];
+  return `<div class="tray"><div class="tray-h"><span>Swap the <b>${label}</b></span><button class="chip" data-act="pickback">Done</button></div>
+    <div class="strip" role="group" aria-label="Pieces for the ${label}">
+      <button class="pp any ${!S.locks[slot]?'on':''}" data-act="pinclear" data-slot="${slot}" aria-pressed="${!S.locks[slot]}">${WAND}Shuffle picks</button>
+      ${ids.map(id => `<button class="pp ${S.locks[slot]===id?'on':''}" data-act="pinpiece" data-v="${id}" aria-label="${nm(id)}" aria-pressed="${S.locks[slot]===id}"><img src="${P[id].u}" alt="">${RECENT.includes(id)?'<span class="rdot"></span>':''}</button>`).join('')}</div>
+    <div class="tray-f">${S.tags.size?'Showing '+[...S.tags].join(' or ').toLowerCase()+' pieces. ':''}Recent first.</div></div>`;
+}
 function popHtml(S, fresh){
   const c = hero(S), faves = S.cfg.mode === 'faves';
   const on = faves || !!c.hearted;
   const atStart = S.idx === 0;
-  const slot = S.picker;
-  let picker = '';
-  if(slot && !faves){
-    const ids = [...pool(S,slot)].sort((a,b) => (RECENT.includes(b)?1:0) - (RECENT.includes(a)?1:0));
-    picker = `<div class="sp-head"><h6>Choose ${slot==='over'?'a jacket':'a '+SLOT_NAME[slot]}</h6><button data-act="pickback">Done</button></div>
-      <div class="sp-sub">${S.tags.size?'Showing '+[...S.tags].join(' or ').toLowerCase()+' pieces. ':''}Recent first.</div>
-      <div class="sp-grid"><button class="it auto ${!S.locks[slot]?'on':''}" data-act="pinclear" data-slot="${slot}">${WAND.replace('<svg','<svg width="18" height="18"')}<br>Let Shuffle pick</button>
-      ${ids.map(id => `<button class="it ${S.locks[slot]===id?'on':''}" data-act="pinpiece" data-v="${id}" aria-label="${nm(id)}">${RECENT.includes(id)?'<span class="rdot"></span>':''}<img src="${P[id].u}" alt=""></button>`).join('')}</div>`;
-  }
+  const tray = !!S.picker && !faves;
   return `<div class="pop-top"><div class="why">${why(S)}</div><button class="pop-x" data-act="close" aria-label="Close">${CLOSE}</button></div>
     <div class="stage ${fresh?'fresh':''}" id="stage">${body(c,S,'stage')}
       <button class="arrow l" data-act="back" aria-label="Previous outfit" ${atStart?'disabled':''}>${CHEV('l')}</button>
       <button class="arrow r" data-act="fwd" aria-label="Next outfit">${CHEV('r')}</button>
     </div>
-    ${chipRow(S)}
-    ${faves?'':'<div class="legend">Lock what you like. Tap a piece to swap it. Shuffle deals the unlocked ones.</div>'}
+    ${tray ? trayHtml(S) : chipRow(S) + (faves?'':'<div class="legend">Lock what you like. Tap a piece to swap it. Shuffle deals the unlocked ones.</div>')}
     <div class="pop-bar">
       <button class="shuf" data-act="shuffle">${WAND}${faves?'Show another':'Shuffle'}</button>
       <button class="sq" data-act="heart" aria-label="Fave this outfit" aria-pressed="${on}">${HEART(on)}</button>
-    </div>
-    <div class="slotpick ${slot&&!faves?'open':''}" role="dialog" aria-label="Choose a piece">${picker}</div>`;
+    </div>`;
 }
 function pageHero(S){
   const faves = S.cfg.mode === 'faves';
@@ -232,9 +240,9 @@ function mount(host){
     else if(a === 'lvl'){ S.lvl = +b.dataset.v; restart(S); render(S, true); }
     else if(a === 'unpin'){ delete S.locks[slot]; render(S); }
     else if(a === 'pinnow'){ S.locks[slot] = hero(S)[slot]; render(S); }
-    else if(a === 'pinclear'){ delete S.locks[slot]; S.picker = null; render(S); }
-    else if(a === 'pinpiece'){ const id = b.dataset.v, s = slotOf(id); if(S.locks[s] === id) delete S.locks[s]; else { S.locks[s] = id; hero(S)[s] = id; } S.picker = null; render(S, true); }
-    else if(a === 'choose'){ S.picker = slot; render(S); }
+    else if(a === 'pinclear'){ delete S.locks[slot]; render(S); }
+    else if(a === 'pinpiece'){ const id = b.dataset.v, s = slotOf(id); if(S.locks[s] === id) delete S.locks[s]; else { S.locks[s] = id; hero(S)[s] = id; } render(S); }
+    else if(a === 'choose'){ S.picker = S.picker === slot ? null : slot; render(S); }
     else if(a === 'pickback'){ S.picker = null; render(S); }
   });
   // Dragging the outfit sideways does what the arrows do.
