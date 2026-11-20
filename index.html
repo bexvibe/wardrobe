@@ -369,6 +369,7 @@
     user-select:none;
   }
   .tile img{width:100%;height:100%;object-fit:contain;display:block;}
+  .no-photo-mini{text-align:center;overflow:hidden;word-break:break-word;line-height:1.1;padding:2px;box-sizing:border-box;}
   .tile .no-photo{
     width:100%;height:100%;
     display:flex;align-items:center;justify-content:center;
@@ -3805,7 +3806,7 @@ function renderArchive(){
     <div class="archive-row">
       ${i.photo
         ? `<img class="name-row-thumb" src="${esc(i.photo)}" alt="" referrerpolicy="no-referrer" loading="lazy" decoding="async">`
-        : `<div class="name-row-thumb no-photo-mini">No photo</div>`}
+        : `<div class="name-row-thumb no-photo-mini">${esc(i.name)}</div>`}
       <div class="archive-row-text">
         <div class="archive-row-title">${esc(i.name)}</div>
         <div class="archive-row-sub">${esc(i.brand || '')}</div>
@@ -3977,7 +3978,7 @@ function renderBuilderGallery(){
   morphHtml(gallery, items.map(i => {
     const selected = chosen.includes(i.id);
     return `<div class="tile picker-tile ${selected ? 'picker-selected' : ''}" data-key="${i.id}" onclick="toggleBuilderItem('${i.id}')">
-      ${i.photo ? `<img src="${esc(i.photo)}" alt="" referrerpolicy="no-referrer" loading="lazy" decoding="async">` : `<span class="no-photo">No photo</span>`}
+      ${i.photo ? `<img src="${esc(i.photo)}" alt="" referrerpolicy="no-referrer" loading="lazy" decoding="async">` : `<span class="no-photo">${esc(i.name)}</span>`}
       ${selected ? `<span class="picker-check">&check;</span>` : ''}
     </div>`;
   }).join(''));
@@ -4128,7 +4129,7 @@ function renderPickerGallery(slotKey){
   gallery.innerHTML = noneTile + items.map(i => {
     const selected = f.type === 'items' && f.ids.includes(i.id);
     return `<div class="tile picker-tile ${selected ? 'picker-selected' : ''}" onclick="toggleSlotItem('${slotKey}','${i.id}')">
-      ${i.photo ? `<img src="${esc(i.photo)}" alt="" referrerpolicy="no-referrer" loading="lazy" decoding="async">` : `<span class="no-photo">No photo</span>`}
+      ${i.photo ? `<img src="${esc(i.photo)}" alt="" referrerpolicy="no-referrer" loading="lazy" decoding="async">` : `<span class="no-photo">${esc(i.name)}</span>`}
       ${selected ? `<span class="picker-check">✓</span>` : ''}
     </div>`;
   }).join('');
@@ -4342,7 +4343,7 @@ function outfitLayout(combo){
 function outfitThumbsHtml(combo){
   const cell = p => p.photo
     ? `<img src="${esc(p.photo)}" alt="${esc(p.name)}" referrerpolicy="no-referrer" loading="lazy" decoding="async">`
-    : `<div class="no-photo-mini">No photo</div>`;
+    : `<div class="no-photo-mini">${esc(p.name)}</div>`;
   const { hats, upper, lower, extras } = outfitLayout(combo);
   return [
     hats.length ? `<div class="outfit-extras outfit-hats n${Math.min(hats.length, 4)}">${hats.map(cell).join('')}</div>` : '',
@@ -4593,7 +4594,7 @@ function drawOutfitPage(key){
         ${comboPieces(combo).map(p => `
           <div class="outfit-piece-row tappable"
                onclick='openPieceSheet(${JSON.stringify(p.id)})'>
-            ${p.photo ? `<img src="${esc(p.photo)}" alt="${esc(p.name)}" referrerpolicy="no-referrer" loading="lazy" decoding="async">` : `<div class="no-photo-mini">No photo</div>`}
+            ${p.photo ? `<img src="${esc(p.photo)}" alt="${esc(p.name)}" referrerpolicy="no-referrer" loading="lazy" decoding="async">` : `<div class="no-photo-mini">${esc(p.name)}</div>`}
             <div class="outfit-piece-info">
               <div class="p-name">${esc(p.name)}</div>
             </div>
@@ -4638,12 +4639,12 @@ function drawCapsulePage(id){
         ${pieces.length ? `<div class="capsule-thumbs">${capsuleBands(pieces).map(row =>
           `<div class="capsule-band">${row.map(p => p.photo
             ? `<img src="${esc(p.photo)}" alt="${esc(p.name)}" referrerpolicy="no-referrer" decoding="async">`
-            : `<div class="no-photo-mini">No photo</div>`).join('')}</div>`).join('')}</div>` : ''}
+            : `<div class="no-photo-mini">${esc(p.name)}</div>`).join('')}</div>`).join('')}</div>` : ''}
         <div class="outfit-page-list">
         ${pieces.length ? pieces.map(p => `
           <div class="outfit-piece-row tappable"
                onclick='openPieceSheet(${JSON.stringify(p.id)})'>
-            ${p.photo ? `<img src="${esc(p.photo)}" alt="${esc(p.name)}" referrerpolicy="no-referrer" loading="lazy" decoding="async">` : `<div class="no-photo-mini">No photo</div>`}
+            ${p.photo ? `<img src="${esc(p.photo)}" alt="${esc(p.name)}" referrerpolicy="no-referrer" loading="lazy" decoding="async">` : `<div class="no-photo-mini">${esc(p.name)}</div>`}
             <div class="outfit-piece-info" style="flex:1;min-width:0;">
               <div class="p-name">${esc(p.name)}</div>
               <div class="p-meta">${esc(p.brand || '')}</div>
@@ -5759,7 +5760,7 @@ function renderExtrasPicker(key){
          onclick='toggleOutfitExtra(${JSON.stringify(key)}, ${JSON.stringify(i.id)})'>
       ${i.photo
         ? `<img src="${esc(i.photo)}" alt="${esc(i.name)}" referrerpolicy="no-referrer" loading="lazy" decoding="async">`
-        : `<span class="no-photo">No photo</span>`}
+        : `<span class="no-photo">${esc(i.name)}</span>`}
       ${on.has(i.id) ? `<span class="picker-check">✓</span>` : ''}
     </div>
   `).join('') : `
@@ -5933,7 +5934,7 @@ function renderLoosePieces(){
     <div class="tile" data-id="${i.id}" onclick="openModal('${i.id}')">
       ${i.photo
         ? `<img src="${esc(i.photo)}" alt="${esc(i.name)}" referrerpolicy="no-referrer" loading="lazy" decoding="async">`
-        : `<span class="no-photo">No photo</span>`}
+        : `<span class="no-photo">${esc(i.name)}</span>`}
     </div>`).join('');
 }
 
@@ -5957,7 +5958,7 @@ function renderCapsules(){
     const pieces = capsuleItems(capsule);
     const cell = p => p.photo
       ? `<img src="${esc(p.photo)}" alt="${esc(p.name)}" referrerpolicy="no-referrer" loading="lazy" decoding="async">`
-      : `<div class="no-photo-mini">No photo</div>`;
+      : `<div class="no-photo-mini">${esc(p.name)}</div>`;
 
     const PREVIEW = 4;
     const shown = pieces.slice(0, PREVIEW);
@@ -6132,7 +6133,7 @@ function renderCapsuleEditorGallery(){
   morphHtml(gallery, pool.map(i => {
     const selected = capsuleDraft.itemIds.has(i.id);
     return `<div class="tile picker-tile ${selected ? 'picker-selected' : ''}" data-key="${i.id}" onclick="toggleCapsuleItem('${i.id}')">
-      ${i.photo ? `<img src="${esc(i.photo)}" alt="" referrerpolicy="no-referrer" loading="lazy" decoding="async">` : `<span class="no-photo">No photo</span>`}
+      ${i.photo ? `<img src="${esc(i.photo)}" alt="" referrerpolicy="no-referrer" loading="lazy" decoding="async">` : `<span class="no-photo">${esc(i.name)}</span>`}
       ${selected ? `<span class="picker-check">✓</span>` : ''}
     </div>`;
   }).join(''));
@@ -7624,7 +7625,7 @@ function drawItemSheet(id){
   modal.innerHTML = `
     ${asPage ? '' : '<div class="sheet-grip"></div>'}
     <div class="modal-photo">
-      ${item.photo ? `<img src="${esc(item.photo)}" alt="${esc(item.name)}" referrerpolicy="no-referrer" decoding="async">` : `<span class="no-photo">No photo yet</span>`}
+      ${item.photo ? `<img src="${esc(item.photo)}" alt="${esc(item.name)}" referrerpolicy="no-referrer" decoding="async">` : `<span class="no-photo">${esc(item.name)}</span>`}
       ${asPage ? editIcon : ''}
     </div>
     <div class="modal-body ${asPage ? 'has-footer' : ''}">
@@ -8784,7 +8785,7 @@ function render(){
       return `
       <div class="tile ${editMode ? 'select-mode' : ''} ${selected ? 'item-selected' : ''}" data-id="${i.id}" data-key="${i.id}" onclick="${clickHandler(i.id)}">
         ${editMode ? `<span class="select-check ${selected ? 'checked' : ''}">✓</span>` : ''}
-        ${i.photo ? `<img src="${esc(i.photo)}" alt="${esc(i.name)}" referrerpolicy="no-referrer" loading="lazy" decoding="async">` : `<span class="no-photo">No photo</span>`}
+        ${i.photo ? `<img src="${esc(i.photo)}" alt="${esc(i.name)}" referrerpolicy="no-referrer" loading="lazy" decoding="async">` : `<span class="no-photo">${esc(i.name)}</span>`}
       </div>
     `;
     }).join(''));
@@ -8796,7 +8797,7 @@ function render(){
       return `
       <div class="name-row ${editMode ? 'select-mode' : ''} ${selected ? 'item-selected' : ''}" data-id="${i.id}" onclick="${clickHandler(i.id)}">
         ${editMode ? `<span class="select-check ${selected ? 'checked' : ''}">✓</span>` : ''}
-        ${i.photo ? `<img class="name-row-thumb" src="${esc(i.photo)}" alt="" referrerpolicy="no-referrer" loading="lazy" decoding="async">` : `<div class="name-row-thumb no-photo-mini">No photo</div>`}
+        ${i.photo ? `<img class="name-row-thumb" src="${esc(i.photo)}" alt="" referrerpolicy="no-referrer" loading="lazy" decoding="async">` : `<div class="name-row-thumb no-photo-mini">${esc(i.name)}</div>`}
         <div class="name-row-text">
           <div class="name-row-title">${esc(i.name)}</div>
           <div class="name-row-sub">${esc(i.brand || '')}</div>
