@@ -1572,7 +1572,7 @@
   }
   /* The filters are up and cover this row. It eases down as they rise. */
   .float-row.away{
-    transform:translateX(-50%) translateY(10px) scale(0.96);
+    transform:translateX(-50%) scale(0.9);
     opacity:0;visibility:hidden;
   }
   .float-row > *{pointer-events:auto;}
@@ -1631,15 +1631,11 @@
      takes its place, so the one thing you can do from deep in the list is
      narrow it. It shrinks to nothing (width and its half of the gap too)
      rather than just fading, so Filters glides to the centre. */
-  .shuffle-fab{
-    max-width:140px;overflow:hidden;
-    transition:background 0.12s ease, transform 0.12s ease,
-               max-width 260ms var(--sheet-ease), padding 260ms var(--sheet-ease),
-               margin 260ms var(--sheet-ease), opacity 200ms ease;
-  }
-  .shuffle-fab.tucked{
-    max-width:0;padding-left:0;padding-right:0;margin-right:-8px;border-width:0;
-    opacity:0;transform:scale(0.8);pointer-events:none;
+  .shuffle-fab:not(.tucked), .filters-fab.fab-pop{animation:fab-pop 200ms var(--sheet-ease);}
+  .shuffle-fab.tucked{display:none;}
+  @keyframes fab-pop{from{opacity:0;transform:scale(0.85);}to{opacity:1;transform:none;}}
+  @media (prefers-reduced-motion: reduce){
+    .shuffle-fab:not(.tucked), .filters-fab.fab-pop{animation:none;}
   }
   .shuffle-fab:active{transform:scale(0.96);}
   /* Material Symbols "wand_stars", Apache 2.0. Inlined rather than pulled
@@ -3233,17 +3229,12 @@ function placeFiltersButton(fab, animate){
     const first = animate && fab.offsetParent ? fab.getBoundingClientRect() : null;
     if(inHead) row.insertBefore(fab, row.firstChild); else float.appendChild(fab);
     fab.classList.toggle('in-head', inHead);
-    // FLIP: it is the same button, so it travels rather than swapping.
-    if(first && !window.matchMedia('(prefers-reduced-motion: reduce)').matches){
-      const last = fab.getBoundingClientRect();
-      const dx = first.left + first.width / 2 - (last.left + last.width / 2);
-      const dy = first.top + first.height / 2 - (last.top + last.height / 2);
-      fab.style.transition = 'none';
-      fab.style.transform = `translate(${dx}px, ${dy}px)`;
+    // It pops in at its new place rather than travelling there.
+    if(first){
+      fab.classList.remove('fab-pop');
       void fab.offsetWidth;
-      fab.style.transition = 'transform 340ms var(--sheet-ease), opacity var(--sheet-ease-ms) var(--sheet-ease), visibility var(--sheet-ease-ms)';
-      fab.style.transform = '';
-      setTimeout(() => { fab.style.transition = ''; }, 380);
+      fab.classList.add('fab-pop');
+      setTimeout(() => fab.classList.remove('fab-pop'), 260);
     }
   }
   fab.classList.toggle('in-head', inHead);
