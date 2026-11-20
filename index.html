@@ -4762,9 +4762,51 @@ function randomHeroCombo(){
   const pool = outfitDisplayed.filter(heroPasses);
   return pool.length ? pool[Math.floor(Math.random() * pool.length)] : null;
 }
+// Shuffle never deals the outfit already on screen, and walks through the
+// others before repeating any: once every combination the filters leave has
+// been dealt, the round starts again from the beginning. When there is only
+// the one, there is nothing to deal and it says so.
+let heroDealt = new Set();
+let heroDealtSig = '';
+function nextHeroCombo(){
+  const sig = heroSignature();
+  if(sig !== heroDealtSig){ heroDealt = new Set(); heroDealtSig = sig; }
+  const current = heroCombo ? comboKey(heroCombo) : null;
+  if(current) heroDealt.add(current);
+
+  // Cheap path: a random draw that is neither on screen nor already dealt.
+  for(let i = 0; i < 60; i++){
+    const c = drawHeroCombo();
+    if(!c) break;
+    const k = comboKey(c);
+    if(heroPasses(c) && !heroDealt.has(k)) return c;
+  }
+
+  // The random draws keep missing, so the unseen ones are few or none. Count
+  // what is really there.
+  const pool = new Map();
+  const gen = comboGenerator();
+  for(let n = 0; n < 5000; n++){
+    const next = gen.next();
+    if(next.done) break;
+    if(!heroPasses(next.value)) continue;
+    pool.set(comboKey(next.value), next.value);
+  }
+  if(current) pool.delete(current);
+  if(!pool.size) return null;                       // only one option
+
+  let fresh = [...pool].filter(([k]) => !heroDealt.has(k));
+  if(!fresh.length){
+    // Every one has had its turn: loop back to the beginning.
+    heroDealt = new Set(current ? [current] : []);
+    fresh = [...pool];
+  }
+  return fresh[Math.floor(Math.random() * fresh.length)][1];
+}
 function shuffleHero(){
-  const c = randomHeroCombo();
-  if(!c) return;
+  const c = nextHeroCombo();
+  if(!c){ showToast('No more combos'); return; }
+  heroDealt.add(comboKey(c));
   heroCombo = c;
   storeHero(c);
   renderHero();
