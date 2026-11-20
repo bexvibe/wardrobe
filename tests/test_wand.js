@@ -102,14 +102,15 @@ const stream = p => p.evaluate(()=>outfitDisplayed.slice(0, 8).map(c=>comboKey(c
     // the header beside New fave.
     check('on All it is the big one: wide and centred', await p.evaluate(()=>{
       const r = document.getElementById('shuffle-fab').getBoundingClientRect();
-      return r.width >= 300 && r.height >= 52 &&
-             Math.abs((r.left + r.right) / 2 - window.innerWidth / 2) <= 2;
+      const row = document.getElementById('float-row').getBoundingClientRect();
+      return r.width >= 200 && r.height >= 52 &&
+             Math.abs((row.left + row.right) / 2 - window.innerWidth / 2) <= 2;
     }));
-    check('and Filters is in the header, left of New fave', await p.evaluate(()=>{
+    check('and Filters floats beside it, in the same row', await p.evaluate(()=>{
       const f = document.getElementById('filters-fab');
-      const n = document.getElementById('build-outfit-btn-all');
-      return f.parentElement.id === 'all-icon-row' &&
-             f.getBoundingClientRect().right <= n.getBoundingClientRect().left;
+      const sh = document.getElementById('shuffle-fab');
+      return f.parentElement.id === 'float-row' &&
+             sh.getBoundingClientRect().right <= f.getBoundingClientRect().left;
     }));
 
     check('and clear of the nav', await p.evaluate(()=>{
@@ -172,8 +173,7 @@ const stream = p => p.evaluate(()=>outfitDisplayed.slice(0, 8).map(c=>comboKey(c
       (await p.evaluate(()=>totalComboCount())) === totalBefore);
     check('and the new hero is kept for the rest of the visit',
       await p.evaluate(()=>{ const k = readStoredHero(); return !!k && comboKey(k) === comboKey(heroCombo); }));
-    check('it takes you back up to the hero',
-      (await p.evaluate(()=>Math.round(window.scrollY))) === 0);
+    check('and it opens the popup to steer it', await p.evaluate(()=>heroPopOpen));
     await p.close();
   }
 
