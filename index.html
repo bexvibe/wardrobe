@@ -4682,9 +4682,9 @@ function renderHero(){
   // Jacket and jumper share the first layer, then the top, then the bottom —
   // or the dress, where the top and bottom would be.
   // An optional layer the outfit doesn't have is left out rather than shown
-  // as an empty box — unless it is locked to none, which must stay visible so
-  // it can be unlocked.
-  const layerSlots = ['jacket','jumper'].filter(s => heroSlotPieces(s, c).length || heroSlotLocked(s, c));
+  // as an empty box, locked to none or not. A none lock is still a filter, so
+  // the filters button counts it and Clear lets go of it.
+  const layerSlots = ['jacket','jumper'].filter(s => heroSlotPieces(s, c).length);
   const layers = layerSlots.length
     ? `<div class="hero-row ${layerSlots.length === 2 ? 'n2' : ''}">${layerSlots.map(s => heroSlotHtml(s, c)).join('')}</div>`
     : '';
