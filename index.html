@@ -3156,7 +3156,6 @@ const SHEETS = {
   // Small sheets over an outfit's page, only ever left.
   inspoadd:  { backdrop: 'modal-backdrop', draw: null },
   inspolink: { backdrop: 'modal-backdrop', draw: null },
-  inspoview: { backdrop: 'modal-backdrop', draw: null },
   // Only ever left, never returned to: their drafts do not survive the trip.
   capsule:   { backdrop: 'modal-backdrop', draw: null },
   builder:   { backdrop: 'modal-backdrop', draw: null },
@@ -5005,8 +5004,8 @@ function openCapsulePage(id, fromEl){
   openPage('capsulepage', id, fromEl);
 }
 
-function openPage(sheet, id, fromEl){
-  pushSheet({ sheet, id });
+function openPage(sheet, id, fromEl, extra){
+  pushSheet(Object.assign({ sheet, id }, extra));
   // Opened from a piece's sheet, that sheet gives way to the page.
   showSheetBackdrop(null);
   syncOutfitPage(true);
@@ -6272,6 +6271,8 @@ function drawInspoPage(id){
   const layer = document.getElementById('outfit-page');
   if(!g || !layer){ closeModal(); return; }
   const n = g.keys.length;
+  const entry = sheetTrail.find(e => e.sheet === 'inspopage' && e.id === id);
+  const removable = Boolean(entry && entry.removable);
   layer.dataset.key = 'inspopage:' + id;
   layer.innerHTML = `
     <div class="outfit-page-inner">
@@ -6287,7 +6288,8 @@ function drawInspoPage(id){
         <div class="sheet-footer-inner">
           <button class="btn secondary" type="button" id="outfit-page-back" onclick="goBackFromSheet()">${BACK_GLYPH}Back</button>
           <div class="sheet-footer-actions">
-            ${g.url ? `<a class="btn tonal" id="inspo-page-open" href="${esc(g.url)}" target="_blank" rel="noopener noreferrer">Open original ↗</a>` : ''}
+            ${g.url ? `<a class="btn tonal" id="inspo-open" href="${esc(g.url)}" target="_blank" rel="noopener noreferrer">Open original ↗</a>` : ''}
+            ${removable ? `<button class="btn secondary" type="button" id="inspo-remove" onclick='removeInspoFromViewer(${JSON.stringify(id)})'>Remove</button>` : ''}
           </div>
         </div>
       </div>
@@ -6426,21 +6428,11 @@ async function saveInspoLink(){
   goBackFromSheet();
 }
 
+// From an outfit's page an inspo opens as a page, the same as from the Inspo
+// destination, and keeps its Remove: there it is clear which outfit is meant.
 function openInspoViewer(id){
-  const hit = findInspo(id);
-  if(!hit) return;
-  const { pin } = hit;
-  openInspoSheet('inspoview', id, `
-    <div class="modal-body inspo-sheet">
-      <div class="inspo-big">
-        ${pin.image ? `<img src="${esc(pin.image)}" alt="" referrerpolicy="no-referrer" decoding="async" onerror="this.remove()">` : ''}
-        <span class="inspo-src">${esc(pin.source || 'Link')}</span>
-      </div>
-      <div class="modal-actions">
-        ${pin.url ? `<a class="btn tonal" id="inspo-open" href="${esc(pin.url)}" target="_blank" rel="noopener noreferrer">Open original ↗</a>` : ''}
-        <button class="btn secondary" id="inspo-remove" type="button" onclick='removeInspoFromViewer(${JSON.stringify(id)})'>Remove</button>
-      </div>
-    </div>`);
+  if(!findInspo(id)) return;
+  openPage('inspopage', id, null, { removable: true });
 }
 
 async function removeInspoFromViewer(id){

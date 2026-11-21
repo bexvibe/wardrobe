@@ -215,8 +215,12 @@ async function addLink(p, text){
     await addLink(p, 'https://www.pinterest.com/pin/111/');
     await addLink(p, 'https://www.pinterest.com/pin/222/');
     await p.click('#outfit-page .inspo-tile >> nth=0'); await p.waitForTimeout(500);
-    check('a pin opens larger in a sheet over the page',
-      (await topSheet(p)).endsWith('outfit > inspoview') && await p.isVisible('#modal .inspo-big img'));
+    check('a pin opens as a page over the outfit, not a bottom sheet',
+      (await topSheet(p)).endsWith('outfit > inspopage') && await p.isVisible('#outfit-page .inspo-big img') &&
+      !(await p.evaluate(()=>document.getElementById('modal-backdrop').classList.contains('open'))));
+    check('with the outfit it is kept against as a card, and the bar fixed at the foot',
+      await p.evaluate(()=>document.querySelectorAll('#outfit-page .inspo-outfits .outfit-card').length)===1 &&
+      await p.evaluate(()=>{ const r=document.querySelector('#outfit-page .sheet-footer').getBoundingClientRect(); return Math.abs(r.bottom-innerHeight)<30; }));
     check('with a way to the original, in a new tab',
       (await p.getAttribute('#inspo-open', 'href')) === 'https://www.pinterest.com/pin/111/' &&
       (await p.getAttribute('#inspo-open', 'target')) === '_blank');

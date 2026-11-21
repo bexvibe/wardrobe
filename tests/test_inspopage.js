@@ -76,14 +76,14 @@ const live = p => p.evaluate(()=>window.__WARDROBE_STATE.outfit_inspo.filter(r=>
       await p.evaluate(()=>document.querySelectorAll('#outfit-page .inspo-outfits .outfit-card').length)===2 &&
       (await p.textContent('#outfit-page .inspo-outfits-title')).includes('2 outfits'));
     check('and Back and Open original on the bar',
-      await p.isVisible('#outfit-page-back') && (await p.getAttribute('#inspo-page-open','href'))==='https://pinterest.com/pin/1');
+      await p.isVisible('#outfit-page-back') && (await p.getAttribute('#inspo-open','href'))==='https://pinterest.com/pin/1');
 
     // a card goes to that outfit, and Back comes back here
     await p.click('#outfit-page .inspo-outfits .outfit-card'); await p.waitForTimeout(700);
     check('a card opens that outfit', (await trail(p))==='inspopage > outfit');
     await p.click('#outfit-page-back'); await p.waitForTimeout(600);
     check('Back returns to the inspo page', (await trail(p))==='inspopage' &&
-      await p.isVisible('#inspo-page-open'));
+      await p.isVisible('#inspo-open'));
 
     await p.close();
   }
