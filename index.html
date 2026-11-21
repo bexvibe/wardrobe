@@ -69,6 +69,10 @@
   /* Item photos are never stretched or squashed: any <img> keeps its own
      proportions. (Inspo tiles opt into cover explicitly, which is more specific.) */
   img{object-fit:contain;}
+  /* The white tee is nearly the same value as the card it sits on, so it
+     gets a faint shadow that follows its cut-out edge. Matched on the photo
+     filename so it applies everywhere that photo appears. */
+  img[src*="white-tee-nobg"]{filter:drop-shadow(0 1px 3px rgba(18,18,18,0.28));}
   html{color-scheme: light;}
   body{
     margin:0;
