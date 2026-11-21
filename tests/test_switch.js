@@ -77,8 +77,8 @@ const cards = p => p.evaluate(()=>
     const s = await segs(p);
     check('on Outfits it becomes All plus the heart', s.length === 2, JSON.stringify(s));
     check('which starts on All', s[0].id === 'nav-outfits-btn' && s[0].on && !s[1].on);
-    check('and the first half now says All',
-      (await p.textContent('#nav-outfits-btn')).trim() === 'All',
+    check('and the first half keeps the name Outfits',
+      (await p.textContent('#nav-outfits-btn')).trim() === 'Outfits',
       (await p.textContent('#nav-outfits-btn')).trim());
     check('and says so to a screen reader',
       s[0].pressed === 'true' && s[1].pressed === 'false');
@@ -91,13 +91,11 @@ const cards = p => p.evaluate(()=>
                dest.querySelectorAll('.nav-seg').length === 2;
       }));
     const word = () => p.textContent('#nav-saved-btn');
-    check('the second half says Faves in words', (await word()).trim() === 'Faves', await word());
+    check('the second half is the heart alone, with a label for screen readers', (await word()).trim() === '' &&
+      await p.evaluate(()=>document.getElementById('nav-saved-btn').getAttribute('aria-label')) === 'Show only faves');
     await p.click('#nav-saved-btn'); await p.waitForTimeout(1100);
-    check('and the same switch sits under the page title', await p.evaluate(()=>{
-      const sw = document.querySelector('#saved-view .view-switch');
-      const on = sw && sw.querySelector('button.on');
-      return Boolean(on) && on.textContent.trim() === 'Faves';
-    }));
+    check('and there is no second switch under the page title', await p.evaluate(()=>
+      !document.querySelector('.view-switch')));
     await p.click('#nav-outfits-btn'); await p.waitForTimeout(1300);
 
     // It has to fit next to two other labels on a small phone, and it is

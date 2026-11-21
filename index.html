@@ -1062,7 +1062,7 @@
      size, so it is the same shape at both sizes it is used at. */
   .heart-glyph{display:block;width:22px;height:22px;}
   .nav-heart .heart-glyph{width:17px;height:17px;}
-  .nav-heart .fave-chip-heart{width:14px;height:14px;margin-right:5px;}
+  .nav-heart .fave-chip-heart{width:14px;height:14px;margin-right:0;}
 
   /* The fave heart: one shape that grows richer over three levels. The
      button is the 44px target; the glyph inside it is smaller. */
@@ -2211,14 +2211,9 @@
         <button class="btn" id="build-outfit-btn-all" type="button" onclick="openOutfitBuilder()"><svg class="plus-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New fave</button>
       </div>
     </header>
-    <div class="view-switch" role="group" aria-label="Outfits">
-      <button type="button" class="on" aria-pressed="true" onclick="setMode('outfits')">All</button>
-      <button type="button" class="" aria-pressed="false" onclick="setMode('saved')"><span class="fave-chip-heart" data-level="2"><svg class="fave-svg" viewBox="0 0 24 24" aria-hidden="true"><path class="fh-body" d="M12 21c-.5 0-9-5.6-9-11.2C3 6.6 5.2 4.5 7.9 4.5c1.7 0 3.1.8 4.1 2.3 1-1.5 2.4-2.3 4.1-2.3C18.8 4.5 21 6.6 21 9.8 21 15.4 12.5 21 12 21z"/><path class="fh-shine" d="M5.8 9.4c.2-1.5 1.1-2.5 2.6-2.8"/></svg></span>Faves</button>
-    </div>
 
     <!-- One outfit, picked afresh each time you arrive: something to react to
          before you start narrowing anything down. -->
-    <h2 class="hero-title" id="outfit-hero-title" style="display:none;">Outfit roulette</h2>
     <div class="hero" id="outfit-hero"></div>
 
     <h2 class="gallery-title" id="gallery-title" style="display:none;">More combos</h2>
@@ -2248,12 +2243,7 @@
         <button class="btn" id="build-outfit-btn" type="button" onclick="openOutfitBuilder()"><svg class="plus-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New fave</button>
       </div>
     </header>
-    <div class="view-switch" role="group" aria-label="Outfits">
-      <button type="button" class="" aria-pressed="false" onclick="setMode('outfits')">All</button>
-      <button type="button" class="on" aria-pressed="true" onclick="setMode('saved')"><span class="fave-chip-heart" data-level="2"><svg class="fave-svg" viewBox="0 0 24 24" aria-hidden="true"><path class="fh-body" d="M12 21c-.5 0-9-5.6-9-11.2C3 6.6 5.2 4.5 7.9 4.5c1.7 0 3.1.8 4.1 2.3 1-1.5 2.4-2.3 4.1-2.3C18.8 4.5 21 6.6 21 9.8 21 15.4 12.5 21 12 21z"/><path class="fh-shine" d="M5.8 9.4c.2-1.5 1.1-2.5 2.6-2.8"/></svg></span>Faves</button>
-    </div>
     <!-- The same featured outfit as on All, dealt from the faves only. -->
-    <h2 class="hero-title" id="saved-hero-title" style="display:none;">Outfit roulette</h2>
     <div class="hero" id="saved-hero"></div>
     <h2 class="gallery-title" id="saved-gallery-title" style="display:none;">More faves</h2>
     <div class="outfit-gallery" id="saved-gallery"></div>
@@ -2898,10 +2888,10 @@ function renderBottomBar(){
   // The grey pill reads "Outfits" from elsewhere; once you are on Outfits
   // it becomes All plus the love heart for what you kept.
   const outfitsPill = onOutfits
-    ? `${seg('nav-outfits-btn', !kept, 'All', `onclick="setMode('outfits')"`).replace('class="nav-seg', 'class="nav-seg nav-seg-all')}
+    ? `${seg('nav-outfits-btn', !kept, 'Outfits', `onclick="setMode('outfits')"`).replace('class="nav-seg', 'class="nav-seg nav-seg-all')}
        ${seg('nav-saved-btn', kept,
-             `<span class="nav-heart">${faveChipHeart(2)}</span>Faves`,
-             `onclick="setMode('saved')" aria-label="Faves"`)}`
+             `<span class="nav-heart">${faveChipHeart(2)}</span>`,
+             `onclick="setMode(appMode === 'saved' ? 'outfits' : 'saved')" aria-label="Show only faves"`)}`
     : `<button class="nav-seg" id="nav-outfits-btn" type="button"
                onclick="setMode('outfits')">Outfits</button>`;
 
@@ -4806,8 +4796,6 @@ function renderHero(){
   const host = document.getElementById(faves ? 'saved-hero' : 'outfit-hero');
   if(!host) return;
   const titleId = faves ? 'saved-gallery-title' : 'gallery-title';
-  const heroTitle = document.getElementById(faves ? 'saved-hero-title' : 'outfit-hero-title');
-  if(heroTitle) heroTitle.style.display = heroCombo ? '' : 'none';
   if(!heroCombo){
     host.innerHTML = ''; host.style.display = 'none';
     const g = document.getElementById(titleId); if(g) g.style.display = 'none';
