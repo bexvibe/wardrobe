@@ -2430,16 +2430,12 @@
   <div id="inspo-view" style="display:none;">
     <header class="page-head">
       <h1>Inspo</h1>
-      <div class="icon-row">
-        <button class="btn" id="new-inspo-btn" type="button" onclick="startInspoFromPage()"><svg class="plus-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New inspo</button>
-      </div>
     </header>
     <div class="inspo-page-grid" id="inspo-page-grid"></div>
     <div class="empty" id="inspo-empty" style="display:none;">
       <span class="empty-emoji" aria-hidden="true">📌</span>
       <h3>Save your inspo</h3>
       <p class="empty-sub">Pins or screenshots of outfits you love</p>
-      <button class="empty-action" type="button" onclick="startInspoFromPage()"><svg class="plus-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New inspo</button>
     </div>
   </div>
 
@@ -3154,7 +3150,6 @@ const SHEETS = {
   outfit:    { backdrop: null, draw: key => drawOutfitPage(key) },
   capsulepage: { backdrop: null, draw: id => drawCapsulePage(id) },
   inspopage: { backdrop: null, draw: id => drawInspoPage(id) },
-  inspopick: { backdrop: null, draw: () => drawInspoPick() },
   // Small sheets over an outfit's page, only ever left.
   inspoadd:  { backdrop: 'modal-backdrop', draw: null },
   inspolink: { backdrop: 'modal-backdrop', draw: null },
@@ -3187,7 +3182,6 @@ const PAGE_DRAW = {
   outfit:      key => drawOutfitPage(key),
   capsulepage: id  => drawCapsulePage(id),
   inspopage:   id  => drawInspoPage(id),
-  inspopick:   ()  => drawInspoPick(),
 };
 
 function syncOutfitPage(redraw){
@@ -6247,8 +6241,6 @@ function renderInspoPage(){
   const groups = inspoGroups();
   grid.innerHTML = groups.map(inspoTileHtml).join('');
   document.getElementById('inspo-empty').style.display = groups.length ? 'none' : 'block';
-  // While empty, the + sits in the middle of the page instead.
-  document.getElementById('new-inspo-btn').style.display = groups.length ? '' : 'none';
 }
 
 function openInspoPage(id, fromEl){
@@ -6290,115 +6282,11 @@ function drawInspoPage(id){
           <button class="btn secondary" type="button" id="outfit-page-back" onclick="goBackFromSheet()">${BACK_GLYPH}Back</button>
           <div class="sheet-footer-actions">
             ${g.url ? `<a class="btn tonal" id="inspo-page-open" href="${esc(g.url)}" target="_blank" rel="noopener noreferrer">Open original ↗</a>` : ''}
-            <button class="btn secondary" type="button" id="inspo-page-remove" onclick='removeInspoGroup(${JSON.stringify(id)})'>Remove</button>
           </div>
         </div>
       </div>
     </div>`;
   allowSheetDrag(goBackFromSheet);
-}
-
-// Removing from its page takes it off every outfit it is kept against.
-async function removeInspoGroup(id){
-  const g = inspoGroupFor(id);
-  if(!g) return;
-  const done = [];
-  for(const pin of g.pins){
-    const hit = await archiveInspo(pin.id);
-    if(hit) done.push(hit);
-  }
-  if(!done.length) return;
-  goBackFromSheet();
-  if(appMode === 'inspo') renderInspoPage();
-  showToast('Inspo removed', async () => {
-    let ok = false;
-    for(const hit of done.slice().reverse()) ok = (await restoreInspo(hit)) || ok;
-    if(ok && appMode === 'inspo') renderInspoPage();
-  });
-}
-
-// New inspo from the Inspo page: what it is comes first, then which outfits.
-// On an outfit's page that second step does not exist.
-const INSPO_PICK = '*';
-let inspoPending = null;      // { kind: 'photo', files } or { kind: 'link', url }
-let inspoPickSel = new Set();
-
-function startInspoFromPage(){
-  openInspoAdd(INSPO_PICK);
-}
-
-function openInspoPick(pending){
-  inspoPending = pending;
-  inspoPickSel = new Set();
-  openPage('inspopick', 'new');
-}
-
-function drawInspoPick(){
-  const layer = document.getElementById('outfit-page');
-  if(!layer){ closeModal(); return; }
-  const faves = favoriteOutfits.slice().reverse().filter(r => comboFromKey(r.key));
-  layer.dataset.key = 'inspopick:new';
-  layer.innerHTML = `
-    <div class="outfit-page-inner">
-      <div class="modal-body has-footer outfit-page-body inspo-page-body">
-        <h2 class="modal-name">Save to</h2>
-        ${faves.length ? `<div class="inspo-outfits" style="margin-top:12px;">${faves.map(r => {
-          const combo = comboFromKey(r.key);
-          return `<button class="outfit-card inspo-pick" type="button" data-key="${esc(r.key)}"
-                    aria-pressed="${inspoPickSel.has(r.key)}"
-                    onclick='toggleInspoPick(${JSON.stringify(r.key)}, this)'>
-              <span class="inspo-tick"></span>
-              <div class="outfit-thumbs">${outfitThumbsHtml(combo)}</div>
-            </button>`;
-        }).join('')}</div>`
-        : `<p class="inspo-pick-note">Save an outfit as a fave first, then keep inspo against it.</p>`}
-      </div>
-      <div class="sheet-footer split pagebar outfit-page-bar">
-        <div class="sheet-footer-inner">
-          <button class="btn secondary" type="button" id="outfit-page-back" onclick="goBackFromSheet()">${BACK_GLYPH}Back</button>
-          <div class="sheet-footer-actions">
-            <button class="btn" type="button" id="inspo-pick-save" onclick="saveInspoPick()" ${inspoPickSel.size ? '' : 'disabled'}>Save</button>
-          </div>
-        </div>
-      </div>
-    </div>`;
-  allowSheetDrag(goBackFromSheet);
-}
-
-function toggleInspoPick(key, btn){
-  if(inspoPickSel.has(key)) inspoPickSel.delete(key); else inspoPickSel.add(key);
-  btn.setAttribute('aria-pressed', String(inspoPickSel.has(key)));
-  const save = document.getElementById('inspo-pick-save');
-  if(save) save.disabled = inspoPickSel.size === 0;
-}
-
-async function saveInspoPick(){
-  const keys = [...inspoPickSel];
-  const pending = inspoPending;
-  const btn = document.getElementById('inspo-pick-save');
-  if(!keys.length || !pending) return;
-  if(btn){ btn.disabled = true; btn.textContent = 'Saving...'; }
-  let added = 0;
-  try{
-    if(pending.kind === 'photo'){
-      added = await addInspoPhotosTo(keys, pending.files);
-    }else{
-      const preview = await fetchLinkPreview(pending.url);
-      for(const key of keys){
-        const res = await addInspoLink(key, pending.url, preview);
-        if(res.pin) added = 1;
-      }
-    }
-  }catch(e){
-    console.error('[wardrobe] inspo save failed', e);
-    showToast('Could not save that');
-  }
-  if(btn){ btn.textContent = 'Save'; btn.disabled = false; }
-  if(!added) return;
-  inspoPending = null;
-  goBackFromSheet();
-  if(appMode === 'inspo') renderInspoPage();
-  showToast(pending.kind === 'photo' && pending.files.length > 1 ? `${pending.files.length} inspo added` : 'Inspo added');
 }
 
 // Words for a search from what the outfit is made of — the pieces' own
@@ -6486,7 +6374,6 @@ async function handleInspoFiles(event){
   const key = inspoTargetKey;
   if(!files.length || !key) return;
   goBackFromSheet();                       // the add sheet has done its job
-  if(key === INSPO_PICK){ openInspoPick({ kind: 'photo', files }); return; }
   showToast(files.length === 1 ? 'Adding photo...' : `Adding ${files.length} photos...`);
   try{
     const added = await addInspoPhotos(key, files);
@@ -6514,7 +6401,7 @@ function openInspoLink(){
       <div class="form-error" id="inspo-error"></div>
       <p class="inspo-hint">Any image or page. For a page we save its preview picture, and keep the link to open the original.</p>
       <div class="modal-actions">
-        <button class="btn" id="inspo-save" type="button" onclick="saveInspoLink()">${key === INSPO_PICK ? 'Next' : 'Save'}</button>
+        <button class="btn" id="inspo-save" type="button" onclick="saveInspoLink()">Save</button>
       </div>
     </div>`);
   setTimeout(() => { const el = document.getElementById('inspo-url'); if(el) el.focus(); }, 280);
@@ -6526,13 +6413,6 @@ async function saveInspoLink(){
   const btn = document.getElementById('inspo-save');
   if(!input || !inspoTargetKey) return;
   err.textContent = '';
-  if(inspoTargetKey === INSPO_PICK){
-    const url = normalizeInspoUrl(input.value);
-    if(!url){ err.textContent = 'That does not look like a link.'; return; }
-    goBackFromSheet();
-    openInspoPick({ kind: 'link', url });
-    return;
-  }
   btn.disabled = true; btn.textContent = 'Saving...';
   const res = await addInspoLink(inspoTargetKey, input.value);
   btn.disabled = false; btn.textContent = 'Save';

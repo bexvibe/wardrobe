@@ -48,8 +48,8 @@ const live = p => p.evaluate(()=>window.__WARDROBE_STATE.outfit_inspo.filter(r=>
   { // empty
     const p=await open(b,'');
     await p.click('#nav-inspo-btn'); await p.waitForTimeout(400);
-    check('empty: the app\'s empty state, with the header button hidden',
-      await p.isVisible('#inspo-empty') && !(await p.isVisible('#new-inspo-btn')) &&
+    check('empty: the app\'s empty state',
+      await p.isVisible('#inspo-empty') &&
       (await p.textContent('#inspo-empty h3')).trim()==='Save your inspo');
     await p.close();
   }
@@ -60,8 +60,8 @@ const live = p => p.evaluate(()=>window.__WARDROBE_STATE.outfit_inspo.filter(r=>
         const bs=[...document.querySelectorAll('#bottom-bar .bottom-btn')];
         return bs.length===4 && bs[3].textContent.trim()==='Inspo' && bar.left>=0 && bar.right<=innerWidth; }));
     await p.click('#nav-inspo-btn'); await p.waitForTimeout(500);
-    check('the title and a New inspo button sit at the top',
-      (await p.textContent('#inspo-view h1')).trim()==='Inspo' && await p.isVisible('#new-inspo-btn'));
+    check('the title sits at the top',
+      (await p.textContent('#inspo-view h1')).trim()==='Inspo');
     check('the same pin on two outfits is one tile, with a count',
       await p.evaluate(()=>document.querySelectorAll('#inspo-page-grid .inspo-tile').length)===2 &&
       await p.evaluate(()=>document.querySelectorAll('#inspo-page-grid .inspo-count').length)===1);
@@ -75,41 +75,16 @@ const live = p => p.evaluate(()=>window.__WARDROBE_STATE.outfit_inspo.filter(r=>
     check('with the outfits it is saved to as two cards',
       await p.evaluate(()=>document.querySelectorAll('#outfit-page .inspo-outfits .outfit-card').length)===2 &&
       (await p.textContent('#outfit-page .inspo-outfits-title')).includes('2 outfits'));
-    check('and Back, Open original and Remove on the bar',
-      await p.isVisible('#outfit-page-back') && (await p.getAttribute('#inspo-page-open','href'))==='https://pinterest.com/pin/1' &&
-      await p.isVisible('#inspo-page-remove'));
+    check('and Back and Open original on the bar',
+      await p.isVisible('#outfit-page-back') && (await p.getAttribute('#inspo-page-open','href'))==='https://pinterest.com/pin/1');
 
     // a card goes to that outfit, and Back comes back here
     await p.click('#outfit-page .inspo-outfits .outfit-card'); await p.waitForTimeout(700);
     check('a card opens that outfit', (await trail(p))==='inspopage > outfit');
     await p.click('#outfit-page-back'); await p.waitForTimeout(600);
     check('Back returns to the inspo page', (await trail(p))==='inspopage' &&
-      await p.isVisible('#inspo-page-remove'));
+      await p.isVisible('#inspo-page-open'));
 
-    // remove takes it off every outfit; Undo brings both back
-    await p.click('#inspo-page-remove'); await p.waitForTimeout(700);
-    check('Remove clears it from every outfit', (await live(p))===1 &&
-      await p.evaluate(()=>document.querySelectorAll('#inspo-page-grid .inspo-tile').length)===1);
-    await p.click('#toast .toast-undo'); await p.waitForTimeout(700);
-    check('Undo restores them all', (await live(p))===3 &&
-      await p.evaluate(()=>document.querySelectorAll('#inspo-page-grid .inspo-tile').length)===2);
-
-    // a new link, kept against two outfits
-    await p.click('#new-inspo-btn'); await p.waitForTimeout(500);
-    await p.click('#inspo-link'); await p.waitForTimeout(500);
-    check('the link sheet goes on to choosing outfits', (await p.textContent('#inspo-save')).trim()==='Next');
-    await p.fill('#inspo-url','example.com/look');
-    await p.click('#inspo-save'); await p.waitForTimeout(800);
-    check('then a page of outfit cards to pick from', (await trail(p))==='inspopick' &&
-      await p.evaluate(()=>document.querySelectorAll('#outfit-page .inspo-pick').length)===3 &&
-      await p.isDisabled('#inspo-pick-save'));
-    await p.evaluate(()=>{ const c=document.querySelectorAll('#outfit-page .inspo-pick'); c[0].click(); c[2].click(); });
-    check('ticking turns Save on', !(await p.isDisabled('#inspo-pick-save')));
-    await p.click('#inspo-pick-save'); await p.waitForTimeout(1200);
-    check('Save keeps it against both and returns to the page',
-      (await live(p))===5 && (await trail(p))==='' &&
-      await p.evaluate(()=>document.querySelectorAll('#inspo-page-grid .inspo-tile').length)===3,
-      await trail(p));
     await p.close();
   }
   await b.close();
