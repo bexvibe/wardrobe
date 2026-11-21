@@ -112,11 +112,12 @@ async function clearSlot(p, key){
     check('the Pieces row carries the count in words that name it',
       (await rowValue(p,'pieces'))==='Tops (3)', await rowValue(p,'pieces'));
     const chips = await activeChips(p);
-    check('and it is a removable chip at the top, with no badge',
-      chips.length===1 && chips[0].label==='Tops (3)' && !/selected/i.test(chips[0].label),
+    const pinned = await p.evaluate(()=>itemsInTab('Tops').slice(0,3).map(i=>i.name));
+    check('and each piece is a removable chip at the top, by name, with no badge',
+      chips.length===3 && chips.map(c=>c.label).join()===pinned.join() && !chips.some(c=>/selected/i.test(c.label)),
       JSON.stringify(chips));
-    check('which says what tapping it does, to a screen reader too',
-      /^Remove/.test(chips[0].said) && /Tops/.test(chips[0].said), chips[0].said);
+    check('each says what tapping it does, to a screen reader too',
+      chips.every((c,i)=>/^Remove/.test(c.said) && c.said.includes(pinned[i])), chips.map(c=>c.said).join(' | '));
     await openFilterSection(p, 'pieces');
     const c = await catRow(p, 'Tops');
     check('the category row carries the count as its value', c.value==='Tops (3)' && c.on, JSON.stringify(c));
@@ -167,7 +168,7 @@ async function clearSlot(p, key){
     });
     await p.waitForTimeout(400);
     await openSheet(p);
-    check('two chips are on at the top', (await activeChips(p)).length===2);
+    check('three chips are on at the top: two tops and a jacket', (await activeChips(p)).length===3);
     await p.click('#filter-sheet-clear'); await p.waitForTimeout(700);
     check('and Clear all leaves nothing on or chipped',
       (await activeChips(p)).length===0 &&
@@ -257,7 +258,7 @@ async function clearSlot(p, key){
     });
     check('the same row, the same count, on Faves',
       row.value==='Tops (4)' && row.h>=44, JSON.stringify(row));
-    check('and the same chip at the top', (await activeChips(p)).map(c=>c.label).join()==='Tops (4)');
+    check('and the same four chips at the top', (await activeChips(p)).length===4);
     check('and no "selected" there either',
       !(await p.evaluate(()=>/selected/i.test(
         document.getElementById('filter-sheet').innerText))));
