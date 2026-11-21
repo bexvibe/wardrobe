@@ -3321,19 +3321,18 @@ function activeFilterCount(){
 // On All the button lives up by New fave, with its icon; on Faves it floats
 // above the nav as it always did. It is one button that moves, so there is
 // one thing to keep in step: the count, the wash and aria-expanded.
-// Scrolled down into the outfits, Filters leaves the header and docks at the
+// Scrolled down into the outfits, Filters leaves the row and docks at the
 // bottom where Shuffle was; back at the top it returns. Hysteresis, so it
 // does not flicker at the line.
 let filtersDocked = false;
 
 function placeFiltersButton(fab, animate){
-  // On All the button sits at the top, in the icon row, until you scroll
-  // down into the list; on Faves it floats.
-  // On the outfit pages it lives in the bar that sticks to the top, after the
-  // layout switch, and stays there as you scroll.
+  // At the top the button sits in the row under the title, after the layout
+  // switch. Scrolled down into the outfits it leaves the row (which scrolls
+  // away with the page) and takes Shuffle's place at the bottom.
   const bar = (appMode === 'outfits' || appMode === 'saved') ? outfitBarEl() : null;
   const float = document.getElementById('float-row');
-  const inHead = !!bar;
+  const inHead = !!bar && !filtersDocked;
   const target = inHead ? bar : float;
   if(!inHead) fab.classList.remove('in-head');
   if(target && fab.parentElement !== target){
@@ -3353,8 +3352,16 @@ function placeFiltersButton(fab, animate){
 }
 
 function updateFiltersDock(){
-  // The button no longer travels: it sits in the sticky bar on both pages.
-  const next = false;
+  // Docked once the outfits themselves have come up the screen, with a gap
+  // between the two thresholds so it does not flicker at the line.
+  let next = false;
+  if(appMode === 'outfits' || appMode === 'saved'){
+    const gal = document.getElementById(appMode === 'saved' ? 'saved-gallery' : 'outfit-gallery');
+    if(gal && gal.offsetParent && window.scrollY > 40){
+      const top = gal.getBoundingClientRect().top;
+      next = filtersDocked ? top < window.innerHeight * 0.8 : top < window.innerHeight * 0.45;
+    }
+  }
   if(next === filtersDocked) return;
   filtersDocked = next;
   renderFiltersFab(true);
@@ -8279,8 +8286,6 @@ function renderOutfitBar(){
         aria-pressed="${outfitTags.includes(t)}" onclick='setOutfitTag(${JSON.stringify(t)})'>${esc(t)}</button>`).join('');
   morphHtml(bar.querySelector('.bar-seg'), segHtml);
   morphHtml(bar.querySelector('.bar-chips'), chips);
-  // Not inside the viewing area until this page is up.
-  if(bar.offsetParent) stickCategoryRow(bar, null);
 }
 
 function setOutfitTag(tag){
