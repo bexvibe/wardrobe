@@ -55,9 +55,9 @@ const stream = p => p.evaluate(()=>outfitDisplayed.slice(0, 8).map(c=>comboKey(c
     await p.click('#nav-outfits-btn'); await p.waitForTimeout(1500);
     // On All the wand floats at the bottom and deals the featured card in place.
     check('on All Shuffle floats at the bottom', await shown(p));
-    check('and Filters floats beside it', await p.evaluate(()=>{
+    check('and Filters sits up by New fave', await p.evaluate(()=>{
       const f = document.getElementById('filters-fab');
-      return f.parentElement.id === 'float-row' && getComputedStyle(f).display !== 'none';
+      return f.parentElement.id === 'all-icon-row' && getComputedStyle(f).display !== 'none';
     }));
     await p.click('#outfit-hero .hero-feature'); await p.waitForTimeout(600);
     check('it says what it is, in the popup',
@@ -74,24 +74,15 @@ const stream = p => p.evaluate(()=>outfitDisplayed.slice(0, 8).map(c=>comboKey(c
     check('the wand is over what you kept, when there is any',
       (await shown(p)) === (keptCards > 0), `${keptCards} cards`);
     if(keptCards > 0){
-      // Over what you kept it is the small one, level with the Filters pill.
-      check('on Faves it is level with the filters pill', await p.evaluate(()=>{
-        const fab = document.getElementById('shuffle-fab').getBoundingClientRect();
-        const pill = document.getElementById('filters-fab').getBoundingClientRect();
-        return Math.abs(fab.bottom - pill.bottom) <= 2;
-      }));
-      check('immediately to the left of it', await p.evaluate(()=>{
-        const row = document.getElementById('float-row');
-        const kids = Array.from(row.children);
-        const shuffle = document.getElementById('shuffle-fab');
-        const filters = document.getElementById('filters-fab');
-        const gap = Math.round(filters.getBoundingClientRect().left - shuffle.getBoundingClientRect().right);
-        return kids[0] === shuffle && kids[1] === filters && gap === 8;
-      }));
-      const seed = await p.evaluate(()=>sessionSeed);
+      // As on All: Filters up by New fave, Shuffle floating on its own.
+      check('on Faves Filters sits up by New fave too', await p.evaluate(()=>
+        document.getElementById('filters-fab').parentElement.id === 'saved-icon-row'));
+      check('and Shuffle floats on its own', await p.evaluate(()=>
+        document.getElementById('shuffle-fab').parentElement.id === 'float-row'));
+      const before = await p.evaluate(()=>comboKey(heroCombo));
       await p.click('#shuffle-fab'); await p.waitForTimeout(800);
-      check('and deals the faves from a new seed',
-        (await p.evaluate(()=>sessionSeed)) !== seed);
+      check('and deals another fave as the featured one',
+        keptCards < 2 || (await p.evaluate(()=>comboKey(heroCombo))) !== before);
     }
     await p.click('#nav-capsules-btn'); await p.waitForTimeout(900);
     check('nor over capsules', !(await shown(p)));

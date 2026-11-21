@@ -309,7 +309,7 @@ const confirmText = p => p.evaluate(()=>({
     const arrows = [...src.matchAll(/class="sheet-back"[^>]*/g)].map(m => m[0]);
     check('no back arrow at the top of any page', arrows.length === 0,
       `${arrows.length}: ${arrows.join(' | ').slice(0, 120)}`);
-    check('select mode leaves by Back on its bar, like the sheets do',
+    check('select mode leaves by Done on its bar, like the sheets do',
       /id="edit-back-btn"/.test(src) && /class="btn secondary bulk-back"/.test(src));
 
     // And the editors leave the way the other sheets do.

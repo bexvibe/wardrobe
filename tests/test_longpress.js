@@ -72,17 +72,17 @@ const selected = p => p.evaluate(()=>Array.from(selectedIds));
     // Selecting takes the head over: the same back arrow every sheet uses,
     // the mode's own name at the size a sheet titles itself, and the
     // controls that do nothing here step aside.
-    check('the sheets\' back arrow appears once there is a mode to leave',
+    check('Done appears once there is a mode to leave',
       (await p.isVisible('#edit-back-btn')) &&
-      (await p.textContent('#edit-back-btn')).trim()==='Back' &&
-      (await p.evaluate(()=>Boolean(document.querySelector('#edit-back-btn .back-glyph')))));
+      (await p.textContent('#edit-back-btn')).trim()==='Done' &&
+      (await p.evaluate(()=>!document.querySelector('#edit-back-btn .back-glyph'))));
     check('and the head carries no title at all in the mode',
       await p.evaluate(()=>document.getElementById('wardrobe-title').offsetParent === null));
     check('and the count is inside the button that acts on it, with no other count',
       (await p.textContent('#bulk-delete')).trim()==='Delete 1 item' &&
       !/selected/i.test(await p.textContent('#bulk-bar')),
       (await p.textContent('#bulk-bar')).replace(/\s+/g,' ').trim());
-    check('and Back is at the bottom left of the bar', await p.evaluate(()=>{
+    check('and Done is at the bottom left of the bar', await p.evaluate(()=>{
       const b=document.getElementById('edit-back-btn').getBoundingClientRect();
       const bar=document.getElementById('bulk-bar').getBoundingClientRect();
       return b.left < bar.left + 40 && b.top > window.innerHeight/2;
@@ -98,7 +98,7 @@ const selected = p => p.evaluate(()=>Array.from(selectedIds));
 
     // and back out
     await p.click('#edit-back-btn'); await p.waitForTimeout(400);
-    check('Back leaves select mode', !(await inEdit(p)));
+    check('Done leaves select mode', !(await inEdit(p)));
     check('and the button goes away again', !(await p.isVisible('#edit-back-btn')));
     check('the title goes back to the page name',
       (await p.textContent('#wardrobe-title')).trim()==='Wardrobe');

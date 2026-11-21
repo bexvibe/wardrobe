@@ -200,7 +200,7 @@ async function assertPattern(p, scope, label, name, outWord, inset = 0){
     await p.waitForFunction(()=>outfitDisplayed.length > 0);
     await p.evaluate(()=>closeFilterSheet()); await p.waitForTimeout(400);
     await p.evaluate(()=>openOutfitBuilder()); await p.waitForTimeout(700);
-    await assertPattern(p, '#modal', 'Save as fave', 'outfit builder', 'Back');
+    await assertPattern(p, '#modal', 'Save as fave', 'outfit builder');
     // The save waits for an outfit to exist, which is not the same as the
     // bar being half-drawn: Cancel is live from the first frame.
     check('the save waits until there is an outfit to save',
