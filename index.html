@@ -1511,10 +1511,12 @@
   .hero-spaces > :first-child .hero-badge{top:52px;bottom:auto;}
   /* Shoes and accessories under the spaces: the same visual weight as a
      piece, not a third of the card each. */
-  .hero-feature .outfit-extras > *,.hero-pop .outfit-extras > *{width:26%;}
-  .hero-feature .outfit-extras.n2 > *,.hero-pop .outfit-extras.n2 > *{width:22%;}
-  .hero-feature .outfit-extras.n3 > *,.hero-pop .outfit-extras.n3 > *{width:18%;}
-  .hero-feature .outfit-extras.n4 > *,.hero-pop .outfit-extras.n4 > *{width:15%;}
+  .hero-feature .outfit-extras,.hero-pop .outfit-extras{flex:2 1 0;min-height:0;margin:0;}
+  .hero-feature .outfit-extras > *,.hero-pop .outfit-extras > *{
+    width:auto;height:100%;max-width:34%;aspect-ratio:1/1;min-width:0;
+  }
+  .hero-feature .outfit-extras img,.hero-pop .outfit-extras img{width:100%;height:100%;object-fit:contain;}
+  .hero-feature .hero-spaces,.hero-pop .hero-spaces{flex:7 1 0;}
   .hero-slot.bottom{flex:4 1 0;}
   .hero-slot.dress{flex:7 1 0;}
   .hero-row .hero-slot{flex:none;height:100%;}
@@ -4822,16 +4824,18 @@ function renderHero(){
          onclick="openHeroPopup()"
          onkeydown="if(event.key === 'Enter' || event.key === ' '){ event.preventDefault(); openHeroPopup(); }">
       ${faveHeartHtml(key)}
+      ${heroDressingHtml(c, 'hats')}
       <div class="hero-spaces">${heroRowsHtml(c, true)}</div>
-      ${heroDressingHtml(c)}
+      ${heroDressingHtml(c, 'extras')}
     </div>`);
   // In the popup the spaces are live.
   const body = document.getElementById('hero-pop-body');
   if(body) morphHtml(body, `
     <div class="outfit-card" data-key="hero-pop">
       ${faveHeartHtml(key)}
+      ${heroDressingHtml(c, 'hats')}
       <div class="hero-spaces">${heroRowsHtml(c)}</div>
-      ${heroDressingHtml(c)}
+      ${heroDressingHtml(c, 'extras')}
     </div>`);
   renderShuffleFab();
 }
@@ -4839,7 +4843,7 @@ function renderHero(){
 // On Faves the featured outfit is a kept one, and a kept outfit can wear
 // accessories and shoes the spaces do not have a place for. They sit under
 // the spaces, as on the grid's cards.
-function heroDressingHtml(c){
+function heroDressingHtml(c, part){
   if(appMode !== 'saved') return '';
   const cell = p => p.photo
     ? `<img src="${esc(p.photo)}" alt="${esc(p.name)}" referrerpolicy="no-referrer" decoding="async">`
@@ -4847,7 +4851,7 @@ function heroDressingHtml(c){
   const { hats, extras } = outfitLayout(c);
   const row = (list, cls) => list.length
     ? `<div class="outfit-extras ${cls} n${Math.min(list.length, 4)}">${list.map(cell).join('')}</div>` : '';
-  return row(hats, 'outfit-hats') + row(extras, '');
+  return part === 'hats' ? row(hats, 'outfit-hats') : row(extras, '');
 }
 
 // `flat` is the card on the page: the same spaces, read-only, with a padlock
