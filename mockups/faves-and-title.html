@@ -1,0 +1,187 @@
+<title>Faves Entry And Hero Title</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600&family=Figtree:wght@400;500;600&display=swap">
+<style>
+/* Layout: a column of labelled phone mock-ups, each a small stage with its own caption.
+   Palette and type are the app's own: warm grey page, off-white surface, near-black ink, plum brand. */
+:root{
+  --bg:#D9D6D0; --stage:#E3E0DB; --surface:#F7F5F1; --ink:#121212; --soft:#6F6A63; --line:#CFCBC4;
+  --brand:#756694; --brand-soft:#E4DEEE; --chip:#E9E6E0;
+  --display:'Bricolage Grotesque',sans-serif; --body:'Figtree',sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#1A1918;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#1A1918;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px 56px}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) body{color:#EDEAE4}}
+:root[data-theme="dark"] body{color:#EDEAE4}
+.wrap{max-width:1100px;margin:0 auto}
+h1{font-family:var(--display);font-weight:600;font-size:28px;letter-spacing:-.02em;margin:0 0 6px;text-wrap:balance}
+h2{font-family:var(--display);font-weight:600;font-size:21px;letter-spacing:-.01em;margin:44px 0 6px}
+.lead{max-width:62ch;margin:0 0 6px;color:var(--soft)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--soft:#A9A39A}}
+:root[data-theme="dark"]{--soft:#A9A39A}
+.row{display:flex;flex-wrap:wrap;gap:28px;margin-top:22px;align-items:flex-start}
+.opt{flex:1 1 300px;max-width:340px;min-width:0}
+.opt h3{font-family:var(--display);font-weight:600;font-size:16px;margin:0 0 2px}
+.opt p{margin:0 0 12px;font-size:13.5px;color:var(--soft)}
+.opt .tag{display:inline-block;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--brand);margin-bottom:4px}
+
+/* phone */
+.phone{position:relative;width:100%;max-width:320px;aspect-ratio:9/17;border-radius:30px;background:var(--stage);color:#121212;
+  border:6px solid #121212;overflow:hidden;font-size:12px}
+.pg{padding:16px 14px 0}
+.hd{display:flex;justify-content:space-between;align-items:center}
+.hd b{font-family:var(--display);font-weight:600;font-size:21px;letter-spacing:-.01em}
+.circ{width:32px;height:32px;border-radius:50%;background:var(--surface);display:grid;place-items:center;font-size:16px;line-height:1}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px;
+  box-shadow:0 10px 24px rgba(0,0,0,.16)}
+.outfit{height:190px;border-radius:8px;display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.pc{border-radius:8px;display:grid;place-items:center;font-size:10px;color:#fff;font-weight:600}
+.pc.dress{background:#E5DDCF;color:#7a7160;grid-row:span 2}
+.pc.jkt{background:#9a5b36}
+.pc.shoe{background:#3a3633}
+.more{margin-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.more i{display:block;height:64px;border-radius:8px;background:var(--surface);border:1px solid var(--line)}
+
+/* nav */
+.nav{position:absolute;left:10px;right:10px;bottom:10px;display:flex;gap:4px;align-items:center;justify-content:space-between;
+  background:var(--surface);border-radius:999px;padding:5px;box-shadow:0 6px 18px rgba(0,0,0,.2)}
+.nb{flex:1;text-align:center;padding:9px 0;border-radius:999px;font-weight:600;font-size:12px;color:var(--soft)}
+.nb.on{background:#121212;color:#fff}
+.nb.grp{flex:1.6;display:flex;gap:2px;background:var(--chip);padding:2px}
+.nb.grp span{flex:1;padding:7px 0;border-radius:999px}
+.nb.grp .sel{background:#121212;color:#fff}
+.hrt{color:var(--brand)}
+.nb.on .hrt,.sel .hrt{color:#fff}
+
+/* floating row (A) */
+.fab-row{position:absolute;right:12px;bottom:66px;display:flex;gap:8px;align-items:center}
+.fab{height:38px;padding:0 14px;border-radius:999px;background:var(--surface);box-shadow:0 5px 14px rgba(0,0,0,.22);
+  display:flex;align-items:center;gap:6px;font-weight:600;font-size:12px}
+.fab.dark{background:#121212;color:#fff}
+.fab.fv{background:var(--brand);color:#fff}
+.fab.fv.off{background:var(--surface);color:#121212}
+
+/* long-press menu (C) */
+.menu{position:absolute;left:14px;bottom:62px;width:170px;background:var(--surface);border-radius:14px;padding:6px;
+  box-shadow:0 12px 30px rgba(0,0,0,.3)}
+.menu div{padding:11px 10px;border-radius:9px;font-weight:600;display:flex;justify-content:space-between;align-items:center}
+.menu div.hl{background:var(--brand-soft)}
+.scrim{position:absolute;inset:0;background:rgba(0,0,0,.25)}
+.hint{position:absolute;left:0;right:0;bottom:14px;text-align:center;font-size:10px;color:var(--soft)}
+.chip{display:inline-flex;align-items:center;gap:5px;background:var(--brand-soft);color:#3b3354;border-radius:999px;padding:5px 10px;font-weight:600;font-size:11px;margin:10px 0 8px}
+
+/* title studies */
+.t-eyebrow{font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--soft);margin:12px 2px 6px}
+.t-title{font-family:var(--display);font-weight:600;font-size:19px;letter-spacing:-.01em;margin:12px 2px 8px}
+.t-sub{font-size:11.5px;color:var(--soft);margin:-4px 2px 8px}
+.ov{position:absolute;top:14px;left:14px;z-index:2;background:rgba(18,18,18,.82);color:#fff;font-weight:600;font-size:10px;letter-spacing:.06em;padding:5px 9px;border-radius:999px}
+.ctr{display:flex;justify-content:space-between;align-items:center;margin:12px 2px 8px}
+.ctr b{font-family:var(--display);font-weight:600;font-size:15px}
+.ctr span{color:var(--soft);font-size:11.5px}
+.note{margin-top:34px;padding:16px 18px;border-radius:10px;background:var(--stage);color:#121212;max-width:62ch}
+.note b{font-family:var(--display)}
+</style>
+
+<div class="wrap">
+  <h1>Faves entry and hero title</h1>
+  <p class="lead">Mock-ups only, nothing is built. Placeholder blocks stand in for your cutouts.</p>
+
+  <h2>1. One Outfits page, Faves as a filter</h2>
+  <p class="lead">Since both pages are identical, Faves becomes a heart filter on Outfits. What matters is how few taps it takes from opening the app. Three ways in, all within thumb reach.</p>
+
+  <div class="row">
+    <div class="opt">
+      <span class="tag">Option A</span>
+      <h3>Heart pill beside Shuffle</h3>
+      <p>A third floating pill sits on the thumb side with Filters and Shuffle. One tap flips Faves on or off. Nothing changes in the nav.</p>
+      <div class="phone"><div class="pg">
+        <div class="hd"><b>Outfits</b><span class="circ">+</span></div>
+        <div class="chip"><span class="hrt">♥</span> Faves · 24 outfits</div>
+        <div class="card"><div class="outfit"><div class="pc dress">dress</div><div class="pc jkt">jacket</div><div class="pc shoe">shoes</div></div></div>
+        <div class="more"><i></i><i></i></div>
+      </div>
+      <div class="fab-row"><span class="fab fv">♥ Faves</span><span class="fab">Filters</span><span class="fab dark">Shuffle</span></div>
+      <div class="nav"><span class="nb">Wardrobe</span><span class="nb on">Outfits</span><span class="nb">Capsules</span></div></div>
+    </div>
+
+    <div class="opt">
+      <span class="tag">Option B · my pick</span>
+      <h3>Heart lives in the Outfits tab</h3>
+      <p>The tab splits in two, as it does now, but both halves are the same page: <b>All</b> or <b>♥</b>. Tap Outfits once to arrive, tap ♥ to narrow. The app also opens on the last one you used.</p>
+      <div class="phone"><div class="pg">
+        <div class="hd"><b>Outfits</b><span class="circ">+</span></div>
+        <div class="chip"><span class="hrt">♥</span> Faves · 24 outfits</div>
+        <div class="card"><div class="outfit"><div class="pc dress">dress</div><div class="pc jkt">jacket</div><div class="pc shoe">shoes</div></div></div>
+        <div class="more"><i></i><i></i></div>
+      </div>
+      <div class="fab-row"><span class="fab">Filters</span><span class="fab dark">Shuffle</span></div>
+      <div class="nav"><span class="nb">Wardrobe</span><span class="nb grp"><span>All</span><span class="sel"><span class="hrt">♥</span></span></span><span class="nb">Capsules</span></div></div>
+    </div>
+
+    <div class="opt">
+      <span class="tag">Option C</span>
+      <h3>Press and hold Outfits</h3>
+      <p>Holding the tab opens a quick menu right under the thumb: Faves, All, or Shuffle a fave. Fastest for the thumb, but hidden until you learn it.</p>
+      <div class="phone"><div class="pg">
+        <div class="hd"><b>Outfits</b><span class="circ">+</span></div>
+        <div class="card" style="margin-top:12px"><div class="outfit"><div class="pc dress">dress</div><div class="pc jkt">jacket</div><div class="pc shoe">shoes</div></div></div>
+        <div class="more"><i></i><i></i></div>
+      </div>
+      <div class="scrim"></div>
+      <div class="menu"><div class="hl"><span><span class="hrt">♥</span>&nbsp; Faves</span><span>✓</span></div><div>All outfits</div><div>Shuffle a fave</div></div>
+      <div class="nav"><span class="nb">Wardrobe</span><span class="nb on">Outfits</span><span class="nb">Capsules</span></div></div>
+    </div>
+  </div>
+
+  <div class="note"><b>Suggestion:</b> B, plus one rule: the app opens on Faves if you have any saved, otherwise on All. The tab already sits where your thumb rests, so arriving and filtering each take one tap, and there is no second page to explain.</div>
+
+  <h2>2. “Outfit roulette” title</h2>
+  <p class="lead">The current title is a casino metaphor in a calm app. These treat the featured outfit as a suggestion, not a game. Same card, five heading options.</p>
+
+  <div class="row">
+    <div class="opt">
+      <span class="tag">Option 1</span>
+      <h3>Today’s pick</h3>
+      <p>Plain and personal, with the date as a quiet second line.</p>
+      <div class="phone"><div class="pg">
+        <div class="hd"><b>Outfits</b><span class="circ">+</span></div>
+        <div class="t-title">Today’s pick</div><div class="t-sub">Friday 21 November</div>
+        <div class="card"><div class="outfit"><div class="pc dress">dress</div><div class="pc jkt">jacket</div><div class="pc shoe">shoes</div></div></div>
+      </div><div class="nav"><span class="nb">Wardrobe</span><span class="nb on">Outfits</span><span class="nb">Capsules</span></div></div>
+    </div>
+    <div class="opt">
+      <span class="tag">Option 2</span>
+      <h3>Small caps label</h3>
+      <p>No headline at all. A small caps line like a magazine caption lets the outfit be the title.</p>
+      <div class="phone"><div class="pg">
+        <div class="hd"><b>Outfits</b><span class="circ">+</span></div>
+        <div class="t-eyebrow">Try this on</div>
+        <div class="card"><div class="outfit"><div class="pc dress">dress</div><div class="pc jkt">jacket</div><div class="pc shoe">shoes</div></div></div>
+      </div><div class="nav"><span class="nb">Wardrobe</span><span class="nb on">Outfits</span><span class="nb">Capsules</span></div></div>
+    </div>
+    <div class="opt">
+      <span class="tag">Option 3</span>
+      <h3>Label on the card</h3>
+      <p>The words move onto the picture as a small pill, so the page loses a heading and gains space.</p>
+      <div class="phone"><div class="pg">
+        <div class="hd"><b>Outfits</b><span class="circ">+</span></div>
+        <div class="card" style="margin-top:14px;position:relative"><span class="ov">Suggested for you</span><div class="outfit"><div class="pc dress">dress</div><div class="pc jkt">jacket</div><div class="pc shoe">shoes</div></div></div>
+      </div><div class="nav"><span class="nb">Wardrobe</span><span class="nb on">Outfits</span><span class="nb">Capsules</span></div></div>
+    </div>
+    <div class="opt">
+      <span class="tag">Option 4 · my pick</span>
+      <h3>Count, no slogan</h3>
+      <p>“Wear this?” on the left, where you are in the deck on the right. It says what the card is for, and the count makes shuffling feel finite.</p>
+      <div class="phone"><div class="pg">
+        <div class="hd"><b>Outfits</b><span class="circ">+</span></div>
+        <div class="ctr"><b>Wear this?</b><span>12 of 24 faves</span></div>
+        <div class="card"><div class="outfit"><div class="pc dress">dress</div><div class="pc jkt">jacket</div><div class="pc shoe">shoes</div></div></div>
+      </div><div class="nav"><span class="nb">Wardrobe</span><span class="nb on">Outfits</span><span class="nb">Capsules</span></div></div>
+    </div>
+  </div>
+
+  <div class="note"><b>Suggestion:</b> Option 4 pairs well with Faves as a filter: with the heart on, the right side reads “12 of 24 faves”, and with it off, “12 of 130 outfits”. If you want it quieter, Option 2.</div>
+</div>
