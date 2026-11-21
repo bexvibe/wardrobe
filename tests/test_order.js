@@ -69,8 +69,8 @@ function wellOrdered(list, owned){
     check('All leads', tabs[0]==='All', tabs.slice(0,3).join(', '));
     check('then the categories you own something in, in order, then the empty ones',
       wellOrdered(tabs, owned), tabs.join(', '));
-    check('and No Image is last of all',
-      tabs[tabs.length-1]==='No Image', tabs.slice(-3).join(', '));
+    check('and there is no No Image tab: pieces sit under their category',
+      !tabs.includes('No Image'), tabs.slice(-3).join(', '));
     check('an empty category is still offered, just later',
       tabs.includes('Skirts') && owned['Skirts']===0 &&
       tabs.indexOf('Skirts') > tabs.indexOf('Jackets'), tabs.join(', '));
