@@ -154,7 +154,7 @@ const dbTags = (p, id) => p.evaluate(i =>
       await p.evaluate(()=>!anySheetShowing()));
 
     // The lead card opens a popup of spaces: tapping one opens Filters, not a page.
-    await p.click('#outfit-hero .hero-feature'); await p.waitForTimeout(600);
+    await p.click('#outfit-hero .hero-feature',{position:{x:3,y:3}}); await p.waitForTimeout(600);
     await p.click('#hero-pop .hero-slot .hero-slot-open'); await p.waitForTimeout(700);
     check('a tap on the lead card opens Filters rather than the outfit',
       await p.evaluate(()=>filterSheetOpen() && !sheetTrail.length));

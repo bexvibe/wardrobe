@@ -35,7 +35,7 @@ const heroKey = p => p.evaluate(()=>heroCombo ? comboKey(heroCombo) : null);
   await p.click('#nav-outfits-btn'); await p.waitForTimeout(1000);
 
   // --- the container fits its contents ---
-  await p.click('#outfit-hero .hero-feature'); await p.waitForTimeout(600);
+  await p.click('#outfit-hero .hero-feature',{position:{x:3,y:3}}); await p.waitForTimeout(600);
   const fit = await p.evaluate(()=>{
     const card=document.querySelector('#hero-pop .outfit-card');
     const cr=card.getBoundingClientRect();

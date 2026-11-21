@@ -88,6 +88,16 @@ const cards = p => p.evaluate(()=>
   check('and the bar is there too', await q(()=>!!document.querySelector('#saved-tabs > #filters-fab')));
   await p.click('#saved-tabs .view-seg'); await p.waitForTimeout(600);
   check('grid again', await q(()=>!document.querySelector('#saved-gallery').classList.contains('as-list')));
+  await p.click('#nav-outfits-btn'); await p.waitForTimeout(800);
+  // Tapping a piece on the hero card goes straight to that piece's filter.
+  await p.click('#outfit-hero .hero-slot[data-slot]'); await p.waitForTimeout(700);
+  check('tapping a piece in the hero opens its filter, not the popup',
+    await q(()=>filterSheetOpen() && !heroPopOpen && !!filterPage));
+  // A piece with no photo says its name in the hero and in the cards.
+  await q(()=>{ closeFilterSheet(); ITEMS.forEach(i=>{ i.photo=null; }); renderHero(); renderOutfits(); });
+  await p.waitForTimeout(400);
+  check('no photo: the hero slot shows the name', await q(()=>document.querySelector('#outfit-hero .hero-name')?.textContent.trim().length>0));
+  check('and a card shows it too', await q(()=>document.querySelectorAll('#outfit-gallery .no-photo-mini').length>0));
   await b.close();
   const failed=results.filter(r=>!r).length;
   console.log(`\n${results.length-failed}/${results.length} checks passed`);
