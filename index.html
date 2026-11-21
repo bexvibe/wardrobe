@@ -473,7 +473,7 @@
     padding:10px 12px;
     box-shadow:0 6px 24px rgba(0,0,0,0.11);
   }
-  .bulk-bar .bulk-back{margin-right:auto;background:transparent;box-shadow:none;color:var(--ink-soft);padding:0 10px 0 4px;}
+  .bulk-bar .bulk-back{margin-right:auto;background:transparent;box-shadow:none;color:var(--ink-soft);padding:0 10px;}
   .bulk-bar .bulk-delete{white-space:nowrap;}
   /* These are the two things the mode is for, so they get a real target
      rather than the small button used inside a sheet. */
@@ -2361,9 +2361,7 @@
     <div class="hero-pop-body" id="hero-pop-body"></div>
     <div class="sheet-footer split pagebar">
       <div class="sheet-footer-inner">
-        <button class="btn secondary" type="button" id="hero-pop-back" onclick="closeHeroPopup()">
-          <svg class="back-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>Back</button>
+        <button class="btn secondary" type="button" id="hero-pop-back" onclick="closeHeroPopup()">Close</button>
         <button class="btn secondary hero-undo" type="button" id="hero-pop-undo" onclick="undoHeroShuffle()" aria-label="Previous outfit" hidden>
           <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"
                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button>
@@ -4060,9 +4058,7 @@ function openOutfitBuilder(){
     </div>
     <div class="sheet-footer split pagebar">
       <div class="sheet-footer-inner">
-        <button class="btn secondary" type="button" onclick="closeOutfitBuilder()">
-          <svg class="back-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>Back</button>
+        <button class="btn secondary" type="button" onclick="closeOutfitBuilder()">Cancel</button>
         <div class="sheet-footer-actions"><button class="btn" id="builder-save-btn" onclick="saveBuiltOutfit()" disabled>Save as fave</button></div>
       </div>
     </div>
@@ -9245,9 +9241,7 @@ function render(){
     // bar has to say how many. Back sits at the left, where the other bars
     // keep it.
     bulkBar.innerHTML = `
-      <button class="btn secondary bulk-back" id="edit-back-btn" type="button" onclick="toggleEditMode()">
-        <svg class="back-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>Back</button>
+      <button class="btn secondary bulk-back" id="edit-back-btn" type="button" onclick="toggleEditMode()">Done</button>
       <button class="btn secondary" onclick="selectAllVisible()"
               ${filtered.length ? '' : 'disabled'}>${allOn ? 'Deselect all' : 'Select all'}</button>
       <button class="btn bulk-delete" id="bulk-delete" onclick="bulkDeleteSelected()"
