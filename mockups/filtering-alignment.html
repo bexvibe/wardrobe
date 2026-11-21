@@ -1,0 +1,428 @@
+<title>Filtering Alignment</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500&family=Work+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  /* Layout: a review page. First what the app does today, drawn as the app
+     draws it; then one live phone where the same category row can be
+     switched between three designs and four screens. */
+  :root{
+    --bg:#F7F7F6; --fg:#171717; --muted:#66666A; --panel:#FFFFFF; --rule:#E2E2E0; --stage:#E9E9E7;
+    --brand:#756694; --brand-ink:#FFFFFF; --good:#2F6B4A; --warn:#8A5A12;
+    /* the app's own light tokens, used inside the phone */
+    --a-page:#E3E0DB; --a-surface:#F7F5F1; --a-line:#D2CFC9; --a-soft:#D5D2CC; --a-ink:#121212; --a-ink-soft:#6E6E6E; --a-accent:#1A1A1A;
+    --display:'Fraunces',Georgia,serif; --body:'Work Sans',system-ui,sans-serif; --mono:'IBM Plex Mono',ui-monospace,monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#121213; --fg:#EDEDEB; --muted:#9A9AA0; --panel:#1B1B1D; --rule:#2C2C2F; --stage:#232326;
+      --brand:#9A8CBB; --brand-ink:#17141F; --good:#7FC29A; --warn:#D9A74F; color-scheme:dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#121213; --fg:#EDEDEB; --muted:#9A9AA0; --panel:#1B1B1D; --rule:#2C2C2F; --stage:#232326;
+    --brand:#9A8CBB; --brand-ink:#17141F; --good:#7FC29A; --warn:#D9A74F; color-scheme:dark;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.5;
+    padding-block:32px 72px;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));
+    -webkit-font-smoothing:antialiased;}
+  .wrap{max-width:1040px;margin:0 auto;display:grid;gap:56px;}
+  h1,h2,h3{font-family:var(--display);font-weight:400;letter-spacing:-0.015em;text-wrap:balance;margin:0;}
+  h1{font-size:clamp(28px,6vw,40px);line-height:1.1;}
+  h2{font-size:26px;line-height:1.2;}
+  h3{font-size:18px;line-height:1.25;}
+  p{margin:0;}
+  .kicker{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);}
+  .sec{display:grid;gap:18px;}
+  .lede{color:var(--muted);max-width:64ch;}
+  .intro{display:grid;gap:14px;max-width:64ch;}
+
+  /* ---- the patterns in use ---- */
+  .patterns{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;}
+  .pat{background:var(--panel);border:1px solid var(--rule);border-radius:14px;padding:16px;display:grid;gap:12px;align-content:start;min-width:0;}
+  .pat .where{font-size:13px;color:var(--muted);}
+  .pat .where b{color:var(--fg);font-weight:600;}
+  .pat .note{font-size:13px;padding-top:10px;border-top:1px solid var(--rule);}
+  .pat .note.warn{color:var(--warn);}
+  .pat .note.ok{color:var(--good);}
+  .mini{background:var(--a-page);border-radius:10px;padding:12px;display:grid;gap:10px;min-width:0;overflow:hidden;color:var(--a-ink);font-family:var(--body);}
+  .mini .lbl{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--a-ink-soft);}
+
+  /* app chips and tabs, as the app draws them */
+  .row{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:1px;}
+  .row::-webkit-scrollbar{display:none;}
+  .tab,.chip{flex:none;appearance:none;font:inherit;font-size:13px;font-weight:500;cursor:pointer;
+    padding:7px 14px;border-radius:999px;border:1px solid var(--a-line);background:var(--a-surface);color:var(--a-ink);white-space:nowrap;}
+  .tab.active,.chip.on{background:var(--a-accent);color:#fff;border-color:var(--a-accent);}
+  .tab.subtab{background:var(--a-page);font-weight:500;}
+  .tab.subtab.active{background:var(--a-accent);}
+  .tab.sub-first{margin-left:8px;}
+  .tab.empty{opacity:.45;}
+  .tab:focus-visible,.chip:focus-visible,.opt:focus-visible,.sbtn:focus-visible{outline:2px solid var(--brand);outline-offset:2px;}
+  .chip .badge{display:inline-grid;place-items:center;min-width:16px;height:16px;border-radius:8px;background:#fff;color:var(--a-ink);font-size:10px;margin-left:6px;padding:0 4px;}
+  .chip .caret{margin-left:6px;opacity:.6;}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;}
+  .t{aspect-ratio:3/4;border-radius:8px;display:grid;place-items:end start;padding:6px;font-size:10px;font-weight:500;color:#fff;position:relative;overflow:hidden;line-height:1.15;}
+  .t.none{background:var(--a-surface);color:var(--a-ink-soft);border:1px dashed var(--a-line);place-items:center;text-align:center;}
+  .t.sel{box-shadow:0 0 0 2px var(--a-accent), 0 0 0 4px var(--a-page);}
+  .t .tick{position:absolute;top:5px;right:5px;width:18px;height:18px;border-radius:9px;background:var(--a-accent);color:#fff;display:grid;place-items:center;font-size:11px;}
+  .field{background:var(--a-surface);border:1px solid var(--a-line);border-radius:10px;padding:9px 12px;font-size:13px;display:flex;justify-content:space-between;}
+  .searchbar{background:var(--a-surface);border:1px solid var(--a-line);border-radius:999px;padding:8px 14px;font-size:13px;color:var(--a-ink-soft);}
+
+  /* ---- the matrix ---- */
+  .scroller{overflow-x:auto;border:1px solid var(--rule);border-radius:14px;background:var(--panel);}
+  table{border-collapse:collapse;width:100%;min-width:720px;font-size:13.5px;}
+  th,td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--rule);vertical-align:top;}
+  th{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:500;background:var(--panel);}
+  tr:last-child td{border-bottom:0;}
+  td.y{color:var(--good);font-weight:600;} td.n{color:var(--muted);} td.p{color:var(--warn);}
+  td:first-child{font-weight:600;}
+
+  /* ---- the live comparison ---- */
+  .lab{display:grid;grid-template-columns:minmax(0,370px) minmax(0,1fr);gap:36px;align-items:start;}
+  @media (max-width:820px){.lab{grid-template-columns:minmax(0,1fr);}}
+  .controls{display:grid;gap:22px;}
+  .group{display:grid;gap:8px;}
+  .opts{display:flex;flex-wrap:wrap;gap:8px;}
+  .opt{appearance:none;font:inherit;text-align:left;cursor:pointer;padding:10px 14px;border-radius:12px;border:1px solid var(--rule);background:var(--panel);color:var(--fg);display:grid;gap:1px;min-width:132px;flex:1 1 132px;}
+  .opt .ot{font-weight:600;font-size:14px;}
+  .opt .os{font-size:12px;color:var(--muted);}
+  .opt[aria-pressed="true"]{border-color:var(--fg);box-shadow:inset 0 0 0 1px var(--fg);}
+  .verdict{display:grid;gap:10px;padding:16px;border:1px solid var(--rule);border-radius:14px;background:var(--panel);}
+  .verdict ul{margin:0;padding-left:18px;display:grid;gap:4px;font-size:14px;}
+  .verdict .pro::marker{color:var(--good);} .verdict .con::marker{color:var(--warn);}
+  .stage{background:var(--stage);border-radius:22px;padding:20px 0;display:grid;justify-items:center;}
+  .phone{width:340px;max-width:calc(100% - 24px);height:640px;background:var(--a-page);border-radius:30px;border:1px solid var(--a-line);overflow:hidden;position:relative;display:grid;grid-template-rows:auto auto minmax(0,1fr) auto;color:var(--a-ink);box-shadow:0 10px 30px rgba(0,0,0,.14);}
+  .p-head{padding:18px 16px 8px;font-family:var(--display);font-size:20px;display:flex;justify-content:space-between;align-items:center;}
+  .p-head small{font-family:var(--body);font-size:12px;color:var(--a-ink-soft);}
+  .p-tabs{padding:4px 12px 6px;display:grid;gap:6px;}
+  .p-tabs .row{align-items:center;}
+  .p-body{overflow-y:auto;padding:8px 12px 12px;}
+  .p-foot{padding:10px 12px 14px;display:flex;justify-content:space-between;gap:8px;border-top:1px solid var(--a-line);background:var(--a-surface);}
+  .sbtn{appearance:none;font:inherit;font-size:13px;font-weight:600;padding:9px 16px;border-radius:999px;border:1px solid var(--a-line);background:var(--a-surface);color:var(--a-ink);cursor:pointer;}
+  .sbtn.primary{background:var(--a-ink);color:#fff;border-color:var(--a-ink);}
+  .p-scope{font-size:12px;color:var(--a-ink-soft);padding:0 14px 6px;display:flex;justify-content:space-between;}
+  .p-scope button{appearance:none;border:0;background:none;font:inherit;color:var(--a-ink);text-decoration:underline;cursor:pointer;padding:0;}
+  .sublead{font-size:12px;color:var(--a-ink-soft);flex:none;padding:0 4px 0 6px;}
+  .sheet{position:absolute;left:0;right:0;bottom:0;background:var(--a-surface);border-radius:22px 22px 0 0;padding:14px 16px 20px;display:grid;gap:12px;box-shadow:0 -8px 24px rgba(0,0,0,.18);transform:translateY(105%);transition:transform .26s cubic-bezier(.32,.72,0,1);}
+  .sheet.open{transform:none;}
+  .sheet .grip{width:36px;height:4px;border-radius:2px;background:var(--a-line);justify-self:center;}
+  .sheet .wrapchips{display:flex;flex-wrap:wrap;gap:6px;}
+  .scrim{position:absolute;inset:0;background:rgba(0,0,0,.28);opacity:0;pointer-events:none;transition:opacity .2s;}
+  .scrim.open{opacity:1;pointer-events:auto;}
+  @media (prefers-reduced-motion: reduce){.sheet,.scrim{transition:none;}}
+
+  .rec{background:var(--panel);border:1px solid var(--rule);border-radius:16px;padding:24px;display:grid;gap:16px;}
+  .rec ol{margin:0;padding-left:20px;display:grid;gap:8px;}
+  .rec li b{font-weight:600;}
+  .tag{display:inline-block;font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;padding:2px 8px;border-radius:999px;background:var(--brand);color:var(--brand-ink);vertical-align:middle;margin-left:6px;}
+  .rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px 28px;margin:0;padding:0;list-style:none;}
+  .rules li{display:grid;gap:2px;padding-top:12px;border-top:1px solid var(--rule);}
+  .rules b{font-weight:600;font-size:14px;} .rules span{color:var(--muted);font-size:14px;}
+</style>
+
+<div class="wrap">
+
+  <header class="intro">
+    <span class="kicker">Wardrobe · Filtering review</span>
+    <h1>Filtering Alignment</h1>
+    <p class="lede">The capsule editor is the only place where choosing a category opens the types inside it. Below is everything the app does today, then one phone where the same category row can be tried three ways on four different screens.</p>
+  </header>
+
+  <!-- ================= 1. TODAY ================= -->
+  <section class="sec">
+    <span class="kicker">1 · In use today</span>
+    <h2>Six patterns, one app</h2>
+    <div class="patterns">
+
+      <div class="pat">
+        <h3>Flat category tabs</h3>
+        <div class="mini">
+          <span class="lbl">Wardrobe</span>
+          <div class="row"><button class="tab active">Tops</button><button class="tab">Pants</button><button class="tab">Shorts</button><button class="tab">Skirts</button><button class="tab empty">Dresses</button><button class="tab empty">Jumpsuits</button></div>
+        </div>
+        <p class="where"><b>Wardrobe</b>, <b>Outfit builder</b> and <b>Add accessories</b>. One level, and nothing underneath.</p>
+        <p class="note warn">The wardrobe shows shelves you own nothing on (faded, at the end). The builder and accessories picker hide them.</p>
+      </div>
+
+      <div class="pat">
+        <h3>Tabs, then types inline</h3>
+        <div class="mini">
+          <span class="lbl">Capsule editor</span>
+          <div class="row"><button class="tab">All</button><button class="tab active">Tops</button><button class="tab subtab sub-first">Blouses</button><button class="tab subtab active">Shirts</button><button class="tab subtab">Singlets</button><button class="tab">Pants</button><button class="tab">Shoes</button></div>
+        </div>
+        <p class="where"><b>Capsule editor</b> only. Choose Tops and its types open beside it, A to Z. Tap a type again to clear it.</p>
+        <p class="note ok">Only types you own a piece in, and only when there is more than one.</p>
+        <p class="note warn">The row scrolls sideways, so the open types can push the other tabs off screen.</p>
+      </div>
+
+      <div class="pat">
+        <h3>Chip that opens a page</h3>
+        <div class="mini">
+          <span class="lbl">Outfits and Faves filter sheet · Pieces</span>
+          <div class="row"><button class="chip on">Tops<span class="badge">2</span><span class="caret">›</span></button><button class="chip">Pants<span class="caret">›</span></button><button class="chip">Shoes<span class="caret">›</span></button></div>
+          <div class="grid3"><div class="t none">Outfits with no top</div><div class="t sel" style="background:#8c6a8e">Blouse<span class="tick">✓</span></div><div class="t" style="background:#5f7f8f">Shirt</div></div>
+        </div>
+        <p class="where"><b>Filter sheet.</b> A chip per category opens a full page of that category's pieces, with a "none" tile first.</p>
+        <p class="note warn">A flat grid of every top, with no way to narrow it. This is the second place after the capsule editor with the scanning problem.</p>
+      </div>
+
+      <div class="pat">
+        <h3>Flat chip rows</h3>
+        <div class="mini">
+          <span class="lbl">Capsules</span><div class="row"><button class="chip on">Holiday</button><button class="chip">Work</button><button class="chip">Weekend</button></div>
+          <span class="lbl">Tags</span><div class="row"><button class="chip">linen</button><button class="chip on">summer</button><button class="chip">formal</button></div>
+        </div>
+        <p class="where"><b>Filter sheet</b> (Capsules, Faves, Tags). Multi-select, each with a count in its label.</p>
+        <p class="note ok">Already consistent with each other.</p>
+      </div>
+
+      <div class="pat">
+        <h3>Search overlay</h3>
+        <div class="mini">
+          <span class="lbl">Wardrobe</span>
+          <div class="searchbar">Search pieces…</div>
+        </div>
+        <p class="where"><b>Wardrobe</b> only. Its own full-width bar that covers the tabs. Closing it clears the query.</p>
+        <p class="note">Separate from categories by design. No change proposed.</p>
+      </div>
+
+      <div class="pat">
+        <h3>Category as a form field</h3>
+        <div class="mini">
+          <span class="lbl">Add or edit a piece</span>
+          <div class="field"><span>Category</span><span>Blouses ⌄</span></div>
+        </div>
+        <p class="where"><b>Item editor.</b> Picks the specific type (Blouses). The tab it lands on, such as Tops, is worked out from that.</p>
+        <p class="note ok">This is where the two levels come from. The type is the real data and the tab is its parent.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 2. MATRIX ================= -->
+  <section class="sec">
+    <span class="kicker">2 · Side by side</span>
+    <h2>Where each screen differs</h2>
+    <div class="scroller">
+      <table>
+        <thead><tr><th>Screen</th><th>Top level</th><th>Types underneath</th><th>Empty categories</th><th>"All" tab</th><th>Picks</th></tr></thead>
+        <tbody>
+          <tr><td>Wardrobe</td><td>Tabs</td><td class="n">None</td><td class="p">Shown, faded</td><td class="y">Yes</td><td class="n">Opens a piece</td></tr>
+          <tr><td>Outfit builder</td><td>Tabs</td><td class="n">None</td><td>Hidden</td><td class="n">No</td><td>One, or two tops</td></tr>
+          <tr><td>Add accessories</td><td>Tabs</td><td class="n">None</td><td>Hidden</td><td class="n">No</td><td>Many</td></tr>
+          <tr><td>Capsule editor</td><td>Tabs</td><td class="y">Inline, A to Z</td><td>Hidden</td><td class="y">Yes</td><td>Many</td></tr>
+          <tr><td>Filter sheet piece page</td><td>Chips, then a page</td><td class="n">None</td><td>Hidden</td><td class="n">No</td><td>Many, or "none"</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="lede">Four screens pick pieces from a category grid. Only one lets you narrow that grid by type, and the wardrobe is the only one that shows empty shelves.</p>
+  </section>
+
+  <!-- ================= 3. LIVE LAB ================= -->
+  <section class="sec">
+    <span class="kicker">3 · Try it</span>
+    <h2>One row, three designs, four screens</h2>
+    <p class="lede">Pick a design and a screen, then use the phone. Tops, Pants, Shoes and Jackets have more than one type. Dresses has one, so it shows no second level, which is the rule today.</p>
+
+    <div class="lab">
+      <div class="stage">
+        <div class="phone" id="phone" aria-label="Interactive phone mockup">
+          <div class="p-head"><span id="p-title">Capsule</span><small id="p-count"></small></div>
+          <div class="p-tabs" id="p-tabs"></div>
+          <div class="p-body"><div class="p-scope" id="p-scope"></div><div class="grid3" id="p-grid"></div></div>
+          <div class="p-foot" id="p-foot"></div>
+          <div class="scrim" id="scrim"></div>
+          <div class="sheet" id="sheet" role="dialog" aria-label="Type">
+            <span class="grip"></span>
+            <div style="display:flex;justify-content:space-between;align-items:baseline;"><b id="sheet-title">Type</b><button class="sbtn" id="sheet-done" style="padding:6px 14px;">Done</button></div>
+            <div class="wrapchips" id="sheet-chips"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <div class="group">
+          <span class="kicker">Design</span>
+          <div class="opts" id="designs">
+            <button class="opt" data-v="A" aria-pressed="false"><span class="ot">A · Inline</span><span class="os">Types open beside the tab. As the capsule editor does now.</span></button>
+            <button class="opt" data-v="B" aria-pressed="true"><span class="ot">B · Second row</span><span class="os">Types on their own line under the tabs.</span></button>
+            <button class="opt" data-v="C" aria-pressed="false"><span class="ot">C · Type button</span><span class="os">One "Type" button opens a sheet of chips.</span></button>
+          </div>
+        </div>
+        <div class="group">
+          <span class="kicker">Screen</span>
+          <div class="opts" id="screens">
+            <button class="opt" data-v="wardrobe" aria-pressed="false"><span class="ot">Wardrobe</span><span class="os">Browse, no picking</span></button>
+            <button class="opt" data-v="builder" aria-pressed="false"><span class="ot">Outfit builder</span><span class="os">Pick one piece</span></button>
+            <button class="opt" data-v="capsule" aria-pressed="true"><span class="ot">Capsule editor</span><span class="os">Pick many, All tab</span></button>
+            <button class="opt" data-v="filter" aria-pressed="false"><span class="ot">Filter page</span><span class="os">Pieces row, with "none"</span></button>
+          </div>
+        </div>
+        <div class="verdict" id="verdict"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 4. RECOMMENDATION ================= -->
+  <section class="sec">
+    <span class="kicker">4 · Recommendation</span>
+    <div class="rec">
+      <h2>Use B everywhere, built once</h2>
+      <p>Put the types on their own line under the tabs, and make that one shared component that every picker and browser uses. It keeps the top-level tabs where your thumb expects them, it never scrolls them away, and it costs one extra row only when there is something to choose.</p>
+      <ul class="rules">
+        <li><b>Same shape on every screen</b><span>Tabs, then types beneath. Choose a tab to open its types; tap a type again to clear it.</span></li>
+        <li><b>Same visibility rule</b><span>Show types only when you own pieces in two or more. Always A to Z.</span></li>
+        <li><b>Same empty rule</b><span>Hide categories with nothing in them everywhere. The wardrobe can keep faded shelves only if that is a deliberate choice.</span></li>
+        <li><b>Types never leak</b><span>Changing tab clears the type, as the capsule editor does now.</span></li>
+      </ul>
+      <h3>Order of work</h3>
+      <ol>
+        <li><b>Extract the row</b> from the capsule editor into a shared helper that takes the pool of pieces and the draft's tab and type.</li>
+        <li><b>Outfit builder</b> and <b>filter sheet piece pages</b> next. They are the same job and the same large grids.</li>
+        <li><b>Wardrobe</b> after that. It has the most room for a second row, but it also has the view toggle and archive tab to fit around.</li>
+        <li><b>Accessories picker</b> picks it up automatically and shows a second row only if a shelf grows past one type.</li>
+        <li>Leave <b>search</b> and the <b>tag, fave and capsule chips</b> alone. They filter by something other than category.</li>
+      </ol>
+      <p class="lede">Design C is worth keeping in mind if the wardrobe ever needs more than types, such as colour or brand. For one extra level it adds a tap and hides the choice.</p>
+    </div>
+  </section>
+
+</div>
+
+<script>
+(function(){
+  /* Example wardrobe: each type belongs to a tab, as the app's category map does. */
+  var TYPES = {
+    Tops:    {Blouses:4, Shirts:3, Singlets:2},
+    Pants:   {Jeans:3, Trousers:3},
+    Dresses: {Dresses:4},
+    Jackets: {Blazers:2, Coats:2},
+    Shoes:   {Boots:2, Sneakers:3, Sandals:2},
+    Shorts:  {}  /* none owned */
+  };
+  var ORDER = ['Tops','Pants','Shorts','Dresses','Jackets','Shoes'];
+  var hues = {Blouses:318,Shirts:205,Singlets:28,Jeans:218,Trousers:260,Dresses:350,Blazers:160,Coats:110,Boots:24,Sneakers:190,Sandals:44};
+  var ITEMS = [];
+  Object.keys(TYPES).forEach(function(tab){
+    Object.keys(TYPES[tab]).forEach(function(cat){
+      for(var i=1;i<=TYPES[tab][cat];i++) ITEMS.push({id:cat+i,tab:tab,cat:cat,n:i});
+    });
+  });
+  var SCREENS = {
+    wardrobe:{title:'Wardrobe', all:true,  showEmpty:true,  pick:false, none:false, foot:null},
+    builder: {title:'Build an outfit', all:false, showEmpty:false, pick:'one', none:false, foot:['Cancel','Use this piece']},
+    capsule: {title:'New capsule', all:true,  showEmpty:false, pick:'many', none:false, foot:['Cancel','Save capsule']},
+    filter:  {title:'Pieces', all:false, showEmpty:false, pick:'many', none:true,  foot:['Back','Apply']}
+  };
+  var NOTES = {
+    A:{pro:['Already built and tested in the capsule editor.','Types sit right next to their parent tab.'],
+       con:['Everything lives in one scrolling row, so open types push the other tabs out of view.','Hard to tell at a glance which tabs are top level.']},
+    B:{pro:['Top-level tabs never move or scroll away.','Same place on every screen, so it is learned once.','Easy to share as one component.'],
+       con:['Costs a row of height when types are open.','The wardrobe has to fit it beside the view toggle.']},
+    C:{pro:['Takes no height until you want it.','Has room for more filters later, such as colour.'],
+       con:['Two taps instead of one.','The choice is hidden, so you cannot see what is narrowing the grid except from the badge.']}
+  };
+  var s = {design:'B', screen:'capsule', tab:null, sub:null, picked:{}, sheet:false};
+
+  function $(id){return document.getElementById(id);}
+  function esc(x){return String(x).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  function cfg(){return SCREENS[s.screen];}
+  function tabs(){
+    var c=cfg();
+    return (c.all?['All']:[]).concat(ORDER.filter(function(t){
+      var owned = Object.keys(TYPES[t]).length>0;
+      return owned || c.showEmpty;
+    }));
+  }
+  function typesOf(tab){
+    if(tab==='All'||!TYPES[tab]) return [];
+    var k=Object.keys(TYPES[tab]).sort(function(a,b){return a.localeCompare(b);});
+    return k.length>1?k:[];
+  }
+  function ensureTab(){
+    var t=tabs();
+    if(t.indexOf(s.tab)<0){ s.tab=t[0]; s.sub=null; }
+  }
+  function pool(){
+    if(s.tab==='All') return ITEMS;
+    return ITEMS.filter(function(i){return i.tab===s.tab && (!s.sub || i.cat===s.sub);});
+  }
+  function tabBtn(t){
+    var empty = !Object.keys(TYPES[t]||{}).length && t!=='All';
+    return '<button class="tab '+(s.tab===t?'active':'')+(empty?' empty':'')+'" data-tab="'+esc(t)+'">'+esc(t)+'</button>';
+  }
+  function subBtn(c,i,inline){
+    return '<button class="tab subtab '+(inline&&i===0?'sub-first ':'')+(s.sub===c?'active':'')+'" data-sub="'+esc(c)+'">'+esc(c)+'</button>';
+  }
+  function renderTabs(){
+    var t=tabs(), subs=typesOf(s.tab), h='';
+    if(s.design==='A'){
+      h='<div class="row">'+t.map(function(x){return tabBtn(x)+(x===s.tab?subs.map(function(c,i){return subBtn(c,i,true);}).join(''):'');}).join('')+'</div>';
+    } else if(s.design==='B'){
+      h='<div class="row">'+t.map(tabBtn).join('')+'</div>';
+      if(subs.length) h+='<div class="row"><span class="sublead">'+esc(s.tab)+' ›</span>'+subs.map(function(c,i){return subBtn(c,i,false);}).join('')+'</div>';
+    } else {
+      var has=typesOf(s.tab).length>0;
+      h='<div class="row">'+t.map(tabBtn).join('')
+        +(has?'<button class="chip '+(s.sub?'on':'')+'" id="open-sheet" style="margin-left:6px;">Type'+(s.sub?'<span class="badge">1</span>':'')+'<span class="caret">⌄</span></button>':'')+'</div>';
+    }
+    $('p-tabs').innerHTML=h;
+  }
+  function renderGrid(){
+    var c=cfg(), items=pool(), h='';
+    if(c.none) h+='<div class="t none" data-none="1'+'" style="'+(s.picked.__none?'box-shadow:0 0 0 2px var(--a-accent),0 0 0 4px var(--a-page);':'')+'">Outfits with no '+esc((s.tab==='All'?'piece':s.tab).toLowerCase().replace(/s$/,''))+(s.picked.__none?'<span class="tick">✓</span>':'')+'</div>';
+    h+=items.map(function(i){
+      var on=!!s.picked[i.id];
+      return '<div class="t '+(on?'sel':'')+'" data-id="'+i.id+'" style="background:hsl('+hues[i.cat]+' 22% '+(34+i.n*4)+'%);">'+esc(i.cat.replace(/s$/,''))+(on?'<span class="tick">✓</span>':'')+'</div>';
+    }).join('');
+    $('p-grid').innerHTML=h;
+    $('p-count').textContent=items.length+' piece'+(items.length===1?'':'s');
+    var scope=[s.tab].concat(s.sub?[s.sub]:[]).join(' › ');
+    $('p-scope').innerHTML='<span>Showing '+esc(scope)+'</span>'+(s.sub?'<button id="clear-sub">Clear type</button>':'');
+  }
+  function renderFoot(){
+    var f=cfg().foot;
+    $('p-foot').innerHTML=f?'<button class="sbtn" type="button">'+f[0]+'</button><button class="sbtn primary" type="button">'+f[1]+'</button>':'<span style="font-size:12px;color:var(--a-ink-soft);">Tap a piece to open it</span>';
+    $('p-title').textContent=cfg().title;
+  }
+  function renderSheet(){
+    var subs=typesOf(s.tab);
+    $('sheet-title').textContent=s.tab+' type';
+    $('sheet-chips').innerHTML=subs.map(function(c){return '<button class="chip '+(s.sub===c?'on':'')+'" data-sub="'+esc(c)+'">'+esc(c)+'</button>';}).join('');
+    $('sheet').classList.toggle('open',s.sheet&&subs.length>0);
+    $('scrim').classList.toggle('open',s.sheet&&subs.length>0);
+  }
+  function renderVerdict(){
+    var n=NOTES[s.design];
+    $('verdict').innerHTML='<h3>'+({A:'A · Inline',B:'B · Second row',C:'C · Type button'})[s.design]+'</h3>'
+      +'<ul>'+n.pro.map(function(x){return '<li class="pro">'+x+'</li>';}).join('')+'</ul>'
+      +'<ul>'+n.con.map(function(x){return '<li class="con">'+x+'</li>';}).join('')+'</ul>';
+    var b=$('designs').children; for(var i=0;i<b.length;i++) b[i].setAttribute('aria-pressed',b[i].dataset.v===s.design);
+    b=$('screens').children; for(i=0;i<b.length;i++) b[i].setAttribute('aria-pressed',b[i].dataset.v===s.screen);
+  }
+  function render(){ ensureTab(); renderTabs(); renderGrid(); renderFoot(); renderSheet(); renderVerdict(); }
+
+  document.addEventListener('click',function(e){
+    var t=e.target.closest('button,.t'); if(!t) return;
+    if(t.closest('#designs')){ s.design=t.dataset.v; s.sheet=false; return render(); }
+    if(t.closest('#screens')){ s.screen=t.dataset.v; s.sheet=false; s.picked={}; return render(); }
+    if(!t.closest('#phone')) return;
+    if(t.dataset.tab){ s.tab=t.dataset.tab; s.sub=null; return render(); }
+    if(t.dataset.sub){ s.sub=(s.sub===t.dataset.sub)?null:t.dataset.sub; if(s.design==='C') s.sheet=false; return render(); }
+    if(t.id==='open-sheet'){ s.sheet=true; return render(); }
+    if(t.id==='sheet-done'){ s.sheet=false; return render(); }
+    if(t.id==='clear-sub'){ s.sub=null; return render(); }
+    if(t.dataset.none){ s.picked.__none=!s.picked.__none; return render(); }
+    if(t.dataset.id && cfg().pick){
+      if(cfg().pick==='one'){ var was=s.picked[t.dataset.id]; s.picked={}; if(!was) s.picked[t.dataset.id]=true; }
+      else s.picked[t.dataset.id]=!s.picked[t.dataset.id];
+      return renderGrid();
+    }
+  });
+  $('scrim').addEventListener('click',function(){ s.sheet=false; render(); });
+  s.tab='Tops';
+  render();
+})();
+</script>

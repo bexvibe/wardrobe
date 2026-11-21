@@ -6,9 +6,16 @@
 // one tap from anywhere. Going through here rather than through a raw
 // click means a suite that only wants to be on a page says so, and the
 // one suite that is about the bar itself is where the bar is checked.
+// Search takes the navigation's place at the foot of the screen while it is
+// open, so the way to a tab is Back first.
+async function leaveSearch(page){
+  if(await page.isVisible('#search-overlay')) await page.click('#search-back');
+}
+
 module.exports = {
   // The kept half.
   async toFaves(page, settle){
+    await leaveSearch(page);
     // The heart only shows once you are on Outfits.
     if(!(await page.$('#nav-saved-btn'))){
       await page.click('#nav-outfits-btn');
@@ -21,6 +28,7 @@ module.exports = {
 
   // The generated half.
   async toAll(page, settle){
+    await leaveSearch(page);
     await page.click('#nav-outfits-btn');
     await page.waitForFunction(() => appMode === 'outfits');
     await page.waitForTimeout(settle === undefined ? 1200 : settle);
