@@ -91,7 +91,7 @@ const vis=(p,s)=>p.isVisible(s);
   check('the filter sheet stays down on arrival', !(await sheetOpen()));
   check('the pill is there, and says Filters',
     (await vis(p,'#filters-fab')) &&
-    (await p.textContent('#filters-fab')).replace(/\s+/g,' ').trim() === 'All filters',
+    (await p.textContent('#filters-fab')).replace(/\s+/g,' ').trim() === 'Filters',
     (await p.textContent('#filters-fab')).trim());
   check('with no arrow on it to say which way it goes',
     await p.evaluate(()=>!document.querySelector('.filters-fab-chevron')));

@@ -134,7 +134,7 @@ const onSheet = (p, down) => p.evaluate(d=>{
   // ---- 2. The pill ----
   {
     const p=await open(b);
-    check('it says Filters', (await fabText(p)) === 'All filters', await fabText(p));
+    check('it says Filters', (await fabText(p)) === 'Filters', await fabText(p));
     // On All it is up by New fave and carries its icon; on Faves it still
     // floats, bare. This suite opens on All.
     check('and its icon, in the sticky bar', await p.evaluate(()=>
@@ -144,7 +144,7 @@ const onSheet = (p, down) => p.evaluate(d=>{
     check('not yet expanded to a screen reader',
       (await p.getAttribute('#filters-fab','aria-expanded')) === 'false');
     await raise(p);
-    check('still says Filters with the sheet up, never Hide filters', (await fabText(p)) === 'All filters', await fabText(p));
+    check('still says Filters with the sheet up, never Hide filters', (await fabText(p)) === 'Filters', await fabText(p));
     check('expanded to a screen reader',
       (await p.getAttribute('#filters-fab','aria-expanded')) === 'true');
     check('its row has eased away behind the sheet',

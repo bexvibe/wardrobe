@@ -1,4 +1,4 @@
-// The Outfits page has the wardrobe's sticky bar: layout switch, All filters,
+// The Outfits page has the wardrobe's sticky bar: layout switch, Filters,
 // a quick Faves tap, then the tags used most. List is a layout of the cards
 // below the hero; the hero is the same in both.
 const { chromium } = require('playwright');
@@ -60,7 +60,7 @@ const cards = p => p.evaluate(()=>
   await p.waitForTimeout(300);
   check('the bar is there, with the layout switch first',
     await q(()=>{const k=document.querySelector('#outfit-tabs').children; return k[0].className==='bar-seg' && !!k[0].querySelector('.view-seg');}));
-  check('All filters is in the bar', await q(()=>document.querySelector('#outfit-tabs > #filters-fab')?.textContent.trim().startsWith('All filters')));
+  check('Filters is in the bar', await q(()=>document.querySelector('#outfit-tabs > #filters-fab')?.textContent.trim().startsWith('Filters')));
   check('the bar sticks like the wardrobe row', await q(()=>document.getElementById('outfit-tabs').classList.contains('stuck-row')));
   const quick = await q(()=>Array.from(document.querySelectorAll('#outfit-tabs .bar-chips .tab')).map(e=>e.textContent.trim()));
   check('Faves first, then at most five tags', quick[0]==='Faves' && quick.length>=2 && quick.length<=6, quick.join(', '));

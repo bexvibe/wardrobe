@@ -24,13 +24,13 @@ const isOpen = p => p.evaluate(()=>filterSheetOpen());
 
   await p.click('#nav-outfits-btn'); await p.waitForTimeout(1200);
   check('closed on Outfits', !(await isOpen(p)));
-  check('pill says All filters', (await fabText(p)).startsWith('All filters'), await fabText(p));
+  check('pill says Filters', (await fabText(p)).startsWith('Filters'), await fabText(p));
   await toFaves(p, 900);
   check('closed on Faves', !(await isOpen(p)));
 
   await p.click('#filters-fab'); await p.waitForTimeout(600);
   check('pill opens it', await isOpen(p));
-  check('pill still says Filters, never Hide filters', (await fabText(p)).startsWith('All filters'), await fabText(p));
+  check('pill still says Filters, never Hide filters', (await fabText(p)).startsWith('Filters'), await fabText(p));
   const head = await p.evaluate(()=>{
     const t=document.querySelector('.filter-sheet-title').getBoundingClientRect();
     const c=document.getElementById('filter-sheet-clear').getBoundingClientRect();

@@ -3368,7 +3368,7 @@ function renderFiltersFab(animate){
   fab.setAttribute('aria-expanded', String(up));
   fab.innerHTML = `
     ${appMode === 'outfits' || appMode === 'saved' ? '<svg class="filters-fab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg>' : ''}
-    <span class="filters-fab-label">${inHead ? 'All filters' : 'Filters'}</span>
+    <span class="filters-fab-label">Filters</span>
     ${n ? `<span class="filters-fab-count">${n}</span>` : ''}`;
 
   const row = document.getElementById('float-row');
@@ -8242,7 +8242,11 @@ function setOutfitView(mode){
 // from the pieces as they are now, so the five change as the wardrobe does. A
 // tag that is on stays on the row even if it falls out of the five.
 const QUICK_TAGS = 5;
+// Off for now: the top row is the layout switch, Filters and Faves, and the
+// tags are chosen from the Filters sheet. Set to true to put the five back.
+const SHOW_QUICK_TAGS = false;
 function quickTags(){
+  if(!SHOW_QUICK_TAGS) return [];
   const top = tagsByUse().slice(0, QUICK_TAGS);
   outfitTags.forEach(t => { if(!top.includes(t)) top.push(t); });
   return top;
