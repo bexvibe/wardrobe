@@ -1879,6 +1879,10 @@
   .filter-active{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px;}
   .filter-active .filter-chip{gap:8px;}
   .chip-x{font-size:10px;opacity:.6;}
+  /* A piece's chip carries its photo, tucked into the left end of the pill. */
+  .filter-active .filter-chip.has-thumb{padding-left:5px;}
+  .chip-thumb{width:32px;height:32px;flex:none;border-radius:50%;object-fit:contain;background:var(--surface);}
+  .filter-active .chip-label{max-width:160px;overflow:hidden;text-overflow:ellipsis;}
   /* Specific enough to beat .capsule-picks' own 14px above and below, which
      stacked with the head and made a wide gap under the title. */
   .filter-sheet-body .filter-rows{margin:0;}
@@ -3434,7 +3438,15 @@ function filterSectionValue(section){
 // Everything that is on, as a chip: [kind, key, words].
 function activeFilterChips(){
   const chips = [];
-  filterTabs().forEach(t => { if(outfitFilters[t].type !== 'any') chips.push(['slot', t, slotSummary(t)]); });
+  // One per piece, each with its photo, rather than "Tops (3)".
+  filterTabs().forEach(t => {
+    const f = outfitFilters[t];
+    if(f.type === 'none') chips.push(['slot', t, noneLabel(t)]);
+    else if(f.type === 'items') f.ids.forEach(id => {
+      const it = itemById(id);
+      if(it) chips.push(['piece', t + '\u0000' + id, it.name, it.photo || '']);
+    });
+  });
   capsuleFilter.forEach(id => { const c = capsules.find(x => x.id === id); if(c) chips.push(['capsule', id, c.name]); });
   outfitTags.forEach(t => chips.push(['tag', t, t]));
   const mode = appMode === 'saved' ? 'saved' : 'outfits';
@@ -3446,7 +3458,11 @@ function removeActiveFilter(kind, key){
   if(kind === 'capsule') return toggleCapsuleFilter(key);
   if(kind === 'tag') return setOutfitTag(key);
   if(kind === 'fave') return setFaveFilter(key);
-  outfitFilters[key] = anyFilter();
+  if(kind === 'piece'){
+    const [tab, id] = key.split('\u0000');
+    const ids = outfitFilters[tab].ids.filter(x => x !== id);
+    outfitFilters[tab] = ids.length ? {type:'items', ids} : anyFilter();
+  } else outfitFilters[key] = anyFilter();
   renderFilterControls();
   renderFiltersFab();
   filterResultsStale = true;
@@ -3471,9 +3487,9 @@ function filterControlsHtml(ns){
   sections.push('faves');
   const chips = activeFilterChips();
   return `
-    ${chips.length ? `<div class="filter-active" role="group" aria-label="Filters on">${chips.map(([kind, key, label]) =>
-      `<button type="button" class="filter-chip active" aria-label="Remove ${esc(label)}"
-         onclick='removeActiveFilter(${jsArg(kind)}, ${jsArg(key)})'><span class="chip-label">${esc(label)}</span><span class="chip-x" aria-hidden="true">✕</span></button>`).join('')}</div>` : ''}
+    ${chips.length ? `<div class="filter-active" role="group" aria-label="Filters on">${chips.map(([kind, key, label, photo]) =>
+      `<button type="button" class="filter-chip active ${photo ? 'has-thumb' : ''}" aria-label="Remove ${esc(label)}"
+         onclick='removeActiveFilter(${jsArg(kind)}, ${jsArg(key)})'>${photo ? `<img class="chip-thumb" src="${esc(photo)}" alt="" referrerpolicy="no-referrer" loading="lazy" decoding="async">` : ''}<span class="chip-label">${esc(label)}</span><span class="chip-x" aria-hidden="true">✕</span></button>`).join('')}</div>` : ''}
     <div class="capsule-picks filter-rows" id="${ns}-rows">${sections.map(filterRowHtml).join('')}</div>`;
 }
 
