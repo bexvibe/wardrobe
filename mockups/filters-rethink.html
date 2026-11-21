@@ -1,0 +1,695 @@
+<title>Filters Rethink</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500&family=Work+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  /* Layout: a working phone beside a control panel. The phone is a small
+     clone of the app (Wardrobe, Outfits, Faves, Capsules and the sheets over
+     them) where every category picker uses ONE shared row component. The
+     panel jumps to each touched screen and switches the options. */
+  :root{
+    --bg:#F7F7F6; --fg:#171717; --muted:#66666A; --panel:#FFFFFF; --rule:#E2E2E0; --stage:#E9E9E7;
+    --brand:#756694; --brand-ink:#FFFFFF; --good:#2F6B4A; --warn:#8A5A12;
+    --a-page:#E3E0DB; --a-surface:#F7F5F1; --a-line:#D2CFC9; --a-soft:#D5D2CC; --a-ink:#121212; --a-ink-soft:#6E6E6E; --a-accent:#1A1A1A;
+    --display:'Fraunces',Georgia,serif; --body:'Work Sans',system-ui,sans-serif; --mono:'IBM Plex Mono',ui-monospace,monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#121213; --fg:#EDEDEB; --muted:#9A9AA0; --panel:#1B1B1D; --rule:#2C2C2F; --stage:#232326;
+      --brand:#9A8CBB; --brand-ink:#17141F; --good:#7FC29A; --warn:#D9A74F; color-scheme:dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#121213; --fg:#EDEDEB; --muted:#9A9AA0; --panel:#1B1B1D; --rule:#2C2C2F; --stage:#232326;
+    --brand:#9A8CBB; --brand-ink:#17141F; --good:#7FC29A; --warn:#D9A74F; color-scheme:dark;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.5;
+    padding-block:32px 72px;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));
+    -webkit-font-smoothing:antialiased;}
+  .wrap{max-width:1080px;margin:0 auto;display:grid;gap:36px;}
+  h1,h2,h3{font-family:var(--display);font-weight:400;letter-spacing:-0.015em;text-wrap:balance;margin:0;}
+  h1{font-size:clamp(28px,6vw,40px);line-height:1.1;} h2{font-size:22px;line-height:1.2;} h3{font-size:17px;line-height:1.25;}
+  p{margin:0;}
+  .kicker{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);}
+  .intro{display:grid;gap:12px;max-width:66ch;} .lede{color:var(--muted);}
+
+  .lab{display:grid;grid-template-columns:minmax(0,390px) minmax(0,1fr);gap:40px;align-items:start;}
+  @media (max-width:860px){.lab{grid-template-columns:minmax(0,1fr);}}
+  .side{display:grid;gap:26px;min-width:0;}
+  .group{display:grid;gap:8px;}
+  .opts{display:flex;flex-wrap:wrap;gap:8px;}
+  .opt{appearance:none;font:inherit;text-align:left;cursor:pointer;padding:9px 13px;border-radius:12px;border:1px solid var(--rule);background:var(--panel);color:var(--fg);display:grid;gap:1px;min-width:120px;flex:1 1 120px;}
+  .opt .ot{font-weight:600;font-size:14px;} .opt .os{font-size:12px;color:var(--muted);}
+  .opt[aria-pressed="true"]{border-color:var(--fg);box-shadow:inset 0 0 0 1px var(--fg);}
+  .jump{appearance:none;font:inherit;font-size:13px;font-weight:500;cursor:pointer;padding:8px 14px;border-radius:999px;border:1px solid var(--rule);background:var(--panel);color:var(--fg);}
+  .jump:hover{border-color:var(--fg);}
+  .opt:focus-visible,.jump:focus-visible,.sbtn:focus-visible,.tab:focus-visible,.chip:focus-visible,.navb:focus-visible,.t:focus-visible{outline:2px solid var(--brand);outline-offset:2px;}
+  .where{padding:14px 16px;border:1px solid var(--rule);border-radius:14px;background:var(--panel);display:grid;gap:6px;}
+  .where b{font-family:var(--display);font-weight:400;font-size:17px;} .where p{color:var(--muted);font-size:14px;}
+  .where p.q{color:var(--warn);}
+  .tasks{margin:0;padding-left:20px;display:grid;gap:6px;color:var(--muted);font-size:14px;} .tasks b{color:var(--fg);font-weight:600;}
+  .stage{background:var(--stage);border-radius:24px;padding:22px 0;display:grid;justify-items:center;}
+
+  /* ===== the phone: the app's own light tokens ===== */
+  .phone{width:362px;max-width:calc(100% - 20px);height:740px;border-radius:40px;background:#101010;padding:8px;box-shadow:0 18px 44px rgba(0,0,0,.26);color:var(--a-ink);font-family:var(--body);}
+  .screen{position:relative;width:100%;height:100%;border-radius:32px;overflow:hidden;background:var(--a-page);isolation:isolate;}
+  .phone button{font-family:inherit;color:inherit;}
+  .view{position:absolute;inset:0 0 70px 0;overflow-y:auto;padding:26px 14px 90px;scrollbar-width:none;}
+  .view::-webkit-scrollbar{display:none;}
+  .ph{display:flex;justify-content:space-between;align-items:center;padding:14px 0 10px;}
+  .ph h4{margin:0;font-family:var(--display);font-weight:400;font-size:27px;letter-spacing:-0.02em;}
+  .pbtn{appearance:none;border:0;background:var(--a-ink);color:#fff!important;font-size:13px;font-weight:600;border-radius:999px;padding:9px 14px;cursor:pointer;display:flex;gap:6px;align-items:center;}
+  .nav{position:absolute;left:50%;transform:translateX(-50%);bottom:12px;z-index:6;display:flex;gap:4px;padding:5px;background:var(--a-surface);border:1px solid var(--a-line);border-radius:999px;box-shadow:0 6px 22px rgba(0,0,0,.11);}
+  .navb{appearance:none;border:0;background:none;min-height:42px;padding:0 15px;font-size:13px;font-weight:600;color:var(--a-ink-soft)!important;border-radius:999px;cursor:pointer;}
+  .navb.on{background:var(--a-soft);color:var(--a-ink)!important;}
+  .float{position:absolute;left:50%;bottom:70px;z-index:5;transform:translateX(-50%);display:flex;gap:8px;}
+  .float[hidden]{display:none;}
+  .fpill{position:relative;display:flex;align-items:center;gap:8px;min-height:42px;padding:0 17px;border-radius:999px;border:1px solid var(--a-line);background:var(--a-surface);font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.12);}
+  .fpill.active{background:var(--a-soft);} .fpill svg{width:16px;height:16px;color:var(--a-ink-soft);}
+  .fpill.brand{background:var(--brand);border-color:var(--brand);color:#fff!important;}
+  .fbadge{position:absolute;top:-6px;right:-4px;min-width:20px;height:20px;padding:0 6px;display:inline-grid;place-items:center;border-radius:999px;background:var(--a-accent);color:#fff;font-size:11px;font-weight:600;box-shadow:0 0 0 2px var(--a-page);}
+
+  /* shared category row */
+  .rowwrap{display:grid;gap:6px;}
+  .row{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:1px;align-items:center;}
+  .row::-webkit-scrollbar{display:none;}
+  .tab,.chip{flex:none;appearance:none;font:inherit;font-size:13px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:999px;border:1px solid var(--a-line);background:var(--a-surface);color:var(--a-ink);white-space:nowrap;}
+  .tab.active,.chip.on{background:var(--a-accent);color:#fff;border-color:var(--a-accent);}
+  .tab.subtab{background:var(--a-page);} .tab.subtab.active{background:var(--a-accent);}
+  .tab.sub-first{margin-left:8px;} .tab.faded{opacity:.45;}
+  .bdg{display:inline-grid;place-items:center;min-width:16px;height:16px;border-radius:8px;background:var(--a-accent);color:#fff;font-size:10px;padding:0 4px;margin-left:-2px;}
+  .tab.active .bdg,.chip.on .bdg{background:#fff;color:var(--a-ink);}
+  .sublead{font-size:12px;color:var(--a-ink-soft);flex:none;padding:0 4px 0 6px;}
+  .typepanel{display:flex;flex-wrap:wrap;gap:6px;padding:10px;background:var(--a-surface);border:1px solid var(--a-line);border-radius:14px;}
+  .caret{opacity:.6;font-size:11px;}
+
+  /* tiles */
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;}
+  .t{appearance:none;border:0;padding:6px;font:inherit;text-align:left;aspect-ratio:3/4;border-radius:9px;display:grid;align-items:end;font-size:10.5px;font-weight:500;color:#fff!important;position:relative;overflow:hidden;line-height:1.15;cursor:pointer;}
+  .t.none{background:var(--a-surface);color:var(--a-ink-soft)!important;border:1px dashed var(--a-line);place-items:center;text-align:center;}
+  .t.sel{box-shadow:0 0 0 2px var(--a-accent),0 0 0 4px var(--a-page);}
+  .tick{position:absolute;top:5px;right:5px;width:18px;height:18px;border-radius:9px;background:var(--a-accent);color:#fff;display:grid;place-items:center;font-size:11px;}
+  .scope{font-size:12px;color:var(--a-ink-soft);padding:8px 2px 8px;display:flex;justify-content:space-between;}
+  .scope button{appearance:none;border:0;background:none;font:inherit;color:var(--a-ink);text-decoration:underline;cursor:pointer;padding:0;}
+
+  /* outfits */
+  .obar{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:2px 1px 12px;}
+  .obar::-webkit-scrollbar{display:none;}
+  .ogrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .oc{background:var(--a-surface);border-radius:12px;padding:8px;display:grid;gap:6px;min-width:0;}
+  .stack{display:grid;gap:3px;}
+  .stack span{border-radius:6px;padding:5px 7px;font-size:10px;font-weight:500;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .ocf{display:flex;justify-content:space-between;align-items:center;}
+  .ib{appearance:none;border:0;background:none;cursor:pointer;display:flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:var(--a-ink-soft)!important;padding:4px 2px;min-height:30px;}
+  .ib svg{width:20px;height:20px;}
+  .more{display:grid;justify-items:center;padding:14px;}
+  .sbtn{appearance:none;font:inherit;font-size:13px;font-weight:600;padding:10px 16px;border-radius:999px;border:1px solid var(--a-line);background:var(--a-surface);color:var(--a-ink)!important;cursor:pointer;}
+  .sbtn.primary{background:var(--a-ink);color:#fff!important;border-color:var(--a-ink);} .sbtn[disabled]{opacity:.4;cursor:default;}
+  .sbtn.wide{flex:1;}
+  .emp{display:grid;gap:8px;justify-items:center;text-align:center;padding:36px 12px;}
+  .emp b{font-family:var(--display);font-weight:400;font-size:20px;} .emp p{font-size:13px;color:var(--a-ink-soft);}
+  .ccard{background:var(--a-surface);border-radius:12px;padding:14px;display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;cursor:pointer;width:100%;border:0;text-align:left;font:inherit;}
+  .ccard b{font-weight:600;} .ccard span{font-size:12px;color:var(--a-ink-soft);}
+
+  /* overlay pages */
+  .ov{position:absolute;inset:0;z-index:20;background:var(--a-page);display:none;grid-template-rows:auto auto auto minmax(0,1fr) auto;}
+  .ov.open{display:grid;}
+  .ov-head{padding:30px 14px 8px;font-family:var(--display);font-size:22px;}
+  .ov-head input{width:100%;font:inherit;font-family:var(--display);font-size:22px;border:0;border-bottom:1px solid var(--a-line);background:none;color:var(--a-ink);padding:4px 0;outline:none;}
+  .ov-tabs{padding:4px 12px 6px;} .ov-sum{padding:0 14px 4px;font-size:12px;color:var(--a-ink-soft);min-height:20px;}
+  .ov-body{overflow-y:auto;padding:6px 12px 12px;}
+  .ov-foot{display:flex;gap:8px;padding:10px 12px 16px;background:var(--a-surface);border-top:1px solid var(--a-line);}
+
+  /* filters sheet */
+  .scrim{position:absolute;inset:0;z-index:30;background:rgba(0,0,0,.3);opacity:0;pointer-events:none;transition:opacity .26s;}
+  .scrim.open{opacity:1;pointer-events:auto;}
+  .fsheet{position:absolute;left:0;right:0;bottom:0;z-index:31;max-height:90%;display:flex;flex-direction:column;background:var(--a-page);border-radius:20px 20px 0 0;box-shadow:0 -10px 34px rgba(0,0,0,.2);transform:translateY(102%);transition:transform .28s cubic-bezier(.32,.72,0,1);visibility:hidden;}
+  .fsheet.open{transform:none;visibility:visible;}
+  .grip{width:36px;height:4px;border-radius:2px;background:var(--a-line);margin:8px auto 2px;}
+  .fs-head{display:flex;justify-content:space-between;align-items:center;padding:6px 18px 10px;}
+  .fs-head span{font-family:var(--display);font-size:21px;}
+  .fs-head button{appearance:none;border:0;background:none;font:inherit;font-size:13px;font-weight:600;color:var(--a-ink)!important;text-decoration:underline;cursor:pointer;}
+  .fs-body{overflow-y:auto;padding:0 14px 12px;display:grid;gap:18px;align-content:start;min-height:120px;}
+  .fs-foot{display:flex;gap:8px;padding:10px 14px 16px;border-top:1px solid var(--a-line);background:var(--a-surface);}
+  .sec{display:grid;gap:7px;}
+  .lbl{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--a-ink-soft);}
+  .lbl i{font-style:normal;color:var(--a-ink);}
+  .hint{font-size:12px;color:var(--a-ink-soft);margin-top:-3px;}
+  .hrt{width:14px;height:14px;}
+  .row.wrap{flex-wrap:wrap;overflow:visible;}
+  .achips{display:flex;flex-wrap:wrap;gap:6px;}
+  .achips .chip .x{font-size:10px;opacity:.7;}
+  .rrows{background:var(--a-surface);border-radius:16px;padding:4px;display:grid;gap:2px;}
+  .rrow{appearance:none;border:0;background:none;font:inherit;text-align:left;cursor:pointer;display:flex;align-items:center;gap:12px;width:100%;padding:16px 14px;border-radius:12px;color:var(--a-ink)!important;min-height:56px;}
+  .rrow:active{background:var(--a-page);}
+  .rl{font-weight:600;font-size:15px;}
+  .rv{margin-left:auto;color:var(--a-ink);font-size:13px;max-width:58%;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .rv.dim{color:var(--a-ink-soft);}
+  .rmeta{display:flex;justify-content:space-between;align-items:baseline;gap:12px;font-size:12.5px;color:var(--a-ink-soft);padding:2px 2px 10px;}
+  .rmeta b{font-weight:600;color:var(--a-ink);white-space:nowrap;}
+  .picks{background:var(--a-surface);border-radius:16px;padding:4px;display:grid;gap:2px;}
+  .pick{appearance:none;border:0;background:none;font:inherit;text-align:left;cursor:pointer;display:flex;align-items:center;gap:10px;width:100%;padding:0 14px;min-height:52px;border-radius:12px;color:var(--a-ink)!important;font-size:15px;}
+  .pick.picked{background:var(--a-soft);}
+  .pick .mk{margin-left:auto;width:18px;text-align:right;}
+  .fs-foot.pills{background:none;border-top:0;padding-top:6px;}
+  .pills .sbtn{box-shadow:0 6px 24px rgba(0,0,0,.11);border-color:transparent;min-height:48px;background:var(--a-surface);}
+  .pills .sbtn.primary{background:var(--a-ink);}
+  .spill{position:relative;flex:1;min-width:0;}
+  .spill svg{position:absolute;left:15px;top:50%;transform:translateY(-50%);width:18px;height:18px;color:var(--a-ink-soft);pointer-events:none;}
+  .spill input{width:100%;min-height:48px;border-radius:999px;border:1px solid transparent;background:var(--a-surface);padding:0 16px 0 42px;font:inherit;font-size:16px;color:var(--a-ink);box-shadow:0 6px 24px rgba(0,0,0,.11);outline:none;}
+  .spill input:focus-visible{outline:2px solid var(--a-ink-soft);}
+  .toast{position:absolute;left:50%;bottom:130px;transform:translateX(-50%) translateY(10px);z-index:50;background:var(--a-ink);color:#fff;font-size:13px;padding:9px 16px;border-radius:999px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;white-space:nowrap;}
+  .toast.on{opacity:1;transform:translateX(-50%);}
+  @media (prefers-reduced-motion: reduce){.fsheet,.scrim,.toast{transition:none;}}
+</style>
+
+<div class="wrap">
+  <header class="intro">
+    <span class="kicker">Wardrobe · Filters sheet</span>
+    <h1>Filters Rethink</h1>
+    <p class="lede">The Filters sheet today against a shorter one: four rows that each open the same kind of page. It uses your real capsule and tag names, so the length is honest. Switch between the two and try the same job in each.</p>
+  </header>
+
+  <div class="lab">
+    <div class="stage">
+      <div class="phone"><div class="screen" id="screen">
+        <div class="view" id="view"></div>
+        <div class="float" id="float"></div>
+        <div class="nav" id="nav"></div>
+        <div class="ov" id="ov"></div>
+        <div class="scrim" id="scrim"></div>
+        <div class="fsheet" id="fsheet" role="dialog" aria-label="Filters">
+          <span class="grip"></span>
+          <div class="fs-head"><span id="fs-title">Filters</span><button id="fs-clear" type="button">Clear all</button></div>
+          <div class="fs-body" id="fs-body"></div>
+          <div class="fs-foot" id="fs-foot"></div>
+        </div>
+        <div class="toast" id="toast" role="status"></div>
+      </div></div>
+    </div>
+
+    <div class="side">
+      <div class="where" id="where"></div>
+
+      <div class="group">
+        <span class="kicker">Filters sheet</span>
+        <div class="opts" id="sheets">
+          <button class="opt" data-v="new" aria-pressed="true"><span class="ot">Rethink</span><span class="os">Four rows, each opens a page</span></button>
+          <button class="opt" data-v="today" aria-pressed="false"><span class="ot">Today</span><span class="os">Every chip in one sheet</span></button>
+        </div>
+      </div>
+      <div class="group">
+        <span class="kicker">Jump to</span>
+        <div class="opts" id="jumps">
+          <button class="jump" data-j="outfits">Outfits</button>
+          <button class="jump" data-j="fmain">Filters sheet</button>
+          <button class="jump" data-j="rpieces">Pieces page</button>
+          <button class="jump" data-j="rcaps">Capsules page</button>
+          <button class="jump" data-j="rtags">Tags page</button>
+          <button class="jump" data-j="rfaves">Faves page</button>
+        </div>
+      </div>
+      <div class="group">
+        <span class="kicker">Category row design (Pieces page)</span>
+        <div class="opts" id="designs">
+          <button class="opt" data-v="A" aria-pressed="false"><span class="ot">A · Inline</span><span class="os">Types beside the tab</span></button>
+          <button class="opt" data-v="B" aria-pressed="true"><span class="ot">B · Second row</span><span class="os">Recommended</span></button>
+          <button class="opt" data-v="C" aria-pressed="false"><span class="ot">C · Type button</span><span class="os">Opens a chip panel</span></button>
+        </div>
+      </div>
+      <div class="group"><button class="jump" id="reset" style="justify-self:start;">Reset</button></div>
+      <div class="group">
+        <span class="kicker">Things to try</span>
+        <ol class="tasks">
+          <li><b>Open Filters in Today,</b> then scroll to Pieces. Do the same in Rethink.</li>
+          <li><b>Find outfits with a pair of jeans and no jacket.</b> Pieces, Pants, Jeans, then the Jackets tab and "No jacket".</li>
+          <li><b>Pick two capsules.</b> Capsules page, then type "sum" in the search pill.</li>
+          <li><b>Remove one filter</b> by tapping its chip at the top of the sheet.</li>
+          <li><b>Tags and Faves.</b> Read the line at the top of each page that says how it combines.</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var $=function(s,r){return (r||document).querySelector(s);};
+  var esc=function(x){return String(x).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});};
+
+  /* ---------- the wardrobe ---------- */
+  var TAXO=[['Tops',[['Blouses',4],['Shirts',3],['Singlets',2]]],['Pants',[['Jeans',3],['Trousers',3]]],['Shorts',[]],
+    ['Skirts',[['Midi',2],['Mini',1]]],['Dresses',[['Dresses',3]]],['Jackets',[['Blazers',2],['Coats',2]]],
+    ['Shoes',[['Boots',2],['Sneakers',3],['Sandals',2]]],['Hats',[['Beanies',2],['Caps',2]]],
+    ['Bags',[['Totes',2],['Clutches',1]]],['Jewellery',[['Necklaces',3]]]];
+  var OUTFIT_TABS=['Tops','Pants','Shorts','Skirts','Dresses','Jackets','Shoes'], EXTRA_TABS=['Hats','Bags','Jewellery'];
+  var HUE={Blouses:318,Shirts:205,Singlets:28,Jeans:218,Trousers:262,Midi:340,Mini:12,Dresses:350,Blazers:160,Coats:110,Boots:24,Sneakers:190,Sandals:44,Beanies:280,Caps:80,Totes:30,Clutches:300,Necklaces:50};
+  var SING={Blouses:'Blouse',Shirts:'Shirt',Singlets:'Singlet',Jeans:'Jeans',Trousers:'Trousers',Midi:'Midi skirt',Mini:'Mini skirt',Dresses:'Dress',Blazers:'Blazer',Coats:'Coat',Boots:'Boots',Sneakers:'Sneakers',Sandals:'Sandals',Beanies:'Beanie',Caps:'Cap',Totes:'Tote',Clutches:'Clutch',Necklaces:'Necklace'};
+  var SLOT_NONE={Tops:'No top',Pants:'No pants',Shorts:'No shorts',Skirts:'No skirt',Dresses:'No dress',Jackets:'No jacket',Shoes:'No shoes'};
+  var TAGS=['summer','boho','baggy','sporty','dressy','raining','jesse\u2019s','lounging','natural fibres','winter'];
+  var CAPNAMES=['Summer','Sporty','Winter','Pregnant','Lounging','Boho','Dressing up','Minimalist','All year','Autumn/Spring'];
+  var PIECES=[],idx=0;
+  TAXO.forEach(function(t){t[1].forEach(function(c){for(var n=1;n<=c[1];n++){
+    PIECES.push({id:c[0]+n,tab:t[0],cat:c[0],n:n,name:SING[c[0]]+' '+n,tags:[TAGS[idx%10]].concat(idx%3===0&&(idx*3+4)%10!==idx%10?[TAGS[(idx*3+4)%10]]:[])});idx++;}});});
+  var PBY={}; PIECES.forEach(function(p){PBY[p.id]=p;});
+  function col(p){return 'hsl('+HUE[p.cat]+' 24% '+(34+p.n*5)+'%)';}
+  var inTab=function(t){return PIECES.filter(function(p){return p.tab===t;});};
+  function typesOf(tab){ if(tab==='All') return [];
+    var k=[]; inTab(tab).forEach(function(p){if(k.indexOf(p.cat)<0)k.push(p.cat);});
+    k.sort(function(a,b){return a.localeCompare(b);}); return k.length>1?k:[]; }
+  var quickTags=(function(){var c={};PIECES.forEach(function(p){p.tags.forEach(function(t){c[t]=(c[t]||0)+1;});});
+    return TAGS.slice().sort(function(a,b){return c[b]-c[a];}).slice(0,3);})();
+
+  /* ---------- outfits ---------- */
+  function hash(s){var h=5381;for(var i=0;i<s.length;i++)h=((h<<5)+h+s.charCodeAt(i))>>>0;return h;}
+  var OUT=[];
+  (function(){
+    var tops=inTab('Tops'),bots=inTab('Pants').concat(inTab('Skirts')),dr=inTab('Dresses'),jk=inTab('Jackets'),sh=inTab('Shoes'),bases=[];
+    tops.forEach(function(t){bots.forEach(function(b){bases.push([t,b]);});}); dr.forEach(function(d){bases.push([d]);});
+    bases.forEach(function(b){sh.forEach(function(s){[null].concat(jk).forEach(function(j){
+      var pcs=b.concat([s]).concat(j?[j]:[]),key=pcs.map(function(p){return p.id;}).join('+'),h=hash(key);
+      OUT.push({key:key,pieces:pcs,level:(h%100<2)?(h%3)+1:0});});});});
+  })();
+
+  /* ---------- state ---------- */
+  var S;
+  function fresh(){
+    S={page:'wardrobe',design:'B',hideEmpty:true,hints:false,seed:1,shown:12,
+      capsules:CAPNAMES.map(function(n,i){return {id:'c'+(i+1),name:n,ids:PIECES.filter(function(p){return hash(n+p.id)%100<48;}).map(function(p){return p.id;})};}),
+      capF:[],tags:[],slots:{},fave:{outfits:[],saved:[]},extras:{},custom:[],
+      wd:{tab:'Tops',sub:null},sheetOpen:false,sheet:'new',rp:null,rpTab:null,rq:'',fpage:null,fsub:{},ov:null,note:'wardrobe'};
+    OUTFIT_TABS.forEach(function(t){S.slots[t]={type:'any',ids:[]};});
+    S.levels={}; OUT.forEach(function(o){S.levels[o.key]=o.level;});
+  }
+  fresh();
+  function lvl(o){return S.levels[o.key]||0;}
+  var pageKey=function(){return S.page==='saved'?'saved':'outfits';};
+  function filterTabs(){return OUTFIT_TABS.filter(function(t){return inTab(t).length>0;});}
+
+  function allowedSet(){ if(!S.capF.length) return null; var s={};
+    S.capsules.filter(function(c){return S.capF.indexOf(c.id)>=0;}).forEach(function(c){c.ids.forEach(function(i){s[i]=1;});}); return s; }
+  function passes(o,pg,allowed){
+    var L=lvl(o), fv=S.fave[pg];
+    if(pg==='saved'&&L<1) return false;
+    if(fv.length&&fv.indexOf(L)<0) return false;
+    if(allowed&&!o.pieces.every(function(p){return allowed[p.id];})) return false;
+    if(S.tags.length&&!o.pieces.some(function(p){return p.tags.some(function(t){return S.tags.indexOf(t)>=0;});})) return false;
+    for(var t in S.slots){var f=S.slots[t]; if(f.type==='any') continue;
+      var inSlot=o.pieces.filter(function(p){return p.tab===t;});
+      if(f.type==='none'){ if(inSlot.length) return false; }
+      else if(!inSlot.some(function(p){return f.ids.indexOf(p.id)>=0;})) return false; }
+    return true;
+  }
+  function results(){ var pg=pageKey(),al=allowedSet();
+    return S.custom.concat(OUT).filter(function(o){return passes(o,pg,al);}); }
+  function narrowedSlots(){return Object.keys(S.slots).filter(function(t){return S.slots[t].type!=='any';}).length;}
+  function filterCount(){return S.capF.length+S.tags.length+S.fave[pageKey()].length+narrowedSlots();}
+  function clearAllFilters(){S.capF=[];S.tags=[];S.fave[pageKey()]=[];OUTFIT_TABS.forEach(function(t){S.slots[t]={type:'any',ids:[]};});}
+
+  /* ---------- the one shared category row ---------- */
+  function CatRow(host,o){
+    var keep=[].map.call(host.querySelectorAll('.row'),function(r){return r.scrollLeft;});
+    var bdg=function(n){return n?'<span class="bdg">'+n+'</span>':'';};
+    var subs=o.typesOf(o.tab), open=host._open&&subs.length>0;
+    var tabBtn=function(t){return '<button class="tab '+(o.tab===t.k?'active':'')+(t.faded?' faded':'')+'" data-tab="'+esc(t.k)+'">'+esc(t.k)+bdg(o.count?o.count(t.k,null):0)+'</button>';};
+    var subBtn=function(c,i,inl){return '<button class="tab subtab '+(inl&&i===0?'sub-first ':'')+(o.sub===c?'active':'')+'" data-sub="'+esc(c)+'">'+esc(c)+bdg(o.count?o.count(o.tab,c):0)+'</button>';};
+    var typeBtn='<button class="chip '+(o.sub?'on':'')+'" data-typebtn="1" aria-expanded="'+!!open+'">Type'+(o.sub?'<span class="bdg">1</span>':'')+'<span class="caret">'+(open?'⌃':'⌄')+'</span></button>';
+    var panel=open?'<div class="typepanel">'+subs.map(function(c){return '<button class="chip '+(o.sub===c?'on':'')+'" data-sub="'+esc(c)+'">'+esc(c)+bdg(o.count?o.count(o.tab,c):0)+'</button>';}).join('')+'</div>':'';
+    var h='';
+    if(o.only){
+      if(subs.length) h=o.design==='C' ? '<div class="row">'+typeBtn+'</div>'+panel
+        : '<div class="row"><span class="sublead">'+esc(o.tab)+' ›</span>'+subs.map(function(c,i){return subBtn(c,i,false);}).join('')+'</div>';
+    } else if(o.design==='A'){
+      h='<div class="row">'+o.tabs.map(function(t){return tabBtn(t)+(t.k===o.tab?subs.map(function(c,i){return subBtn(c,i,true);}).join(''):'');}).join('')+'</div>';
+    } else if(o.design==='B'){
+      h='<div class="row">'+o.tabs.map(tabBtn).join('')+'</div>'+(subs.length?'<div class="row"><span class="sublead">'+esc(o.tab)+' ›</span>'+subs.map(function(c,i){return subBtn(c,i,false);}).join('')+'</div>':'');
+    } else {
+      h='<div class="row">'+o.tabs.map(tabBtn).join('')+(subs.length?typeBtn:'')+'</div>'+panel;
+    }
+    host.className='rowwrap'; host.innerHTML=h;
+    [].forEach.call(host.querySelectorAll('.row'),function(r,i){if(keep[i]!=null) r.scrollLeft=keep[i];});
+    host.onclick=function(e){var b=e.target.closest('button'); if(!b) return;
+      if(b.dataset.tab!=null){host._open=false;o.onTab(b.dataset.tab);}
+      else if(b.dataset.sub!=null){if(o.design==='C') host._open=false;o.onSub(b.dataset.sub);}
+      else if(b.dataset.typebtn){host._open=!host._open;o.redraw();}};
+  }
+  function tile(p,on,attr){return '<button class="t '+(on?'sel':'')+'" '+attr+' style="background:'+col(p)+'" aria-pressed="'+!!on+'">'+esc(p.name)+(on?'<span class="tick">✓</span>':'')+'</button>';}
+
+  /* ---------- toast & notes ---------- */
+  var tt; function toast(m){var t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(tt);tt=setTimeout(function(){t.classList.remove('on');},1700);}
+  var NOTES={
+    wardrobe:['Wardrobe','The same row as every picker. Choose Tops and its types open underneath. Whether empty shelves show is the setting on the right.',null],
+    outfits:['Outfits','The Faves chip and quick tags here share their state with the sheet. Heart an outfit to cycle Like, Love, All-time, and it turns up under Faves.','Open question: "Faves" is a page switch in the bar but a level filter in the sheet.'],
+    saved:['Outfits · Faves','Same filters, drawn from your faves only. The sheet\'s Faves chips narrow by level here.',null],
+    fmain:['Filters sheet','Four sections, one anatomy: a labelled chip row with a count. The hint says how each one combines, because today they differ and nothing says so.',null],
+    fpieces:['Filters · Pieces page','The same type row as every other picker, then the "No …" tile and the pieces. Picks stay when you switch type, and the type chips show how many are picked in each.',null],
+    builder:['Outfit builder','Same row, minus All. Tops take two. A tab you own nothing in does not appear.',null],
+    capsule:['Capsule editor','The row this all started from, now the shared one. Badges show how many you have picked in each tab and type.',null],
+    extras:['Add accessories','Picks the row up for free. Hats and Bags have two types so they show a second level. Jewellery has one, so it does not.',null],
+    rmain:['Filters · Rethink','Four rows, each showing what is on. What is on also appears as chips at the top, one tap to remove. The count stays at the foot.',null],
+    rpage:['Filters · a page','Every row opens the same kind of page: the category row, tiles or a list, and the floating Back and search pills. The count sits at the top. Back returns to the rows.','Open: the count is two taps away (Back, then See). A See button in the page header would make it one.'],
+    capsules:['Capsules','Not a filter screen. Open a capsule to edit it, or make a new one.',null]
+  };
+  function renderNote(){var n=NOTES[S.note]||NOTES.wardrobe;
+    $('#where').innerHTML='<span class="kicker">You are on</span><b>'+n[0]+'</b><p>'+n[1]+'</p>'+(n[2]?'<p class="q">'+n[2]+'</p>':'');}
+
+  /* ---------- pages ---------- */
+  var HEART='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.6-7-10a4 4 0 0 1 7-2.4A4 4 0 0 1 19 10c0 5.4-7 10-7 10z" stroke="currentColor" stroke-width="2" stroke-linejoin="round" fill="FILL"/></svg>';
+  var HC=['none','#B9A9C9','#8E6FB0','#5B3E86'], HN=['','Like','Love','All-time'];
+  function heart(l,small){return HEART.replace('FILL',HC[l]).replace('<svg','<svg'+(small?' class="hrt"':''));}
+
+  function renderNav(){
+    var cur=S.page==='saved'?'outfits':S.page;
+    $('#nav').innerHTML=[['wardrobe','Wardrobe'],['outfits','Outfits'],['capsules','Capsules']].map(function(x){
+      return '<button class="navb '+(cur===x[0]?'on':'')+'" data-go="'+x[0]+'">'+x[1]+'</button>';}).join('');
+  }
+  function renderFloat(){
+    var el=$('#float'),on=S.page==='outfits'||S.page==='saved'; el.hidden=!on||!!S.ov; if(!on) return;
+    var n=filterCount();
+    el.innerHTML='<button class="fpill '+(n?'active':'')+'" data-act="filters"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg>Filters'+(n?'<span class="fbadge">'+n+'</span>':'')+'</button>'
+      +'<button class="fpill brand" data-act="shuffle">Shuffle</button>';
+  }
+  function wdTabs(){
+    return [{k:'All'}].concat(TAXO.map(function(t){return t[0];}).filter(function(t){return inTab(t).length>0||!S.hideEmpty;})
+      .map(function(t){return {k:t,faded:inTab(t).length===0};}));
+  }
+  function wdPool(){var w=S.wd; return w.tab==='All'?PIECES:PIECES.filter(function(p){return p.tab===w.tab&&(!w.sub||p.cat===w.sub);});}
+  function renderView(){
+    var v=$('#view'),keep=v.scrollTop,h='';
+    if(S.page==='wardrobe'){
+      h='<div class="ph"><h4>Wardrobe</h4><button class="pbtn" data-act="toast" data-m="Opens the new piece form">+ New piece</button></div><div id="wd-row"></div><div class="scope" id="wd-scope"></div><div class="grid3" id="wd-grid"></div>';
+      v.innerHTML=h; drawWardrobe();
+    } else if(S.page==='capsules'){
+      h='<div class="ph"><h4>Capsules</h4><button class="pbtn" data-act="newcap">+ New capsule</button></div>'
+       +S.capsules.map(function(c){return '<button class="ccard" data-cap="'+c.id+'"><b>'+esc(c.name)+'</b><span>'+c.ids.length+' pieces</span></button>';}).join('');
+      v.innerHTML=h;
+    } else {
+      h='<div class="ph"><h4>Outfits</h4><button class="pbtn" data-act="builder">+ New fave</button></div><div class="obar" id="obar"></div><div id="ocards"></div>';
+      v.innerHTML=h; drawBar(); drawCards();
+    }
+    v.scrollTop=keep;
+  }
+  function drawWardrobe(){
+    if(wdTabs().every(function(t){return t.k!==S.wd.tab;})) S.wd={tab:'All',sub:null};
+    CatRow($('#wd-row'),{tabs:wdTabs(),tab:S.wd.tab,sub:S.wd.sub,design:S.design,typesOf:typesOf,
+      onTab:function(t){S.wd={tab:t,sub:null};drawWardrobe();},
+      onSub:function(c){S.wd.sub=S.wd.sub===c?null:c;drawWardrobe();},redraw:drawWardrobe});
+    var pool=wdPool(); $('#wd-grid').innerHTML=pool.map(function(p){return tile(p,false,'data-p="'+p.id+'"');}).join('')||'<div class="emp" style="grid-column:1/-1"><b>Nothing here yet</b><p>Add a piece to see it on this shelf.</p></div>';
+    $('#wd-scope').innerHTML='<span>'+esc([S.wd.tab].concat(S.wd.sub?[S.wd.sub]:[]).join(' › '))+' · '+pool.length+' piece'+(pool.length===1?'':'s')+'</span>'+(S.wd.sub?'<button data-act="wd-clear">Clear type</button>':'');
+  }
+  function drawBar(){
+    var el=$('#obar'); if(!el) return;
+    el.innerHTML='<button class="tab '+(S.page==='saved'?'active':'')+'" data-act="faves-page">'+heart(2,true)+'Faves</button>'
+      +quickTags.map(function(t){return '<button class="tab '+(S.tags.indexOf(t)>=0?'active':'')+'" data-tag="'+t+'">'+t+'</button>';}).join('');
+  }
+  function describeFilters(){
+    var b=[]; if(S.capF.length) b.push(S.capF.length+' capsule'+(S.capF.length>1?'s':''));
+    if(S.fave[pageKey()].length) b.push('fave level');
+    if(S.tags.length) b.push(S.tags.join(' or '));
+    filterTabs().forEach(function(t){var f=S.slots[t]; if(f.type==='items') b.push(f.ids.length+' '+t.toLowerCase()); if(f.type==='none') b.push(SLOT_NONE[t].toLowerCase());});
+    return b.join(', ');
+  }
+  function drawCards(){
+    var el=$('#ocards'); if(!el) return;
+    var res=results().slice(); var seed=S.seed;
+    res.sort(function(a,b){var pa=a.key.indexOf('c-')===0?-1:0,pb=b.key.indexOf('c-')===0?-1:0; return pa!==pb?pa-pb:hash(a.key+seed)-hash(b.key+seed);});
+    if(!res.length){
+      el.innerHTML='<div class="emp"><b>'+(S.page==='saved'&&!filterCount()?'Save your favourites':'No outfits match')+'</b><p>'+(filterCount()?'Narrowed by '+esc(describeFilters())+'.':'Tap a heart on an outfit to save it here.')+'</p>'+(filterCount()?'<button class="sbtn" data-act="clear-all">Clear all filters</button>':'')+'</div>'; return;
+    }
+    var vis=res.slice(0,S.shown);
+    el.innerHTML='<div class="ogrid">'+vis.map(function(o){
+      var L=lvl(o),ex=(S.extras[o.key]||[]).length;
+      return '<div class="oc"><div class="stack">'+o.pieces.map(function(p){return '<span style="background:'+col(p)+'">'+esc(p.name)+'</span>';}).join('')+'</div>'
+        +'<div class="ocf"><button class="ib" data-heart="'+esc(o.key)+'" aria-label="Fave level: '+(HN[L]||'none')+'">'+heart(L)+(L?HN[L]:'')+'</button>'
+        +'<button class="ib" data-extra="'+esc(o.key)+'" aria-label="Add accessories">+'+(ex?' '+ex:'')+'</button></div></div>';}).join('')+'</div>'
+      +(res.length>vis.length?'<div class="more"><button class="sbtn" data-act="more">Load more · '+(res.length-vis.length).toLocaleString('en-US')+' left</button></div>':'');
+  }
+  function redrawOutfits(){ if(S.page==='outfits'||S.page==='saved'){drawBar();drawCards();} renderFloat(); }
+
+  /* ---------- the filters sheet ---------- */
+  function openSheet(page){S.sheetOpen=true;S.fpage=page||null;$('#scrim').classList.add('open');$('#fsheet').classList.add('open');renderSheet();if(S.sheet!=='new'){S.note=page?'fpieces':'fmain';renderNote();}}
+  function closeSheet(){S.sheetOpen=false;S.fpage=null;S.rp=null;S.rq='';$('#scrim').classList.remove('open');$('#fsheet').classList.remove('open');S.note=S.page==='saved'?'saved':'outfits';renderNote();redrawOutfits();}
+  function sheetNote(){return S.fpage?'fpieces':'fmain';}
+  function renderSheet(){
+    if(S.sheet==='new') return renderSheetNew();
+    $('#fs-foot').className='fs-foot';
+    var body=$('#fs-body'),keep=body.scrollTop;
+    var pg=pageKey(), n=results().length;
+    $('#fs-title').textContent=S.fpage||'Filters';
+    var clr=$('#fs-clear'); clr.textContent=S.fpage?'Clear':'Clear all';
+    clr.style.visibility=(S.fpage?S.slots[S.fpage].type!=='any':filterCount()>0)?'visible':'hidden';
+    if(!S.fpage){
+      var hint=function(t){return S.hints?'<span class="hint">'+t+'</span>':'';};
+      var cnt=function(n){return n?' <i>('+n+')</i>':'';};
+      var h='';
+      if(S.capsules.length) h+='<div class="sec"><span class="lbl">Capsules'+cnt(S.capF.length)+'</span>'+hint('Outfits made only from the chosen capsules')+'<div class="row wrap">'+S.capsules.map(function(c){return '<button class="chip '+(S.capF.indexOf(c.id)>=0?'on':'')+'" data-cap-f="'+c.id+'" aria-pressed="'+(S.capF.indexOf(c.id)>=0)+'">'+esc(c.name)+'</button>';}).join('')+'</div></div>';
+      h+='<div class="sec"><span class="lbl">Faves'+cnt(S.fave[pg].length)+'</span>'+hint('Any chosen level')+'<div class="row wrap">'+[1,2,3].map(function(l){var on=S.fave[pg].indexOf(l)>=0;return '<button class="chip '+(on?'on':'')+'" data-lvl="'+l+'" aria-pressed="'+on+'">'+heart(l,true)+HN[l]+'</button>';}).join('')+'</div></div>';
+      h+='<div class="sec"><span class="lbl">Tags'+cnt(S.tags.length)+'</span>'+hint('Any piece with any chosen tag')+'<div class="row wrap">'+TAGS.map(function(t){var on=S.tags.indexOf(t)>=0;return '<button class="chip '+(on?'on':'')+'" data-tagf="'+t+'" aria-pressed="'+on+'">'+t+'</button>';}).join('')+'</div></div>';
+      h+='<div class="sec"><span class="lbl">Pieces'+cnt(narrowedSlots())+'</span>'+hint('Each category narrows further')+'<div class="row wrap">'+filterTabs().map(function(t){var f=S.slots[t];
+        return '<button class="chip '+(f.type!=='any'?'on':'')+'" data-slot="'+t+'">'+t+(f.type==='items'?'<span class="bdg">'+f.ids.length+'</span>':f.type==='none'?'<span class="bdg">No</span>':'')+'<span class="caret">›</span></button>';}).join('')+'</div></div>';
+      body.innerHTML=h;
+    } else {
+      body.innerHTML='<div id="fs-types"></div><div class="grid3" id="fs-grid"></div>'; drawSlotPage();
+    }
+    body.scrollTop=S.fpage?0:keep;
+    $('#fs-foot').innerHTML=(S.fpage?'<button class="sbtn" data-act="fback">‹ Back</button>':'')+'<button class="sbtn primary wide" data-act="fsee">'+(n===0?'No outfits match':'See '+n.toLocaleString('en-US')+' outfit'+(n===1?'':'s'))+'</button>';
+  }
+  function drawSlotPage(){
+    var slot=S.fpage,f=S.slots[slot],sub=S.fsub[slot]||null;
+    CatRow($('#fs-types'),{only:true,tab:slot,sub:sub,design:S.design,typesOf:typesOf,
+      count:function(t,c){return c?inTab(t).filter(function(p){return p.cat===c&&f.ids.indexOf(p.id)>=0;}).length:0;},
+      onTab:function(){},onSub:function(c){S.fsub[slot]=S.fsub[slot]===c?null:c;drawSlotPage();},redraw:drawSlotPage});
+    var pool=inTab(slot).filter(function(p){return !sub||p.cat===sub;});
+    $('#fs-grid').innerHTML='<button class="t none '+(f.type==='none'?'sel':'')+'" data-none="1" aria-pressed="'+(f.type==='none')+'">'+SLOT_NONE[slot]+(f.type==='none'?'<span class="tick">✓</span>':'')+'</button>'
+      +pool.map(function(p){return tile(p,f.type==='items'&&f.ids.indexOf(p.id)>=0,'data-fp="'+p.id+'"');}).join('');
+    var clr=$('#fs-clear'); clr.style.visibility=f.type!=='any'?'visible':'hidden';
+    var n=results().length, last=$('#fs-foot').lastChild; if(last) last.textContent=n===0?'No outfits match':'See '+n.toLocaleString('en-US')+' outfit'+(n===1?'':'s');
+  }
+
+
+  /* ---------- the rethought sheet ---------- */
+  var ROWS=['Pieces','Capsules','Tags','Faves'];
+  var HINTS={Pieces:'Each category narrows further',Capsules:'Outfits made only from the chosen capsules',Tags:'Any piece carrying any chosen tag',Faves:'Any chosen level'};
+  var capName=function(id){var c=S.capsules.filter(function(x){return x.id===id;})[0];return c?c.name:id;};
+  function listVal(a){return a.length?(a.length>2?a.slice(0,2).join(', ')+' +'+(a.length-2):a.join(', ')):'Any';}
+  function rowValue(r){
+    if(r==='Pieces'){var v=filterTabs().filter(function(t){return S.slots[t].type!=='any';}).map(function(t){var f=S.slots[t];
+      return f.type==='none'?SLOT_NONE[t]:(f.ids.length>1?t+' ('+f.ids.length+')':PBY[f.ids[0]].name);});return listVal(v);}
+    if(r==='Capsules') return listVal(S.capF.map(capName));
+    if(r==='Tags') return listVal(S.tags);
+    return listVal(S.fave[pageKey()].map(function(l){return HN[l];}));
+  }
+  function activeChips(){
+    var c=[];
+    filterTabs().forEach(function(t){var f=S.slots[t];
+      if(f.type==='items') c.push({k:'slot:'+t,t:f.ids.length>1?t+' · '+f.ids.length:PBY[f.ids[0]].name});
+      if(f.type==='none') c.push({k:'slot:'+t,t:SLOT_NONE[t]});});
+    S.capF.forEach(function(id){c.push({k:'cap:'+id,t:capName(id)});});
+    S.tags.forEach(function(t){c.push({k:'tag:'+t,t:t});});
+    S.fave[pageKey()].forEach(function(l){c.push({k:'lvl:'+l,t:HN[l]});});
+    return c;
+  }
+  function removeChip(k){
+    var p=k.split(':'),w=p[0],v=p.slice(1).join(':');
+    if(w==='slot') S.slots[v]={type:'any',ids:[]};
+    else if(w==='cap') S.capF=S.capF.filter(function(x){return x!==v;});
+    else if(w==='tag') S.tags=S.tags.filter(function(x){return x!==v;});
+    else if(w==='lvl') S.fave[pageKey()]=S.fave[pageKey()].filter(function(x){return x!==+v;});
+  }
+  function sectionActive(r){return rowValue(r)!=='Any';}
+  function clearSection(r){
+    if(r==='Pieces') OUTFIT_TABS.forEach(function(t){S.slots[t]={type:'any',ids:[]};});
+    else if(r==='Capsules') S.capF=[]; else if(r==='Tags') S.tags=[]; else S.fave[pageKey()]=[];
+  }
+  var SEARCH_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>';
+  var seeLabel=function(){var n=results().length;return n===0?'No outfits match':'See '+n.toLocaleString('en-US')+' outfit'+(n===1?'':'s');};
+  function pickRow(label,on,attr,lead){return '<button class="pick '+(on?'picked':'')+'" '+attr+' aria-pressed="'+!!on+'">'+(lead||'')+'<span>'+esc(label)+'</span><span class="mk">'+(on?'✓':'')+'</span></button>';}
+  function rpMeta(){var n=results().length;
+    $('#rmetaw').innerHTML='<div class="rmeta"><span>'+HINTS[S.rp]+'</span><b>'+(n===0?'No outfits':n.toLocaleString('en-US')+' outfit'+(n===1?'':'s'))+'</b></div>';
+    $('#fs-clear').style.visibility=sectionActive(S.rp)?'visible':'hidden';}
+  function drawRPList(){
+    var q=(S.rq||'').trim().toLowerCase(),h='',pg=pageKey(),m=function(x){return !q||x.toLowerCase().indexOf(q)>=0;};
+    if(S.rp==='Capsules') h=S.capsules.filter(function(c){return m(c.name);}).map(function(c){return pickRow(c.name,S.capF.indexOf(c.id)>=0,'data-rcap="'+c.id+'"');}).join('');
+    else if(S.rp==='Tags') h=TAGS.slice().sort(function(a,b){return a.localeCompare(b);}).filter(m).map(function(t){return pickRow(t,S.tags.indexOf(t)>=0,'data-rtag="'+esc(t)+'"');}).join('');
+    else h=[1,2,3].map(function(l){return pickRow(HN[l],S.fave[pg].indexOf(l)>=0,'data-rlvl="'+l+'"',heart(l,true));}).join('');
+    $('#rlist').innerHTML=h||'<div class="emp"><p>Nothing called “'+esc(S.rq)+'”</p></div>';
+    rpMeta();
+    if(S.rp==='Faves') $('#fs-foot').lastChild.textContent=seeLabel();
+  }
+  function drawRPPieces(){
+    var t=S.rpTab,f=S.slots[t],sub=S.fsub[t]||null,q=(S.rq||'').trim().toLowerCase();
+    CatRow($('#rtabs'),{tabs:filterTabs().map(function(k){return {k:k};}),tab:t,sub:sub,design:S.design,typesOf:typesOf,
+      count:function(tt,c){var g=S.slots[tt]; if(g.type==='none') return c?0:1;
+        return g.type==='items'?g.ids.filter(function(id){return !c||PBY[id].cat===c;}).length:0;},
+      onTab:function(k){S.rpTab=k;S.rq='';var i=$('#rq');if(i)i.value='';drawRPPieces();},
+      onSub:function(c){S.fsub[t]=S.fsub[t]===c?null:c;drawRPPieces();},redraw:drawRPPieces});
+    var pool=inTab(t).filter(function(p){return (!sub||p.cat===sub)&&(!q||p.name.toLowerCase().indexOf(q)>=0);});
+    $('#rgrid').innerHTML=(q?'':'<button class="t none '+(f.type==='none'?'sel':'')+'" data-rnone="1" aria-pressed="'+(f.type==='none')+'">'+SLOT_NONE[t]+(f.type==='none'?'<span class="tick">✓</span>':'')+'</button>')
+      +pool.map(function(p){return tile(p,f.type==='items'&&f.ids.indexOf(p.id)>=0,'data-rfp="'+p.id+'"');}).join('');
+    rpMeta();
+  }
+  function renderSheetNew(){
+    var body=$('#fs-body'),foot=$('#fs-foot'),clr=$('#fs-clear'),keep=body.scrollTop;
+    foot.className='fs-foot pills';
+    if(!S.rp){
+      $('#fs-title').textContent='Filters'; clr.textContent='Clear all'; clr.style.visibility=filterCount()>0?'visible':'hidden';
+      var chips=activeChips();
+      body.innerHTML=(chips.length?'<div class="achips">'+chips.map(function(c){return '<button class="chip on" data-rrem="'+esc(c.k)+'" aria-label="Remove '+esc(c.t)+'">'+esc(c.t)+'<span class="x">✕</span></button>';}).join('')+'</div>':'')
+        +'<div class="rrows">'+ROWS.map(function(r){var v=rowValue(r);return '<button class="rrow" data-rrow="'+r+'"><span class="rl">'+r+'</span><span class="rv '+(v==='Any'?'dim':'')+'">'+esc(v)+'</span><span class="caret">›</span></button>';}).join('')+'</div>';
+      body.scrollTop=keep;
+      foot.innerHTML='<button class="sbtn primary wide" data-act="fsee">'+seeLabel()+'</button>';
+      S.note='rmain';
+    } else {
+      $('#fs-title').textContent=S.rp; clr.textContent='Clear';
+      var searchable=S.rp!=='Faves', ph={Pieces:'Search pieces',Capsules:'Search capsules',Tags:'Search tags'}[S.rp];
+      body.innerHTML=(S.rp==='Pieces'?'<div id="rtabs"></div>':'')+'<div id="rmetaw"></div>'+(S.rp==='Pieces'?'<div class="grid3" id="rgrid"></div>':'<div class="picks" id="rlist"></div>');
+      foot.innerHTML='<button class="sbtn" data-act="rback">‹ Back</button>'+(searchable
+        ?'<div class="spill">'+SEARCH_SVG+'<input type="text" id="rq" autocomplete="off" placeholder="'+ph+'" value="'+esc(S.rq||'')+'"></div>'
+        :'<button class="sbtn primary wide" data-act="fsee">'+seeLabel()+'</button>');
+      body.scrollTop=0;
+      if(S.rp==='Pieces') drawRPPieces(); else drawRPList();
+      S.note='rpage';
+    }
+    renderNote();
+  }
+  function openRP(r){
+    S.rp=r; S.rq='';
+    if(r==='Pieces'){var ft=filterTabs(); S.rpTab=ft.filter(function(t){return S.slots[t].type!=='any';})[0]||(ft.indexOf(S.rpTab)>=0?S.rpTab:ft[0]);}
+    renderSheetNew();
+  }
+
+  /* ---------- overlay pickers: builder, capsule editor, accessories ---------- */
+  function openPicker(cfg){
+    S.ov={cfg:cfg,ids:cfg.ids.slice(),tab:cfg.tabs[0],sub:null,name:cfg.name||''}; S.note=cfg.note; renderNote();
+    var o=$('#ov');o.classList.add('open');
+    o.innerHTML='<div class="ov-head">'+(cfg.nameField?'<input id="ov-name" placeholder="Name this capsule" aria-label="Capsule name" value="'+esc(S.ov.name)+'">':esc(cfg.title))+'</div>'
+      +'<div class="ov-tabs" id="ov-tabs"></div><div class="ov-sum" id="ov-sum"></div><div class="ov-body" id="ov-body"><div class="grid3" id="ov-grid"></div></div>'
+      +'<div class="ov-foot"><button class="sbtn" data-act="ov-cancel">Cancel</button><button class="sbtn primary wide" id="ov-save" data-act="ov-save">'+cfg.saveLabel+'</button></div>';
+    var nm=$('#ov-name'); if(nm) nm.oninput=function(){S.ov.name=nm.value;drawPickerFoot();};
+    renderFloat(); drawPicker();
+  }
+  function closePicker(){S.ov=null;$('#ov').classList.remove('open');$('#ov').innerHTML='';S.note=S.page==='saved'?'saved':S.page;renderNote();renderFloat();}
+  function pkTabs(){var c=S.ov.cfg; return (c.all?[{k:'All'}]:[]).concat(c.tabs.map(function(t){return {k:t};}));}
+  function pkPool(){var v=S.ov,c=v.cfg; if(v.tab==='All') return PIECES.filter(function(p){return c.tabs.indexOf(p.tab)>=0||c.allOf;});
+    return PIECES.filter(function(p){return p.tab===v.tab&&(!v.sub||p.cat===v.sub);});}
+  function pkCount(t,c){var v=S.ov; return v.ids.filter(function(i){var p=PBY[i]; return (t==='All'?true:p.tab===t)&&(!c||p.cat===c);}).length;}
+  function drawPicker(){
+    var v=S.ov; if(!v) return; var c=v.cfg;
+    CatRow($('#ov-tabs'),{tabs:pkTabs(),tab:v.tab,sub:v.sub,design:S.design,typesOf:typesOf,count:function(t,cat){return t==='All'?0:pkCount(t,cat);},
+      onTab:function(t){v.tab=t;v.sub=null;drawPicker();},onSub:function(x){v.sub=v.sub===x?null:x;drawPicker();},redraw:drawPicker});
+    var pool=pkPool();
+    $('#ov-grid').innerHTML=pool.map(function(p){return tile(p,v.ids.indexOf(p.id)>=0,'data-pk="'+p.id+'"');}).join('');
+    drawPickerFoot();
+  }
+  function drawPickerFoot(){
+    var v=S.ov; if(!v) return; var c=v.cfg;
+    $('#ov-sum').textContent=c.summary?c.summary(v.ids):(v.ids.length+' picked');
+    var b=$('#ov-save'); if(b) b.disabled=!c.canSave(v.ids,v.name);
+  }
+  function togglePk(id){
+    var v=S.ov,c=v.cfg,p=PBY[id],i=v.ids.indexOf(id);
+    if(i>=0){v.ids.splice(i,1);}
+    else{ var max=c.max?c.max(p.tab):Infinity, same=v.ids.filter(function(x){return PBY[x].tab===p.tab;});
+      if(same.length>=max){v.ids.splice(v.ids.indexOf(same[same.length-1]),1);} v.ids.push(id); }
+    drawPicker();
+  }
+  function openBuilder(){
+    openPicker({title:'New fave',tabs:OUTFIT_TABS.filter(function(t){return inTab(t).length>0;}),all:false,ids:[],note:'builder',saveLabel:'Save fave',
+      max:function(t){return t==='Tops'?2:1;},
+      summary:function(ids){return ids.length?ids.map(function(i){return PBY[i].name;}).join(' · '):'Pick a top and bottom, or a dress';},
+      canSave:function(ids){var t=function(x){return ids.some(function(i){return PBY[i].tab===x;});};return (t('Tops')&&(t('Pants')||t('Skirts')))||t('Dresses');}});
+  }
+  function openCapsule(cap){
+    openPicker({title:'',nameField:true,name:cap?cap.name:'',tabs:TAXO.map(function(t){return t[0];}).filter(function(t){return inTab(t).length>0;}),all:true,allOf:true,
+      ids:cap?cap.ids:[],note:'capsule',saveLabel:'Save capsule',summary:function(ids){return ids.length+' piece'+(ids.length===1?'':'s')+' in this capsule';},
+      canSave:function(ids,name){return ids.length>0&&(name||'').trim().length>0;},capId:cap&&cap.id});
+  }
+  function openExtras(key){
+    openPicker({title:'Add accessories',tabs:EXTRA_TABS.filter(function(t){return inTab(t).length>0;}),all:false,ids:(S.extras[key]||[]).slice(),note:'extras',saveLabel:'Save',
+      summary:function(ids){return ids.length?ids.length+' on this outfit':'Nothing added yet';},canSave:function(){return true;},extraKey:key});
+  }
+  function savePicker(){
+    var v=S.ov,c=v.cfg;
+    if(c.extraKey){S.extras[c.extraKey]=v.ids.slice(); toast('Accessories saved');}
+    else if(c.nameField){ var nm=(v.name||'').trim();
+      if(c.capId){S.capsules.forEach(function(x){if(x.id===c.capId){x.name=nm;x.ids=v.ids.slice();}});}
+      else S.capsules.push({id:'c'+(S.capsules.length+1+Date.now()%1000),name:nm,ids:v.ids.slice()});
+      toast('Capsule saved'); }
+    else { var pcs=v.ids.map(function(i){return PBY[i];}), key='c-'+Date.now(); var o={key:key,pieces:pcs,level:1};
+      S.custom.unshift(o); S.levels[key]=1; toast('Saved to Faves'); S.page='saved'; }
+    closePicker(); renderAll();
+  }
+
+  /* ---------- wiring ---------- */
+  function renderAll(){renderNav();renderView();renderFloat();renderNote();if(S.sheetOpen)renderSheet();}
+  document.addEventListener('click',function(e){
+    var el=e.target.closest('button'); if(!el) return;
+    if(el.closest('#jumps')){jump(el.dataset.j);return;}
+    if(el.closest('#designs')){S.design=el.dataset.v;mark();S.ov?drawPicker():null;renderAll();return;}
+    if(el.closest('#sheets')){S.sheet=el.dataset.v;S.rp=null;S.fpage=null;mark();if(S.sheetOpen)renderSheet();return;}
+    if(el.id==='reset'){var d=S.design,sh=S.sheet;closeAllLayers();fresh();S.design=d;S.sheet=sh;S.page='outfits';S.note='outfits';renderAll();mark();return;}
+    if(!el.closest('#screen')) return;
+    var d=el.dataset;
+    if(d.go){S.page=d.go;S.shown=12;S.note=d.go;renderAll();return;}
+    if(d.heart){S.levels[d.heart]=((S.levels[d.heart]||0)+1)%4;drawCards();return;}
+    if(d.extra){openExtras(d.extra);return;}
+    if(d.tag){var i=S.tags.indexOf(d.tag);i>=0?S.tags.splice(i,1):S.tags.push(d.tag);S.shown=12;redrawOutfits();return;}
+    if(d.cap){openCapsule(S.capsules.filter(function(c){return c.id===d.cap;})[0]);return;}
+    if(d.p){toast('Opens the piece');return;}
+    if(d.pk){togglePk(d.pk);return;}
+    if(d.rrow){openRP(d.rrow);return;}
+    if(d.rrem){removeChip(d.rrem);S.shown=12;renderSheetNew();return;}
+    if(d.rcap){var rc=S.capF.indexOf(d.rcap);rc>=0?S.capF.splice(rc,1):S.capF.push(d.rcap);S.shown=12;drawRPList();return;}
+    if(d.rtag){var rt=S.tags.indexOf(d.rtag);rt>=0?S.tags.splice(rt,1):S.tags.push(d.rtag);S.shown=12;drawRPList();return;}
+    if(d.rlvl){var rl=+d.rlvl,ra=S.fave[pageKey()],ri=ra.indexOf(rl);ri>=0?ra.splice(ri,1):ra.push(rl);S.shown=12;drawRPList();return;}
+    if(d.rnone||d.rfp){var rt2=S.rpTab,rf=S.slots[rt2];
+      if(d.rnone){S.slots[rt2]=rf.type==='none'?{type:'any',ids:[]}:{type:'none',ids:[]};}
+      else{if(rf.type==='none')rf={type:'items',ids:[]};var rq=rf.ids.indexOf(d.rfp);rq>=0?rf.ids.splice(rq,1):rf.ids.push(d.rfp);S.slots[rt2]=rf.ids.length?{type:'items',ids:rf.ids}:{type:'any',ids:[]};}
+      S.shown=12;drawRPPieces();return;}
+    if(d.capF){var j=S.capF.indexOf(d.capF);j>=0?S.capF.splice(j,1):S.capF.push(d.capF);S.shown=12;renderSheet();return;}
+    if(d.lvl){var l=+d.lvl,a=S.fave[pageKey()],k=a.indexOf(l);k>=0?a.splice(k,1):a.push(l);S.shown=12;renderSheet();return;}
+    if(d.tagf){var m=S.tags.indexOf(d.tagf);m>=0?S.tags.splice(m,1):S.tags.push(d.tagf);S.shown=12;renderSheet();return;}
+    if(d.slot){S.fpage=d.slot;S.note='fpieces';renderNote();renderSheet();return;}
+    if(d.none){var f=S.slots[S.fpage];S.slots[S.fpage]=f.type==='none'?{type:'any',ids:[]}:{type:'none',ids:[]};S.shown=12;drawSlotPage();return;}
+    if(d.fp){var f2=S.slots[S.fpage];if(f2.type==='none')f2={type:'items',ids:[]};var q=f2.ids.indexOf(d.fp);q>=0?f2.ids.splice(q,1):f2.ids.push(d.fp);
+      S.slots[S.fpage]=f2.ids.length?{type:'items',ids:f2.ids}:{type:'any',ids:[]};S.shown=12;drawSlotPage();return;}
+    switch(d.act){
+      case 'filters':openSheet(null);break;
+      case 'shuffle':S.seed++;S.shown=12;drawCards();break;
+      case 'more':S.shown+=12;drawCards();break;
+      case 'faves-page':S.page=S.page==='saved'?'outfits':'saved';S.shown=12;S.note=S.page;renderAll();break;
+      case 'builder':openBuilder();break;
+      case 'newcap':openCapsule(null);break;
+      case 'wd-clear':S.wd.sub=null;drawWardrobe();break;
+      case 'toast':toast(d.m);break;
+      case 'clear-all':clearAllFilters();redrawOutfits();break;
+      case 'fback':S.fpage=null;S.note='fmain';renderNote();renderSheet();break;
+      case 'fsee':closeSheet();break;
+      case 'rback':S.rp=null;S.rq='';renderSheetNew();break;
+      case 'ov-cancel':closePicker();break;
+      case 'ov-save':savePicker();break;
+    }
+  });
+  $('#scrim').addEventListener('click',closeSheet);
+  document.addEventListener('input',function(e){ if(e.target.id!=='rq') return; S.rq=e.target.value; if(S.rp==='Pieces') drawRPPieces(); else drawRPList(); });
+  $('#fs-clear').addEventListener('click',function(){
+    if(S.sheet==='new'){ if(S.rp) clearSection(S.rp); else clearAllFilters(); S.shown=12; renderSheetNew(); return; }
+    if(S.fpage){S.slots[S.fpage]={type:'any',ids:[]};drawSlotPage();}
+    else{clearAllFilters();S.shown=12;renderSheet();}
+  });
+  function mark(){[['designs',S.design],['sheets',S.sheet]].forEach(function(g){
+    [].forEach.call($('#'+g[0]).children,function(b){b.setAttribute('aria-pressed',b.dataset.v===g[1]);});});}
+  function closeAllLayers(){S.sheetOpen=false;$('#scrim').classList.remove('open');$('#fsheet').classList.remove('open');S.ov=null;$('#ov').classList.remove('open');}
+  function jump(j){
+    closeAllLayers(); S.fpage=null; S.rp=null; S.page='outfits'; S.note='outfits'; renderAll();
+    if(j==='outfits') return;
+    openSheet(null);
+    var map={rpieces:'Pieces',rcaps:'Capsules',rtags:'Tags',rfaves:'Faves'};
+    if(map[j]){ if(S.sheet==='new') openRP(map[j]); else { if(j==='rpieces'){S.fpage='Tops';renderSheet();} } }
+  }
+  S.page='outfits'; S.note='outfits';
+  mark(); renderAll();
+})();
+</script>
