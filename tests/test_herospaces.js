@@ -165,7 +165,7 @@ async function dealUntil(p, test, tries=200){
       const r = document.getElementById('hero-pop').getBoundingClientRect();
       return Math.abs((r.top + r.bottom)/2 - innerHeight/2) <= 6 && Math.abs((r.left + r.right)/2 - innerWidth/2) <= 2;
     }));
-    check('and Back and Shuffle share the bar', await p.evaluate(()=>{
+    check('and Close and Shuffle share the bar', await p.evaluate(()=>{
       const b = document.getElementById('hero-pop-back').getBoundingClientRect();
       const s2 = document.getElementById('hero-pop-shuffle').getBoundingClientRect();
       return Math.abs(b.top - s2.top) <= 2 && b.right <= s2.left;
@@ -174,7 +174,7 @@ async function dealUntil(p, test, tries=200){
     check('Escape puts it away', await p.evaluate(()=>!heroPopOpen));
     await p.click('#outfit-hero .hero-feature'); await p.waitForTimeout(500);
     await p.click('#hero-pop-back'); await p.waitForTimeout(500);
-    check('Back closes it', await p.evaluate(()=>!heroPopOpen));
+    check('Close closes it', await p.evaluate(()=>!heroPopOpen));
     await p.click('#outfit-hero .hero-feature'); await p.waitForTimeout(400);
     await p.mouse.click(195, 12); await p.waitForTimeout(500);
     check('tapping outside closes it', await p.evaluate(()=>!heroPopOpen));
@@ -197,7 +197,7 @@ async function dealUntil(p, test, tries=200){
       const g = document.querySelector('#outfit-gallery .outfit-card').getBoundingClientRect();
       return a.width > g.width + 20;
     }));
-    check('the popup keeps one height and Back and Shuffle stay put through a deal', await p.evaluate(()=>{
+    check('the popup keeps one height and Close and Shuffle stay put through a deal', await p.evaluate(()=>{
       openHeroPopup();
       return true;
     }) && await (async()=>{
@@ -222,9 +222,9 @@ async function dealUntil(p, test, tries=200){
       (await p.evaluate(()=>Math.round(scrollY))) === y0);
     await p.keyboard.press('Escape'); await p.waitForTimeout(700);
     await toFaves(p, 1100);
-    check('on Faves Filters floats too', await p.evaluate(()=>{
+    check('on Faves Filters sits in the header too, as on All', await p.evaluate(()=>{
       const f = document.getElementById('filters-fab');
-      return f.parentElement.id === 'float-row';
+      return f.parentElement.id === 'saved-icon-row';
     }));
     await p.close();
   }

@@ -54,17 +54,17 @@ async function longPress(p, sel){
     check('the head carries no title in the mode',
       await p.evaluate(()=>document.getElementById('wardrobe-title').offsetParent === null));
     check('the count is inside the button that acts on it, and nowhere else',
-      (await bar(p))==='Back Select all Delete 1 item', await bar(p));
+      (await bar(p))==='Done Select all Delete 1 item', await bar(p));
     check('and the navigation stands down', !(await p.isVisible('.bottom-bar')));
-    check('the way out is Back, at the bottom left of the bar',
+    check('the way out is Done, at the bottom left of the bar',
       (await p.isVisible('#edit-back-btn')) &&
       (await p.evaluate(()=>{
         const bk=document.getElementById('edit-back-btn').getBoundingClientRect();
         const bar=document.getElementById('bulk-bar').getBoundingClientRect();
-        return Boolean(document.querySelector('#edit-back-btn .back-glyph')) &&
+        return !document.querySelector('#edit-back-btn .back-glyph') &&
                bk.left - bar.left < 24 && bk.top > window.innerHeight / 2;
       })));
-    check('and there is no Done button any more',
+    check('and there is no second Done button',
       await p.evaluate(()=>!document.getElementById('edit-done-btn')));
     check('and the icons are not', await p.evaluate(()=>
       ['search-btn','add-item-btn'].every(id =>
@@ -105,7 +105,7 @@ async function longPress(p, sel){
       };
     }, {page: restHeight, selecting: selectingRest});
     check('scrolled a long way down', g.scrolled > 1800, String(g.scrolled));
-    check('so the way out is still on screen', g.done, `Back at ${g.doneTop}px`);
+    check('so the way out is still on screen', g.done, `Done at ${g.doneTop}px`);
     check('the action bar is still on screen too', g.bar);
     // Two buttons a thumb has to hit while the other hand holds the phone.
     check('both actions are thumb-sized', await p.evaluate(()=>
@@ -140,7 +140,7 @@ async function longPress(p, sel){
     await p.click('#bulk-bar button:has-text("Deselect all")'); await p.waitForTimeout(500);
     check('which it does', (await p.evaluate(()=>selectedIds.size))===0);
     check('with nothing selected the button just says Delete, not a count of zero',
-      (await bar(p))==='Back Select all Delete', await bar(p));
+      (await bar(p))==='Done Select all Delete', await bar(p));
     check('and there is nothing to delete',
       await p.evaluate(()=>document.querySelector('#bulk-bar button:last-child').disabled));
     await p.close();
@@ -152,7 +152,7 @@ async function longPress(p, sel){
     await longPress(p, '#gallery .tile');
     await p.evaluate(()=>window.scrollTo({top:1500})); await p.waitForTimeout(400);
     await p.click('#edit-back-btn'); await p.waitForTimeout(600);
-    check('Back leaves the mode', !(await p.evaluate(()=>editMode)));
+    check('Done leaves the mode', !(await p.evaluate(()=>editMode)));
     check('the navigation comes back', await p.isVisible('.bottom-bar'));
     check('the action bar goes', !(await p.isVisible('#bulk-bar')));
     check('and nothing is left selected', (await p.evaluate(()=>selectedIds.size))===0);
