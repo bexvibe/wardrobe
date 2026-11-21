@@ -110,6 +110,7 @@
 
   /* The same All / Faves switch as the nav, under the title, so the choice
      is at the top of the page as well as at the bottom. */
+  .no-outfit-switch .view-switch{display:none;}
   .view-switch{
     display:inline-flex;gap:2px;padding:3px;margin:-6px 0 14px;
     background:var(--accent-soft);border-radius:999px;
@@ -2229,6 +2230,9 @@
       <button type="button" class="" aria-pressed="false" onclick="setMode('outfits')">All</button>
       <button type="button" class="on" aria-pressed="true" onclick="setMode('saved')"><span class="fave-chip-heart" data-level="2"><svg class="fave-svg" viewBox="0 0 24 24" aria-hidden="true"><path class="fh-body" d="M12 21c-.5 0-9-5.6-9-11.2C3 6.6 5.2 4.5 7.9 4.5c1.7 0 3.1.8 4.1 2.3 1-1.5 2.4-2.3 4.1-2.3C18.8 4.5 21 6.6 21 9.8 21 15.4 12.5 21 12 21z"/><path class="fh-shine" d="M5.8 9.4c.2-1.5 1.1-2.5 2.6-2.8"/></svg></span>Faves</button>
     </div>
+    <!-- The same featured outfit as on All, dealt from the faves only. -->
+    <div class="hero" id="saved-hero"></div>
+    <h2 class="gallery-title" id="saved-gallery-title" style="display:none;">More faves</h2>
     <div class="outfit-gallery" id="saved-gallery"></div>
     <div class="empty" id="saved-empty" style="display:none;">
       <span class="empty-emoji" id="saved-empty-emoji" aria-hidden="true">💗</span>
@@ -2501,6 +2505,11 @@ let pendingPhotoItemId = null;
 let appMode = 'inventory';
 let favoriteOutfits = [];
 let capsules = [];
+// The All / Faves switch under the Outfits title. Hidden for now (the nav
+// at the bottom still switches); set this to true to bring it back.
+const SHOW_OUTFIT_SWITCH = false;
+document.body.classList.toggle('no-outfit-switch', !SHOW_OUTFIT_SWITCH);
+
 let viewMode = 'photos'; // 'photos' or 'names'
 let editMode = false;
 let selectedIds = new Set();
@@ -4792,11 +4801,13 @@ function drawCapsulePage(id){
 }
 
 function renderHero(){
-  const host = document.getElementById('outfit-hero');
+  const faves = appMode === 'saved';
+  const host = document.getElementById(faves ? 'saved-hero' : 'outfit-hero');
   if(!host) return;
+  const titleId = faves ? 'saved-gallery-title' : 'gallery-title';
   if(!heroCombo){
     host.innerHTML = ''; host.style.display = 'none';
-    const g = document.getElementById('gallery-title'); if(g) g.style.display = 'none';
+    const g = document.getElementById(titleId); if(g) g.style.display = 'none';
     closeHeroPopup();
     renderShuffleFab();
     return;
@@ -4805,8 +4816,10 @@ function renderHero(){
 
   const key = comboKey(heroCombo);
   const c = heroCombo;
-  const gt = document.getElementById('gallery-title');
-  if(gt){
+  const gt = document.getElementById(titleId);
+  if(gt && faves){
+    gt.style.display = savedShownCount > 1 ? 'flex' : 'none';
+  } else if(gt){
     // With filters on and nothing but the featured outfit left, a bare
     // "More combos" over an empty grid reads as broken, so say why.
     const others = outfitDisplayed.filter(o => comboKey(o) !== key).length;
@@ -4822,7 +4835,9 @@ function renderHero(){
          aria-label="Try this outfit. Tap to shuffle and lock items"
          onclick="openHeroPopup()"
          onkeydown="if(event.key === 'Enter' || event.key === ' '){ event.preventDefault(); openHeroPopup(); }">
+      ${faveHeartHtml(key)}
       <div class="hero-spaces">${heroRowsHtml(c, true)}</div>
+      ${heroDressingHtml(c)}
     </div>`);
   // In the popup the spaces are live.
   const body = document.getElementById('hero-pop-body');
@@ -4830,8 +4845,23 @@ function renderHero(){
     <div class="outfit-card" data-key="hero-pop">
       ${faveHeartHtml(key)}
       <div class="hero-spaces">${heroRowsHtml(c)}</div>
+      ${heroDressingHtml(c)}
     </div>`);
   renderShuffleFab();
+}
+
+// On Faves the featured outfit is a kept one, and a kept outfit can wear
+// accessories and shoes the spaces do not have a place for. They sit under
+// the spaces, as on the grid's cards.
+function heroDressingHtml(c){
+  if(appMode !== 'saved') return '';
+  const cell = p => p.photo
+    ? `<img src="${esc(p.photo)}" alt="${esc(p.name)}" referrerpolicy="no-referrer" decoding="async">`
+    : `<div class="no-photo-mini">${esc(p.name)}</div>`;
+  const { hats, extras } = outfitLayout(c);
+  const row = (list, cls) => list.length
+    ? `<div class="outfit-extras ${cls} n${Math.min(list.length, 4)}">${list.map(cell).join('')}</div>` : '';
+  return row(hats, 'outfit-hats') + row(extras, '');
 }
 
 // `flat` is the card on the page: the same spaces, read-only, with a padlock
@@ -5027,12 +5057,11 @@ function nextHeroCombo(){
   return fresh[Math.floor(Math.random() * fresh.length)][1];
 }
 function shuffleHero(){
-  const c = nextHeroCombo();
+  const c = appMode === 'saved' ? nextSavedHero() : nextHeroCombo();
   if(!c){ showToast('No more combos'); return; }
   heroDealt.add(comboKey(c));
   heroCombo = c;
-  storeHero(c);
-  renderHero();
+  if(appMode === 'saved') renderSavedOutfits(); else { storeHero(c); renderHero(); }
   ['hero-pop-shuffle','shuffle-fab'].forEach(id => {
     const fab = document.getElementById(id);
     if(fab){ fab.classList.remove('casting'); void fab.offsetWidth; fab.classList.add('casting'); }
@@ -5041,7 +5070,24 @@ function shuffleHero(){
 // One floating button, two meanings: on All it deals the featured outfit in
 // place; on Faves it reorders what you kept, as it always did.
 function shuffleFabTap(){
-  if(appMode === 'outfits') shuffleHero(); else shuffleOutfits();
+  shuffleHero();
+}
+
+// Faves: deal the featured outfit from the kept ones the filters leave,
+// never the one on screen, walking through the rest before repeating.
+function nextSavedHero(){
+  const sig = heroSignature() + '|saved';
+  if(sig !== heroDealtSig){ heroDealt = new Set(); heroDealtSig = sig; }
+  const current = heroCombo ? comboKey(heroCombo) : null;
+  if(current) heroDealt.add(current);
+  const recs = savedShownRecs();
+  let fresh = recs.filter(r => !heroDealt.has(r.key));
+  if(!fresh.length){
+    heroDealt = new Set(current ? [current] : []);
+    fresh = recs.filter(r => r.key !== current);
+  }
+  if(!fresh.length) return null;
+  return favoriteRecordToCombo(fresh[Math.floor(Math.random() * fresh.length)]);
 }
 
 // ---- The spaces in the featured outfit ---------------------
@@ -5061,6 +5107,7 @@ function heroSlotLocked(slot, c){
   const pieces = heroSlotPieces(slot, c);
   if(!pieces.length) return OPTIONAL_SLOTS.includes(slot) && outfitFilters[tabsForSlot(slot)[0]].type === 'none';
   const f = outfitFilters[tabForItem(pieces[0])];
+  if(!f) return false;   // a piece with no photo has no filter row
   return f.type === 'items' && f.ids.length === pieces.length && pieces.every(p => f.ids.includes(p.id));
 }
 function lockGlyph(on){
@@ -5118,6 +5165,7 @@ function lockHeroSlot(slot){
   // The outfit stays: locking is keeping it, not dealing again. Only the
   // pool behind it is redrawn, so the grid follows.
   const keep = heroCombo;
+  if(appMode === 'saved'){ renderSavedOutfits(); return; }
   outfitGen = comboGenerator();
   outfitDisplayed = [];
   loadMoreOutfits();
@@ -6113,6 +6161,16 @@ function savedOutfitMatches(rec){
 
 let savedShownCount = 0;
 
+function savedShownRecs(){
+  const want = faveFilter.saved;
+  const pool = favoriteOutfits.concat(
+    [...faveLingering.values()].filter(r => !favoriteOutfits.some(f => f.key === r.key)));
+  return shuffledForSession(
+    pool.filter(rec => (favePinned.has(rec.key) || faveMatches(rec.level, want))
+                       && savedOutfitMatches(rec)),
+    rec => rec.key);
+}
+
 function renderSavedOutfits(){
   const gallery = document.getElementById('saved-gallery');
   const emptyState = document.getElementById('saved-empty');
@@ -6125,12 +6183,7 @@ function renderSavedOutfits(){
   // the page every time you opened it until you took it away.
   // Ones whose heart was just changed stay put until the filter changes.
   const want = faveFilter.saved;
-  const pool = favoriteOutfits.concat(
-    [...faveLingering.values()].filter(r => !favoriteOutfits.some(f => f.key === r.key)));
-  const shown = shuffledForSession(
-    pool.filter(rec => (favePinned.has(rec.key) || faveMatches(rec.level, want))
-                       && savedOutfitMatches(rec)),
-    rec => rec.key);
+  const shown = savedShownRecs();
   const narrowed = outfitTags.length > 0 || capsuleFilter.length > 0 || countNarrowedSlots(outfitFilters) > 0;
   renderFaveChips();
 
@@ -6159,6 +6212,8 @@ function renderSavedOutfits(){
     document.getElementById('saved-empty-action').style.display = firstVisit ? '' : 'none';
     emptyState.style.display = 'block';
     savedShownCount = 0;
+    heroCombo = null;
+    renderHero();
     renderShuffleFab();
     return;
   }
@@ -6166,7 +6221,14 @@ function renderSavedOutfits(){
   document.getElementById('build-outfit-btn').style.display = '';
   savedShownCount = shown.length;
 
-  morphHtml(gallery, shown.map(rec => {
+  // The featured one stays while it still qualifies; otherwise the first of
+  // the session's order leads. The rest follow as "More faves".
+  const keepKey = heroCombo && appMode === 'saved' ? comboKey(heroCombo) : null;
+  const lead = shown.find(r => r.key === keepKey) || shown[0];
+  heroCombo = favoriteRecordToCombo(lead);
+  renderHero();
+
+  morphHtml(gallery, shown.filter(rec => rec !== lead).map(rec => {
     const combo = favoriteRecordToCombo(rec);
     const thumbs = outfitThumbsHtml(combo);
 

@@ -75,7 +75,7 @@ async function run(browser, shoesOn){
     await toFaves(page, 400);
     const saved = await page.evaluate(()=>({
       count: favoriteOutfits.length,
-      thumbs: document.querySelectorAll('#saved-gallery .outfit-thumbs img, #saved-gallery .outfit-thumbs .no-photo-mini').length
+      thumbs: document.querySelectorAll('#saved-view .outfit-thumbs img, #saved-view .outfit-thumbs .no-photo-mini, #saved-hero .hero-slot img, #saved-hero .outfit-extras img').length
     }));
     check('outfit saved with shoes still shows all 3 pieces', saved.count===1 && saved.thumbs===3,
       `pieces rendered=${saved.thumbs}`);

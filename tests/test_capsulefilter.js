@@ -69,13 +69,13 @@ const dealt = p => p.evaluate(() => outfitDisplayed.map(c => comboPieces(c).map(
   await toFaves(p);
   await p.click('#filters-fab'); await p.waitForTimeout(400);
   check('Faves keeps the capsules on', (await chips(p)).every(c=>c.on));
-  let n = await p.evaluate(() => document.querySelectorAll('#saved-gallery .outfit-card').length);
+  let n = await p.evaluate(() => document.querySelectorAll('#saved-view .outfit-card').length);
   check('Faves: both capsules → outfits 1 and 2', n===2, String(n));
   await tap(p,'Beta');
-  n = await p.evaluate(() => document.querySelectorAll('#saved-gallery .outfit-card').length);
+  n = await p.evaluate(() => document.querySelectorAll('#saved-view .outfit-card').length);
   check('Faves: Alpha only → outfit 1', n===1, String(n));
   await tap(p,'Alpha');
-  n = await p.evaluate(() => document.querySelectorAll('#saved-gallery .outfit-card').length);
+  n = await p.evaluate(() => document.querySelectorAll('#saved-view .outfit-card').length);
   check('Tap again clears the filter', n===3 && (await chips(p)).every(c=>!c.on), String(n));
 
   await tap(p,'Alpha');

@@ -45,7 +45,7 @@ async function open(b){
   return p;
 }
 
-const cards = p => p.evaluate(()=>document.querySelectorAll('#saved-gallery .outfit-card').length);
+const cards = p => p.evaluate(()=>document.querySelectorAll('#saved-view .outfit-card').length);
 const chipLabels = p => p.evaluate(()=>
   Array.from(document.querySelectorAll('#sheet-filter-grid .filter-chip'))
     .map(e=>e.childNodes[0].textContent.trim()));
@@ -119,7 +119,7 @@ async function pinFirst(p, key){
     check('pinning the dress keeps the dress fave', (await cards(p))===1, String(await cards(p)));
     check('and the other two are not drawn at all',
       await p.evaluate(()=>favoriteOutfits.length===3 &&
-        document.querySelectorAll('#saved-gallery .outfit-card').length===1));
+        document.querySelectorAll('#saved-view .outfit-card').length===1));
 
     await setAny(p, 'Dresses');
     await pin(p, 'Tops', 'seed_22');

@@ -49,8 +49,8 @@ const total  = p => p.evaluate(()=>totalComboCount());
 const kept = async p => {
   await require('./nav').toFaves(p, 0); await p.waitForTimeout(1200);
   await p.evaluate(()=>closeFilterSheet()); await p.waitForTimeout(400);
-  return p.evaluate(()=>Array.from(document.querySelectorAll('#saved-gallery .outfit-card'))
-    .map(c=>c.querySelector('img') ? c.querySelector('img').getAttribute('alt') : '?'));
+  return p.evaluate(()=>Array.from(document.querySelectorAll('#saved-view .outfit-card'))
+    .map(c=>(c.querySelector('.fave-heart')||{dataset:{}}).dataset.key||'?'));
 };
 
 (async()=>{

@@ -119,10 +119,10 @@ const check=(n,p,d)=>{results.push(p);console.log(`${p?'PASS':'FAIL'}  ${n}${d?'
     await signIn(p);
     await toFaves(p, 600);
     const s=await p.evaluate(()=>{
-      const card=document.querySelector('#saved-gallery .outfit-card');
+      const card=document.querySelector('#saved-view .outfit-card');
       return {
-        upper:card.querySelectorAll('.outfit-upper > *').length,
-        lower:card.querySelectorAll('.outfit-lower > *').length,
+        upper:card.querySelectorAll('.hero-slot.top img').length,
+        lower:card.querySelectorAll('.hero-slot.bottom img').length,
         feet:card.querySelectorAll('.outfit-extras > *').length,
       };
     });

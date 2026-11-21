@@ -72,7 +72,7 @@ const check=(n,p,d)=>{results.push(p);console.log(`${p?'PASS':'FAIL'}  ${n}${d?'
   // propagates into an outfit saved before the rename
   await typeSearch(p, '');
   await toFaves(p, 500);
-  await p.click('#saved-gallery .outfit-card'); await p.waitForTimeout(400);
+  await p.evaluate(()=>openOutfitPage(favoriteOutfits[0].key, document.querySelector('#saved-view .outfit-card'))); await p.waitForTimeout(400);
   const pieceNames = await p.$$eval('#outfit-page .p-name', els=>els.map(e=>e.textContent.trim()));
   check('saved outfit shows the new name', pieceNames.includes(NEW_NAME), pieceNames.join(' | '));
 

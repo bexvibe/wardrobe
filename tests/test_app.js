@@ -153,7 +153,7 @@ async function login(page) {
 
     await toFaves(page, 300);
     check('saved tab shows the hearted outfit',
-      (await page.evaluate(()=>document.querySelectorAll('#saved-gallery .outfit-card').length))===1);
+      (await page.evaluate(()=>document.querySelectorAll('#saved-view .outfit-card').length))===1);
 
     // Level 1 -> 2 -> 3 -> 0: three more taps clears it.
     for(let i = 0; i < 3; i++) await page.click('#saved-gallery .outfit-fav-btn');
@@ -217,7 +217,7 @@ async function login(page) {
       await (async () => {
         await toFaves(page, 300);
         return (await page.evaluate(()=>
-          document.querySelectorAll('#saved-gallery .outfit-card').length))===1;
+          document.querySelectorAll('#saved-view .outfit-card').length))===1;
       })());
     await page.screenshot({ path: shot('v3-migrated.png') });
 
