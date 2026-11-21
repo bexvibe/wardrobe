@@ -439,12 +439,14 @@
   .name-list{
     display:flex;flex-direction:column;
     background:var(--surface);border:1px solid var(--line);
-    border-radius:10px;padding:2px 10px;
+    border-radius:10px;padding:8px;
   }
   .name-list:empty{display:none;}
+  /* The same row as a piece in an outfit's or a capsule's list: a 56px tile,
+     the name over the brand, and a chevron to open it. */
   .name-row{
     display:flex;align-items:center;gap:10px;
-    padding:12px 4px;
+    padding:8px 4px;
     cursor:pointer;
     -webkit-touch-callout:none;
     -webkit-user-select:none;
@@ -454,13 +456,17 @@
     width:44px;height:44px;border-radius:6px;object-fit:contain;
     background:var(--page);flex:none;
   }
+  .name-row .name-row-thumb{width:56px;height:56px;}
   .name-row-thumb.no-photo-mini{
     display:flex;align-items:center;justify-content:center;
     font-family:'Figtree',sans-serif;font-variant-numeric:tabular-nums;font-size:7px;color:var(--ink-soft);
   }
+  .name-row .name-row-thumb.no-photo-mini{font-size:8px;}
   .name-row-text{flex:1;min-width:0;}
-  .name-row-title{font-family:'Bricolage Grotesque',sans-serif;font-size:15px;}
-  .name-row-sub{font-size:12px;color:var(--ink-soft);}
+  .name-row-title{font-family:'Bricolage Grotesque',sans-serif;font-size:14px;}
+  .name-row-sub{font-size:11px;color:var(--ink-soft);}
+  /* Choosing pieces replaces the chevron with the tick. */
+  .name-row.select-mode .piece-go{display:none;}
 
   /* Edit mode / bulk select */
   .tile.select-mode, .name-row.select-mode{position:relative;}
@@ -9646,6 +9652,7 @@ function render(){
           <div class="name-row-title">${esc(i.name)}</div>
           <div class="name-row-sub">${esc(i.brand || '')}</div>
         </div>
+        <span class="piece-go" aria-hidden="true">›</span>
       </div>
     `;
     }).join('');
