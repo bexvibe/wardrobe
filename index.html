@@ -1501,10 +1501,20 @@
      phone shrinks the pieces rather than scrolling or growing the popup. */
   .hero-pop .outfit-card{flex:1;min-height:0;cursor:default;}
   .hero-spaces{flex:1;min-height:0;display:flex;flex-direction:column;gap:6px;}
-  .hero-row{display:grid;gap:6px;flex:2 1 0;min-height:0;}
+  .hero-row{display:grid;gap:6px;flex:3 1 0;min-height:0;}
   .hero-row.n2{grid-template-columns:repeat(2,minmax(0,1fr));}
   .hero-slot{position:relative;border-radius:10px;min-height:0;flex:2 1 0;}
   .hero-slot.top{flex:3 1 0;}
+  /* The lock sits low in its space, which for the first one is the corner the
+     heart is in — so it drops below the heart instead. */
+  .hero-spaces > :first-child .hero-lock,
+  .hero-spaces > :first-child .hero-badge{top:52px;bottom:auto;}
+  /* Shoes and accessories under the spaces: the same visual weight as a
+     piece, not a third of the card each. */
+  .hero-feature .outfit-extras > *,.hero-pop .outfit-extras > *{width:26%;}
+  .hero-feature .outfit-extras.n2 > *,.hero-pop .outfit-extras.n2 > *{width:22%;}
+  .hero-feature .outfit-extras.n3 > *,.hero-pop .outfit-extras.n3 > *{width:18%;}
+  .hero-feature .outfit-extras.n4 > *,.hero-pop .outfit-extras.n4 > *{width:15%;}
   .hero-slot.bottom{flex:4 1 0;}
   .hero-slot.dress{flex:7 1 0;}
   .hero-row .hero-slot{flex:none;height:100%;}
