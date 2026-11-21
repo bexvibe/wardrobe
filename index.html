@@ -69,6 +69,10 @@
   /* Item photos are never stretched or squashed: any <img> keeps its own
      proportions. (Inspo tiles opt into cover explicitly, which is more specific.) */
   img{object-fit:contain;}
+  /* The white tee is nearly the same value as the card it sits on, so it
+     gets a faint shadow that follows its cut-out edge. Matched on the photo
+     filename so it applies everywhere that photo appears. */
+  img[src*="white-tee-nobg"]{filter:drop-shadow(0 1px 3px rgba(18,18,18,0.28));}
   html{color-scheme: light;}
   body{
     margin:0;
@@ -1847,7 +1851,7 @@
     background:none;border:none;color:var(--ink);
     cursor:pointer;padding:0 6px;margin-right:-6px;
   }
-  .filter-sheet-body{padding:6px 18px calc(24px + var(--kb, 0px));flex:1 0 auto;}
+  .filter-sheet-body{padding:2px 18px calc(24px + var(--kb, 0px));flex:1 0 auto;}
   /* Choosing pieces: a page inside the sheet. Three across, so a category
      of a dozen is a few rows rather than a long scroll. */
   .filter-page-gallery{grid-template-columns:repeat(auto-fill, minmax(104px, 1fr));}
