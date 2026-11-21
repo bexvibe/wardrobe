@@ -2195,6 +2195,7 @@
 
     <!-- One outfit, picked afresh each time you arrive: something to react to
          before you start narrowing anything down. -->
+    <h2 class="hero-title" id="outfit-hero-title" style="display:none;">Outfit roulette</h2>
     <div class="hero" id="outfit-hero"></div>
 
     <h2 class="gallery-title" id="gallery-title" style="display:none;">More combos</h2>
@@ -2229,6 +2230,7 @@
       <button type="button" class="on" aria-pressed="true" onclick="setMode('saved')"><span class="fave-chip-heart" data-level="2"><svg class="fave-svg" viewBox="0 0 24 24" aria-hidden="true"><path class="fh-body" d="M12 21c-.5 0-9-5.6-9-11.2C3 6.6 5.2 4.5 7.9 4.5c1.7 0 3.1.8 4.1 2.3 1-1.5 2.4-2.3 4.1-2.3C18.8 4.5 21 6.6 21 9.8 21 15.4 12.5 21 12 21z"/><path class="fh-shine" d="M5.8 9.4c.2-1.5 1.1-2.5 2.6-2.8"/></svg></span>Faves</button>
     </div>
     <!-- The same featured outfit as on All, dealt from the faves only. -->
+    <h2 class="hero-title" id="saved-hero-title" style="display:none;">Outfit roulette</h2>
     <div class="hero" id="saved-hero"></div>
     <h2 class="gallery-title" id="saved-gallery-title" style="display:none;">More faves</h2>
     <div class="outfit-gallery" id="saved-gallery"></div>
@@ -4780,6 +4782,8 @@ function renderHero(){
   const host = document.getElementById(faves ? 'saved-hero' : 'outfit-hero');
   if(!host) return;
   const titleId = faves ? 'saved-gallery-title' : 'gallery-title';
+  const heroTitle = document.getElementById(faves ? 'saved-hero-title' : 'outfit-hero-title');
+  if(heroTitle) heroTitle.style.display = heroCombo ? '' : 'none';
   if(!heroCombo){
     host.innerHTML = ''; host.style.display = 'none';
     const g = document.getElementById(titleId); if(g) g.style.display = 'none';
