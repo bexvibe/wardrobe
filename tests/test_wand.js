@@ -57,7 +57,7 @@ const stream = p => p.evaluate(()=>outfitDisplayed.slice(0, 8).map(c=>comboKey(c
     check('on All Shuffle floats at the bottom', await shown(p));
     check('and Filters sits up by New fave', await p.evaluate(()=>{
       const f = document.getElementById('filters-fab');
-      return f.parentElement.id === 'all-icon-row' && getComputedStyle(f).display !== 'none';
+      return f.parentElement.id === 'outfit-tabs' && getComputedStyle(f).display !== 'none';
     }));
     await p.click('#outfit-hero .hero-feature'); await p.waitForTimeout(600);
     check('it says what it is, in the popup',
@@ -76,7 +76,7 @@ const stream = p => p.evaluate(()=>outfitDisplayed.slice(0, 8).map(c=>comboKey(c
     if(keptCards > 0){
       // As on All: Filters up by New fave, Shuffle floating on its own.
       check('on Faves Filters sits up by New fave too', await p.evaluate(()=>
-        document.getElementById('filters-fab').parentElement.id === 'saved-icon-row'));
+        document.getElementById('filters-fab').parentElement.id === 'saved-tabs'));
       check('and Shuffle floats on its own', await p.evaluate(()=>
         document.getElementById('shuffle-fab').parentElement.id === 'float-row'));
       const before = await p.evaluate(()=>comboKey(heroCombo));

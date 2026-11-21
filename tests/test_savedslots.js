@@ -218,7 +218,7 @@ async function pinFirst(p, key){
     check('the sheet does not open itself on arriving',
       !(await p.evaluate(()=>filterSheetOpen())));
     check('and the shut sheet still counts both on the pill',
-      (await p.textContent('#filters-fab')).replace(/\s+/g,'') === 'Filters2',
+      (await p.textContent('#filters-fab')).replace(/\s+/g,'') === 'Allfilters2',
       (await p.textContent('#filters-fab')).replace(/\s+/g,' ').trim());
     await p.close();
   }

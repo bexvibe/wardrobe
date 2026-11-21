@@ -224,7 +224,7 @@ async function dealUntil(p, test, tries=200){
     await toFaves(p, 1100);
     check('on Faves Filters sits in the header too, as on All', await p.evaluate(()=>{
       const f = document.getElementById('filters-fab');
-      return f.parentElement.id === 'saved-icon-row';
+      return f.parentElement.id === 'saved-tabs';
     }));
     await p.close();
   }

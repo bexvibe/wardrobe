@@ -126,7 +126,7 @@ const on = p => p.evaluate(()=>Array.from(
     const two = await badge();
     // Under OR a second tag widens the results, so counting it as a second
     // filter would be saying the page is more narrowed than it is.
-    check('the pill always reads Filters', /^Filters\b/.test(one) && /^Filters\b/.test(two), one);
+    check('the pill always reads Filters', /^All filters\b/.test(one) && /^All filters\b/.test(two), one);
     check('one tag reads as one filter', /\b1\b/.test(one), one);
     check('and two tags still read as one', /\b1\b/.test(two) && !/\b2\b/.test(two), two);
 

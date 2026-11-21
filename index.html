@@ -1561,10 +1561,38 @@
   .filters-fab-icon{width:18px;height:18px;display:block;flex:none;}
   .filters-fab.in-head .filters-fab-count{box-shadow:0 0 0 2px var(--page);}
   .filters-fab.in-head.active .filters-fab-count{box-shadow:0 0 0 2px var(--page);}
-  @media (max-width:370px){
-    .filters-fab.in-head .filters-fab-label{display:none;}
-    .filters-fab.in-head{padding:0 13px;}
+  /* In the bar it is one of the row, drawn as a tab with its icon, and it
+     keeps its words at every width: the row scrolls instead. */
+  .outfit-bar .filters-fab.in-head{
+    flex:none;box-shadow:none;border:1px solid var(--line);margin-right:0;
   }
+  .outfit-bar .filters-fab.in-head.active{border-color:var(--accent);}
+  .outfit-bar .bar-seg,.outfit-bar .bar-chips{display:contents;}
+  .outfit-bar .tab.quick-faves{gap:6px;}
+  .outfit-bar .tab .fave-chip-heart{width:14px;height:14px;}
+  /* The list: one white card around every row, as in the piece lists. */
+  .outfit-gallery.as-list{
+    display:flex;flex-direction:column;gap:0;
+    background:var(--surface);border:1px solid var(--line);
+    border-radius:10px;padding:2px 10px;
+  }
+  .outfit-gallery.as-list:empty{display:none;}
+  .outfit-row{
+    position:relative;display:flex;align-items:center;gap:12px;
+    padding:10px 0;cursor:pointer;border-top:1px solid var(--line);
+  }
+  .outfit-row:first-child{border-top:0;}
+  .outfit-row-thumbs{display:flex;gap:4px;flex:none;}
+  .outfit-row-thumbs img,.outfit-row-thumbs .no-photo-mini{
+    width:44px;height:44px;border-radius:6px;object-fit:contain;background:var(--page);display:block;
+  }
+  .outfit-row-text{flex:1;min-width:0;}
+  .outfit-row-title{
+    font-family:'Bricolage Grotesque',sans-serif;font-size:14px;line-height:1.3;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+  }
+  .outfit-row-sub{font-size:12px;color:var(--ink-soft);}
+  .outfit-row .outfit-fav-btn{position:static;flex:none;background:transparent;}
 
   /* On All, Shuffle is the big button over the nav: it deals the featured
      outfit, wherever you are on the page. */
@@ -2211,6 +2239,7 @@
         <button class="btn" id="build-outfit-btn-all" type="button" onclick="openOutfitBuilder()"><svg class="plus-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New fave</button>
       </div>
     </header>
+    <div class="tabs outfit-bar" id="outfit-tabs"><span class="bar-seg"></span><span class="bar-chips"></span></div>
 
     <!-- One outfit, picked afresh each time you arrive: something to react to
          before you start narrowing anything down. -->
@@ -2243,6 +2272,8 @@
         <button class="btn" id="build-outfit-btn" type="button" onclick="openOutfitBuilder()"><svg class="plus-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New fave</button>
       </div>
     </header>
+    <div class="tabs outfit-bar" id="saved-tabs"><span class="bar-seg"></span><span class="bar-chips"></span></div>
+
     <!-- The same featured outfit as on All, dealt from the faves only. -->
     <div class="hero" id="saved-hero"></div>
     <h2 class="gallery-title" id="saved-gallery-title" style="display:none;">More faves</h2>
@@ -2948,6 +2979,7 @@ function setMode(mode){
 
   // A page you have moved to is not the page the filters were raised on.
   closeFilterSheet();
+  renderFiltersFab();
 
   restoreScroll(mode);
 }
@@ -3222,14 +3254,16 @@ let filtersDocked = false;
 function placeFiltersButton(fab, animate){
   // On All the button sits at the top, in the icon row, until you scroll
   // down into the list; on Faves it floats.
-  const row = document.getElementById(appMode === 'saved' ? 'saved-icon-row' : 'all-icon-row');
+  // On the outfit pages it lives in the bar that sticks to the top, after the
+  // layout switch, and stays there as you scroll.
+  const bar = (appMode === 'outfits' || appMode === 'saved') ? outfitBarEl() : null;
   const float = document.getElementById('float-row');
-  const inHead = (appMode === 'outfits' || appMode === 'saved') && !!row && !filtersDocked;
-  const target = inHead ? row : float;
+  const inHead = !!bar;
+  const target = inHead ? bar : float;
   if(!inHead) fab.classList.remove('in-head');
   if(target && fab.parentElement !== target){
     const first = animate && fab.offsetParent ? fab.getBoundingClientRect() : null;
-    if(inHead) row.insertBefore(fab, row.firstChild); else float.appendChild(fab);
+    if(inHead) bar.insertBefore(fab, bar.querySelector('.bar-chips')); else float.appendChild(fab);
     fab.classList.toggle('in-head', inHead);
     // It pops in at its new place rather than travelling there.
     if(first){
@@ -3244,14 +3278,8 @@ function placeFiltersButton(fab, animate){
 }
 
 function updateFiltersDock(){
-  let next = false;
-  if(appMode === 'outfits' || appMode === 'saved'){
-    const gal = document.getElementById(appMode === 'saved' ? 'saved-gallery' : 'outfit-gallery');
-    if(gal && gal.offsetParent && window.scrollY > 40){
-      const top = gal.getBoundingClientRect().top;
-      next = filtersDocked ? top < window.innerHeight * 0.8 : top < window.innerHeight * 0.45;
-    }
-  }
+  // The button no longer travels: it sits in the sticky bar on both pages.
+  const next = false;
   if(next === filtersDocked) return;
   filtersDocked = next;
   renderFiltersFab(true);
@@ -3271,7 +3299,7 @@ function renderFiltersFab(animate){
   fab.setAttribute('aria-expanded', String(up));
   fab.innerHTML = `
     ${appMode === 'outfits' || appMode === 'saved' ? '<svg class="filters-fab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg>' : ''}
-    <span class="filters-fab-label">Filters</span>
+    <span class="filters-fab-label">${inHead ? 'All filters' : 'Filters'}</span>
     ${n ? `<span class="filters-fab-count">${n}</span>` : ''}`;
 
   const row = document.getElementById('float-row');
@@ -3279,6 +3307,7 @@ function renderFiltersFab(animate){
 
   // The other thing floating in this band, refreshed with it.
   renderShuffleFab();
+  if(appMode === 'outfits' || appMode === 'saved') renderOutfitBar();
 }
 
 // One mount, in the docked panel, following whichever page you are on. The
@@ -6241,15 +6270,9 @@ function renderSavedOutfits(){
   heroCombo = favoriteRecordToCombo(lead);
   renderHero();
 
-  morphHtml(gallery, shown.filter(rec => rec !== lead).map(rec => {
-    const combo = favoriteRecordToCombo(rec);
-    const thumbs = outfitThumbsHtml(combo);
-
-    return `<div class="outfit-card" data-key="${esc(rec.key)}" onclick='openOutfitPage(${JSON.stringify(rec.key)}, this)'>
-      ${faveHeartHtml(rec.key)}
-      <div class="outfit-thumbs">${thumbs}</div>
-    </div>`;
-  }).join(''), { flip:true });
+  gallery.classList.toggle('as-list', outfitView === 'list');
+  morphHtml(gallery, shown.filter(rec => rec !== lead)
+    .map(rec => outfitEntryHtml(favoriteRecordToCombo(rec), rec.key, true)).join(''), { flip:true });
   renderShuffleFab();
 }
 
@@ -6652,15 +6675,8 @@ function renderOutfits(){
   if(buildBtnAll) buildBtnAll.style.display = '';
   if(loadMoreBtn) loadMoreBtn.style.display = total > outfitDisplayed.length ? 'inline-block' : 'none';
 
-  morphHtml(gallery, shown.map(combo => {
-    const key = comboKey(combo);
-    const thumbs = outfitThumbsHtml(combo);
-
-    return `<div class="outfit-card" data-key="${esc(key)}" onclick='openOutfitPage(${JSON.stringify(key)}, this)'>
-      ${faveHeartHtml(key)}
-      <div class="outfit-thumbs">${thumbs}</div>
-    </div>`;
-  }).join(''), { flip:true });
+  gallery.classList.toggle('as-list', onPage && outfitView === 'list');
+  morphHtml(gallery, shown.map(combo => outfitEntryHtml(combo, comboKey(combo), onPage)).join(''), { flip:true });
 
   // Whether there is anything to deal again has just changed.
   renderShuffleFab();
@@ -7963,6 +7979,77 @@ function toggleTag(list, tag){
 
 // One tag list, applied to whichever half of the switch you are looking
 // at. The generator is re-run for All; the kept list is only redrawn.
+// ---- Outfits: grid or list, and the bar above them --------------------------
+// The same pattern as the wardrobe: a row that stops at the top of the screen
+// with the layout switch first, then All filters, then quick taps. The hero is
+// the same in either layout; only the cards below it change.
+let outfitView = 'grid';   // 'grid' or 'list'
+
+// One outfit as a card in the grid, or as a row in the list.
+function outfitEntryHtml(combo, key, onPage){
+  if(!(onPage && outfitView === 'list')){
+    return `<div class="outfit-card" data-key="${esc(key)}" onclick='openOutfitPage(${JSON.stringify(key)}, this)'>
+      ${faveHeartHtml(key)}
+      <div class="outfit-thumbs">${outfitThumbsHtml(combo)}</div>
+    </div>`;
+  }
+  const pieces = comboPieces(combo);
+  const imgs = pieces.slice(0, 4).map(p => p.photo
+    ? `<img src="${esc(p.photo)}" alt="" referrerpolicy="no-referrer" loading="lazy" decoding="async">`
+    : `<span class="no-photo-mini"></span>`).join('');
+  const names = pieces.map(p => p.name).join(' · ');
+  return `<div class="outfit-row" data-key="${esc(key)}" onclick='openOutfitPage(${JSON.stringify(key)}, this)'>
+    <div class="outfit-row-thumbs">${imgs}</div>
+    <div class="outfit-row-text">
+      <div class="outfit-row-title">${esc(names)}</div>
+      <div class="outfit-row-sub">${pieces.length} ${pieces.length === 1 ? 'piece' : 'pieces'}</div>
+    </div>
+    ${faveHeartHtml(key)}
+  </div>`;
+}
+
+function setOutfitView(mode){
+  if(outfitView === mode) return;
+  outfitView = mode;
+  renderOutfitBar();
+  if(appMode === 'saved') renderSavedOutfits(); else renderOutfits();
+}
+
+// The tags you reach for most, so the common narrowing is one tap. They come
+// from the pieces as they are now, so the five change as the wardrobe does. A
+// tag that is on stays on the row even if it falls out of the five.
+const QUICK_TAGS = 5;
+function quickTags(){
+  const top = tagsByUse().slice(0, QUICK_TAGS);
+  outfitTags.forEach(t => { if(!top.includes(t)) top.push(t); });
+  return top;
+}
+
+function outfitBarEl(){
+  return document.getElementById(appMode === 'saved' ? 'saved-tabs' : 'outfit-tabs');
+}
+
+function renderOutfitBar(){
+  const bar = outfitBarEl();
+  if(!bar) return;
+  const seg = (mode, label, icon) => `
+    <button type="button" class="view-seg-btn ${outfitView === mode ? 'active' : ''}"
+            aria-pressed="${outfitView === mode}" aria-label="${label}" title="${label}">${icon}</button>`;
+  const segHtml = `<div class="view-seg" role="group" aria-label="Layout"
+       onclick="setOutfitView(outfitView === 'grid' ? 'list' : 'grid')">
+      ${seg('grid', 'Grid view', ICONS.grid)}${seg('list', 'List view', ICONS.list)}
+    </div>`;
+  const faves = appMode === 'saved';
+  const chips = `<button class="tab quick-faves ${faves ? 'active' : ''}" type="button" aria-pressed="${faves}"
+        onclick="setMode(appMode === 'saved' ? 'outfits' : 'saved')">${faveChipHeart(2)}<span>Faves</span></button>`
+    + quickTags().map(t => `<button class="tab ${outfitTags.includes(t) ? 'active' : ''}" type="button"
+        aria-pressed="${outfitTags.includes(t)}" onclick='setOutfitTag(${JSON.stringify(t)})'>${esc(t)}</button>`).join('');
+  morphHtml(bar.querySelector('.bar-seg'), segHtml);
+  morphHtml(bar.querySelector('.bar-chips'), chips);
+  // Not inside the viewing area until this page is up.
+  if(bar.offsetParent) stickCategoryRow(bar, null);
+}
+
 function setOutfitTag(tag){
   outfitTags = toggleTag(outfitTags, tag);
   renderFilterControls();     // redraws the chips and the Clear all control with them
