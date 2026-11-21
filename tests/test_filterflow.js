@@ -121,6 +121,21 @@ const results=[]; const check=(n,p,d)=>{results.push(p);console.log(`${p?'PASS':
   await p.click('#filters-fab'); await p.waitForTimeout(600);
   check('the sheet reopens on its rows', (await title())==='Filters');
 
+  // ---- The foot rides above the keyboard; the list stays put ----
+  if(!(await p.evaluate(()=>filterSheetOpen()))){ await p.click('#filters-fab'); await p.waitForTimeout(600); }
+  await p.click('[data-filter-row="tags"]'); await settle();
+  await p.evaluate(()=>{ window.__vv={height:innerHeight-330,offsetTop:0,_l:{},addEventListener(t,f){(this._l[t]=this._l[t]||[]).push(f);},removeEventListener(t,f){this._l[t]=(this._l[t]||[]).filter(x=>x!==f);}};
+    Object.defineProperty(window,'visualViewport',{value:window.__vv,configurable:true}); });
+  await p.click('#filter-sheet-search'); await p.waitForTimeout(400);
+  const pill = await p.evaluate(()=>document.getElementById('filter-sheet-search').getBoundingClientRect().bottom);
+  check('with the keyboard up, the search pill is above it', pill <= 844-330, `${Math.round(pill)} vs ${844-330}`);
+  check('and so is Back', await p.evaluate(()=>document.getElementById('filter-sheet-back').getBoundingClientRect().bottom <= innerHeight-330));
+  check('the list is still there, whole', await p.evaluate(()=>document.querySelectorAll('#filter-section-list .capsule-pick').length>=3));
+  check('the sheet itself was not resized or moved', await p.evaluate(()=>{const s=document.getElementById('filter-sheet').getBoundingClientRect();return Math.round(s.bottom)===innerHeight;}));
+  await p.evaluate(()=>document.getElementById('filter-sheet-search').blur()); await p.waitForTimeout(300);
+  check('the foot comes back down, list intact', await p.evaluate(()=>document.documentElement.style.getPropertyValue('--kb')==='' && document.querySelectorAll('#filter-section-list .capsule-pick').length>=3));
+  await p.evaluate(()=>closeFilterSheet()); await p.waitForTimeout(500);
+
   await b.close();
   const ok=results.filter(Boolean).length;
   console.log(`${ok}/${results.length} checks passed`); process.exit(ok===results.length?0:1);

@@ -888,7 +888,7 @@
   }
 
   /* Room for it, so the last field is not stuck underneath. */
-  .modal-body.has-footer{padding-bottom:12px;}
+  .modal-body.has-footer{padding-bottom:calc(12px + var(--kb, 0px));}
   .outfits-heading{
     font-family:'Bricolage Grotesque',sans-serif;
     font-weight:500;
@@ -1790,7 +1790,7 @@
     /* Grows with its content and only scrolls once it has used the whole
        screen, less a sliver of page at the top (and the phone's status bar,
        if there is one) so there is still something to tap or pull on. */
-    max-height:calc(100% - max(12px, env(safe-area-inset-top, 0px)) - var(--kb, 0px));
+    max-height:calc(100% - max(12px, env(safe-area-inset-top, 0px)));
     background:var(--page);
     border-radius:18px 18px 0 0;
     display:flex;flex-direction:column;
@@ -1800,10 +1800,15 @@
     transform:translateY(100%);
     transition:transform var(--sheet-ease-ms) var(--sheet-ease);
   }
-  /* --kb is how much of the screen the keyboard covers while the search
-     field at the foot has focus (see syncKeyboard); the sheet rides up by
-     that much and gives up the same height, so the field stays in view. */
-  .filter-sheet.open{transform:translateY(calc(-1 * var(--kb, 0px)));}
+  .filter-sheet.open{transform:translateY(0);}
+  /* While a search field at the foot has focus, --kb is how much of the
+     screen the keyboard covers (see syncKeyboard). Only the foot moves: it
+     rides up above the keyboard, and the list gets that much room under it so
+     the last rows can still be scrolled into view. The sheet itself is never
+     resized for it: a scroller that changes size under a sticky foot is what
+     iOS leaves blank. Pickers (#modal) do the same. */
+  .filter-sheet .sheet-footer,
+  #modal .sheet-footer{transform:translateY(calc(-1 * var(--kb, 0px)));}
   /* Changing page changes how tall the sheet needs to be, and it gets
      there by growing or shrinking rather than jumping. */
   .filter-sheet.morphing{
@@ -1842,7 +1847,7 @@
     background:none;border:none;color:var(--ink);
     cursor:pointer;padding:0 6px;margin-right:-6px;
   }
-  .filter-sheet-body{padding:6px 18px 24px;flex:1 0 auto;}
+  .filter-sheet-body{padding:6px 18px calc(24px + var(--kb, 0px));flex:1 0 auto;}
   /* Choosing pieces: a page inside the sheet. Three across, so a category
      of a dozen is a few rows rather than a long scroll. */
   .filter-page-gallery{grid-template-columns:repeat(auto-fill, minmax(104px, 1fr));}
@@ -8734,7 +8739,7 @@ function formPickFrame(title, placeholder, onInput, onEnter){
         <button class="btn secondary" type="button" onclick="closeFormPicker()">${BACK_BTN_SVG}Back</button>
         <div class="search-box">${SEARCH_ICON_SVG}
           <input type="text" id="form-pick-input" autocomplete="off" placeholder="${placeholder}"
-                 onfocus="holdPickerScroll()"
+                 onfocus="holdPickerScroll();watchKeyboard(true)" onblur="watchKeyboard(false)"
                  oninput="${onInput}"
                  onkeydown="if(event.key==='Enter'){event.preventDefault();${onEnter};}">
         </div>
