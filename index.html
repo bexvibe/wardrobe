@@ -2815,8 +2815,9 @@ function renderShuffleFab(){
   if(row) row.classList.remove('big');
   // On All it deals the featured outfit; on Faves it reorders what is kept.
   const dealt = appMode === 'outfits' ? !!heroCombo : (appMode === 'saved' && savedShownCount > 0);
-  fab.style.display = dealt ? 'flex' : 'none';
   const tucked = (appMode === 'outfits' || appMode === 'saved') && filtersDocked;
+  // Inline, so the tucked class's display:none cannot lose to it.
+  fab.style.display = dealt && !tucked ? 'flex' : 'none';
   fab.classList.toggle('tucked', tucked);
   fab.tabIndex = tucked ? -1 : 0;
   fab.setAttribute('aria-hidden', String(tucked));
