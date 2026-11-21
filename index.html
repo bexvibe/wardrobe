@@ -1876,10 +1876,12 @@
   /* The sheet is a short list of rows, each showing what it is set to and
      opening a page of its own. What is on is also spelled out as chips above
      the rows, one tap to take any of them off. */
-  .filter-active{display:flex;flex-wrap:wrap;gap:8px;margin:2px 0 6px;}
+  .filter-active{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px;}
   .filter-active .filter-chip{gap:8px;}
   .chip-x{font-size:10px;opacity:.6;}
-  .filter-rows{margin:8px 0 0;}
+  /* Specific enough to beat .capsule-picks' own 14px above and below, which
+     stacked with the head and made a wide gap under the title. */
+  .filter-sheet-body .filter-rows{margin:0;}
   .filter-rows .capsule-pick{min-height:56px;padding:10px 8px;font-weight:500;}
   .capsule-pick-value{
     margin-left:auto;max-width:55%;
