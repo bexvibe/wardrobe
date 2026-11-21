@@ -250,41 +250,40 @@
      The keyboard would otherwise cover it: --kb is how much of the screen
      the keyboard is hiding (kept current by syncKeyboard), and the bar rides
      up by that much. */
-  .search-overlay{
+  /* The same two floating pills as every picker's search: Back, and a rounded
+     field. The markup carries the picker's own classes (sheet-footer split
+     pagebar, search-box), so the look is theirs and cannot drift; this only
+     pins it to the screen instead of the foot of a sheet. */
+  .search-overlay.sheet-footer{
     display:none;
     position:fixed;bottom:0;left:0;right:0;
     z-index:105;
-    padding:12px 14px calc(12px + env(safe-area-inset-bottom, 0px));
-    background:var(--page);
-    box-shadow:0 -6px 20px rgba(0,0,0,0.09);
     transform:translateY(calc(-1 * var(--kb, 0px)));
   }
-  .search-overlay.open{display:block;}
+  .search-overlay.sheet-footer.open{display:block;}
   /* The home indicator is behind the keyboard once it is up, so there is
      nothing left to clear. */
-  .search-overlay.keyboard-up{padding-bottom:12px;}
+  .search-overlay.sheet-footer.keyboard-up{padding-bottom:12px;}
   body.searching .bottom-bar{display:none;}
-  /* The last results still have to be reachable above the bar. */
-  body.searching #inventory-view{padding-bottom:calc(84px + env(safe-area-inset-bottom, 0px));}
+  /* The last results still have to be reachable above the pills. */
+  body.searching #inventory-view{padding-bottom:calc(96px + env(safe-area-inset-bottom, 0px));}
   /* A selection puts its own bar in the same place; the query is still
      narrowing the grid, and comes back with the bar when the selection ends. */
-  body.selecting .search-overlay{display:none;}
-  .search-overlay-bar{display:flex;align-items:center;gap:6px;}
-  /* The field, and the x that lives in it rather than beside it. */
-  .search-field{position:relative;flex:1;min-width:0;}
-  .search-field input[type=text]{width:100%;padding-left:42px;padding-right:42px;}
-  .search-field-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);
-    width:18px;height:18px;color:var(--ink-soft);pointer-events:none;}
+  body.selecting .search-overlay.sheet-footer{display:none;}
+  /* The x lives inside the field, on its right, so the text stops short of it. */
+  .search-overlay .search-box input[type=text]{padding-right:46px;}
   .search-clear{
-    position:absolute;right:6px;top:50%;
+    position:absolute;right:8px;top:50%;
     transform:translateY(-50%);
-    width:32px;height:32px;
+    width:38px;height:38px;
     display:flex;align-items:center;justify-content:center;
     border:none;border-radius:999px;
     background:none;color:var(--ink-soft);
     cursor:pointer;padding:0;
   }
-  .search-clear svg{width:15px;height:15px;display:block;}
+  /* .search-box draws its icon with a rule on every svg inside it; the x is
+     not that icon. */
+  .search-box .search-clear svg{position:static;transform:none;width:15px;height:15px;display:block;}
   input[type=text]{
     font-family:'Figtree',sans-serif;
     /* 16px exactly, and not a pixel less: Safari on iOS zooms the page in
@@ -2363,28 +2362,22 @@
   </div>
 </div>
 
-<div class="search-overlay" id="search-overlay">
+<div class="search-overlay sheet-footer split pagebar" id="search-overlay">
   <!-- Two controls, and each does one thing. Back leaves searching; the x
-       inside the field empties it and leaves you typing. "Done" sat where a
-       Search button would and could have meant either. -->
-  <div class="search-overlay-bar">
-    <button class="icon-btn" id="search-back" onclick="closeSearch()"
-            aria-label="Close search" title="Close search">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-    </button>
-    <div class="search-field">
-      <svg class="search-field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+       inside the field empties it and leaves you typing. -->
+  <div class="sheet-footer-inner">
+    <button class="btn secondary" id="search-back" type="button" onclick="closeSearch()"
+            aria-label="Close search"><svg class="back-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>Back</button>
+    <div class="search-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
       <!-- Results narrow as you type, so Search on the keyboard only needs to
            put the keyboard away and leave the bar and the results where they are. -->
       <input type="text" id="filter-search" placeholder="Search name, brand, category, colour..."
              enterkeyhint="search" autocomplete="off" autocapitalize="off" spellcheck="false"
              oninput="render()"
              onkeydown="if(event.key==='Escape') closeSearch(); else if(event.key==='Enter') this.blur();">
-      <button class="search-clear" id="search-clear" onclick="clearSearch()"
+      <button class="search-clear" id="search-clear" type="button" onclick="clearSearch()"
               aria-label="Clear search" title="Clear search" style="display:none;">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-          <path d="M6 6l12 12M18 6L6 18"/>
-        </svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
       </button>
     </div>
   </div>

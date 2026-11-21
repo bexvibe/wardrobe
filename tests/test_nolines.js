@@ -109,7 +109,7 @@ async function open(b){
   // What separates a floating surface from the page now.
   const lift = await p.evaluate(()=>({
     panel: getComputedStyle(document.getElementById('filter-sheet')).boxShadow,
-    overlay: getComputedStyle(document.querySelector('.search-overlay')).boxShadow,
+    overlay: getComputedStyle(document.querySelector('#search-overlay .search-box input')).boxShadow,
   }));
   check('the filter panel is lifted by a shadow instead', /rgba?\(/.test(lift.panel), lift.panel.slice(0,40));
   check('and so is the search bar', /rgba?\(/.test(lift.overlay), lift.overlay.slice(0,40));
