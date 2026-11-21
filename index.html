@@ -1046,6 +1046,43 @@
   .inspo-opt svg{width:22px;height:22px;flex:none;stroke:var(--ink);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
   .inspo-opt small{display:block;font-weight:400;font-size:12px;color:var(--ink-soft);}
   .inspo-hint{font-size:12px;color:var(--ink-soft);margin:6px 2px 0;line-height:1.4;}
+  /* The Inspo destination: every pin in two columns, because here the
+     pictures are the page. The same tile as on an outfit. */
+  .inspo-page-grid{display:grid;grid-template-columns:repeat(2, 1fr);gap:8px;}
+  .inspo-count{
+    position:absolute;right:6px;top:6px;
+    font-family:'Figtree',sans-serif;font-size:10px;font-weight:600;
+    background:var(--surface);color:var(--ink);padding:2px 7px;border-radius:999px;
+    box-shadow:0 1px 3px rgba(0,0,0,0.14);
+  }
+  /* An inspo's own page: the picture, then the outfits it is kept against,
+     as the app's outfit cards, two to a row. */
+  .inspo-page-body .inspo-big{cursor:default;min-height:240px;max-height:none;margin-bottom:0;}
+  .inspo-page-body .inspo-big img{max-height:62vh;}
+  .inspo-outfits-title{font-family:'Bricolage Grotesque',sans-serif;font-weight:500;font-size:17px;margin:22px 0 10px;}
+  .inspo-outfits{display:grid;grid-template-columns:repeat(2, minmax(0, 1fr));gap:12px;}
+  .inspo-outfits .outfit-card{padding:6px;}
+  /* Picking: a card is a selector, so it is outlined and filled when on. */
+  .outfit-card.inspo-pick{position:relative;font:inherit;color:inherit;text-align:left;}
+  .outfit-card.inspo-pick[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--ink);}
+  .inspo-tick{
+    position:absolute;top:8px;right:8px;z-index:2;width:22px;height:22px;border-radius:50%;
+    border:1.5px solid var(--line);background:var(--surface);
+    display:grid;place-items:center;
+  }
+  .inspo-pick[aria-pressed="true"] .inspo-tick{background:var(--ink);border-color:var(--ink);}
+  .inspo-pick[aria-pressed="true"] .inspo-tick::after{
+    content:'';width:5px;height:9px;border:solid #fff;border-width:0 2px 2px 0;
+    transform:rotate(45deg) translate(-1px,-1px);
+  }
+  .inspo-pick-note{padding:30px 10px;text-align:center;color:var(--ink-soft);font-size:15px;line-height:1.45;}
+  /* Four destinations: the side padding is what gives. */
+  .bottom-bar.four{gap:2px;padding:4px;}
+  .bottom-bar.four .bottom-btn{padding:0 8px;font-size:12.5px;}
+  .bottom-bar.four .bottom-btn.nav-switch{padding:3px;}
+  .bottom-bar.four .nav-seg{padding:0 8px;min-width:40px;font-size:12.5px;}
+  .bottom-bar.four .nav-seg.nav-seg-all{padding:0 12px;min-width:0;}
+  .sheet-footer-actions a.btn{text-decoration:none;display:flex;align-items:center;justify-content:center;}
   /* A short sheet sizes itself to what is on it instead of filling 85%. */
   .modal-backdrop.compact .modal{height:auto;max-height:85%;}
   /* The heart lives on the bar here, not over a corner of the picture. */
@@ -2390,6 +2427,22 @@
     </div>
   </div>
 
+  <div id="inspo-view" style="display:none;">
+    <header class="page-head">
+      <h1>Inspo</h1>
+      <div class="icon-row">
+        <button class="btn" id="new-inspo-btn" type="button" onclick="startInspoFromPage()"><svg class="plus-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New inspo</button>
+      </div>
+    </header>
+    <div class="inspo-page-grid" id="inspo-page-grid"></div>
+    <div class="empty" id="inspo-empty" style="display:none;">
+      <span class="empty-emoji" aria-hidden="true">📌</span>
+      <h3>Save your inspo</h3>
+      <p class="empty-sub">Pins or screenshots of outfits you love</p>
+      <button class="empty-action" type="button" onclick="startInspoFromPage()"><svg class="plus-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New inspo</button>
+    </div>
+  </div>
+
   <div id="archive-view" style="display:none;">
     <button class="quiet-link back-link" onclick="setMode('inventory')"><svg class="back-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>Wardrobe</button>
     <header class="page-head">
@@ -3011,7 +3064,12 @@ function renderBottomBar(){
       ? `<button class="bottom-btn ${appMode === 'capsules' ? 'active' : ''}"
                  id="nav-capsules-btn" type="button" onclick="setMode('capsules')">Capsules</button>`
       : ''}
+    ${inspoAvailable
+      ? `<button class="bottom-btn ${appMode === 'inspo' ? 'active' : ''}"
+                 id="nav-inspo-btn" type="button" onclick="setMode('inspo')">Inspo</button>`
+      : ''}
   `;
+  bar.classList.toggle('four', capsulesAvailable && inspoAvailable);
 }
 
 function setMode(mode){
@@ -3043,6 +3101,7 @@ function setMode(mode){
   document.getElementById('saved-view').style.display = mode==='saved' ? 'block' : 'none';
   document.getElementById('capsules-view').style.display = mode==='capsules' ? 'block' : 'none';
   document.getElementById('archive-view').style.display = mode==='archive' ? 'block' : 'none';
+  document.getElementById('inspo-view').style.display = mode==='inspo' ? 'block' : 'none';
 
   // Arriving anywhere: the panel has to hold the filters of the page you
   // have moved to before it is shown.
@@ -3052,6 +3111,7 @@ function setMode(mode){
   if(mode==='archive') renderArchive();
   if(mode==='saved') renderSavedOutfits();
   if(mode==='capsules') renderCapsules();
+  if(mode==='inspo') renderInspoPage();
   if(mode==='outfits'){
     outfitRenderContext = 'tab';
     outfitTags = outfitTags.filter(t => allTags().includes(t));
@@ -3093,6 +3153,8 @@ const SHEETS = {
   // backdrop while it is the sheet you are on.
   outfit:    { backdrop: null, draw: key => drawOutfitPage(key) },
   capsulepage: { backdrop: null, draw: id => drawCapsulePage(id) },
+  inspopage: { backdrop: null, draw: id => drawInspoPage(id) },
+  inspopick: { backdrop: null, draw: () => drawInspoPick() },
   // Small sheets over an outfit's page, only ever left.
   inspoadd:  { backdrop: 'modal-backdrop', draw: null },
   inspolink: { backdrop: 'modal-backdrop', draw: null },
@@ -3124,6 +3186,8 @@ function outfitPageShowing(){
 const PAGE_DRAW = {
   outfit:      key => drawOutfitPage(key),
   capsulepage: id  => drawCapsulePage(id),
+  inspopage:   id  => drawInspoPage(id),
+  inspopick:   ()  => drawInspoPick(),
 };
 
 function syncOutfitPage(redraw){
@@ -5983,7 +6047,8 @@ function rowToInspo(r){
     id: r.id, key: r.combo_key, kind: r.kind,
     url: r.url || null, imagePath: r.image_path || null,
     image: r.image_url || null,            // a photo's is filled in by hydrateInspoImages
-    source: r.source || ''
+    source: r.source || '',
+    at: r.created_at || ''
   };
 }
 
@@ -6037,13 +6102,13 @@ async function fetchLinkPreview(url){
   }catch(e){ return null; }
 }
 
-async function addInspoLink(key, raw){
+async function addInspoLink(key, raw, known){
   const url = normalizeInspoUrl(raw);
   if(!url) return { error: 'That does not look like a link.' };
-  const preview = await fetchLinkPreview(url);
+  const preview = known !== undefined ? known : await fetchLinkPreview(url);
   const pin = { id: newInspoId(), key, kind: 'link', url, imagePath: null,
     image: (preview && preview.imageUrl) || null,
-    source: (preview && preview.source) || inspoHost(url) };
+    source: (preview && preview.source) || inspoHost(url), at: new Date().toISOString() };
   const { error } = await client().from('outfit_inspo').insert({
     id: pin.id, combo_key: key, kind: 'link', url,
     image_url: pin.image, source: pin.source
@@ -6054,6 +6119,12 @@ async function addInspoLink(key, raw){
 }
 
 async function addInspoPhotos(key, files){
+  return addInspoPhotosTo([key], files);
+}
+
+// One upload, kept against each outfit: a row per outfit, all pointing at the
+// same stored picture, which is what lets the Inspo page show it once.
+async function addInspoPhotosTo(keys, files){
   const db = client();
   let added = 0;
   for(const file of files){
@@ -6063,16 +6134,23 @@ async function addInspoPhotos(key, files){
     const up = await db.storage.from(BUCKET).upload(path, blob,
       { contentType: blob.type || 'image/jpeg', upsert: true });
     if(up.error){ dbFail(up.error, 'Could not upload photo'); continue; }
-    const { error } = await db.from('outfit_inspo').insert({
-      id, combo_key: key, kind: 'photo', image_path: path, source: 'Photo'
-    });
-    if(error){ dbFail(error, 'Photo uploaded but not saved — try again'); continue; }
     const signed = await db.storage.from(BUCKET).createSignedUrl(path, PHOTO_URL_TTL);
-    (outfitInspo[key] = outfitInspo[key] || []).push({
-      id, key, kind: 'photo', url: null, imagePath: path,
-      image: (signed.data && signed.data.signedUrl) || null, source: 'Photo'
-    });
-    added++;
+    const image = (signed.data && signed.data.signedUrl) || null;
+    let kept = false;
+    for(let i = 0; i < keys.length; i++){
+      const key = keys[i];
+      const rowId = i === 0 ? id : newInspoId();
+      const { error } = await db.from('outfit_inspo').insert({
+        id: rowId, combo_key: key, kind: 'photo', image_path: path, source: 'Photo'
+      });
+      if(error){ dbFail(error, 'Photo uploaded but not saved — try again'); continue; }
+      (outfitInspo[key] = outfitInspo[key] || []).push({
+        id: rowId, key, kind: 'photo', url: null, imagePath: path,
+        image, source: 'Photo', at: new Date().toISOString()
+      });
+      kept = true;
+    }
+    if(kept) added++;
   }
   return added;
 }
@@ -6103,6 +6181,224 @@ async function restoreInspo(hit){
   const list = (outfitInspo[hit.key] = outfitInspo[hit.key] || []);
   list.splice(Math.min(hit.at, list.length), 0, hit.pin);
   return true;
+}
+
+// ---- The Inspo destination -----------------------------------
+//
+// Every pin from every outfit on one page. The same picture kept against
+// several outfits is several rows (a link shares its address, a photo its
+// stored file), and shows here once, with the outfits it belongs to.
+function inspoIdentity(p){
+  return p.kind === 'photo' ? 'photo:' + (p.imagePath || p.id) : 'link:' + (p.url || p.id);
+}
+
+function inspoGroups(){
+  const byId = new Map();
+  Object.keys(outfitInspo).forEach(key => outfitInspo[key].forEach(pin => {
+    const id = inspoIdentity(pin);
+    let g = byId.get(id);
+    if(!g){
+      g = { id: pin.id, pins: [], keys: [], image: pin.image, source: pin.source,
+            url: pin.url, at: pin.at || '' };
+      byId.set(id, g);
+    }
+    g.pins.push(pin);
+    if(!g.keys.includes(key)) g.keys.push(key);
+    if(!g.image && pin.image) g.image = pin.image;
+    if((pin.at || '') > g.at) g.at = pin.at || '';
+  }));
+  return [...byId.values()].sort((a, b) => b.at < a.at ? -1 : b.at > a.at ? 1 : 0);
+}
+
+function inspoGroupFor(id){
+  const hit = findInspo(id);
+  if(!hit) return null;
+  const ident = inspoIdentity(hit.pin);
+  return inspoGroups().find(g => g.pins.some(p => inspoIdentity(p) === ident)) || null;
+}
+
+// An outfit from its key alone: one on screen or kept resolves as usual; one
+// that only has inspo is read back out of the key.
+function comboFromKey(key){
+  const known = comboForKey(key);
+  if(known) return known;
+  const p = String(key).split('|');
+  const id = v => (v && v !== 'none') ? v : null;
+  let rec = null;
+  if(p[0] === 'dress') rec = { key, base: 'dress', top: null, overtop: null, bottom: null,
+    dress: id(p[1]), jumper: id(p[2]), jacket: id(p[3]) };
+  else if(p[0] === 'tb') rec = { key, base: 'topbottom', top: id(p[1]), bottom: id(p[2]),
+    jumper: id(p[3]), jacket: id(p[4]), overtop: id(p[6]), dress: null };
+  return rec ? favoriteRecordToCombo(rec) : null;
+}
+
+function inspoTileHtml(g, i){
+  return `<button class="inspo-tile" type="button" aria-label="Open inspo ${i + 1}"
+            onclick='openInspoPage(${JSON.stringify(g.id)})'>
+      ${g.image ? `<img src="${esc(g.image)}" alt="" referrerpolicy="no-referrer" loading="lazy" decoding="async" onerror="this.remove()">` : ''}
+      <span class="inspo-src">${esc(g.source || 'Link')}</span>
+      ${g.keys.length > 1 ? `<span class="inspo-count">${g.keys.length} outfits</span>` : ''}
+    </button>`;
+}
+
+function renderInspoPage(){
+  const grid = document.getElementById('inspo-page-grid');
+  if(!grid) return;
+  const groups = inspoGroups();
+  grid.innerHTML = groups.map(inspoTileHtml).join('');
+  document.getElementById('inspo-empty').style.display = groups.length ? 'none' : 'block';
+  // While empty, the + sits in the middle of the page instead.
+  document.getElementById('new-inspo-btn').style.display = groups.length ? '' : 'none';
+}
+
+function openInspoPage(id, fromEl){
+  if(!inspoGroupFor(id)) return;
+  openPage('inspopage', id, fromEl);
+}
+
+function inspoOutfitCardHtml(key){
+  const combo = comboFromKey(key);
+  if(!combo) return '';
+  return `<div class="outfit-card" data-key="${esc(key)}" onclick='openOutfitPage(${JSON.stringify(key)}, this)'>
+      <div class="outfit-thumbs">${outfitThumbsHtml(combo)}</div>
+    </div>`;
+}
+
+const BACK_GLYPH = `<svg class="back-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>`;
+
+// An inspo as a page: the picture large, then the outfits it is kept against
+// as cards, two to a row. Back, Open original and Remove sit on the bar.
+function drawInspoPage(id){
+  const g = inspoGroupFor(id);
+  const layer = document.getElementById('outfit-page');
+  if(!g || !layer){ closeModal(); return; }
+  const n = g.keys.length;
+  layer.dataset.key = 'inspopage:' + id;
+  layer.innerHTML = `
+    <div class="outfit-page-inner">
+      <div class="modal-body has-footer outfit-page-body inspo-page-body">
+        <div class="inspo-big">
+          ${g.image ? `<img src="${esc(g.image)}" alt="" referrerpolicy="no-referrer" decoding="async" onerror="this.remove()">` : ''}
+          <span class="inspo-src">${esc(g.source || 'Link')}</span>
+        </div>
+        <h3 class="inspo-outfits-title">${n === 1 ? 'Saved to 1 outfit' : `Saved to ${n} outfits`}</h3>
+        <div class="inspo-outfits">${g.keys.map(inspoOutfitCardHtml).join('')}</div>
+      </div>
+      <div class="sheet-footer split pagebar outfit-page-bar">
+        <div class="sheet-footer-inner">
+          <button class="btn secondary" type="button" id="outfit-page-back" onclick="goBackFromSheet()">${BACK_GLYPH}Back</button>
+          <div class="sheet-footer-actions">
+            ${g.url ? `<a class="btn tonal" id="inspo-page-open" href="${esc(g.url)}" target="_blank" rel="noopener noreferrer">Open original ↗</a>` : ''}
+            <button class="btn secondary" type="button" id="inspo-page-remove" onclick='removeInspoGroup(${JSON.stringify(id)})'>Remove</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  allowSheetDrag(goBackFromSheet);
+}
+
+// Removing from its page takes it off every outfit it is kept against.
+async function removeInspoGroup(id){
+  const g = inspoGroupFor(id);
+  if(!g) return;
+  const done = [];
+  for(const pin of g.pins){
+    const hit = await archiveInspo(pin.id);
+    if(hit) done.push(hit);
+  }
+  if(!done.length) return;
+  goBackFromSheet();
+  if(appMode === 'inspo') renderInspoPage();
+  showToast('Inspo removed', async () => {
+    let ok = false;
+    for(const hit of done.slice().reverse()) ok = (await restoreInspo(hit)) || ok;
+    if(ok && appMode === 'inspo') renderInspoPage();
+  });
+}
+
+// New inspo from the Inspo page: what it is comes first, then which outfits.
+// On an outfit's page that second step does not exist.
+const INSPO_PICK = '*';
+let inspoPending = null;      // { kind: 'photo', files } or { kind: 'link', url }
+let inspoPickSel = new Set();
+
+function startInspoFromPage(){
+  openInspoAdd(INSPO_PICK);
+}
+
+function openInspoPick(pending){
+  inspoPending = pending;
+  inspoPickSel = new Set();
+  openPage('inspopick', 'new');
+}
+
+function drawInspoPick(){
+  const layer = document.getElementById('outfit-page');
+  if(!layer){ closeModal(); return; }
+  const faves = favoriteOutfits.slice().reverse().filter(r => comboFromKey(r.key));
+  layer.dataset.key = 'inspopick:new';
+  layer.innerHTML = `
+    <div class="outfit-page-inner">
+      <div class="modal-body has-footer outfit-page-body inspo-page-body">
+        <h2 class="modal-name">Save to</h2>
+        ${faves.length ? `<div class="inspo-outfits" style="margin-top:12px;">${faves.map(r => {
+          const combo = comboFromKey(r.key);
+          return `<button class="outfit-card inspo-pick" type="button" data-key="${esc(r.key)}"
+                    aria-pressed="${inspoPickSel.has(r.key)}"
+                    onclick='toggleInspoPick(${JSON.stringify(r.key)}, this)'>
+              <span class="inspo-tick"></span>
+              <div class="outfit-thumbs">${outfitThumbsHtml(combo)}</div>
+            </button>`;
+        }).join('')}</div>`
+        : `<p class="inspo-pick-note">Save an outfit as a fave first, then keep inspo against it.</p>`}
+      </div>
+      <div class="sheet-footer split pagebar outfit-page-bar">
+        <div class="sheet-footer-inner">
+          <button class="btn secondary" type="button" id="outfit-page-back" onclick="goBackFromSheet()">${BACK_GLYPH}Back</button>
+          <div class="sheet-footer-actions">
+            <button class="btn" type="button" id="inspo-pick-save" onclick="saveInspoPick()" ${inspoPickSel.size ? '' : 'disabled'}>Save</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  allowSheetDrag(goBackFromSheet);
+}
+
+function toggleInspoPick(key, btn){
+  if(inspoPickSel.has(key)) inspoPickSel.delete(key); else inspoPickSel.add(key);
+  btn.setAttribute('aria-pressed', String(inspoPickSel.has(key)));
+  const save = document.getElementById('inspo-pick-save');
+  if(save) save.disabled = inspoPickSel.size === 0;
+}
+
+async function saveInspoPick(){
+  const keys = [...inspoPickSel];
+  const pending = inspoPending;
+  const btn = document.getElementById('inspo-pick-save');
+  if(!keys.length || !pending) return;
+  if(btn){ btn.disabled = true; btn.textContent = 'Saving...'; }
+  let added = 0;
+  try{
+    if(pending.kind === 'photo'){
+      added = await addInspoPhotosTo(keys, pending.files);
+    }else{
+      const preview = await fetchLinkPreview(pending.url);
+      for(const key of keys){
+        const res = await addInspoLink(key, pending.url, preview);
+        if(res.pin) added = 1;
+      }
+    }
+  }catch(e){
+    console.error('[wardrobe] inspo save failed', e);
+    showToast('Could not save that');
+  }
+  if(btn){ btn.textContent = 'Save'; btn.disabled = false; }
+  if(!added) return;
+  inspoPending = null;
+  goBackFromSheet();
+  if(appMode === 'inspo') renderInspoPage();
+  showToast(pending.kind === 'photo' && pending.files.length > 1 ? `${pending.files.length} inspo added` : 'Inspo added');
 }
 
 // Words for a search from what the outfit is made of — the pieces' own
@@ -6190,6 +6486,7 @@ async function handleInspoFiles(event){
   const key = inspoTargetKey;
   if(!files.length || !key) return;
   goBackFromSheet();                       // the add sheet has done its job
+  if(key === INSPO_PICK){ openInspoPick({ kind: 'photo', files }); return; }
   showToast(files.length === 1 ? 'Adding photo...' : `Adding ${files.length} photos...`);
   try{
     const added = await addInspoPhotos(key, files);
@@ -6217,7 +6514,7 @@ function openInspoLink(){
       <div class="form-error" id="inspo-error"></div>
       <p class="inspo-hint">Any image or page. For a page we save its preview picture, and keep the link to open the original.</p>
       <div class="modal-actions">
-        <button class="btn" id="inspo-save" type="button" onclick="saveInspoLink()">Save</button>
+        <button class="btn" id="inspo-save" type="button" onclick="saveInspoLink()">${key === INSPO_PICK ? 'Next' : 'Save'}</button>
       </div>
     </div>`);
   setTimeout(() => { const el = document.getElementById('inspo-url'); if(el) el.focus(); }, 280);
@@ -6229,6 +6526,13 @@ async function saveInspoLink(){
   const btn = document.getElementById('inspo-save');
   if(!input || !inspoTargetKey) return;
   err.textContent = '';
+  if(inspoTargetKey === INSPO_PICK){
+    const url = normalizeInspoUrl(input.value);
+    if(!url){ err.textContent = 'That does not look like a link.'; return; }
+    goBackFromSheet();
+    openInspoPick({ kind: 'link', url });
+    return;
+  }
   btn.disabled = true; btn.textContent = 'Saving...';
   const res = await addInspoLink(inspoTargetKey, input.value);
   btn.disabled = false; btn.textContent = 'Save';
