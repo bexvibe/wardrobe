@@ -243,17 +243,32 @@
   .icon-row .btn{min-height:44px;padding:0 18px;white-space:nowrap;border-radius:999px;}
 
   /* Search opens over the page rather than sitting on it. The results stay
-     visible underneath, because watching them narrow as you type is the
-     whole point of searching. */
+     visible above it, because watching them narrow as you type is the whole
+     point of searching.
+     It lives at the foot of the screen, where the thumb already is, and it
+     takes the place of the navigation while it is open, as a selection does.
+     The keyboard would otherwise cover it: --kb is how much of the screen
+     the keyboard is hiding (kept current by syncKeyboard), and the bar rides
+     up by that much. */
   .search-overlay{
     display:none;
-    position:fixed;top:0;left:0;right:0;
+    position:fixed;bottom:0;left:0;right:0;
     z-index:105;
-    padding:calc(10px + env(safe-area-inset-top, 0px)) 14px 12px;
+    padding:12px 14px calc(12px + env(safe-area-inset-bottom, 0px));
     background:var(--page);
-    box-shadow:0 6px 20px rgba(0,0,0,0.09);
+    box-shadow:0 -6px 20px rgba(0,0,0,0.09);
+    transform:translateY(calc(-1 * var(--kb, 0px)));
   }
   .search-overlay.open{display:block;}
+  /* The home indicator is behind the keyboard once it is up, so there is
+     nothing left to clear. */
+  .search-overlay.keyboard-up{padding-bottom:12px;}
+  body.searching .bottom-bar{display:none;}
+  /* The last results still have to be reachable above the bar. */
+  body.searching #inventory-view{padding-bottom:calc(84px + env(safe-area-inset-bottom, 0px));}
+  /* A selection puts its own bar in the same place; the query is still
+     narrowing the grid, and comes back with the bar when the selection ends. */
+  body.selecting .search-overlay{display:none;}
   .search-overlay-bar{display:flex;align-items:center;gap:6px;}
   /* The field, and the x that lives in it rather than beside it. */
   .search-field{position:relative;flex:1;min-width:0;}
@@ -2341,8 +2356,12 @@
     </button>
     <div class="search-field">
       <svg class="search-field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+      <!-- Results narrow as you type, so Search on the keyboard only needs to
+           put the keyboard away and leave the bar and the results where they are. -->
       <input type="text" id="filter-search" placeholder="Search name, brand, category, colour..."
-             oninput="render()" onkeydown="if(event.key==='Escape') closeSearch()">
+             enterkeyhint="search" autocomplete="off" autocapitalize="off" spellcheck="false"
+             oninput="render()"
+             onkeydown="if(event.key==='Escape') closeSearch(); else if(event.key==='Enter') this.blur();">
       <button class="search-clear" id="search-clear" onclick="clearSearch()"
               aria-label="Clear search" title="Clear search" style="display:none;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
@@ -9011,32 +9030,61 @@ function clearSearch(){
   input.focus();
 }
 
-// The bar lands on top of the head that holds the search button, so the head
-// goes invisible rather than display:none — it keeps its height and the grid
-// underneath does not jump as the bar opens and closes.
-function setToolbarHidden(hidden){
-  const bar = document.getElementById('wardrobe-head');
-  if(bar) bar.style.visibility = hidden ? 'hidden' : '';
+// How much of the screen the keyboard is covering, as the distance between
+// the bottom of what you can see and the bottom of the page. A fixed bar
+// stays glued to the page, not to what is visible, so on a phone the keyboard
+// slides over it; the bar is lifted by this amount to stay above it. Only
+// listened to while search is open.
+function syncKeyboard(){
+  const vv = window.visualViewport;
+  const kb = vv ? Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop)) : 0;
+  document.documentElement.style.setProperty('--kb', kb + 'px');
+  const bar = document.getElementById('search-overlay');
+  if(bar) bar.classList.toggle('keyboard-up', kb > 80);
+}
+
+function watchKeyboard(on){
+  const vv = window.visualViewport;
+  if(!vv) return;
+  const act = on ? 'addEventListener' : 'removeEventListener';
+  vv[act]('resize', syncKeyboard);
+  vv[act]('scroll', syncKeyboard);
+  if(on) syncKeyboard();
+  else {
+    document.documentElement.style.removeProperty('--kb');
+    const bar = document.getElementById('search-overlay');
+    if(bar) bar.classList.remove('keyboard-up');
+  }
 }
 
 function openSearch(){
-  document.getElementById('search-overlay').classList.add('open');
-  setToolbarHidden(true);
-  // The bar covers the top of the page, so start at the top: the results you
-  // are narrowing should be the ones under your thumb.
+  const bar = document.getElementById('search-overlay');
+  const wasOpen = bar.classList.contains('open');
+  bar.classList.add('open');
+  document.body.classList.add('searching');
+  const btn = document.getElementById('search-btn');
+  if(btn) btn.classList.add('active');
+  if(!wasOpen) watchKeyboard(true);
+  // Start at the top so the first results are the ones in view as you type.
   window.scrollTo({ top: 0 });
   const input = document.getElementById('filter-search');
-  input.focus();
+  // preventScroll: the browser's own scroll to bring the field into view only
+  // fights the bar, which is already where the field belongs.
+  input.focus({ preventScroll: true });
   input.select();
 }
 
 function closeSearch(){
   document.getElementById('search-overlay').classList.remove('open');
-  setToolbarHidden(false);
+  document.body.classList.remove('searching');
+  const btn = document.getElementById('search-btn');
+  if(btn) btn.classList.remove('active');
+  watchKeyboard(false);
   // Leaving search ends it. Keeping the query meant a wardrobe quietly
   // filtered by something you could no longer see or edit — the x inside
   // the field is how you clear it and carry on.
   const input = document.getElementById('filter-search');
+  input.blur();
   if(input.value){ input.value = ''; }
   render();
 }

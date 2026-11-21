@@ -127,7 +127,9 @@ const scrollTo = async (p, top) => { await p.evaluate(t=>window.scrollTo({top:t}
     await p.click('#nav-inventory-btn'); await p.waitForTimeout(500);
     await p.click('#search-btn'); await p.waitForTimeout(400);
     await p.fill('#filter-search', 'zzzz-nothing'); await p.waitForTimeout(400);
-    await p.click('#nav-outfits-btn');
+    // The search bar takes the navigation's place at the foot of the screen
+    // while it is open, so there is no tab to tap from inside it.
+    await p.evaluate(()=>setMode('outfits'));
     await p.waitForFunction(()=>outfitDisplayed.length > 0);
     await p.waitForTimeout(400);
     await p.click('#outfit-gallery .outfit-card'); await p.waitForTimeout(500);
