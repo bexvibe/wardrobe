@@ -104,6 +104,19 @@ const cards = p => p.evaluate(()=>
   await p.evaluate(()=>setMode('saved')); await p.waitForTimeout(500);
   await p.evaluate(()=>setMode('outfits')); await p.waitForTimeout(500);
   check('flipping Faves does not reset the quick row', await q(()=>document.getElementById('outfit-tabs').scrollLeft) === before, String(before));
+  // Pickers: search at the foot, level with Back, fully rounded.
+  await q(()=>{ openItemForm(); });
+  await p.waitForTimeout(600);
+  await q(()=>{ openFormTagsPicker(); });
+  await p.waitForTimeout(600);
+  const g = await q(()=>{
+    const i=document.getElementById('form-pick-input'), back=document.querySelector('#modal .sheet-footer .btn.secondary');
+    const ri=i.getBoundingClientRect(), rb=back.getBoundingClientRect();
+    return {inFooter: !!i.closest('.sheet-footer'), level: Math.abs((ri.top+ri.height/2)-(rb.top+rb.height/2))<2,
+            round: parseFloat(getComputedStyle(i).borderRadius)>=20, right: ri.left>rb.right-1};
+  });
+  check('the picker search sits in the footer beside Back', g.inFooter && g.right, JSON.stringify(g));
+  check('level with it, and rounded', g.level && g.round, JSON.stringify(g));
   await b.close();
   const failed=results.filter(r=>!r).length;
   console.log(`\n${results.length-failed}/${results.length} checks passed`);

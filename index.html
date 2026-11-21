@@ -2092,10 +2092,17 @@
   .field-pick-btn svg{flex:none;color:var(--ink-soft);}
   .form-extra{display:flex;flex-direction:column;gap:12px;}
   /* A search field keeps its icon inside it, at the left. */
-  .search-box{position:sticky;top:0;z-index:5;background:var(--page);padding:6px 0 8px;margin-top:-6px;}
-  .search-box svg{position:absolute;left:14px;top:calc(50% - 1px);transform:translateY(-50%);
+  /* On a picker the search sits at the foot, level with Back, as a pill of
+     the same height and lift: both are in the thumb's reach. */
+  .search-box{position:relative;flex:1 1 auto;min-width:0;}
+  .search-box svg{position:absolute;left:18px;top:50%;transform:translateY(-50%);
     width:18px;height:18px;color:var(--ink-soft);pointer-events:none;}
-  .search-box input[type=text]{width:100%;padding-left:42px;background:var(--surface);}
+  .search-box input[type=text]{
+    width:100%;min-width:0;min-height:54px;padding:0 18px 0 46px;
+    border-radius:999px;border:1px solid transparent;background:var(--surface);
+    box-shadow:0 6px 24px rgba(0,0,0,0.11);
+  }
+  .search-box input[type=text]:focus-visible{outline:2px solid var(--ink-soft);outline-offset:0;}
   /* Categories sit under the main category they belong to. */
   .capsule-pick.group{font-weight:500;}
   .capsule-pick.child{margin-left:20px;min-height:48px;font-weight:400;}
@@ -8499,16 +8506,16 @@ function formPickFrame(title, placeholder, onInput, onEnter){
   modal.innerHTML = `
     <div class="modal-body has-footer">
       <div class="modal-name" style="margin-bottom:14px;">${title}</div>
-      <div class="search-box">${SEARCH_ICON_SVG}
-        <input type="text" id="form-pick-input" autocomplete="off" placeholder="${placeholder}"
-               oninput="${onInput}"
-               onkeydown="if(event.key==='Enter'){event.preventDefault();${onEnter};}">
-      </div>
       <div class="capsule-picks" id="form-pick-list"></div>
     </div>
     <div class="sheet-footer split pagebar">
       <div class="sheet-footer-inner">
         <button class="btn secondary" type="button" onclick="closeFormPicker()">${BACK_BTN_SVG}Back</button>
+        <div class="search-box">${SEARCH_ICON_SVG}
+          <input type="text" id="form-pick-input" autocomplete="off" placeholder="${placeholder}"
+                 oninput="${onInput}"
+                 onkeydown="if(event.key==='Enter'){event.preventDefault();${onEnter};}">
+        </div>
       </div>
     </div>`;
   allowSheetDrag(null);
