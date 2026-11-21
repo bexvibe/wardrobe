@@ -79,8 +79,8 @@ const cards = p => p.evaluate(()=>
   await p.click('#outfit-tabs .view-seg'); await p.waitForTimeout(700);
   check('list swaps the cards for rows', await q(()=>document.querySelectorAll('#outfit-gallery .outfit-row').length>0 &&
     document.querySelectorAll('#outfit-gallery .outfit-card').length===0));
-  check('a row has pieces, a name line and a heart', await q(()=>{const r=document.querySelector('#outfit-gallery .outfit-row');
-    return r.querySelectorAll('img').length>0 && r.querySelector('.outfit-row-title').textContent.length>0 && !!r.querySelector('.fave-heart');}));
+  check('a row is pieces and a heart, with no text', await q(()=>{const r=document.querySelector('#outfit-gallery .outfit-row');
+    return r.querySelectorAll('img').length>0 && r.textContent.trim()==='' && getComputedStyle(r).borderTopWidth==='0px' && !!r.querySelector('.fave-heart');}));
   check('the hero is still the hero', await q(()=>!!document.querySelector('#outfit-hero .hero-feature')));
   await p.click('#outfit-tabs .bar-chips .quick-faves'); await p.waitForTimeout(1200);
   check('Faves in the bar goes to the faves, in the same layout', await q(()=>appMode==='saved' && document.querySelectorAll('#saved-gallery .outfit-row').length>=0 &&
