@@ -8492,6 +8492,26 @@ const BACK_BTN_SVG = `<svg class="back-glyph" viewBox="0 0 24 24" fill="none" st
 const SEARCH_ICON_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>`;
 
+// The search is fixed to the foot, so when the keyboard comes up the browser
+// scrolls the sheet to keep it in view — down to the bottom of a long list.
+// Put it back where it was: the list stays at the top, under the title.
+function holdPickerScroll(){
+  const modal = document.getElementById('modal');
+  if(!modal) return;
+  const y = modal.scrollTop, wy = window.scrollY;
+  const put = () => {
+    modal.scrollTop = y;
+    if(window.scrollY !== wy) window.scrollTo(0, wy);
+  };
+  [0, 60, 200, 400, 700].forEach(ms => setTimeout(put, ms));
+  const vv = window.visualViewport;
+  if(vv){
+    const onResize = () => put();
+    vv.addEventListener('resize', onResize);
+    setTimeout(() => vv.removeEventListener('resize', onResize), 1200);
+  }
+}
+
 function formPickFrame(title, placeholder, onInput, onEnter){
   const modal = document.getElementById('modal');
   document.getElementById('modal-backdrop').classList.add('as-page');
@@ -8505,6 +8525,7 @@ function formPickFrame(title, placeholder, onInput, onEnter){
         <button class="btn secondary" type="button" onclick="closeFormPicker()">${BACK_BTN_SVG}Back</button>
         <div class="search-box">${SEARCH_ICON_SVG}
           <input type="text" id="form-pick-input" autocomplete="off" placeholder="${placeholder}"
+                 onfocus="holdPickerScroll()"
                  oninput="${onInput}"
                  onkeydown="if(event.key==='Enter'){event.preventDefault();${onEnter};}">
         </div>
