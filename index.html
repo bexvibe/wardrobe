@@ -2002,14 +2002,21 @@
   /* The leftovers, at the end of the page rather than mixed in with the
      capsules — it is a different kind of thing from a capsule. */
   /* Capsules as rows to tick, for the one piece you are looking at. */
-  .capsule-picks{display:flex;flex-direction:column;gap:8px;margin:14px 0;}
+  /* The same pattern as a piece in an outfit's list, without the picture:
+     one white card around every option, rows with no box of their own, the
+     name on the left and the tick or chevron at the right. */
+  .capsule-picks{
+    display:flex;flex-direction:column;gap:0;margin:14px 0;
+    background:var(--surface);border:1px solid var(--line);
+    border-radius:10px;padding:8px;
+  }
   .capsule-pick{
     display:flex;align-items:center;justify-content:space-between;gap:10px;
-    font-family:'Figtree',sans-serif;
-    font-size:16px;font-weight:500;text-align:left;
-    min-height:48px;padding:0 16px;
-    border:1px solid var(--line);border-radius:8px;
-    background:var(--surface);color:var(--ink);
+    font-family:'Bricolage Grotesque',sans-serif;
+    font-size:14px;font-weight:400;text-align:left;
+    min-height:48px;padding:8px 4px;
+    border:0;border-radius:6px;
+    background:transparent;color:var(--ink);
     cursor:pointer;
   }
   /* A field that opens a page of choices (category, tags, capsules). It is
@@ -2051,10 +2058,11 @@
     width:18px;height:18px;color:var(--ink-soft);pointer-events:none;}
   .search-box input[type=text]{width:100%;padding-left:42px;background:var(--surface);}
   /* Categories sit under the main category they belong to. */
-  .capsule-pick.group{font-weight:600;}
+  .capsule-pick.group{font-weight:500;}
   .capsule-pick.child{margin-left:20px;min-height:48px;font-weight:400;}
-  .capsule-pick.picked{border-color:var(--accent);background:var(--accent-soft);}
+  .capsule-pick.picked{background:var(--accent-soft);}
   .capsule-pick-mark{flex:none;font-size:15px;color:var(--ink);width:18px;text-align:right;}
+  .capsule-pick-mark.go{font-size:20px;line-height:1;color:var(--ink-soft);}
 
   /* Set apart by the room around it rather than a rule above it. */
   .loose-section{margin-top:52px;}
@@ -8488,7 +8496,7 @@ function renderFormCategoryPicks(){
         const inside = g.kids.includes(chosen) || g.shelf === chosen;
         rows.push(g.kids.length
           ? `<button type="button" class="capsule-pick ${inside ? 'picked' : ''}" onclick='openFormCategoryGroup(${jsArg(g.shelf)})'>
-               <span>${esc(g.shelf)}</span><span class="capsule-pick-mark">›</span></button>`
+               <span>${esc(g.shelf)}</span><span class="capsule-pick-mark go">›</span></button>`
           : pickRow(g.shelf, g.shelf === chosen, 'pickFormCategory(' + jsArg(g.shelf) + ')'));
       });
     }
