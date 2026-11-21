@@ -50,14 +50,17 @@ const confirmText = p => p.evaluate(()=>({
       outfitFilters['Dresses'] = {type:'items', ids: itemsInTab('Dresses').slice(0,2).map(i=>i.id)};
       renderFilterControls(); resetOutfitResults(); });
     await p.waitForTimeout(500);
+    await p.click('#filters-fab'); await p.waitForTimeout(600);
+    await p.click('#filter-sheet [data-filter-row="pieces"]'); await p.waitForTimeout(500);
     const chips = await p.evaluate(()=>
-      Array.from(document.querySelectorAll('#sheet-filter-grid .filter-chip')).map(e=>({
-        label: e.childNodes[0].textContent.trim(),
+      Array.from(document.querySelectorAll('#filter-sheet [data-filter-cat]')).map(e=>({
+        label: e.dataset.filterCat,
         moot: e.classList.contains('moot'),
         opacity: getComputedStyle(e).opacity,
       })));
-    check('with the shape pinned to dresses, no chip is dimmed',
-      chips.every(c=>!c.moot && c.opacity === '1'), JSON.stringify(chips));
+    check('with the shape pinned to dresses, no category is dimmed',
+      chips.length >= 3 && chips.every(c=>!c.moot && c.opacity === '1'), JSON.stringify(chips));
+    await p.evaluate(()=>closeFilterSheet()); await p.waitForTimeout(500);
     check('the filter still does its job',
       await p.evaluate(()=>outfitDisplayed.every(c=>c.base==='dress')));
     await p.close();
@@ -271,8 +274,8 @@ const confirmText = p => p.evaluate(()=>({
 
     // A sheet with nothing to commit has nothing to cancel. The filter sheet
     // changes the page behind it as you tap, so its foot is one button that
-    // says what you now have and puts the sheet away; a category page adds
-    // a quiet Filters on the left to go back a page. Neither says Done, and
+    // says what you now have and puts the sheet away; a page inside it adds
+    // a quiet Back on the left to go back a step. Neither says Done, and
     // neither leaves an arrow in the top corner.
     await p.evaluate(()=>closeModal()); await p.waitForTimeout(500);   // the piece sheet under the picker
     await p.click('#nav-outfits-btn'); await p.waitForTimeout(1200);
@@ -288,10 +291,17 @@ const confirmText = p => p.evaluate(()=>({
       f.labels.length === 1 && /^See [\d,]+ outfits?$/.test(f.labels[0]), f.labels.join(' / '));
     check('with nothing in the top corner to reach for instead', !f.arrow && f.headFirst === 'filter-sheet-heading',
       JSON.stringify(f));
+    await p.evaluate(()=>openFilterSection('pieces')); await p.waitForTimeout(500);
+    f = await foot();
+    check('the category list adds Back, quiet and on the left, beside See',
+      f.labels.length === 2 && f.labels[0] === 'Back' && f.quietFirst && /^See /.test(f.labels[1]),
+      f.labels.join(' / '));
     await p.evaluate(()=>openFilterPage('Tops')); await p.waitForTimeout(500);
     f = await foot();
-    check('a category page adds Back, quiet and on the left, beside See',
-      f.labels.length === 2 && f.labels[0] === 'Back' && f.quietFirst && /^See /.test(f.labels[1]),
+    check('a category page has Back, quiet and on the left, beside a search pill instead of See',
+      f.labels.length === 1 && f.labels[0] === 'Back' && f.quietFirst &&
+      await p.evaluate(()=>{ const s=document.getElementById('filter-sheet-search'), b=document.getElementById('filter-sheet-back');
+        return Boolean(s) && b.getBoundingClientRect().right <= s.getBoundingClientRect().left + 1; }),
       f.labels.join(' / '));
     check('and still no arrow at the top', !f.arrow && f.headFirst === 'filter-sheet-heading', JSON.stringify(f));
     await p.evaluate(()=>closeFilterSheet()); await p.waitForTimeout(400);

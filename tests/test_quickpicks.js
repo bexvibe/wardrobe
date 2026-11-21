@@ -1,5 +1,5 @@
 const { chromium } = require('playwright');
-const { leaveSheet } = require('./nav');
+const { leaveSheet, openFilterCategory, filterBack } = require('./nav');
 // The filters are a sheet that never opens itself; the pill raises it.
 async function openFilters(page){
   const open = await page.evaluate(() => filterSheetOpen());
@@ -64,28 +64,34 @@ const foot=p=>p.evaluate(()=>({
   check('the main page is titled Filters with Clear all, hidden while nothing is narrowed',
     h.title==='Filters' && h.label==='Clear all' && !h.visible, JSON.stringify(h));
 
-  await p.click('#filter-sheet .filter-chip:has-text("Jumper")'); await p.waitForTimeout(500);
+  const jumper = await p.evaluate(()=>{ openFilterSection('pieces'); return [...document.querySelectorAll('#filter-sheet [data-filter-cat]')].map(e=>e.dataset.filterCat).find(c=>/Jumper/.test(c)); });
+  await filterBack(p);
+  await openFilterCategory(p, jumper);
   h=await head(p);
   check('a category page is titled for the category, with a plain Clear',
     /^Jumpers?$/.test(h.title) && h.label==='Clear', JSON.stringify(h));
   check('Clear is hidden, not disabled, while nothing is narrowed',
     !h.visible && !h.disabled, JSON.stringify(h));
   check('and None is the first tile',
-    await p.evaluate(()=>document.querySelector('#picker-gallery .picker-tile').classList.contains('picker-none')));
+    await p.evaluate(()=>document.querySelector('#picker-gallery .tile').classList.contains('picker-none')));
   let f=await foot(p);
-  check('the foot holds Back and See N outfits, and nothing like Done',
-    f.back && /^See [\d,]+ outfits?$/.test(f.see.trim()) && !/Done/.test(await p.evaluate(()=>document.getElementById('filter-sheet-foot').textContent)),
+  check('the foot holds Back and the search pill, and nothing like Done',
+    f.back && await p.isVisible('#filter-sheet-search') && !/Done/.test(await p.evaluate(()=>document.getElementById('filter-sheet-foot').textContent)),
     JSON.stringify(f));
   await p.screenshot({path:shot('qp-any.png')});
 
   // Picking a specific item shows Clear, and the results follow at once.
   const before=f.results;
-  await p.click('#picker-gallery .picker-tile:not(.picker-none)'); await p.waitForTimeout(300);
+  await p.click('#picker-gallery .tile:not(.picker-none)'); await p.waitForTimeout(300);
   h=await head(p); f=await foot(p);
   const tileChecked=await p.evaluate(()=>document.querySelectorAll('#picker-gallery .picker-selected').length);
   check('picking an item shows Clear', h.visible && tileChecked===1, JSON.stringify(h)+` tiles=${tileChecked}`);
-  check('and the foot count is the results behind the sheet, already narrowed',
-    f.results<before && f.see.replace(/[^\d]/g,'')===String(f.results), `${before} -> ${f.results} "${f.see}"`);
+  check('and the results behind the sheet are already narrowed',
+    f.results<before, `${before} -> ${f.results}`);
+  await filterBack(p);
+  check('and the category list foot count is those results',
+    (await foot(p)).see.replace(/[^\d]/g,'')===String(f.results), (await foot(p)).see);
+  await openFilterCategory(p, jumper);
 
   // Clear in the head puts the category back to Any.
   await p.click('#filter-sheet-clear'); await p.waitForTimeout(300);
@@ -95,32 +101,35 @@ const foot=p=>p.evaluate(()=>({
       : Object.values(activeSlotFilters()).every(x=>x.type==='any')), JSON.stringify(h));
 
   // Taking the last item off again also returns to Any.
-  await p.click('#picker-gallery .picker-tile:not(.picker-none)'); await p.waitForTimeout(250);
-  await p.click('#picker-gallery .picker-tile.picker-selected'); await p.waitForTimeout(300);
+  await p.click('#picker-gallery .tile:not(.picker-none)'); await p.waitForTimeout(250);
+  await p.click('#picker-gallery .tile.picker-selected'); await p.waitForTimeout(300);
   h=await head(p);
   check('unticking the last item hides Clear again', !h.visible, JSON.stringify(h));
 
   // A pinned selection survives shutting the sheet and opening it again.
-  await p.click('#picker-gallery .picker-tile:not(.picker-none)'); await p.waitForTimeout(250);
+  await p.click('#picker-gallery .tile:not(.picker-none)'); await p.waitForTimeout(250);
+  await filterBack(p);
   await leaveSheet(p, {settle:500});
   await openFilters(p);
   h=await head(p);
   check('the sheet reopens on its main page, Clear all showing what is pinned',
     h.title==='Filters' && h.label==='Clear all' && h.visible, JSON.stringify(h));
-  await p.click('#filter-sheet .filter-chip:has-text("Jumper")'); await p.waitForTimeout(500);
+  await openFilterCategory(p, jumper);
   check('reopening the page still shows what you pinned',
     await p.evaluate(()=>document.querySelectorAll('#picker-gallery .picker-selected').length===1));
 
   // The foot's Filters goes back; the chips are refreshed.
-  await p.click('#filter-sheet-back'); await p.waitForTimeout(500);
-  check('Filters in the foot returns to the main page with the chip on',
+  await filterBack(p); await filterBack(p);
+  check('Back twice returns to the main rows with the chip on',
     await p.evaluate(()=>document.getElementById('filter-sheet-title').textContent.trim()==='Filters'
-      && !document.getElementById('filter-sheet-back')
-      && /Jumper/.test(document.querySelector('#filter-sheet .filter-chip.active')?.textContent||'')));
+      && !document.querySelector('#filter-sheet [data-filter-cat]')
+      && document.querySelectorAll('#filter-sheet .filter-active .filter-chip').length===1
+      && document.querySelector('[data-filter-row="pieces"] .capsule-pick-value').textContent.trim()!=='Any')
+    , await p.evaluate(()=>document.getElementById('filter-sheet-title').textContent+'|'+(document.querySelector('#filter-sheet .filter-active')||{}).textContent));
 
   // Every category is the same: Clear hidden until something is chosen.
   await leaveSheet(p, {settle:400});
-  await openFilters(p); await p.click('#filter-sheet .filter-chip:has-text("Top")'); await p.waitForTimeout(500);
+  await openFilters(p); await openFilterCategory(p, 'Tops');
   h=await head(p);
   check('a base category has the same head', h.label==='Clear', JSON.stringify(h));
 

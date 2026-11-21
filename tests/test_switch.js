@@ -157,11 +157,9 @@ const cards = p => p.evaluate(()=>
       outfitFilters['Jackets'].type === 'none'));
     check('and narrowing them', (await cards(p)) === 2, String(await cards(p)));
     await p.evaluate(()=>openFilterSheet()); await p.waitForTimeout(600);
-    check('the active chip in the panel agrees',
-      await p.evaluate(()=>Array.from(
-        document.querySelectorAll('#filter-sheet .filter-active .filter-chip'))
-          .map(e=>e.textContent.trim()).join(',').includes('Jackets')),
-      await p.evaluate(()=>Array.from(document.querySelectorAll('#filter-sheet .filter-active .filter-chip')).map(e=>e.textContent.trim()).join(',')));
+    const chipsTxt = await p.evaluate(()=>Array.from(
+      document.querySelectorAll('#filter-sheet .filter-active .filter-chip')).map(e=>e.textContent.trim()).join(','));
+    check('the active chip in the panel agrees', /jacket/i.test(chipsTxt), chipsTxt);
 
     // And Clear all clears the one set, from either side.
     await p.click('#filter-sheet-clear'); await p.waitForTimeout(900);

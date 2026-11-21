@@ -4,7 +4,7 @@
 // pulling it down. The page behind is covered, so it neither dismisses the
 // sheet nor scrolls under it.
 const { chromium } = require('playwright');
-const { toFaves } = require('./nav');
+const { toFaves, openFilterSection, openFilterCategory, filterBack } = require('./nav');
 const fs=require('fs'), path=require('path');
 const REPO = require('path').join(__dirname, '..');
 const SHOTS = require('path').join(__dirname, 'shots');
@@ -64,27 +64,32 @@ async function pullDown(p, dy){
     await reopen(p);
     check('the pill raises it', await isOpen(p));
 
-    await p.click('#sheet-tag-chips .tag-chip'); await p.waitForTimeout(500);
-    check('tapping a tag inside it keeps it up', await isOpen(p));
+    await openFilterSection(p, 'tags');
+    check('opening the Tags row keeps it up, on that page', (await isOpen(p)) && await p.evaluate(()=>filterSection === 'tags'));
+    await p.click('#filter-section-list .capsule-pick'); await p.waitForTimeout(500);
+    check('ticking a tag inside it keeps it up', await isOpen(p));
     check('and the tag really went on', await p.evaluate(()=>outfitTags.length > 0));
+    await filterBack(p, 700);
+    check('coming back from the tags page keeps it up, on the main rows',
+      (await isOpen(p)) && await p.evaluate(()=>filterSection === null && filterPage === null));
 
-    await p.click('#sheet-filter-grid .filter-chip'); await p.waitForTimeout(700);
-    check('tapping a piece chip keeps it up, on that category\'s page',
-      (await isOpen(p)) && await p.evaluate(()=>filterPage !== null));
-    await p.click('#filter-sheet-back'); await p.waitForTimeout(700);
-    check('and coming back from the page keeps it up, on the main page',
-      (await isOpen(p)) && await p.evaluate(()=>filterPage === null));
+    await openFilterCategory(p, 'Tops');
+    check('opening a category keeps it up, on that category\'s page',
+      (await isOpen(p)) && await p.evaluate(()=>filterPage === 'Tops'));
+    await filterBack(p, 700);
+    check('and coming back from the page keeps it up, on the category list',
+      (await isOpen(p)) && await p.evaluate(()=>filterSection === 'pieces' && filterPage === null));
+    await filterBack(p, 700);
 
-    // The row inside scrolls sideways; that is not scrolling the page.
-    await p.evaluate(()=>document.getElementById('sheet-tag-chips').scrollBy({left:120}));
+    // The sheet's own list scrolls; that is not scrolling the page.
+    await openFilterSection(p, 'tags');
+    await p.evaluate(()=>{ const b=document.getElementById('filter-sheet-body'); (b.scrollHeight>b.clientHeight ? b : document.getElementById('filter-sheet')).scrollBy({top:120}); });
     await p.waitForTimeout(500);
-    check('scrolling a row inside it keeps it up', await isOpen(p));
+    check('scrolling the list inside it keeps it up', await isOpen(p));
 
     // A long press opens a sheet part-way through the gesture, so the click
-    // that follows lands on neither the chip nor the sheet.
-    await p.evaluate(()=>document.getElementById('sheet-tag-chips').scrollTo({left:0}));
-    await p.waitForTimeout(300);
-    const box = await p.locator('#sheet-tag-chips .tag-chip').first().boundingBox();
+    // that follows lands on neither the row nor the sheet.
+    const box = await p.locator('#filter-section-list .capsule-pick').first().boundingBox();
     await p.mouse.move(box.x+box.width/2, box.y+box.height/2);
     await p.mouse.down(); await p.waitForTimeout(700); await p.mouse.up();
     await p.waitForTimeout(500);
@@ -141,7 +146,7 @@ async function pullDown(p, dy){
     await reopen(p);
     check('the pill brings it back each time', await isOpen(p));
     check('always on its main page when it comes back',
-      await p.evaluate(()=>filterPage === null));
+      await p.evaluate(()=>filterPage === null && filterSection === null));
     await p.close();
   }
 
@@ -202,8 +207,9 @@ async function pullDown(p, dy){
       String(await p.evaluate(()=>Math.round(scrollY))));
 
     const before = await p.evaluate(()=>document.documentElement.scrollHeight);
+    await openFilterSection(p, 'tags');
     await p.evaluate(()=>document
-      .querySelector('#sheet-tag-chips .tag-chip[data-tag="summer"]').click());
+      .querySelector('#filter-section-list .capsule-pick[data-tag="summer"]').click());
     await p.waitForTimeout(1200);
     const after = await p.evaluate(()=>({
       h: document.documentElement.scrollHeight,

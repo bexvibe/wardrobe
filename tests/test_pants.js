@@ -2,7 +2,7 @@
 // The tabs split; the outfit's bottom slot still draws from both, so a pair
 // of shorts has not quietly dropped out of the generator.
 const { chromium } = require('playwright');
-const { leaveSheet } = require('./nav');
+const { leaveSheet, openFilterCategory, filterBack } = require('./nav');
 const fs=require('fs'), path=require('path');
 const REPO = require('path').join(__dirname, '..');
 const SHOTS = require('path').join(__dirname, 'shots');
@@ -115,7 +115,8 @@ const tiles = p => p.evaluate(()=>document.querySelectorAll('#gallery .tile').le
     const p=await open(b);
     await p.click('#nav-outfits-btn'); await p.waitForTimeout(1100);
     const shortsId = await p.evaluate(()=>ITEMS.find(i=>i.category==='Shorts').id);
-    await p.evaluate(()=>(filterSheetOpen()||openFilterSheet(),openFilterPage('Shorts'))); await p.waitForTimeout(500);
+    await p.click('#filters-fab'); await p.waitForTimeout(500);
+    await openFilterCategory(p, 'Shorts');
     check('the Shorts page offers the shorts and only the shorts',
       await p.evaluate(id=>{
         const tiles = Array.from(document.querySelectorAll('#picker-gallery .picker-tile:not(.picker-none)'));
@@ -123,8 +124,8 @@ const tiles = p => p.evaluate(()=>document.querySelectorAll('#gallery .tile').le
                tiles.some(t=>(t.getAttribute('onclick')||'').includes(id));
       }, shortsId));
     check('and the Pants page does not', await (async()=>{
-      await leaveSheet(p, {settle:400});
-      await p.evaluate(()=>(filterSheetOpen()||openFilterSheet(),openFilterPage('Pants'))); await p.waitForTimeout(400);
+      await filterBack(p);
+      await openFilterCategory(p, 'Pants');
       return p.evaluate(id=>!Array.from(document.querySelectorAll('#picker-gallery .picker-tile:not(.picker-none)'))
         .some(t=>(t.getAttribute('onclick')||'').includes(id)), shortsId);
     })());
@@ -132,11 +133,12 @@ const tiles = p => p.evaluate(()=>document.querySelectorAll('#gallery .tile').le
     // Tap the pair on the Shorts page. The outfits behind the sheet are left
     // alone while it is open — redrawing them reloaded every photo — and
     // catch up once it is closed.
-    await p.click('#filter-sheet-back'); await p.waitForTimeout(500);
-    await p.evaluate(()=>openFilterPage('Shorts')); await p.waitForTimeout(500);
+    await filterBack(p);
+    await openFilterCategory(p, 'Shorts');
     await p.click(`#picker-gallery .picker-tile[onclick*="${shortsId}"]`); await p.waitForTimeout(900);
     check('the page behind is not redrawn while the sheet is open',
       await p.evaluate(()=>filterSheetOpen() && filterResultsStale));
+    await filterBack(p);   // to the category list, which has the See button
     await leaveSheet(p, {settle:600});
     // Pants is still on Any, but asking for a particular pair of shorts is
     // asking for those shorts — the other bottoms step aside rather than

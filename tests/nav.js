@@ -78,6 +78,11 @@ module.exports = {
 
     if(await page.evaluate(() => typeof filterSheetOpen === 'function' && filterSheetOpen()
         && !document.querySelector('.modal-backdrop.open, #form-backdrop.open'))){
+      // A pieces page has Back and a search pill instead of See: Back out
+      // to a page that has the count, as a thumb would.
+      for(let i = 0; i < 3 && !(await page.isVisible('#filter-sheet-see')); i++){
+        await page.click('#filter-sheet-back'); await page.waitForTimeout(450);
+      }
       await page.click('#filter-sheet-see');           // the filters: See N outfits
     } else if(await page.$('#modal-backdrop.open.as-page #item-page-back')){
       await page.click('#item-page-back');             // a piece's page: Back

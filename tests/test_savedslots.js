@@ -4,7 +4,7 @@
 // keep their own settings — narrowing what you are browsing must not narrow
 // what you have kept.
 const { chromium } = require('playwright');
-const { toFaves, leaveSheet } = require('./nav');
+const { toFaves, leaveSheet, openFilterSection, openFilterCategory, filterBack, tickFilter } = require('./nav');
 const fs=require('fs'), path=require('path');
 const REPO = require('path').join(__dirname, '..');
 const SHOTS = require('path').join(__dirname, 'shots');
@@ -46,9 +46,26 @@ async function open(b){
 }
 
 const cards = p => p.evaluate(()=>document.querySelectorAll('#saved-view .outfit-card').length);
-const chipLabels = p => p.evaluate(()=>
-  Array.from(document.querySelectorAll('#sheet-filter-grid .filter-chip'))
-    .map(e=>e.childNodes[0].textContent.trim()));
+// The categories on the Pieces page of the open Filters sheet, then back.
+const chipLabels = async p => {
+  await openFilterSection(p, 'pieces');
+  const ls = await p.evaluate(()=>Array.from(document.querySelectorAll('#filter-sheet [data-filter-cat]')).map(e=>e.dataset.filterCat));
+  await filterBack(p);
+  return ls;
+};
+// What the category rows say is picked ('Any' when nothing).
+const catValues = async p => {
+  await openFilterSection(p, 'pieces');
+  const v = await p.evaluate(()=>Object.fromEntries(Array.from(document.querySelectorAll('#filter-sheet [data-filter-cat]'))
+    .map(e=>[e.dataset.filterCat, {value:e.querySelector('.capsule-pick-value').textContent.trim(), opacity:getComputedStyle(e).opacity}])));
+  await filterBack(p);
+  return v;
+};
+// Back out of whatever page the sheet is on, then leave it by its See.
+async function closeSheet(p){
+  while(await p.isVisible('#filter-sheet-back')){ await p.click('#filter-sheet-back'); await p.waitForTimeout(400); }
+  await leaveSheet(p, {settle:600});
+}
 // The page no longer prints a count line; the cards are the count.
 
 // The way back from a pinned selection: open the piece's page in the filter
@@ -58,7 +75,7 @@ async function setAny(p, key){
   await p.waitForTimeout(350);
   await p.click('#filter-sheet-clear');
   await p.waitForTimeout(250);
-  await leaveSheet(p, {settle:600});
+  await closeSheet(p);
 }
 
 // Narrowing is pinning, so say which piece.
@@ -73,9 +90,9 @@ async function pin(p, key, id){
 async function pinFirst(p, key){
   await p.evaluate(k=>(filterSheetOpen()||openFilterSheet(),openFilterPage(k)), key);
   await p.waitForTimeout(350);
-  const id = await p.evaluate(()=>document.querySelector('#picker-gallery .picker-tile:not(.picker-none)').getAttribute('onclick'));
-  await p.click('#picker-gallery .picker-tile:not(.picker-none)'); await p.waitForTimeout(250);
-  await leaveSheet(p, {settle:600});
+  const id = await p.evaluate(()=>document.querySelector('#picker-gallery .tile:not(.picker-none)').getAttribute('onclick'));
+  await p.click('#picker-gallery .tile:not(.picker-none)'); await p.waitForTimeout(250);
+  await closeSheet(p);
   return id;
 }
 
@@ -90,7 +107,7 @@ async function pinFirst(p, key){
     await p.click('#filters-fab'); await p.waitForTimeout(450);
     check('the Filters pill raises it', await p.evaluate(()=>filterSheetOpen()));
     check('Faves offers a Pieces row, not tags alone',
-      await p.evaluate(()=>Boolean(document.getElementById('sheet-filter-grid'))));
+      await p.isVisible('#filter-sheet [data-filter-row="pieces"]'));
     check('with every category an outfit is built from',
       (await chipLabels(p)).length > 0 &&
       await p.evaluate(ls => ls.every(t => OUTFIT_TABS.includes(t)), await chipLabels(p)),
@@ -153,10 +170,10 @@ async function pinFirst(p, key){
     await p.waitForTimeout(500);
     check('pinning a top keeps only the fave wearing it', (await cards(p))===1, String(await cards(p)));
     // A number in a badge, not the words "1 selected".
-    check('the chip counts the pinned pieces',
-      (await p.evaluate(()=>Array.from(document.querySelectorAll('#sheet-filter-grid .filter-chip'))
-        .find(e=>e.childNodes[0].textContent.trim()==='Tops')
-        .querySelector('.chip-count').textContent.trim())) === '1');
+    await p.click('#filters-fab'); await p.waitForTimeout(450);
+    const vals = await catValues(p);
+    check('the Tops row says what is pinned', vals.Tops.value !== 'Any' && Object.keys(vals).filter(k=>vals[k].value!=='Any').join()==='Tops', JSON.stringify(vals));
+    await closeSheet(p);
     check('a piece no fave wears is empty rather than wrong', await (async()=>{
       await p.evaluate(()=>{
         outfitFilters['Tops'] = {type:'items', ids:['seed_29']};
@@ -173,12 +190,11 @@ async function pinFirst(p, key){
   {
     const p=await open(b);
     await pin(p, 'Dresses', 'seed_32');
-    const state = await p.evaluate(()=>
-      Array.from(document.querySelectorAll('#sheet-filter-grid .filter-chip'))
-        .map(e=>({label: e.childNodes[0].textContent.trim(),
-                  opacity: getComputedStyle(e).opacity})));
-    check('with only the dress able to match, every chip still reads full strength',
-      state.every(c=>c.opacity === '1'), JSON.stringify(state));
+    await p.click('#filters-fab'); await p.waitForTimeout(450);
+    const state = await catValues(p);
+    check('with only the dress able to match, every category row still reads full strength',
+      Object.values(state).every(c=>c.opacity === '1'), JSON.stringify(state));
+    await closeSheet(p);
     check('and the filter itself still works', (await cards(p))===1, String(await cards(p)));
     await p.close();
   }
@@ -194,11 +210,8 @@ async function pinFirst(p, key){
     check('it is still set on the other half of the switch',
       await p.evaluate(()=>outfitFilters['Dresses'].type==='items'));
     check('and the chip says so there too',
-      await p.evaluate(()=>{
-        const chip = Array.from(document.querySelectorAll('#sheet-filter-grid .filter-chip'))
-          .find(e=>e.childNodes[0].textContent.trim()==='Dresses');
-        return chip.classList.contains('active') && Boolean(chip.querySelector('.chip-count'));
-      }));
+      (await p.evaluate(()=>document.querySelectorAll('#filter-sheet .filter-active .filter-chip').length))===1 &&
+      (await catValues(p)).Dresses.value !== 'Any');
     check('and it is narrowing what is generated',
       await p.evaluate(()=>outfitDisplayed.length > 0 &&
         outfitDisplayed.every(c=>!c.dress || c.dress.id==='seed_32')));
@@ -207,7 +220,7 @@ async function pinFirst(p, key){
     await p.evaluate(()=>{ outfitFilters['Tops'] = {type:'items', ids:['seed_22']};
                            renderFilterControls(); });
     await p.waitForTimeout(400);
-    await leaveSheet(p);                       // the sheet covers the nav
+    await closeSheet(p);                       // the sheet covers the nav
     await toFaves(p, 700);
     check('both survive the round trip',
       await p.evaluate(()=>outfitFilters['Dresses'].type==='items' && outfitFilters['Tops'].type==='items'));
@@ -218,7 +231,7 @@ async function pinFirst(p, key){
     check('the sheet does not open itself on arriving',
       !(await p.evaluate(()=>filterSheetOpen())));
     check('and the shut sheet still counts both on the pill',
-      (await p.textContent('#filters-fab')).replace(/\s+/g,'') === 'Allfilters2',
+      (await p.textContent('#filters-fab')).replace(/\s+/g,'') === 'Filters2',
       (await p.textContent('#filters-fab')).replace(/\s+/g,' ').trim());
     await p.close();
   }
@@ -228,7 +241,9 @@ async function pinFirst(p, key){
     const p=await open(b);
     await pin(p, 'Dresses', 'seed_32');
     await p.click('#filters-fab'); await p.waitForTimeout(450);
-    await p.click('#sheet-tag-chips .tag-chip'); await p.waitForTimeout(500);
+    const tag = await p.evaluate(()=>{ openFilterSection('tags'); return document.querySelector('#filter-section-list .capsule-pick').textContent.replace('✓','').trim(); });
+    await filterBack(p);
+    await tickFilter(p, 'tags', tag);
     check('a tag and a slot are both on', await p.evaluate(()=>activeFilterCount())>=2,
       String(await p.evaluate(()=>activeFilterCount())));
     await p.click('#filter-sheet-clear'); await p.waitForTimeout(600);

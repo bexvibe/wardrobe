@@ -100,13 +100,14 @@ const cards = p => p.evaluate(()=>
   await p.waitForTimeout(400);
   check('no photo: the hero slot shows the name', await q(()=>document.querySelector('#outfit-hero .hero-name')?.textContent.trim().length>0));
   check('and a card shows it too', await q(()=>document.querySelectorAll('#outfit-gallery .no-photo-mini').length>0));
-  // Scroll the quick row, flip Faves, and the row stays where it was.
-  await q(()=>{ const bar=document.getElementById('outfit-tabs'); bar.style.maxWidth='200px'; bar.scrollLeft=60; });
-  const before = await q(()=>document.getElementById('outfit-tabs').scrollLeft);
+  // Flip Faves and back: the bar comes back whole (Filters in it, Faves on the
+  // row), the quick tags are still not there. (With no tag chips the row no
+  // longer overflows, so there is no scroll position to keep.)
   await p.evaluate(()=>setMode('saved')); await p.waitForTimeout(500);
+  check('on Faves the bar has Filters in it', await q(()=>!!document.querySelector('#saved-tabs > #filters-fab.in-head')));
   await p.evaluate(()=>setMode('outfits')); await p.waitForTimeout(500);
-  const after = await q(()=>document.getElementById('outfit-tabs').scrollLeft);
-  check('flipping Faves does not reset the quick row', after === before, before+' -> '+after);
+  check('flipping Faves and back leaves the bar whole', await q(()=>!!document.querySelector('#outfit-tabs > #filters-fab.in-head') &&
+    document.querySelectorAll('#outfit-tabs .bar-chips .tab').length===1 && !!document.querySelector('#outfit-tabs .view-seg')));
   // Pickers: search at the foot, level with Back, fully rounded.
   await q(()=>{ openItemForm(); });
   await p.waitForTimeout(600);

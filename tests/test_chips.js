@@ -1,11 +1,12 @@
-// A filter chip says whether it is on, and how much, without saying it in
-// words. Off is an outline. On with pieces pinned is filled and carries the
-// count in a badge. On with a category ruled out is filled with its label
-// Nowhere does the row print "Any" or "2 selected".
-// And every one of them — chips, tags, Clear all, the pill, the category
+// The Filters sheet says whether a filter is on, and how much, without a
+// wall of chips. Each row shows its value ("Any" when off). Whatever is on is
+// also a removable chip at the top. Nothing prints "2 selected", and the
+// chips carry no count badge: a row's value names the piece, or says
+// "Tops (2)".
+// And every one of them — rows, chips, Clear all, the pill, the category
 // page's Clear and the foot's buttons — is a full thumb's worth of target.
 const { chromium } = require('playwright');
-const { toFaves, leaveSheet } = require('./nav');
+const { toFaves, leaveSheet, openFilterSection, openFilterCategory, filterBack } = require('./nav');
 const fs=require('fs'), path=require('path');
 const REPO = require('path').join(__dirname, '..');
 const SHOTS = require('path').join(__dirname, 'shots');
@@ -14,8 +15,7 @@ const seed=fs.readFileSync(REPO + '/supabase/seed-items.json','utf8');
 const results=[]; const check=(n,p,d)=>{results.push(p);console.log(`${p?'PASS':'FAIL'}  ${n}${d?'  — '+d:''}`);};
 
 const TAGS = {seed_1:['summer','linen'], seed_2:['summer'], seed_3:['winter']};
-// Enough tags that the row is wider than the sheet, which is the whole
-// point of the two checks about edges and scrolling below.
+// A handful of tags, so the Tags page has something to list.
 ['evening','work','holiday','wool','smart','casual','denim','knit']
   .forEach((t,i)=>{ TAGS['seed_'+(10+i)] = [t]; });
 
@@ -42,37 +42,35 @@ async function openSheet(p){
   }
 }
 
-// One chip, read the way you read it on screen: is it filled, does it carry
-// a number, is its label crossed out.
-const chip = (p, label) => p.evaluate(l => {
-  const el = Array.from(document.querySelectorAll('#sheet-filter-grid .filter-chip'))
-    .find(e => e.childNodes[0].textContent.trim() === l);
+const txt = (p, sel) => p.evaluate(x=>[...document.querySelectorAll(x)].map(e=>e.textContent.replace(/\s+/g,' ').trim()), sel);
+const rowValue = (p, section) => p.evaluate(sec=>{
+  const el = document.querySelector(`#filter-sheet [data-filter-row="${sec}"] .capsule-pick-value`);
+  return el ? el.textContent.trim() : null;
+}, section);
+const activeChips = p => p.evaluate(()=>Array.from(document.querySelectorAll('#filter-sheet .filter-active .filter-chip'))
+  .map(e=>({label:e.textContent.replace(/\s*✕\s*$/,'').trim(), said:e.getAttribute('aria-label'), h:Math.round(e.getBoundingClientRect().height)})));
+// One category row on the Pieces list, read the way you read it on screen.
+const catRow = (p, cat) => p.evaluate(c=>{
+  const el = document.querySelector(`#filter-sheet [data-filter-cat="${c}"]`);
   if(!el) return null;
-  const cs = getComputedStyle(el);
-  const badge = el.querySelector('.chip-count');
-  const lab = el.querySelector('.chip-label');
-  return {
-    state: el.dataset.state,
-    filled: !/rgba\(0, 0, 0, 0\)|transparent/.test(cs.backgroundColor),
-    ringed: !/rgba\(0, 0, 0, 0\)|transparent/.test(cs.borderTopColor),
-    badge: badge ? badge.textContent.trim() : null,
-    // Not aria-pressed: this chip takes you to a page of pieces, it does
-    // not toggle. The state travels in its aria-label.
-    haspopup: el.getAttribute('aria-haspopup'),
-    pressed: el.getAttribute('aria-pressed'),
-    caret: Boolean(el.querySelector('.chip-caret')),
-    said: el.getAttribute('aria-label'),
-    text: el.textContent.trim(),
-    h: Math.round(el.getBoundingClientRect().height),
-  };
-}, label);
+  return {value: el.querySelector('.capsule-pick-value').textContent.trim(),
+          on: el.querySelector('.capsule-pick-value').classList.contains('on'),
+          h: Math.round(el.getBoundingClientRect().height)};
+}, cat);
+// Sheet up, on its main rows.
+async function mainRows(p){
+  await openSheet(p);
+  if(await p.$('#filter-sheet-back')){
+    while(await p.$('#filter-sheet-back')) await filterBack(p);
+  }
+}
 
 // Through the category page, the way she would: open it, Clear in the head,
-// and the foot's Filters back to the main page, which is redrawn on the way.
-// The sheet is left open on its main page.
+// Back to the category list. The sheet is left open on that list.
 async function clearSlot(p, key){
-  await p.evaluate(k => (filterSheetOpen()||openFilterSheet(),openFilterPage(k)), key);
-  await p.waitForTimeout(350);
+  await openSheet(p);
+  await p.evaluate(k => openFilterPage(k), key);
+  await p.waitForTimeout(450);
   await p.click(`#filter-sheet-clear`);
   await p.waitForTimeout(250);
   await p.click('#filter-sheet-back');
@@ -82,60 +80,55 @@ async function clearSlot(p, key){
 (async()=>{
   const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium'});
 
-  // ---- 1. Nothing set: outlines all the way along, and not a word ----
+  // ---- 1. Nothing set: every row says Any, no chips on top ----
   {
     const p=await open(b);
-    const all = await p.evaluate(()=>Array.from(
-      document.querySelectorAll('#sheet-filter-grid .filter-chip')).map(e=>({
-        text: e.textContent.trim(),
-        state: e.dataset.state,
-        active: e.classList.contains('active'),
-        badge: Boolean(e.querySelector('.chip-count')),
-      })));
-    check('every chip starts as an outline', all.every(c=>!c.active && c.state==='any'),
-      JSON.stringify(all.slice(0,3)));
-    check('and carries no badge, because nothing is pinned',
-      all.every(c=>!c.badge));
-    check('a chip at rest is its label and nothing else',
-      all.every(c=>!/any|selected/i.test(c.text)),
-      all.map(c=>c.text).join(' | '));
-    check('the word "Any" is nowhere in the filter sheet',
-      !(await p.evaluate(()=>/\bAny\b/.test(
-        document.getElementById('filter-sheet').innerText))));
+    await openSheet(p);
+    const vals = await txt(p, '#filter-sheet [data-filter-row] .capsule-pick-value');
+    check('every row starts on Any', vals.length>=2 && vals.every(v=>v==='Any'), vals.join(' | '));
+    check('and no chip is on at the top', (await activeChips(p)).length===0);
+    check('and no chip carries a count badge',
+      (await p.locator('#filter-sheet .chip-count').count())===0);
+    check('nor a caret',
+      (await p.locator('#filter-sheet .chip-caret').count())===0);
     check('nor "selected"',
       !(await p.evaluate(()=>/selected/i.test(
         document.getElementById('filter-sheet').innerText))));
+    await openFilterSection(p, 'pieces');
+    const cats = await txt(p, '#filter-sheet [data-filter-cat] .capsule-pick-value');
+    check('and every category row says Any too', cats.length>=3 && cats.every(v=>v==='Any'), cats.join(' | '));
     await p.close();
   }
 
-  // ---- 2. Pinning pieces: filled, with the count in a badge ----
+  // ---- 2. Pinning pieces: the row says how many, the chip says so too ----
   {
     const p=await open(b);
     await p.evaluate(()=>{
       outfitFilters['Tops'] = {type:'items', ids:itemsInTab('Tops').slice(0,3).map(i=>i.id)};
-      renderFilterControls();
+      renderFilterControls(); renderFiltersFab();
     });
     await p.waitForTimeout(400);
-    const c = await chip(p, 'Tops');
-    check('a chip with pieces pinned is filled', c.filled && c.state==='items',
-      JSON.stringify(c));
-    check('and has no ring as well — filled is the whole difference', !c.ringed);
-    check('the count is a number in a badge, not a sentence',
-      c.badge === '3' && !/selected/i.test(c.text), `badge ${c.badge}, text "${c.text}"`);
-    check('and the badge follows the number pinned', await (async()=>{
+    await openSheet(p);
+    check('the Pieces row carries the count in words that name it',
+      (await rowValue(p,'pieces'))==='Tops (3)', await rowValue(p,'pieces'));
+    const chips = await activeChips(p);
+    check('and it is a removable chip at the top, with no badge',
+      chips.length===1 && chips[0].label==='Tops (3)' && !/selected/i.test(chips[0].label),
+      JSON.stringify(chips));
+    check('which says what tapping it does, to a screen reader too',
+      /^Remove/.test(chips[0].said) && /Tops/.test(chips[0].said), chips[0].said);
+    await openFilterSection(p, 'pieces');
+    const c = await catRow(p, 'Tops');
+    check('the category row carries the count as its value', c.value==='Tops (3)' && c.on, JSON.stringify(c));
+    check('and the value follows the number pinned', await (async()=>{
       await p.evaluate(()=>{
         outfitFilters['Tops'] = {type:'items', ids:itemsInTab('Tops').slice(0,1).map(i=>i.id)};
         renderFilterControls();
       });
       await p.waitForTimeout(300);
-      return (await chip(p,'Tops')).badge === '1';
+      return (await catRow(p,'Tops')).value === await p.evaluate(()=>itemsInTab('Tops')[0].name);
     })());
-    check('a chip that is on says so to a screen reader too',
-      /Tops/.test(c.said) && /3 selected/.test(c.said) && c.pressed === null, c.said);
-    check('and one that is off says that', await (async()=>{
-      const off = await chip(p, 'Dresses');
-      return /Dresses/.test(off.said) && /any/i.test(off.said) && off.pressed === null;
-    })());
+    check('and one that is off says Any', (await catRow(p, 'Dresses')).value==='Any' && !(await catRow(p,'Dresses')).on);
     await p.close();
   }
 
@@ -145,67 +138,88 @@ async function clearSlot(p, key){
     await p.evaluate(()=>{
       outfitFilters['Dresses'] = {type:'items', ids:itemsInTab('Dresses').slice(0,2).map(i=>i.id)};
       renderFilterControls();
-      resetOutfitResults();   // the chips redraw on their own; the stream does not
+      resetOutfitResults();   // the rows redraw on their own; the stream does not
     });
     await p.waitForTimeout(900);
-    const on = await chip(p, 'Dresses');
-    check('a narrowed category is filled and counted', on.filled && on.badge === '2',
+    await openSheet(p);
+    await openFilterSection(p, 'pieces');
+    const on = await catRow(p, 'Dresses');
+    check('a narrowed category is marked and counted', on.on && on.value === 'Dresses (2)',
       JSON.stringify(on));
     check('and pinning a dress is what asks for a dress outfit',
       await p.evaluate(()=>outfitDisplayed.length > 0 &&
         outfitDisplayed.every(o => o.base === 'dress')));
 
     await clearSlot(p, 'Dresses');
-    const off = await chip(p, 'Dresses');
-    check('Any returns it to a plain outline with no count',
-      !off.filled && off.badge === null && off.state === 'any', JSON.stringify(off));
+    const off = await catRow(p, 'Dresses');
+    check('Any returns it to a plain row with no count',
+      !off.on && off.value === 'Any', JSON.stringify(off));
     await p.close();
   }
 
-  // ---- 4. Clear all puts the whole row back ----
+  // ---- 4. Clear all puts the whole list back ----
   {
     const p=await open(b);
     await p.evaluate(()=>{
       outfitFilters['Tops'] = {type:'items', ids:itemsInTab('Tops').slice(0,2).map(i=>i.id)};
       outfitFilters['Jackets'] = {type:'items', ids:itemsInTab('Jackets').slice(0,1).map(i=>i.id)};
-      renderFilterControls();
+      renderFilterControls(); renderFiltersFab();
     });
     await p.waitForTimeout(400);
-    check('two chips are on', await p.evaluate(()=>
-      document.querySelectorAll('#sheet-filter-grid .filter-chip.active').length)===2);
     await openSheet(p);
+    check('two chips are on at the top', (await activeChips(p)).length===2);
     await p.click('#filter-sheet-clear'); await p.waitForTimeout(700);
-    check('and Clear all leaves nothing filled or badged',
-      await p.evaluate(()=>Array.from(
-        document.querySelectorAll('#sheet-filter-grid .filter-chip'))
-          .every(e=>!e.classList.contains('active') && !e.querySelector('.chip-count'))));
+    check('and Clear all leaves nothing on or chipped',
+      (await activeChips(p)).length===0 &&
+      (await txt(p, '#filter-sheet [data-filter-row] .capsule-pick-value')).every(v=>v==='Any'));
     await p.close();
   }
 
   // ---- 5. Every target in the sheet is 44px ----
   {
     const p=await open(b);
-    // Clear all only exists once there is something to clear.
+    // Clear all only shows once there is something to clear.
     await p.evaluate(()=>{
       outfitFilters['Tops'] = {type:'items', ids:itemsInTab('Tops').slice(0,2).map(i=>i.id)};
-      renderFilterControls();
+      renderFilterControls(); renderFiltersFab();
     });
     await p.waitForTimeout(400);
     await openSheet(p);
     const sizes = await p.evaluate(()=>{
       const h = el => el ? Math.round(el.getBoundingClientRect().height) : null;
       return {
-        piece: Array.from(document.querySelectorAll('#sheet-filter-grid .filter-chip')).map(h),
-        tag: Array.from(document.querySelectorAll('#sheet-tag-chips .tag-chip')).map(h),
+        rows: Array.from(document.querySelectorAll('#filter-sheet [data-filter-row]')).map(h),
+        chips: Array.from(document.querySelectorAll('#filter-sheet .filter-active .filter-chip')).map(h),
         clear: h(document.getElementById('filter-sheet-clear')),
+        see: h(document.getElementById('filter-sheet-see')),
       };
     });
-    check('every piece chip is at least 44px tall',
-      sizes.piece.length > 0 && sizes.piece.every(n=>n>=44), JSON.stringify(sizes.piece));
-    check('every tag chip too',
-      sizes.tag.length > 0 && sizes.tag.every(n=>n>=44), JSON.stringify(sizes.tag));
-    check('Clear all is not a 21px sliver any more', sizes.clear>=44, String(sizes.clear));
-    await p.evaluate(()=>closeFilterSheet()); await p.waitForTimeout(600);
+    check('every row is at least 44px tall',
+      sizes.rows.length > 0 && sizes.rows.every(n=>n>=44), JSON.stringify(sizes.rows));
+    check('every chip on top too',
+      sizes.chips.length > 0 && sizes.chips.every(n=>n>=44), JSON.stringify(sizes.chips));
+    check('Clear all is not a 21px sliver', sizes.clear>=44, String(sizes.clear));
+    check('and neither is the count at the foot', sizes.see>=44, String(sizes.see));
+
+    // The head is the 44px of its Clear and no more, so the rows are not
+    // pushed down the screen.
+    const head = await p.evaluate(()=>
+      Math.round(document.querySelector('.filter-sheet-head').getBoundingClientRect().height));
+    check('and the head is no taller than the Clear it holds', head <= 48, `${head}px`);
+
+    // The Tags page: tick rows.
+    await openFilterSection(p, 'tags');
+    const ticks = await p.evaluate(()=>Array.from(document.querySelectorAll('#filter-section-list .capsule-pick'))
+      .map(e=>Math.round(e.getBoundingClientRect().height)));
+    check('every tag row is at least 44px too', ticks.length>0 && ticks.every(n=>n>=44), JSON.stringify(ticks));
+    await filterBack(p);
+
+    // The category list.
+    await openFilterSection(p, 'pieces');
+    const cats = await p.evaluate(()=>Array.from(document.querySelectorAll('#filter-sheet [data-filter-cat]'))
+      .map(e=>Math.round(e.getBoundingClientRect().height)));
+    check('and every category row', cats.length>0 && cats.every(n=>n>=44), JSON.stringify(cats));
+    await leaveSheet(p, {settle:600});
     // (Measured with the sheet down: while it is up the pill eases away
     // behind it.)
     const fab = await p.evaluate(()=>{
@@ -215,20 +229,14 @@ async function clearSlot(p, key){
     check('the pill that raises the sheet is a full target', fab.h>=44 && fab.w>=44, JSON.stringify(fab));
     await p.click('#filters-fab'); await p.waitForTimeout(500);
 
-    // The head is the 44px of its Clear and no more, so the chips are not
-    // pushed down the screen.
-    const head = await p.evaluate(()=>
-      Math.round(document.querySelector('.filter-sheet-head').getBoundingClientRect().height));
-    check('and the head is no taller than the Clear it holds', head <= 48, `${head}px`);
-
-    await p.evaluate(()=>(filterSheetOpen()||openFilterSheet(),openFilterPage('Tops'))); await p.waitForTimeout(500);
+    await openFilterCategory(p, 'Tops');
     const page = await p.evaluate(()=>{
       const h = id => Math.round(document.getElementById(id).getBoundingClientRect().height);
-      return {clear:h('filter-sheet-clear'), back:h('filter-sheet-back'), see:h('filter-sheet-see'),
+      return {clear:h('filter-sheet-clear'), back:h('filter-sheet-back'), search:h('filter-sheet-search'),
               head:Math.round(document.querySelector('.filter-sheet-head').getBoundingClientRect().height)};
     });
-    check('on a category page Clear, Filters and See are 44px as well',
-      page.clear>=44 && page.back>=44 && page.see>=44, JSON.stringify(page));
+    check('on a category page Clear, Back and the search pill are 44px as well',
+      page.clear>=44 && page.back>=44 && page.search>=44, JSON.stringify(page));
     await p.close();
   }
 
@@ -238,14 +246,20 @@ async function clearSlot(p, key){
     await toFaves(p, 1200);
     await p.evaluate(()=>{
       outfitFilters['Tops'] = {type:'items', ids:itemsInTab('Tops').slice(0,4).map(i=>i.id)};
-      renderFilterControls();
+      renderFilterControls(); renderFiltersFab();
     });
     await p.waitForTimeout(400);
-    const c = await chip(p, 'Tops');
-    check('the same chip, the same badge, on Faves',
-      c.filled && c.badge==='4' && c.h>=44, JSON.stringify(c));
-    check('and no words there either',
-      !(await p.evaluate(()=>/\bAny\b|selected/i.test(
+    await openSheet(p);
+    const row = await p.evaluate(()=>{
+      const el = document.querySelector('#filter-sheet [data-filter-row="pieces"]');
+      return {value: el.querySelector('.capsule-pick-value').textContent.trim(),
+              h: Math.round(el.getBoundingClientRect().height)};
+    });
+    check('the same row, the same count, on Faves',
+      row.value==='Tops (4)' && row.h>=44, JSON.stringify(row));
+    check('and the same chip at the top', (await activeChips(p)).map(c=>c.label).join()==='Tops (4)');
+    check('and no "selected" there either',
+      !(await p.evaluate(()=>/selected/i.test(
         document.getElementById('filter-sheet').innerText))));
     await p.close();
   }
@@ -253,11 +267,15 @@ async function clearSlot(p, key){
   // ---- 7. Fully round, like every other chip in the app ----
   {
     const p=await open(b);
+    await p.evaluate(()=>{
+      outfitFilters['Tops'] = {type:'items', ids:itemsInTab('Tops').slice(0,2).map(i=>i.id)};
+      renderFilterControls(); renderFiltersFab();
+    });
+    await openSheet(p);
     const radii = await p.evaluate(()=>{
       const r = el => el ? getComputedStyle(el).borderTopLeftRadius : null;
       return {
-        piece: r(document.querySelector('#sheet-filter-grid .filter-chip')),
-        tag: r(document.querySelector('#sheet-tag-chips .tag-chip')),
+        chip: r(document.querySelector('#filter-sheet .filter-active .filter-chip')),
         // The shapes it is meant to match.
         wardrobeTab: r(document.querySelector('#tabs .tab')),
         navBtn: r(document.querySelector('.bottom-btn')),
@@ -265,8 +283,7 @@ async function clearSlot(p, key){
       };
     });
     const round = v => parseFloat(v) >= 22;   // half of a 44px chip
-    check('a piece chip is fully round', round(radii.piece), radii.piece);
-    check('and so is a tag chip', round(radii.tag), radii.tag);
+    check('a chip on top is fully round', round(radii.chip), radii.chip);
     check('the same corner the wardrobe tabs, the nav and the pill use',
       round(radii.wardrobeTab) && round(radii.navBtn) && round(radii.fab),
       JSON.stringify(radii));
@@ -297,8 +314,7 @@ async function clearSlot(p, key){
     }
     check('no tab stop lands inside it', !landed.some(l=>l.startsWith('IN THE SHEET')),
       landed.filter(l=>l.startsWith('IN THE SHEET')).join(', ') || landed.slice(0,6).join(', '));
-    // Tabbing past 83 tiles would take all day, so ask the pill directly:
-    // it is the one control near the sheet that must stay reachable.
+    // The pill is the one control near the sheet that must stay reachable.
     check('the pill that opens it is still reachable',
       await p.evaluate(()=>{
         const fab = document.getElementById('filters-fab');
@@ -312,13 +328,13 @@ async function clearSlot(p, key){
       !(await p.evaluate(()=>document.getElementById('filter-sheet').hasAttribute('inert'))));
     check('and its controls take focus again',
       await p.evaluate(()=>{
-        const c = document.querySelector('#filter-sheet .filter-chip');
+        const c = document.querySelector('#filter-sheet [data-filter-row]');
         c.focus();
         return document.activeElement === c;
       }));
 
     // Closing while focus is in there does not strand it off-screen.
-    await p.evaluate(()=>{ document.querySelector('#filter-sheet .filter-chip').focus();
+    await p.evaluate(()=>{ document.querySelector('#filter-sheet [data-filter-row]').focus();
                            closeFilterSheet(); });
     await p.waitForTimeout(500);
     check('closing with focus inside hands it to the pill, not into the dark',
@@ -331,83 +347,73 @@ async function clearSlot(p, key){
     await p.close();
   }
 
-  // ---- 12. The section labels count what is on ----
+  // ---- 12. The rows say what is on ----
   {
     const p=await open(b);
-    // Part of the heading now, in brackets — TAGS (2) — rather than a
-    // badge beside it. A badge belongs on a control you are about to
-    // press; this is a heading carrying a number.
-    const labels = () => p.evaluate(()=>({
-      tags: document.querySelector('label[for], #sheet-tag-count')
-        .closest('.filter-sheet-label').textContent.trim(),
-      pieces: document.getElementById('sheet-piece-count')
-        .closest('.filter-sheet-label').textContent.trim(),
-    }));
+    // The value on a row stands where the count in the heading used to:
+    // nothing on is "Any", and what is on is named.
+    const rows = async () => { await mainRows(p); return {
+      tags: await rowValue(p,'tags'), pieces: await rowValue(p,'pieces') }; };
 
-    const rest = await labels();
-    check('nothing on means the heading is just its name',
-      rest.tags === 'Tags', rest.tags);
-    check('and so is the other one', rest.pieces === 'Pieces', rest.pieces);
+    const rest = await rows();
+    check('nothing on means the row says Any', rest.tags === 'Any', rest.tags);
+    check('and so is the other one', rest.pieces === 'Any', rest.pieces);
 
     await p.evaluate(()=>{ outfitTags = ['summer']; renderFilterControls(); });
     await p.waitForTimeout(400);
-    check('one tag makes it Tags (1)', (await labels()).tags === 'Tags (1)',
-      (await labels()).tags);
-    check('and leaves Pieces alone', (await labels()).pieces === 'Pieces');
+    check('one tag makes the row say it', (await rows()).tags === 'summer', (await rows()).tags);
+    check('and leaves Pieces alone', (await rows()).pieces === 'Any');
 
     await p.evaluate(()=>{ outfitTags = ['summer','linen']; renderFilterControls(); });
     await p.waitForTimeout(400);
-    check('two tags reads Tags (2)', (await labels()).tags === 'Tags (2)',
-      (await labels()).tags);
+    check('two tags reads both', (await rows()).tags === 'summer, linen', (await rows()).tags);
 
-    await p.evaluate(()=>{
+    const expect = await p.evaluate(()=>{
       const tabs = filterTabs();
       outfitFilters[tabs[0]] = {type:'items', ids: itemsInTab(tabs[0]).slice(0,3).map(i=>i.id)};
       outfitFilters[tabs[1]] = {type:'items', ids: itemsInTab(tabs[1]).slice(0,1).map(i=>i.id)};
       renderFilterControls();
+      return [slotSummary(tabs[0]), slotSummary(tabs[1])];
     });
     await p.waitForTimeout(400);
     // Two categories narrowed, whatever number of pieces is pinned inside
-    // them — the chips carry that.
-    check('Pieces counts the categories narrowed, not the pieces pinned',
-      (await labels()).pieces === 'Pieces (2)', (await labels()).pieces);
+    // them — the row names each.
+    check('Pieces names the categories narrowed, not every piece pinned',
+      (await rows()).pieces === expect.join(', '), `${(await rows()).pieces} vs ${expect.join(', ')}`);
 
-    // The point of it: it says so when the chip saying so is off-screen.
-    check('and the heading is in view even when a filtering chip is not',
+    // The point of it: it says so even when what is on is long.
+    check('and the value is in view, inside the sheet',
       await p.evaluate(()=>{
-        const label = document.getElementById('sheet-piece-count')
-          .closest('.filter-sheet-label').getBoundingClientRect();
+        const v = document.querySelector('#filter-sheet [data-filter-row="pieces"] .capsule-pick-value').getBoundingClientRect();
         const sheet = document.getElementById('filter-sheet').getBoundingClientRect();
-        return label.left >= sheet.left && label.right <= sheet.right;
+        return v.left >= sheet.left && v.right <= sheet.right;
       }));
 
-    await openSheet(p);
     await p.click('#filter-sheet-clear'); await p.waitForTimeout(700);
-    const after = await labels();
-    check('Clear all takes both counts away',
-      after.tags === 'Tags' && after.pieces === 'Pieces', JSON.stringify(after));
+    const after = await rows();
+    check('Clear all takes both away',
+      after.tags === 'Any' && after.pieces === 'Any', JSON.stringify(after));
     await p.close();
   }
 
-  // ---- 13. One count, over both halves of the switch ----
+  // ---- 13. One value, over both halves of the switch ----
   {
     const p=await open(b);
-    await p.evaluate(()=>{ outfitTags = ['summer','linen']; renderFilterControls(); });
+    await p.evaluate(()=>{ outfitTags = ['summer','linen']; renderFilterControls(); renderFiltersFab(); });
     await p.waitForTimeout(400);
-    const count = () => p.evaluate(()=>
-      document.getElementById('sheet-tag-count').textContent.trim());
-    check('two tags on, two counted', (await count()) === '(2)', await count());
+    const value = async () => { await mainRows(p); const v = await rowValue(p,'tags'); await leaveSheet(p); return v; };
+    check('two tags on, two named', (await value()) === 'summer, linen', await value());
 
     await toFaves(p, 1100);
-    check('and still two after the switch', (await count()) === '(2)', await count());
+    check('and still the same after the switch', (await value()) === 'summer, linen', await value());
 
     // Dropping one from this side drops it for both, because there is only
     // one of it.
-    await p.evaluate(()=>{ outfitTags = ['summer']; renderFilterControls(); });
+    await p.evaluate(()=>{ outfitTags = ['summer']; renderFilterControls(); renderFiltersFab(); });
     await p.waitForTimeout(400);
-    check('dropping one leaves one', (await count()) === '(1)', await count());
+    check('dropping one leaves one', (await value()) === 'summer', await value());
     await p.click('#nav-outfits-btn'); await p.waitForTimeout(1200);
-    check('on the other side too', (await count()) === '(1)', await count());
+    check('on the other side too', (await value()) === 'summer', await value());
     await p.close();
   }
 

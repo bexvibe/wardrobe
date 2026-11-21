@@ -2,11 +2,12 @@
 // the foot button, the dimmed page, Escape or pulling it down.
 //
 // What this suite is about: where the sheet sits and what it covers, what
-// the pill says, the head and foot it carries, the second page a piece chip
+// the pill says, the head and foot it carries, the pages a row
 // slides to inside the same sheet (not a sheet on a sheet), and the pull
 // down. Which of the ways out leaves it up or closes it while you use it is
 // test_dismiss; how it travels is test_tidy and test_touchdrag.
 const { chromium } = require('playwright');
+const { openFilterSection, openFilterCategory, filterBack, tickFilter } = require('./nav');
 const fs=require('fs'), path=require('path');
 const REPO = require('path').join(__dirname, '..');
 const fake=fs.readFileSync(path.join(__dirname,'fake-supabase.js'),'utf8');
@@ -114,10 +115,11 @@ const onSheet = (p, down) => p.evaluate(d=>{
     check('titled Filters', (await text(p, '#filter-sheet-title')) === 'Filters');
     check('no second chevron or collapse button inside it',
       await p.evaluate(()=>!document.querySelector('.filter-sheet-collapse')));
-    check('and it opens on its main page, with tags and pieces',
-      await p.evaluate(()=>filterPage === null &&
-        Boolean(document.getElementById('sheet-tag-chips')) &&
-        Boolean(document.getElementById('sheet-filter-grid'))));
+    check('and it opens on its main page: rows for tags and pieces',
+      await p.evaluate(()=>filterPage === null && filterSection === null &&
+        Boolean(document.querySelector('#filter-sheet [data-filter-row="tags"]')) &&
+        Boolean(document.querySelector('#filter-sheet [data-filter-row="pieces"]')) &&
+        !document.getElementById('sheet-tag-chips') && !document.getElementById('sheet-filter-grid')));
     await p.close();
 
     // A wider screen: a sheet, not a slab.
@@ -137,7 +139,7 @@ const onSheet = (p, down) => p.evaluate(d=>{
     check('it says Filters', (await fabText(p)) === 'Filters', await fabText(p));
     // On All it is up by New fave and carries its icon; on Faves it still
     // floats, bare. This suite opens on All.
-    check('and its icon, in the sticky bar', await p.evaluate(()=>
+    check('and its icon, in the bar', await p.evaluate(()=>
       !!document.querySelector('#outfit-tabs > #filters-fab .filters-fab-icon')));
     check('and no count badge while nothing is filtered',
       await p.evaluate(()=>!document.querySelector('#filters-fab .filters-fab-count')));
@@ -150,7 +152,7 @@ const onSheet = (p, down) => p.evaluate(d=>{
     check('its row has eased away behind the sheet',
       await p.evaluate(()=>document.getElementById('float-row').classList.contains('away')));
 
-    await p.click('#sheet-tag-chips .tag-chip'); await p.waitForTimeout(500);
+    await tickFilter(p, 'tags', 'sporty');
     await p.click('#filter-sheet-see'); await p.waitForTimeout(600);
     check('the row is back and the pill carries a count of 1',
       await p.evaluate(()=>!document.getElementById('float-row').classList.contains('away') &&
@@ -181,15 +183,16 @@ const onSheet = (p, down) => p.evaluate(d=>{
     check('the dimming comes back to full too',
       await p.evaluate(()=>!document.getElementById('filter-backdrop').style.getPropertyValue('--dim')));
 
-    // The chip rows inside scroll sideways, and a thumb never travels in a
-    // straight line. A drag that starts across belongs to the row.
-    check('a sideways drag on the chips leaves it alone', await (async()=>{
+    // A thumb never travels in a straight line. A drag that starts across
+    // is not a pull down, and not a tap on the row it began on.
+    check('a sideways drag on the rows leaves it alone', await (async()=>{
       const at = await p.evaluate(()=>{
-        const r = document.querySelector('#sheet-filter-grid').getBoundingClientRect();
-        return {x: Math.round(r.left + 150), y: Math.round(r.top + r.height/2)};
+        const r = document.querySelector('#filter-sheet [data-filter-row="pieces"]').getBoundingClientRect();
+        return {x: Math.round(r.left + 30), y: Math.round(r.top + r.height/2)};
       });
-      await drag(p, at, 18, -84);
-      return isOpen(p);
+      await drag(p, at, 18, -40);   // ends off the row, so it is never a click
+      const st = await p.evaluate(()=>({o:filterSheetOpen(), s:filterSection}));
+      return st.o && st.s === null;
     })());
 
     check('a drag up does nothing at all', await (async()=>{
@@ -204,22 +207,21 @@ const onSheet = (p, down) => p.evaluate(d=>{
     const p=await open(b);
     await raise(p);
     const before = await p.evaluate(()=>outfitTags.slice());
-    // Start the drag on a tag chip and pull the whole sheet down.
+    // Start the drag on the Tags row and pull the whole sheet down.
     const chip = await p.evaluate(()=>{
-      const c = document.querySelector('#sheet-tag-chips .tag-chip');
+      const c = document.querySelector('#filter-sheet [data-filter-row="tags"]');
       if(!c) return null;
       const r = c.getBoundingClientRect();
       return {x: Math.round(r.left + r.width/2), y: Math.round(r.top + r.height/2)};
     });
+    check('there is a Tags row to start on', !!chip);
     if(chip){
       await drag(p, chip, 200);
-      check('dragging from a chip closes the sheet', !(await isOpen(p)));
-      check('without the chip counting as tapped',
-        JSON.stringify(await p.evaluate(()=>outfitTags.slice())) === JSON.stringify(before),
-        JSON.stringify(await p.evaluate(()=>outfitTags.slice())));
-    } else {
-      check('dragging from a chip closes the sheet', true, 'no tags in this wardrobe');
-      check('without the chip counting as tapped', true, 'no tags in this wardrobe');
+      check('dragging from a row closes the sheet', !(await isOpen(p)));
+      check('without the row counting as tapped',
+        (await p.evaluate(()=>filterSection === null && outfitTags.length === 0)));
+      await raise(p);
+      check('and it reopens on its rows', (await text(p, '#filter-sheet-title')) === 'Filters');
     }
     await p.close();
   }
@@ -235,8 +237,8 @@ const onSheet = (p, down) => p.evaluate(d=>{
     check('and its count is the one the generator will walk',
       await p.evaluate(()=>document.getElementById('filter-sheet-count').textContent.replace(/,/g,'') ===
         String(filterResultCount()) && filterResultCount() === totalComboCount()));
-    check('no way-back button on the main page',
-      await p.evaluate(()=>!document.getElementById('filter-sheet-back')));
+    check('no way-back button on the main page, only See',
+      await p.evaluate(()=>!document.getElementById('filter-sheet-back') || getComputedStyle(document.getElementById('filter-sheet-back')).display==='none'));
     check('Clear all is on the right of the head, level with the title', await p.evaluate(()=>{
       const t=document.getElementById('filter-sheet-title').getBoundingClientRect();
       const c=document.getElementById('filter-sheet-clear').getBoundingClientRect();
@@ -244,7 +246,7 @@ const onSheet = (p, down) => p.evaluate(d=>{
     }));
 
     const n0 = await p.evaluate(()=>filterResultCount());
-    await p.click('#sheet-tag-chips .tag-chip:has-text("sporty")'); await p.waitForTimeout(700);
+    await tickFilter(p, 'tags', 'sporty'); await p.waitForTimeout(300);
     check('a tag applies at once: Clear all appears', await clearVisible(p));
     const n1 = await p.evaluate(()=>filterResultCount());
     check('and the count in the foot follows it', n1 < n0 &&
@@ -257,7 +259,7 @@ const onSheet = (p, down) => p.evaluate(d=>{
     await p.close();
   }
 
-  // ---- 5. A piece chip slides to a page of its own, in the same sheet ----
+  // ---- 5. The Pieces row slides to a list, then a page, in the same sheet ----
   {
     const p=await open(b);
     await raise(p);
@@ -266,15 +268,19 @@ const onSheet = (p, down) => p.evaluate(d=>{
         typeof closePickerAndApply === 'undefined' &&
         !document.getElementById('picker-quick-picks') &&
         !document.getElementById('picker-backdrop')));
-    check('and the chips no longer promise a popup',
-      await p.evaluate(()=>Array.from(document.querySelectorAll('#sheet-filter-grid .filter-chip'))
+    check('and the rows do not promise a popup',
+      await p.evaluate(()=>Array.from(document.querySelectorAll('#filter-sheet [data-filter-row]'))
         .every(c => !c.hasAttribute('aria-haspopup'))));
-    const key = await p.evaluate(()=>
-      document.querySelector('#sheet-filter-grid .filter-chip').childNodes[0].textContent.trim());
     check('it starts with no pieces page up', await p.evaluate(()=>!document.getElementById('picker-gallery')));
 
-    await p.click('#sheet-filter-grid .filter-chip'); await p.waitForTimeout(800);
-    check('tapping the first piece chip switches the same sheet to its page',
+    await openFilterSection(p, 'pieces');
+    check('the Pieces row opens a list of categories in the same sheet',
+      await p.evaluate(()=>filterSection === 'pieces' && filterPage === null && filterSheetOpen() &&
+        document.querySelectorAll('.filter-backdrop.open, .modal-backdrop.open').length === 1 &&
+        document.querySelectorAll('#filter-sheet [data-filter-cat]').length >= 3));
+    const key = await p.evaluate(()=>document.querySelector('#filter-sheet [data-filter-cat]').dataset.filterCat);
+    await openFilterCategory(p, key); await p.waitForTimeout(350);
+    check('a category switches the same sheet to its page',
       await p.evaluate(k=>filterPage === k && filterSheetOpen() &&
         document.querySelectorAll('.filter-backdrop.open, .modal-backdrop.open').length === 1, key));
     check('with a gallery of tiles: one for none, then every piece in the category',
@@ -282,14 +288,16 @@ const onSheet = (p, down) => p.evaluate(d=>{
         document.querySelectorAll('#picker-gallery .picker-none').length === 1, key));
     check('titled for the category',
       (await text(p, '#filter-sheet-title')) === key, await text(p, '#filter-sheet-title'));
-    check('the tags and chips of the main page are gone from it',
-      await p.evaluate(()=>!document.getElementById('sheet-tag-chips') && !document.getElementById('sheet-filter-grid')));
+    check('the rows of the main page are gone from it',
+      await p.evaluate(()=>!document.querySelector('#filter-sheet [data-filter-row]') && !document.getElementById('sheet-filter-grid')));
     check('Clear says just Clear, and is out of sight with nothing chosen',
       (await text(p, '#filter-sheet-clear')) === 'Clear' && !(await clearVisible(p)));
-    check('the foot has the way back to the left of the See button', await p.evaluate(()=>{
-      const back = document.getElementById('filter-sheet-back'), see = document.getElementById('filter-sheet-see');
-      return Boolean(back) && back.textContent.trim() === 'Back' &&
-        back.getBoundingClientRect().right <= see.getBoundingClientRect().left + 1;
+    check('the foot has the way back to the left of the search pill, and no See', await p.evaluate(()=>{
+      const back = document.getElementById('filter-sheet-back'), s = document.getElementById('filter-sheet-search');
+      const see = document.getElementById('filter-sheet-see');
+      return Boolean(back) && back.textContent.trim() === 'Back' && Boolean(s) &&
+        back.getBoundingClientRect().right <= s.getBoundingClientRect().left + 1 &&
+        (!see || see.offsetParent === null);
     }));
     check('and no quick-picks row, no empty note', await p.evaluate(()=>
       !document.getElementById('picker-quick-picks') &&
@@ -300,8 +308,7 @@ const onSheet = (p, down) => p.evaluate(d=>{
     await p.click('#picker-gallery .picker-tile:not(.picker-none)'); await p.waitForTimeout(900);
     const after = await p.evaluate(k=>({
       type: outfitFilters[k].type, ids: outfitFilters[k].ids.length,
-      n: filterResultCount(), count: Number(document.getElementById('filter-sheet-count')
-        ? document.getElementById('filter-sheet-count').textContent.replace(/,/g,'') : -1),
+      n: filterResultCount(),
       selected: document.querySelectorAll('#picker-gallery .picker-selected:not(.picker-none)').length,
       badge: document.querySelector('#filters-fab .filters-fab-count')?.textContent.trim(),
       open: filterSheetOpen(), page: filterPage,
@@ -309,7 +316,6 @@ const onSheet = (p, down) => p.evaluate(d=>{
     check('a tapped piece is chosen right away', after.type === 'items' && after.ids === 1 && after.selected === 1, JSON.stringify(after));
     check('the results behind it already follow, before the sheet is left',
       after.n !== before.n, `${before.n} -> ${after.n}`);
-    check('the foot count follows too', after.count === after.n || after.n === 0, JSON.stringify(after));
     check('Clear appears', await clearVisible(p));
     check('and the pill\'s badge', after.badge === '1', String(after.badge));
     check('the sheet is still on that page', after.open && after.page === key);
@@ -336,28 +342,37 @@ const onSheet = (p, down) => p.evaluate(d=>{
     check('and then hides itself', !(await clearVisible(p)));
     await p.evaluate(()=>{ outfitTags = []; });
 
-    // Back.
+    // Back, one step at a time.
     await p.click('#picker-gallery .picker-tile:not(.picker-none)'); await p.waitForTimeout(600);
-    await p.click('#filter-sheet-back'); await p.waitForTimeout(800);
-    check('the way back returns to the main page of the same sheet',
-      await p.evaluate(()=>filterPage === null && filterSheetOpen() &&
-        Boolean(document.getElementById('sheet-filter-grid')) && !document.getElementById('picker-gallery')));
-    check('where that chip now shows as active',
-      await p.evaluate(()=>document.querySelector('#sheet-filter-grid .filter-chip').classList.contains('active')));
+    await filterBack(p, 800);
+    check('Back from a category returns to the category list of the same sheet',
+      await p.evaluate(()=>filterPage === null && filterSection === 'pieces' && filterSheetOpen() &&
+        !document.getElementById('picker-gallery') && document.querySelectorAll('#filter-sheet [data-filter-cat]').length >= 3));
+    await filterBack(p, 800);
+    check('and Back again returns to the main rows',
+      await p.evaluate(()=>filterSection === null && Boolean(document.querySelector('#filter-sheet [data-filter-row="pieces"]'))));
+    check('where the Pieces row now shows its value and a chip is on top',
+      (await text(p, '[data-filter-row="pieces"] .capsule-pick-value')) !== 'Any' &&
+      (await p.locator('#filter-sheet .filter-active .filter-chip').count()) === 1);
     check('and the head is Filters / Clear all again',
       (await text(p, '#filter-sheet-title')) === 'Filters' && (await text(p, '#filter-sheet-clear')) === 'Clear all' &&
       await clearVisible(p));
 
     // Out from a page.
-    await p.click('#sheet-filter-grid .filter-chip'); await p.waitForTimeout(800);
-    await p.click('#filter-sheet-see'); await p.waitForTimeout(700);
-    check('See N outfits on a page closes the whole sheet', !(await isOpen(p)));
+    await openFilterCategory(p, key);
+    await p.evaluate(()=>closeFilterSheet());
+    await p.waitForTimeout(700);
+    check('closing the sheet from a page closes the whole sheet', !(await isOpen(p)));
     await raise(p);
-    check('and it comes back on the main page, not the page it was on',
-      await p.evaluate(()=>filterPage === null && Boolean(document.getElementById('sheet-filter-grid'))));
-    await p.click('#sheet-filter-grid .filter-chip'); await p.waitForTimeout(800);
+    check('and it comes back on the main rows, not the page it was on',
+      await p.evaluate(()=>filterPage === null && filterSection === null && Boolean(document.querySelector('#filter-sheet [data-filter-row="pieces"]'))));
+    await openFilterCategory(p, key);
     await p.keyboard.press('Escape'); await p.waitForTimeout(700);
     check('Escape on a page closes the whole sheet too', !(await isOpen(p)));
+    await raise(p);
+    await openFilterSection(p, 'pieces');
+    await p.click('#filter-sheet-see'); await p.waitForTimeout(700);
+    check('See N outfits on the category list closes the whole sheet', !(await isOpen(p)));
     await p.close();
   }
 
@@ -371,8 +386,8 @@ const onSheet = (p, down) => p.evaluate(d=>{
       (await text(p, '#filter-sheet-clear')) === 'Clear all' &&
       /^(See [\d,]+ outfits?|No outfits match)$/.test(await text(p, '#filter-sheet-see')),
       await text(p, '#filter-sheet-see'));
-    await p.click('#sheet-filter-grid .filter-chip'); await p.waitForTimeout(800);
-    check('and its piece chips slide to a page too',
+    await openFilterCategory(p, 'Tops');
+    check('and its categories open a page too',
       await p.evaluate(()=>filterPage !== null && Boolean(document.getElementById('picker-gallery')) &&
         Boolean(document.getElementById('filter-sheet-back'))));
     await p.close();

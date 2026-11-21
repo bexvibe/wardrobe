@@ -1,6 +1,6 @@
 // Navigation: three destinations, no sub-tabs, archive demoted to a link.
 const { chromium } = require('playwright');
-const { toFaves } = require('./nav');
+const { toFaves, openFilterSection, filterBack, tickFilter } = require('./nav');
 
 const fs=require('fs'), path=require('path');
 const REPO = require('path').join(__dirname, '..');
@@ -97,18 +97,20 @@ const vis=(p,s)=>p.isVisible(s);
     await p.evaluate(()=>!document.querySelector('.filters-fab-chevron')));
   await p.click('#filters-fab'); await p.waitForTimeout(600);
   check('the pill raises it', await sheetOpen());
-  check('shape is the categories themselves, not a chip of its own',
+  await openFilterSection(p, 'pieces');
+  check('shape is the categories themselves, not a row of its own',
     await p.evaluate(()=>{
-      const labels=Array.from(document.querySelectorAll('#sheet-filter-grid .filter-chip'))
-        .map(e=>e.childNodes[0].textContent.trim());
+      const labels=Array.from(document.querySelectorAll('#filter-sheet [data-filter-cat]'))
+        .map(e=>e.dataset.filterCat);
       // The ones you own something in lead; empty ones wait at the end.
       return labels.slice(0,3).every(t => itemsInTab(t).length > 0)
         && labels.every(t => OUTFIT_TABS.includes(t))
         && !labels.includes('Shape')
         && !document.getElementById('base-topbottom-btn');
     }),
-    (await p.evaluate(()=>Array.from(document.querySelectorAll('#sheet-filter-grid .filter-chip'))
-      .map(e=>e.childNodes[0].textContent.trim()).join(', '))));
+    (await p.evaluate(()=>Array.from(document.querySelectorAll('#filter-sheet [data-filter-cat]'))
+      .map(e=>e.dataset.filterCat).join(', '))));
+  await filterBack(p);
   check('outfits generated', (await p.evaluate(()=>outfitDisplayed.length)) > 0,
     String(await p.evaluate(()=>outfitDisplayed.length)));
   check('and the page does not print a combination count at all',
@@ -121,7 +123,7 @@ const vis=(p,s)=>p.isVisible(s);
     const hero = document.querySelector('#outfit-hero .outfit-card');
     const sheet = document.getElementById('filter-sheet');
     const nav = document.getElementById('bottom-bar');
-    const grid = document.getElementById('sheet-filter-grid');
+    const grid = document.getElementById('filter-sheet-body');
     const row = document.getElementById('float-row');
     const stack = el => {
       for(let n = el; n; n = n.parentElement){
@@ -170,11 +172,11 @@ const vis=(p,s)=>p.isVisible(s);
   check('its own controls sit inside it, clear of the bottom edge',
     top.gridTop > top.sheetTop && top.gridBottom < top.fold,
     `controls ${top.gridTop}-${top.gridBottom}, sheet starts ${top.sheetTop}`);
-  check('both tags and piece filters are there',
-    await vis(p,'#sheet-tag-chips') && await vis(p,'#sheet-filter-grid'));
+  check('both tags and pieces are rows',
+    await vis(p,'#filter-sheet [data-filter-row="tags"]') && await vis(p,'#filter-sheet [data-filter-row="pieces"]'));
 
   // Filtering straight from the sheet.
-  await p.click('#sheet-tag-chips .tag-chip:has-text("sporty")'); await p.waitForTimeout(800);
+  await tickFilter(p, 'tags', 'sporty'); await p.waitForTimeout(500);
   check('tapping a tag in the sheet filters the results',
     (await p.evaluate(()=>outfitTags)).join()==='sporty');
 
@@ -215,7 +217,9 @@ const vis=(p,s)=>p.isVisible(s);
 
   await p.click('#filters-fab'); await p.waitForTimeout(600);
   check('the pill brings it back', await sheetOpen());
-  check('with the same state it had', await p.evaluate(()=>Boolean(document.querySelector('#sheet-tag-chips .tag-chip.active'))));
+  check('with the same state it had, the tag on the row and as a chip',
+    (await p.evaluate(()=>document.querySelector('#filter-sheet [data-filter-row="tags"] .capsule-pick-value').textContent.trim())) === 'sporty' &&
+    (await p.locator('#filter-sheet .filter-active .filter-chip').count()) === 1);
   check('and tapping the dimmed page puts it away', await (async()=>{
     await p.mouse.click(195, 30); await p.waitForTimeout(600);
     return !(await sheetOpen()) &&
