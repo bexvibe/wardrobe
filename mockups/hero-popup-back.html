@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hero popup back</title>
+<style>
+:root{--bg:#EFEDE9;--fg:#171717;--muted:#66625C;--rule:#D9D5CE;--card:#F8F6F2;--brand:#756694;--tint:#E9E4F2}
+@media (prefers-color-scheme:dark){:root{--bg:#141415;--fg:#ECEAE6;--muted:#A19D96;--rule:#2B2A2D;--card:#1D1C1F;--tint:#2A2535}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,sans-serif;padding:32px 16px 80px}
+.wrap{max-width:1080px;margin:0 auto}h1{font-size:30px;margin:0 0 8px}p{margin:0}.lead{color:var(--muted);max-width:62ch}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:28px;margin-top:32px}
+.opt h2{font-size:18px;margin:0 0 4px}.opt .n{color:var(--muted);font-size:13px;margin:8px 0 0}
+.tag{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;padding:3px 9px;border-radius:99px;background:var(--tint);color:var(--brand);margin-left:6px}
+.phone{--ink:#121212;--soft:#6E6E6E;--line:#D2CFC9;width:250px;height:420px;border-radius:26px;background:#CFCBC5;margin-top:12px;position:relative;overflow:hidden;border:6px solid #1c1c1c}
+.sheet{position:absolute;left:0;right:0;bottom:0;top:46px;background:#F7F5F1;border-radius:20px 20px 0 0;display:flex;flex-direction:column;padding:14px 12px 12px;color:var(--ink)}
+.pieces{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:space-around;position:relative}
+.pc{border-radius:8px;background:#d9d4c8}.pc.a{width:70px;height:46px}.pc.b{width:60px;height:70px;background:#bbb59d}.pc.c{width:80px;height:50px;background:#8a6a5a}
+.bar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px}
+.btn{height:38px;border-radius:99px;border:1px solid var(--line);background:transparent;padding:0 14px;font:600 12px system-ui;color:var(--ink);display:inline-flex;align-items:center;gap:5px}
+.btn.p{background:#756694;border-color:#756694;color:#fff}.btn.off{opacity:.38}
+.x{position:absolute;top:0;right:0;width:30px;height:30px;border-radius:50%;background:#fff;box-shadow:0 1px 3px #0002;display:grid;place-items:center;font-size:15px}
+.dots{display:flex;gap:4px;justify-content:center;margin-top:8px}.dots i{width:6px;height:6px;border-radius:50%;background:#ccc}.dots i.on{background:#756694}
+.ic{width:38px;padding:0;justify-content:center;font-size:16px}
+.rec{border:2px solid var(--brand);border-radius:14px;padding:16px 18px;margin-top:34px;background:var(--card)}
+</style></head><body><div class="wrap">
+<h1>Back in the hero popup</h1>
+<p class="lead">Today Back closes the popup. Because Shuffle is right beside it, it reads as “undo my last shuffle”. Four ways to meet that expectation; the footer is the part that changes.</p>
+<div class="grid">
+
+<div class="opt"><h2>A · Back steps back <span class="tag">literal</span></h2>
+<div class="phone"><div class="sheet"><div class="x">×</div><div class="pieces"><div class="pc a"></div><div class="pc b"></div><div class="pc c"></div></div>
+<div class="bar"><span class="btn">‹ Back</span><span class="btn p">✦ Shuffle</span></div></div></div>
+<p class="n">Back goes to the previous shuffle, as many times as you shuffled. Close moves to a × in the corner (and tapping outside). With no history Back is greyed.</p></div>
+
+<div class="opt"><h2>B · Undo arrow + Done <span class="tag">split</span></h2>
+<div class="phone"><div class="sheet"><div class="pieces"><div class="pc a"></div><div class="pc b"></div><div class="pc c"></div></div>
+<div class="bar"><span class="btn">Done</span><span style="display:flex;gap:6px"><span class="btn ic off">↶</span><span class="btn p">✦ Shuffle</span></span></div></div></div>
+<p class="n">Back becomes “Done” so it no longer promises history. Undo is its own icon next to Shuffle, greyed until you've shuffled. Clearest, but two controls to learn.</p></div>
+
+<div class="opt"><h2>C · History stepper <span class="tag">browse</span></h2>
+<div class="phone"><div class="sheet"><div class="x">×</div><div class="pieces"><div class="pc a"></div><div class="pc b"></div><div class="pc c"></div></div>
+<div class="dots"><i></i><i></i><i class="on"></i></div>
+<div class="bar"><span class="btn ic">‹</span><span class="btn p">✦ Shuffle</span><span class="btn ic off">›</span></div></div></div>
+<p class="n">‹ › move through every outfit you've dealt, Shuffle deals a new one at the end. You can go forward again after stepping back. Most powerful, busiest.</p></div>
+
+<div class="opt"><h2>D · Back, then Done <span class="tag">adaptive</span></h2>
+<div class="phone"><div class="sheet"><div class="x">×</div><div class="pieces"><div class="pc a"></div><div class="pc b"></div><div class="pc c"></div></div>
+<div class="bar"><span class="btn">‹ Back</span><span class="btn p">✦ Shuffle</span></div></div></div>
+<p class="n">After shuffling, Back steps to the previous outfit. On the first outfit (nothing to go back to) the same button reads “Done” and closes. × always closes. Phone back gesture does the same as Back.</p></div>
+
+</div>
+<div class="rec"><b>Recommendation: D.</b> It keeps today's footer and fixes the surprise: Back does what it implies while there is something to go back to, and falls through to closing when there isn't. The corner × and tap-outside give a constant, unambiguous way out. Phone back follows the footer. A is the same without the fall-through; B and C add controls this popup doesn't have room for.<br><br>Open question for build: should going back to a locked/filtered state restore the locks too, or only the pieces shown? I'd restore pieces only, so locks stay as you last set them.</div>
+</div></body></html>
