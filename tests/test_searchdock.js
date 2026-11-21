@@ -76,6 +76,16 @@ const results=[]; const check=(n,p,d)=>{results.push(p);console.log(`${p?'PASS':
   check('and the query is cleared', (await p.inputValue('#filter-search'))==='');
   check('the button is off again', await p.evaluate(()=>!document.getElementById('search-btn').classList.contains('active')));
 
+  // Opening a piece from the results ends the search, and it stays shut.
+  await p.click('#search-btn'); await p.waitForTimeout(200);
+  await p.fill('#filter-search','shirt'); await p.waitForTimeout(300);
+  await p.click('#gallery .tile'); await p.waitForTimeout(600);
+  check('opening a piece ends the search', await p.evaluate(()=>!document.body.classList.contains('searching')
+    && !document.getElementById('search-overlay').classList.contains('open')));
+  await p.evaluate(()=>closeModal()); await p.waitForTimeout(500);
+  check('and it does not come back when the piece closes', !(await vis('#search-overlay')) && (await vis('#bottom-bar')));
+  check('the wardrobe is whole again', (await p.locator('#gallery .tile').count()) > 5);
+
   // Escape and leaving the page are the other ways out.
   await p.click('#search-btn'); await p.waitForTimeout(200);
   await p.press('#filter-search','Escape'); await p.waitForTimeout(200);

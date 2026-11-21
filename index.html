@@ -3123,6 +3123,10 @@ function hideAllSheets(){
 // One step deeper. The first step also notes where you were standing when
 // you took it, because that is what the last step back has to put right.
 function pushSheet(entry){
+  // Search is opened by its icon and nothing else, and it ends when something
+  // opens over the wardrobe: the bar would be hidden under the sheet, still
+  // narrowing a grid you cannot see, and would be back on its own afterwards.
+  if(!anySheetShowing() && document.body.classList.contains('searching')) closeSearch();
   if(!anySheetShowing()){
     sheetTrail = [];
     sheetOrigin = { mode: appMode, y: Math.round(window.scrollY) };
