@@ -1784,7 +1784,7 @@
     /* Grows with its content and only scrolls once it has used the whole
        screen, less a sliver of page at the top (and the phone's status bar,
        if there is one) so there is still something to tap or pull on. */
-    max-height:calc(100% - max(12px, env(safe-area-inset-top, 0px)));
+    max-height:calc(100% - max(12px, env(safe-area-inset-top, 0px)) - var(--kb, 0px));
     background:var(--page);
     border-radius:18px 18px 0 0;
     display:flex;flex-direction:column;
@@ -1794,7 +1794,10 @@
     transform:translateY(100%);
     transition:transform var(--sheet-ease-ms) var(--sheet-ease);
   }
-  .filter-sheet.open{transform:translateY(0);}
+  /* --kb is how much of the screen the keyboard covers while the search
+     field at the foot has focus (see syncKeyboard); the sheet rides up by
+     that much and gives up the same height, so the field stays in view. */
+  .filter-sheet.open{transform:translateY(calc(-1 * var(--kb, 0px)));}
   /* Changing page changes how tall the sheet needs to be, and it gets
      there by growing or shrinking rather than jumping. */
   .filter-sheet.morphing{
@@ -1858,6 +1861,23 @@
     margin-bottom:22px;padding:0;
   }
   .filter-section:last-child{margin-bottom:0;}
+
+  /* The sheet is a short list of rows, each showing what it is set to and
+     opening a page of its own. What is on is also spelled out as chips above
+     the rows, one tap to take any of them off. */
+  .filter-active{display:flex;flex-wrap:wrap;gap:8px;margin:2px 0 6px;}
+  .filter-active .filter-chip{gap:8px;}
+  .chip-x{font-size:10px;opacity:.6;}
+  .filter-rows{margin:8px 0 0;}
+  .filter-rows .capsule-pick{min-height:56px;padding:10px 8px;font-weight:500;}
+  .capsule-pick-value{
+    margin-left:auto;max-width:55%;
+    font-family:'Figtree',sans-serif;font-size:13px;font-weight:400;color:var(--ink-soft);
+    text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .capsule-pick-value.on{color:var(--ink);}
+  .capsule-pick-lead{display:inline-flex;align-items:center;margin-right:8px;}
+  .capsule-pick-label{display:inline-flex;align-items:center;min-width:0;}
 
   /* Outfit filters */
   .base-toggle{display:flex;gap:6px;margin-bottom:12px;}
@@ -3365,24 +3385,120 @@ const FILTER_MOUNTS = [
   { ns: 'sheet', mode: null },
 ];
 
+// The sheet is a short list of rows, one per kind of filter. Each shows what it
+// is set to, and opens a page of its own to change it: the same pattern for
+// all four, rather than three that apply on the spot and one that opens.
+const FILTER_SECTION_TITLES = { pieces: 'Pieces', capsules: 'Capsules', tags: 'Tags', faves: 'Faves' };
+
+function summariseList(names){
+  if(!names.length) return 'Any';
+  return names.length > 2 ? `${names.slice(0, 2).join(', ')} +${names.length - 2}` : names.join(', ');
+}
+
+// What one category is set to, as the words you would say.
+function slotSummary(tab){
+  const f = outfitFilters[tab];
+  if(f.type === 'none') return noneLabel(tab);
+  const only = f.ids.length === 1 ? itemById(f.ids[0]) : null;
+  return only ? only.name : `${tab} (${f.ids.length})`;
+}
+
+function filterSectionValue(section){
+  if(section === 'pieces') return summariseList(filterTabs().filter(t => outfitFilters[t].type !== 'any').map(slotSummary));
+  if(section === 'capsules') return summariseList(capsuleFilter.map(id => (capsules.find(c => c.id === id) || {}).name).filter(Boolean));
+  if(section === 'tags') return summariseList(outfitTags);
+  const mode = appMode === 'saved' ? 'saved' : 'outfits';
+  return summariseList(FAVE_CHIPS.filter(c => faveFilter[mode].includes(Number(c.v))).map(c => c.label));
+}
+
+// Everything that is on, as a chip: [kind, key, words].
+function activeFilterChips(){
+  const chips = [];
+  filterTabs().forEach(t => { if(outfitFilters[t].type !== 'any') chips.push(['slot', t, slotSummary(t)]); });
+  capsuleFilter.forEach(id => { const c = capsules.find(x => x.id === id); if(c) chips.push(['capsule', id, c.name]); });
+  outfitTags.forEach(t => chips.push(['tag', t, t]));
+  const mode = appMode === 'saved' ? 'saved' : 'outfits';
+  FAVE_CHIPS.forEach(c => { if(faveFilter[mode].includes(Number(c.v))) chips.push(['fave', c.v, c.label]); });
+  return chips;
+}
+
+function removeActiveFilter(kind, key){
+  if(kind === 'capsule') return toggleCapsuleFilter(key);
+  if(kind === 'tag') return setOutfitTag(key);
+  if(kind === 'fave') return setFaveFilter(key);
+  outfitFilters[key] = anyFilter();
+  renderFilterControls();
+  renderFiltersFab();
+  filterResultsStale = true;
+  if(!filterSheetOpen()) applyFilterResults();
+}
+
+const pickMark = on => `<span class="capsule-pick-mark">${on ? '✓' : ''}</span>`;
+const rowChevron = '<span class="capsule-pick-mark go" aria-hidden="true">›</span>';
+
+function filterRowHtml(section){
+  const value = filterSectionValue(section);
+  return `<button type="button" class="capsule-pick" data-filter-row="${section}" onclick="openFilterSection('${section}')">
+    <span>${FILTER_SECTION_TITLES[section]}</span>
+    <span class="capsule-pick-value ${value === 'Any' ? '' : 'on'}">${esc(value)}</span>${rowChevron}
+  </button>`;
+}
+
 function filterControlsHtml(ns){
+  const sections = ['pieces'];
+  if(capsulesAvailable && capsules.length) sections.push('capsules');
+  if(tagsAvailable && tagsByUse().length) sections.push('tags');
+  sections.push('faves');
+  const chips = activeFilterChips();
   return `
-    ${capsulesAvailable && capsules.length ? `<div class="filter-section">
-      <span class="filter-sheet-label">Capsules<span class="label-count" id="${ns}-capsule-count"></span></span>
-      <div class="filter-grid chip-row" id="${ns}-capsule-chips" role="group" aria-label="Filter by capsule"></div>
-    </div>` : ''}
-    <div class="filter-section">
-      <span class="filter-sheet-label">Faves<span class="label-count" id="${ns}-fave-count"></span></span>
-      <div class="filter-grid chip-row" data-fave-host role="group" aria-label="Filter by fave level"></div>
-    </div>
-    <div class="filter-section">
-      <span class="filter-sheet-label">Tags<span class="label-count" id="${ns}-tag-count"></span></span>
-      <div class="tag-chips chip-row" id="${ns}-tag-chips"></div>
-    </div>
-    <div class="filter-section">
-      <span class="filter-sheet-label">Pieces<span class="label-count" id="${ns}-piece-count"></span></span>
-      <div class="filter-grid chip-row" id="${ns}-filter-grid"></div>
-    </div>`;
+    ${chips.length ? `<div class="filter-active" role="group" aria-label="Filters on">${chips.map(([kind, key, label]) =>
+      `<button type="button" class="filter-chip active" aria-label="Remove ${esc(label)}"
+         onclick='removeActiveFilter(${jsArg(kind)}, ${jsArg(key)})'><span class="chip-label">${esc(label)}</span><span class="chip-x" aria-hidden="true">✕</span></button>`).join('')}</div>` : ''}
+    <div class="capsule-picks filter-rows" id="${ns}-rows">${sections.map(filterRowHtml).join('')}</div>`;
+}
+
+// One page of a section: the categories, the capsules, the tags or the
+// levels, as rows to tick. Typing at the foot narrows the long ones.
+function filterSectionHtml(section){
+  const q = filterQuery.trim().toLowerCase();
+  const keep = name => !q || name.toLowerCase().includes(q);
+  let rows = '';
+  if(section === 'pieces'){
+    rows = filterTabs().map(t => {
+      const on = outfitFilters[t].type !== 'any';
+      return `<button type="button" class="capsule-pick" data-filter-cat="${esc(t)}" onclick='openFilterPage(${jsArg(t)})'>
+        <span>${esc(t)}</span><span class="capsule-pick-value ${on ? 'on' : ''}">${on ? esc(slotSummary(t)) : 'Any'}</span>${rowChevron}
+      </button>`;
+    }).join('');
+  } else if(section === 'capsules'){
+    rows = capsules.filter(c => keep(c.name)).map(c => {
+      const on = capsuleFilter.includes(c.id);
+      return `<button type="button" class="capsule-pick ${on ? 'picked' : ''}" aria-pressed="${on}" data-key="${esc(c.id)}"
+        onclick='toggleCapsuleFilter(${jsArg(c.id)})'><span>${esc(c.name)}</span>${pickMark(on)}</button>`;
+    }).join('');
+  } else if(section === 'tags'){
+    rows = tagsByUse().slice().sort((a, b) => a.localeCompare(b)).filter(keep).map(t => {
+      const on = outfitTags.includes(t);
+      return `<button type="button" class="capsule-pick ${on ? 'picked' : ''}" aria-pressed="${on}" data-key="${esc(t)}" data-tag="${esc(t)}"
+        onclick='setOutfitTag(${jsArg(t)})'><span>${esc(t)}</span>${pickMark(on)}</button>`;
+    }).join('');
+  } else {
+    const mode = appMode === 'saved' ? 'saved' : 'outfits';
+    rows = FAVE_CHIPS.map(c => {
+      const on = faveFilter[mode].includes(Number(c.v));
+      return `<button type="button" class="capsule-pick ${on ? 'picked' : ''}" aria-pressed="${on}" data-key="${c.v}"
+        onclick="setFaveFilter('${c.v}')"><span class="capsule-pick-label">${c.level !== undefined ? `<span class="capsule-pick-lead">${faveChipHeart(c.level)}</span>` : ''}${c.label}</span>${pickMark(on)}</button>`;
+    }).join('');
+  }
+  if(!rows) return `<p class="picker-empty">${q ? `Nothing called “${esc(filterQuery.trim())}”` : 'Nothing here yet'}</p>`;
+  return `<div class="capsule-picks filter-rows" id="filter-section-list" data-section="${section}">${rows}</div>`;
+}
+
+// The search pill at the foot types into this.
+function setFilterQuery(v){
+  filterQuery = v;
+  if(filterPage) renderPickerGallery(filterPage);
+  else renderFilterControlsBody();
 }
 
 // Nothing when nothing is on: a nought beside "TAGS" is a label saying
@@ -3415,31 +3531,9 @@ function renderFilterControlsBody(){
       renderPickerGallery(filterPage);
       return;
     }
-    host.innerHTML = filterControlsHtml(ns);
-
     capsuleAllowedIds();   // drops a capsule that has since gone
-    const capHost = document.getElementById(`${ns}-capsule-chips`);
-    if(capHost){
-      morphHtml(capHost, capsules.map(c => {
-        const on = capsuleFilter.includes(c.id);
-        return `<button class="filter-chip ${on ? 'active' : ''}" data-key="${esc(c.id)}" type="button" aria-pressed="${on}"
-          onclick='toggleCapsuleFilter(${JSON.stringify(c.id)})'><span class="chip-label">${esc(c.name)}</span></button>`;
-      }).join(''));
-    }
-    setLabelCount(`${ns}-capsule-count`, capsuleFilter.length);
-    renderTagChips(`${ns}-tag-chips`, outfitTags, 'setOutfitTag');
-    renderSlotChips(`${ns}-filter-grid`);
-
-    // How many of each row is on, beside the row's own name. A row is
-    // wider than the panel, so the chip that is filtering may be off to
-    // the right with nothing on screen to say so. The label is always
-    // there, and it does not move when you tap.
-    const slots = outfitFilters;
-    setLabelCount(`${ns}-tag-count`, outfitTags.length);
-    setLabelCount(`${ns}-piece-count`, countNarrowedSlots(slots));
+    host.innerHTML = filterSection ? filterSectionHtml(filterSection) : filterControlsHtml(ns);
   });
-
-  renderFaveChips();
 }
 
 // Outfits always has its Pieces row. The other pages offer tags alone, and
@@ -3493,6 +3587,10 @@ function syncSheetReach(){
 
 // The piece category whose page is showing inside the sheet, or null for the
 // main page of filters.
+// null is the rows; otherwise the section whose page is showing. A piece
+// category (filterPage) is a step deeper, inside 'pieces'.
+let filterSection = null;
+let filterQuery = '';
 let filterPage = null;
 let filterMainScroll = 0;
 let filterFromHero = false;
@@ -3508,6 +3606,8 @@ function openFilterSheet(){
   if(!filterSheetHasContent()){ closeFilterSheet(); return false; }
   const { backdrop, sheet } = filterSheetEls();
   filterPage = null;
+  filterSection = null;
+  filterQuery = '';
   filterFromHero = false;
   sheet.style.height = '';
   renderFilterControls();
@@ -3526,6 +3626,8 @@ function closeFilterSheet(){
   // It reopens on its main page. The page it was on stays drawn until it has
   // gone, so it does not change under the sheet as it leaves.
   filterPage = null;
+  filterSection = null;
+  filterQuery = '';
   filterFromHero = false;
   renderFiltersFab();
   // After the pill, so there is somewhere for focus to land.
@@ -3569,33 +3671,73 @@ function morphFilterSheet(change, dir){
   }, 240);
 }
 
-// Choosing pieces from one category: a second page inside this sheet, not a
-// sheet on top of it. Back is at the foot, beside the count.
-function openFilterPage(slotKey){
+// Each row opens a page inside this sheet, not a sheet on top of it. Back is
+// at the foot.
+function openFilterSection(section){
   const { sheet } = filterSheetEls();
   filterMainScroll = sheet.scrollTop;
   morphFilterSheet(() => {
-    filterPage = slotKey;
+    filterSection = section;
+    filterQuery = '';
     renderFilterControls();
     sheet.scrollTop = 0;
   }, 'fwd');
 }
 
+// Choosing pieces from one category: the step after the list of categories.
+function openFilterPage(slotKey){
+  const { sheet } = filterSheetEls();
+  morphFilterSheet(() => {
+    filterSection = 'pieces';
+    filterPage = slotKey;
+    filterQuery = '';
+    renderFilterControls();
+    sheet.scrollTop = 0;
+  }, 'fwd');
+}
+
+// One step back: from a category to the list of categories, and from any
+// section to the rows.
 function closeFilterPage(){
   // Reached from a space in the popup: Back goes back to the popup.
   if(filterFromHero){ closeFilterSheet(); return; }
   const { sheet } = filterSheetEls();
+  const toRows = !filterPage;
   morphFilterSheet(() => {
-    filterPage = null;
+    if(filterPage) filterPage = null; else filterSection = null;
+    filterQuery = '';
     renderFilterControls();
-    sheet.scrollTop = filterMainScroll;
+    sheet.scrollTop = toRows ? filterMainScroll : 0;
   }, 'back');
 }
 
 // Clear is in the head, top right, and clears what the page it is on holds.
 function clearFromSheetHead(){
   if(filterPage) setSlotAny(filterPage);
+  else if(filterSection) clearFilterSection(filterSection);
   else clearFilters();
+}
+
+function clearFilterSection(section){
+  const mode = appMode === 'saved' ? 'saved' : 'outfits';
+  if(section === 'pieces'){
+    Object.keys(outfitFilters).forEach(k => { outfitFilters[k] = anyFilter(); });
+    renderFilterControls();
+    renderFiltersFab();
+    filterResultsStale = true;
+    if(!filterSheetOpen()) applyFilterResults();
+    return;
+  }
+  if(section === 'capsules') capsuleFilter = [];
+  if(section === 'tags') outfitTags = [];
+  if(section === 'faves'){
+    faveFilter[mode] = [];
+    favePinned.clear(); faveLingering.clear();
+    writeFaveUrl();
+  }
+  renderFilterControls();
+  renderFiltersFab();
+  if(appMode === 'saved') renderSavedOutfits(); else resetOutfitResults();
 }
 
 function renderFilterHead(){
@@ -3607,6 +3749,11 @@ function renderFilterHead(){
     clear.textContent = 'Clear';
     clear.setAttribute('aria-label', 'Clear ' + filterPage.toLowerCase());
     clear.style.visibility = activeSlotFilters()[filterPage].type === 'any' ? 'hidden' : 'visible';
+  } else if(filterSection){
+    title.textContent = FILTER_SECTION_TITLES[filterSection];
+    clear.textContent = 'Clear';
+    clear.setAttribute('aria-label', 'Clear ' + FILTER_SECTION_TITLES[filterSection].toLowerCase());
+    clear.style.visibility = filterSectionValue(filterSection) === 'Any' ? 'hidden' : 'visible';
   } else {
     title.textContent = 'Filters';
     clear.textContent = 'Clear all';
@@ -3634,16 +3781,34 @@ let lastFilterCount = null;
 function renderFilterFooter(){
   const el = document.getElementById('filter-sheet-foot');
   if(!el) return;
-  if(!filterSheetHasContent()){ el.innerHTML = ''; return; }
+  if(!filterSheetHasContent()){ el.innerHTML = ''; delete el.dataset.kind; return; }
   const n = filterResultCount();
   const label = n === 0
     ? 'No outfits match'
     : `See <span class="filter-count" id="filter-sheet-count">${n.toLocaleString('en-US')}</span> ${n === 1 ? 'outfit' : 'outfits'}`;
-  const back = filterPage
-    ? `<button class="btn secondary" id="filter-sheet-back" type="button" onclick="closeFilterPage()">
-         <svg class="back-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>Back</button>`
+  const deeper = Boolean(filterPage || filterSection);
+  const back = deeper
+    ? `<button class="btn secondary" id="filter-sheet-back" type="button" onclick="closeFilterPage()">${BACK_BTN_SVG}Back</button>`
     : '';
+  // Long lists get a search pill beside Back, as every picker does; the
+  // short ones (the rows, the categories, the three levels) get the count.
+  const placeholder = filterPage ? 'Search pieces'
+    : filterSection === 'capsules' ? 'Search capsules'
+    : filterSection === 'tags' ? 'Search tags' : null;
+  if(placeholder){
+    const kind = 'search:' + placeholder;
+    // Typing is going on in it: redrawing would take the keyboard away.
+    const input = el.querySelector('#filter-sheet-search');
+    if(el.dataset.kind === kind && input && input.value === filterQuery) return;
+    el.dataset.kind = kind;
+    el.innerHTML = `${back}<div class="search-box">${SEARCH_ICON_SVG}
+      <input type="text" id="filter-sheet-search" autocomplete="off" autocapitalize="off" spellcheck="false"
+             enterkeyhint="search" placeholder="${placeholder}" value="${esc(filterQuery)}"
+             oninput="setFilterQuery(this.value)" onfocus="watchKeyboard(true)" onblur="watchKeyboard(false)"
+             onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}"></div>`;
+    return;
+  }
+  el.dataset.kind = deeper ? 'back-see' : 'see';
   el.innerHTML = `${back}<div class="sheet-footer-actions"><button class="btn" id="filter-sheet-see" type="button" onclick="closeFilterSheet()"><span>${label}</span></button></div>`;
   if(lastFilterCount !== null && lastFilterCount !== n && filterSheetOpen()){
     const num = document.getElementById('filter-sheet-count');
@@ -4290,7 +4455,10 @@ function noneLabel(tab){
 }
 
 function renderPickerGallery(slotKey){
-  const items = itemsInTab(slotKey);
+  const all = itemsInTab(slotKey);
+  const q = filterQuery.trim().toLowerCase();
+  // Typing narrows by what you would say about a piece.
+  const items = q ? all.filter(i => [i.name, i.brand, i.category].some(v => String(v || '').toLowerCase().includes(q))) : all;
   const f = activeSlotFilters()[slotKey];
 
   // Nothing to choose from. One quiet line rather than a blank space you
@@ -4298,10 +4466,12 @@ function renderPickerGallery(slotKey){
   const note = document.getElementById('picker-empty');
   if(note){
     note.style.display = items.length ? 'none' : 'block';
-    note.textContent = `No ${slotKey.toLowerCase()}`;
+    note.textContent = all.length ? `Nothing called “${filterQuery.trim()}”` : `No ${slotKey.toLowerCase()}`;
   }
 
-  // First tile: outfits with nothing from this category.
+  // First tile: outfits with nothing from this category. Not while you are
+  // looking for a particular piece.
+  const showNone = !q;
   const noneSelected = f.type === 'none';
   const noneTile = `<div class="tile picker-tile picker-none ${noneSelected ? 'picker-selected' : ''}" role="button" aria-pressed="${noneSelected}" onclick="toggleSlotNone('${slotKey}')">
       <span class="no-photo">${esc(noneLabel(slotKey))}</span>
@@ -4311,23 +4481,26 @@ function renderPickerGallery(slotKey){
   const gallery = document.getElementById('picker-gallery');
   // Same page, same pieces: only the ticks change. Rebuilding the tiles
   // reloaded every photo and the whole grid flickered on each tap.
-  const ids = items.map(i => i.id).join('|');
-  if(gallery.dataset.slot === slotKey && gallery.dataset.ids === ids && gallery.children.length === items.length + 1){
+  const ids = (showNone ? 'n:' : '-:') + items.map(i => i.id).join('|');
+  const lead = showNone ? 1 : 0;
+  if(gallery.dataset.slot === slotKey && gallery.dataset.ids === ids && gallery.children.length === items.length + lead){
     const setTile = (el, selected) => {
       el.classList.toggle('picker-selected', selected);
       const tick = el.querySelector('.picker-check');
       if(selected && !tick) el.insertAdjacentHTML('beforeend', '<span class="picker-check">✓</span>');
       else if(!selected && tick) tick.remove();
     };
-    const none = gallery.children[0];
-    none.setAttribute('aria-pressed', noneSelected);
-    setTile(none, noneSelected);
-    items.forEach((i, n) => setTile(gallery.children[n + 1], f.type === 'items' && f.ids.includes(i.id)));
+    if(showNone){
+      const none = gallery.children[0];
+      none.setAttribute('aria-pressed', noneSelected);
+      setTile(none, noneSelected);
+    }
+    items.forEach((i, n) => setTile(gallery.children[n + lead], f.type === 'items' && f.ids.includes(i.id)));
     return;
   }
   gallery.dataset.slot = slotKey;
   gallery.dataset.ids = ids;
-  gallery.innerHTML = noneTile + items.map(i => {
+  gallery.innerHTML = (showNone ? noneTile : '') + items.map(i => {
     const selected = f.type === 'items' && f.ids.includes(i.id);
     return `<div class="tile picker-tile ${selected ? 'picker-selected' : ''}" onclick="toggleSlotItem('${slotKey}','${i.id}')">
       ${i.photo ? `<img src="${esc(i.photo)}" alt="" referrerpolicy="no-referrer" loading="lazy" decoding="async">` : `<span class="no-photo">${esc(i.name)}</span>`}
@@ -5234,6 +5407,7 @@ function openHeroSlot(slot){
   if(!heroCombo) return;
   const tab = heroSlotTab(slot, heroCombo);
   if(!openFilterSheet()) return;
+  filterSection = 'pieces';
   filterPage = tab;
   // Opened from the popup, so Back returns to the popup rather than to the
   // list of every filter.
@@ -5617,6 +5791,8 @@ function setFaveFilter(v){
   favePinned.clear(); faveLingering.clear();
   writeFaveUrl();
   renderFaveChips();
+  renderFilterControls();
+  renderFiltersFab();
   if(mode === 'saved') renderSavedOutfits();
   else resetOutfitResults();
 }
@@ -7978,7 +8154,7 @@ function wireTagLongPress(container){
   container.addEventListener('pointerdown', (e) => {
     tagPressFired = false;
     if(e.button > 0) return;
-    const chip = e.target.closest('.tag-chip[data-tag]');
+    const chip = e.target.closest('.tag-chip[data-tag], .capsule-pick[data-tag]');
     if(!chip) return;
     tagPressOrigin = { x: e.clientX, y: e.clientY, tag: chip.dataset.tag };
     tagPressTimer = setTimeout(() => {

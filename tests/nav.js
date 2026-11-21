@@ -34,6 +34,30 @@ module.exports = {
     await page.waitForTimeout(settle === undefined ? 1200 : settle);
   },
 
+  // The Filters sheet is four rows, and each opens a page. These do what a
+  // thumb does: open a row, open a category inside Pieces, come back.
+  async openFilterSection(page, name, settle){
+    await page.click(`#filter-sheet [data-filter-row="${name}"]`);
+    await page.waitForTimeout(settle === undefined ? 450 : settle);
+  },
+  async openFilterCategory(page, tab, settle){
+    if(!(await page.$('#filter-sheet [data-filter-cat]'))) await module.exports.openFilterSection(page, 'pieces');
+    await page.click(`#filter-sheet [data-filter-cat="${tab}"]`);
+    await page.waitForTimeout(settle === undefined ? 450 : settle);
+  },
+  async filterBack(page, settle){
+    await page.click('#filter-sheet-back');
+    await page.waitForTimeout(settle === undefined ? 450 : settle);
+  },
+  // A tag, a capsule or a level, ticked or unticked on its own page, then back
+  // to the rows.
+  async tickFilter(page, section, label){
+    await module.exports.openFilterSection(page, section);
+    await page.click(`#filter-section-list .capsule-pick:has-text("${label}")`);
+    await page.waitForTimeout(350);
+    await module.exports.filterBack(page);
+  },
+
   // Leaving whichever sheet is up.
   //
   // The control differs by what the sheet is for: one that applies live
