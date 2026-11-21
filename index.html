@@ -1544,6 +1544,17 @@
   }
   /* A shirt worn over a tee is two pieces in one space: side by side, shirt
      then tee, as they are laid out on the grid's cards. */
+  /* A piece with no photo says its name where the photo would be. */
+  .hero-name{
+    position:absolute;inset:6px;display:flex;align-items:center;justify-content:center;
+    text-align:center;padding:8px;border-radius:8px;background:var(--page);color:var(--ink-soft);
+    font-family:'Bricolage Grotesque',sans-serif;font-size:14px;line-height:1.3;pointer-events:none;
+  }
+  .hero-slot.pair .hero-name{width:calc(50% - 9px);}
+  .hero-slot.pair .hero-name:first-of-type{left:6px;}
+  .hero-slot.pair .hero-name:last-of-type{left:auto;right:6px;}
+  /* The shorts cutouts sit smaller in their frames than other pieces do. */
+  .is-shorts{transform:scale(1.18);}
   .hero-slot.pair img{width:calc(50% - 9px);}
   .hero-slot.pair img:first-of-type{left:6px;}
   .hero-slot.pair img:last-of-type{left:auto;right:6px;}
@@ -1982,12 +1993,12 @@
   .outfit-upper.n2 > *{width:50%;aspect-ratio:1/1;}
   /* Absorbs the leftover height rather than leaving a gap, so a simple
      outfit shows a larger bottom instead of empty card. */
-  .outfit-lower{margin-top:-10px;flex:1;min-height:88px;}
+  .outfit-lower{margin-top:4px;flex:1;min-height:88px;}
   .outfit-lower > *{width:100%;height:100%;}
   /* What you put on afterwards, along the foot of the card. One sits
      centred like the shoes used to; more share the width. */
-  .outfit-extras{margin-top:-4px;display:flex;justify-content:center;gap:0;flex:none;}
-  .outfit-extras.outfit-hats{margin:0 0 -4px;}
+  .outfit-extras{margin-top:4px;display:flex;justify-content:center;gap:0;flex:none;}
+  .outfit-extras.outfit-hats{margin:0 0 4px;}
   .outfit-extras > *{width:38%;aspect-ratio:1/1;}
   .outfit-extras.n2 > *{width:30%;}
   .outfit-extras.n3 > *{width:24%;}
@@ -2004,7 +2015,7 @@
     background:var(--page);
     display:flex;align-items:center;justify-content:center;
     font-family:'Figtree',sans-serif;font-variant-numeric:tabular-nums;
-    font-size:8px;color:var(--ink-soft);
+    font-size:10px;line-height:1.15;padding:3px;overflow:hidden;color:var(--ink-soft);
   }
   .outfit-piece-row{
     display:flex;gap:10px;align-items:center;
@@ -2096,10 +2107,17 @@
   .field-pick-btn svg{flex:none;color:var(--ink-soft);}
   .form-extra{display:flex;flex-direction:column;gap:12px;}
   /* A search field keeps its icon inside it, at the left. */
-  .search-box{position:sticky;top:0;z-index:5;background:var(--page);padding:6px 0 8px;margin-top:-6px;}
-  .search-box svg{position:absolute;left:14px;top:calc(50% - 1px);transform:translateY(-50%);
+  /* On a picker the search sits at the foot, level with Back, as a pill of
+     the same height and lift: both are in the thumb's reach. */
+  .search-box{position:relative;flex:1 1 auto;min-width:0;}
+  .search-box svg{position:absolute;left:18px;top:50%;transform:translateY(-50%);
     width:18px;height:18px;color:var(--ink-soft);pointer-events:none;}
-  .search-box input[type=text]{width:100%;padding-left:42px;background:var(--surface);}
+  .search-box input[type=text]{
+    width:100%;min-width:0;min-height:54px;padding:0 18px 0 46px;
+    border-radius:999px;border:1px solid transparent;background:var(--surface);
+    box-shadow:0 6px 24px rgba(0,0,0,0.11);
+  }
+  .search-box input[type=text]:focus-visible{outline:2px solid var(--ink-soft);outline-offset:0;}
   /* Categories sit under the main category they belong to. */
   .capsule-pick.group{font-weight:500;}
   .capsule-pick.child{margin-left:20px;min-height:48px;font-weight:400;}
@@ -2958,6 +2976,11 @@ function renderBottomBar(){
 }
 
 function setMode(mode){
+  // Flipping between all outfits and faves is a filter, not a move: keep the
+  // page where it is and the quick-filter row scrolled to where you had it.
+  const carry = (appMode === 'outfits' || appMode === 'saved') && (mode === 'outfits' || mode === 'saved')
+    && appMode !== mode
+    ? { y: Math.round(window.scrollY), left: (outfitBarEl() || {}).scrollLeft || 0 } : null;
   // Leaving a page: note where you had got to on it.
   if(appMode && appMode !== mode) rememberScroll(appMode);
   appMode = mode;
@@ -3000,6 +3023,11 @@ function setMode(mode){
   closeFilterSheet();
   renderFiltersFab();
 
+  if(carry){
+    scrollPositions[mode] = carry.y;
+    const bar = outfitBarEl();
+    if(bar) bar.scrollLeft = carry.left;
+  }
   restoreScroll(mode);
 }
 
@@ -4513,7 +4541,7 @@ function outfitLayout(combo){
 
 function outfitThumbsHtml(combo){
   const cell = p => p.photo
-    ? `<img src="${esc(p.photo)}" alt="${esc(p.name)}" referrerpolicy="no-referrer" loading="lazy" decoding="async">`
+    ? `<img class="${shelfForItem(p) === 'Shorts' ? 'is-shorts' : ''}" src="${esc(p.photo)}" alt="${esc(p.name)}" referrerpolicy="no-referrer" loading="lazy" decoding="async">`
     : `<div class="no-photo-mini">${esc(p.name)}</div>`;
   const { hats, upper, lower, extras } = outfitLayout(combo);
   return [
@@ -5184,7 +5212,9 @@ function heroSlotHtml(slot, c, flat){
   // The outer layer first, as the grid's cards put it.
   const shown = pieces.length > 1 ? pieces.slice().reverse() : pieces;
   const imgs = shown.length
-    ? shown.map(p => `<img src="${esc(p.photo)}" alt="" referrerpolicy="no-referrer" decoding="async">`).join('')
+    ? shown.map(p => p.photo
+        ? `<img class="${shelfForItem(p) === 'Shorts' ? 'is-shorts' : ''}" src="${esc(p.photo)}" alt="" referrerpolicy="no-referrer" decoding="async">`
+        : `<span class="hero-name">${esc(p.name)}</span>`).join('')
     : `<span class="hero-none">No ${noun}</span>`;
   return `<div class="hero-slot ${slot} ${pieces.length ? '' : 'empty'} ${pieces.length > 1 ? 'pair' : ''} ${locked ? 'locked' : ''}">
     ${imgs}
@@ -6437,7 +6467,6 @@ function openCapsuleEditor(id, seedItemIds){
         </label>
         <label>Description
           <input type="text" id="capsule-desc-input" maxlength="120"
-                 placeholder="A few words (optional)"
                  value="${esc(capsuleDraft.description)}" oninput="onCapsuleDescInput()">
         </label>
       </div>
@@ -8482,22 +8511,43 @@ const BACK_BTN_SVG = `<svg class="back-glyph" viewBox="0 0 24 24" fill="none" st
 const SEARCH_ICON_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>`;
 
+// The search is fixed to the foot, so when the keyboard comes up the browser
+// scrolls the sheet to keep it in view — down to the bottom of a long list.
+// Put it back where it was: the list stays at the top, under the title.
+function holdPickerScroll(){
+  const modal = document.getElementById('modal');
+  if(!modal) return;
+  const y = modal.scrollTop, wy = window.scrollY;
+  const put = () => {
+    modal.scrollTop = y;
+    if(window.scrollY !== wy) window.scrollTo(0, wy);
+  };
+  [0, 60, 200, 400, 700].forEach(ms => setTimeout(put, ms));
+  const vv = window.visualViewport;
+  if(vv){
+    const onResize = () => put();
+    vv.addEventListener('resize', onResize);
+    setTimeout(() => vv.removeEventListener('resize', onResize), 1200);
+  }
+}
+
 function formPickFrame(title, placeholder, onInput, onEnter){
   const modal = document.getElementById('modal');
   document.getElementById('modal-backdrop').classList.add('as-page');
   modal.innerHTML = `
     <div class="modal-body has-footer">
       <div class="modal-name" style="margin-bottom:14px;">${title}</div>
-      <div class="search-box">${SEARCH_ICON_SVG}
-        <input type="text" id="form-pick-input" autocomplete="off" placeholder="${placeholder}"
-               oninput="${onInput}"
-               onkeydown="if(event.key==='Enter'){event.preventDefault();${onEnter};}">
-      </div>
       <div class="capsule-picks" id="form-pick-list"></div>
     </div>
     <div class="sheet-footer split pagebar">
       <div class="sheet-footer-inner">
         <button class="btn secondary" type="button" onclick="closeFormPicker()">${BACK_BTN_SVG}Back</button>
+        <div class="search-box">${SEARCH_ICON_SVG}
+          <input type="text" id="form-pick-input" autocomplete="off" placeholder="${placeholder}"
+                 onfocus="holdPickerScroll()"
+                 oninput="${onInput}"
+                 onkeydown="if(event.key==='Enter'){event.preventDefault();${onEnter};}">
+        </div>
       </div>
     </div>`;
   allowSheetDrag(null);

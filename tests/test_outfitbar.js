@@ -88,6 +88,35 @@ const cards = p => p.evaluate(()=>
   check('and the bar is there too', await q(()=>!!document.querySelector('#saved-tabs > #filters-fab')));
   await p.click('#saved-tabs .view-seg'); await p.waitForTimeout(600);
   check('grid again', await q(()=>!document.querySelector('#saved-gallery').classList.contains('as-list')));
+  await p.click('#nav-outfits-btn'); await p.waitForTimeout(800);
+  // Tapping a piece on the hero card opens the popup, as ever.
+  await p.click('#outfit-hero .hero-slot'); await p.waitForTimeout(700);
+  check('tapping a piece in the hero opens the popup', await q(()=>heroPopOpen && !filterSheetOpen()));
+  await q(()=>closeHeroPopup());
+  // A piece with no photo says its name in the hero and in the cards.
+  await q(()=>{ closeFilterSheet(); ITEMS.forEach(i=>{ i.photo=null; }); renderHero(); renderOutfits(); });
+  await p.waitForTimeout(400);
+  check('no photo: the hero slot shows the name', await q(()=>document.querySelector('#outfit-hero .hero-name')?.textContent.trim().length>0));
+  check('and a card shows it too', await q(()=>document.querySelectorAll('#outfit-gallery .no-photo-mini').length>0));
+  // Scroll the quick row, flip Faves, and the row stays where it was.
+  await q(()=>{ const bar=document.getElementById('outfit-tabs'); bar.style.maxWidth='200px'; bar.scrollLeft=60; });
+  const before = await q(()=>document.getElementById('outfit-tabs').scrollLeft);
+  await p.evaluate(()=>setMode('saved')); await p.waitForTimeout(500);
+  await p.evaluate(()=>setMode('outfits')); await p.waitForTimeout(500);
+  check('flipping Faves does not reset the quick row', await q(()=>document.getElementById('outfit-tabs').scrollLeft) === before, String(before));
+  // Pickers: search at the foot, level with Back, fully rounded.
+  await q(()=>{ openItemForm(); });
+  await p.waitForTimeout(600);
+  await q(()=>{ openFormTagsPicker(); });
+  await p.waitForTimeout(600);
+  const g = await q(()=>{
+    const i=document.getElementById('form-pick-input'), back=document.querySelector('#modal .sheet-footer .btn.secondary');
+    const ri=i.getBoundingClientRect(), rb=back.getBoundingClientRect();
+    return {inFooter: !!i.closest('.sheet-footer'), level: Math.abs((ri.top+ri.height/2)-(rb.top+rb.height/2))<2,
+            round: parseFloat(getComputedStyle(i).borderRadius)>=20, right: ri.left>rb.right-1};
+  });
+  check('the picker search sits in the footer beside Back', g.inFooter && g.right, JSON.stringify(g));
+  check('level with it, and rounded', g.level && g.round, JSON.stringify(g));
   await b.close();
   const failed=results.filter(r=>!r).length;
   console.log(`\n${results.length-failed}/${results.length} checks passed`);

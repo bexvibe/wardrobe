@@ -24,7 +24,7 @@ async function open(b, popup = true){
   }
   await p.waitForSelector('#app-root',{state:'visible'}); await p.waitForTimeout(800);
   await p.click('#nav-outfits-btn'); await p.waitForTimeout(1500);
-  if(popup){ await p.click('#outfit-hero .hero-feature'); await p.waitForTimeout(500); }
+  if(popup){ await p.click('#outfit-hero .hero-feature',{position:{x:3,y:3}}); await p.waitForTimeout(500); }
   return p;
 }
 const heroKey = p => p.evaluate(()=>comboKey(heroCombo));
@@ -156,7 +156,7 @@ async function dealUntil(p, test, tries=200){
       !document.querySelector('#outfit-hero .hero-lock, #outfit-hero .hero-slot-open')));
     check('the popup is shut until asked for', await p.evaluate(()=>
       !heroPopOpen && !document.getElementById('hero-pop-wrap').classList.contains('open')));
-    await p.click('#outfit-hero .hero-feature'); await p.waitForTimeout(500);
+    await p.click('#outfit-hero .hero-feature',{position:{x:3,y:3}}); await p.waitForTimeout(500);
     check('tapping the hero opens it', await p.evaluate(()=>heroPopOpen));
     check('it has no title, subtitle or Done', await p.evaluate(()=>
       !document.querySelector('#hero-pop .hero-title, #hero-pop .hero-sub') &&
@@ -172,10 +172,10 @@ async function dealUntil(p, test, tries=200){
     }));
     await p.keyboard.press('Escape'); await p.waitForTimeout(500);
     check('Escape puts it away', await p.evaluate(()=>!heroPopOpen));
-    await p.click('#outfit-hero .hero-feature'); await p.waitForTimeout(500);
+    await p.click('#outfit-hero .hero-feature',{position:{x:3,y:3}}); await p.waitForTimeout(500);
     await p.click('#hero-pop-back'); await p.waitForTimeout(500);
     check('Close closes it', await p.evaluate(()=>!heroPopOpen));
-    await p.click('#outfit-hero .hero-feature'); await p.waitForTimeout(400);
+    await p.click('#outfit-hero .hero-feature',{position:{x:3,y:3}}); await p.waitForTimeout(400);
     await p.mouse.click(195, 12); await p.waitForTimeout(500);
     check('tapping outside closes it', await p.evaluate(()=>!heroPopOpen));
     await p.close();
