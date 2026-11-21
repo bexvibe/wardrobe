@@ -1,6 +1,6 @@
 // 3-level fave heart and the fave filters.
 const { chromium } = require('playwright');
-const { toFaves, toAll } = require('./nav');
+const { toFaves, toAll, openFilterSection, filterBack } = require('./nav');
 const fs=require('fs'), path=require('path');
 const REPO = path.join(__dirname, '..');
 const fake=fs.readFileSync(path.join(__dirname,'fake-supabase.js'),'utf8');
@@ -21,10 +21,12 @@ async function boot(b, url){
   return p;
 }
 const lvl = p => p.evaluate(()=>document.querySelector('#outfit-gallery .fave-heart').dataset.level);
+// A level is a tick row on the Faves page of the Filters sheet.
 const chip = (p, v) => p.evaluate(v=>{
-  const b=[...document.querySelectorAll('[data-fave-host] .filter-chip')].find(x=>x.offsetParent && x.textContent.includes(v));
-  return b ? b.textContent.trim() : null;
+  const b=[...document.querySelectorAll('#filter-section-list .capsule-pick')].find(x=>x.offsetParent && x.textContent.includes(v));
+  return b ? b.textContent.replace(/\s+/g,' ').replace('✓','').trim() : null;
 }, v);
+const tick = (p, key) => p.evaluate(k=>document.querySelector('#filter-section-list .capsule-pick[data-key="'+k+'"]').click(), key);
 
 (async()=>{
   const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium'});
@@ -63,17 +65,17 @@ const chip = (p, v) => p.evaluate(v=>{
 
   // filters
   await p.evaluate(()=>openFilterSheet()); await p.waitForTimeout(600);
-  check('there is no Not faved chip', !(await chip(p,'Not faved')));
-  check('chips carry no count', (await chip(p,'Love')) === 'Love', await chip(p,'Love'));
-  check('fave chips are the same size as the other filter chips', await p.evaluate(()=>{
-    const f = document.querySelector('[data-fave-host] .filter-chip').getBoundingClientRect();
-    const o = document.querySelector('#filter-sheet-body .filter-grid:not([data-fave-host]) .filter-chip');
-    return !o || Math.abs(o.getBoundingClientRect().height - f.height) < 1;
+  await openFilterSection(p,'faves');
+  check('the Faves page has three levels, no Not faved', (await p.locator('#filter-section-list .capsule-pick').count())===3 && !(await chip(p,'Not faved')));
+  check('level rows carry no count', (await chip(p,'Love')) === 'Love', await chip(p,'Love'));
+  check('level rows are the same size', await p.evaluate(()=>{
+    const hs=[...document.querySelectorAll('#filter-section-list .capsule-pick')].map(e=>Math.round(e.getBoundingClientRect().height));
+    return hs.every(h=>h===hs[0]);
   }));
   check('the panel grows to fit instead of scrolling', await p.evaluate(()=>{
     const sh = document.getElementById('filter-sheet'); return sh.scrollHeight <= sh.clientHeight + 1;
   }));
-  await p.evaluate(()=>[...document.querySelectorAll('[data-fave-host] .filter-chip')].find(x=>x.textContent.includes('Love')).click());
+  await tick(p,2);
   await p.waitForTimeout(800);
   check('filter is in the URL', (await p.evaluate(()=>location.search)) === '?fave=2');
   check('only the loved outfit shows', await p.evaluate(()=>document.querySelectorAll('#outfit-gallery .outfit-card, #outfit-hero .outfit-card').length) === 1);
@@ -81,17 +83,16 @@ const chip = (p, v) => p.evaluate(v=>{
   await p.evaluate(()=>document.querySelector('.fave-heart').click()); await p.waitForTimeout(600);
   check('card stays after its level leaves the filter', await p.evaluate(()=>document.querySelectorAll('.fave-heart').length) >= 1);
 
-  await p.evaluate(()=>[...document.querySelectorAll('[data-fave-host] .filter-chip')].find(x=>x.textContent.includes('Love')).click());
+  await tick(p,2);
   await p.waitForTimeout(600);
-  check('tapping the active chip clears the filter', await p.evaluate(()=>faveFilter.outfits.length===0 && location.search===''));
+  check('ticking the active level again clears the filter', await p.evaluate(()=>faveFilter.outfits.length===0 && location.search===''));
   check('there is no All chip', !(await chip(p,'All')) || (await chip(p,'All')) === 'All-time');
-  await p.evaluate(()=>[...document.querySelectorAll('[data-fave-host] .filter-chip')].find(x=>x.textContent.includes('Like')).click());
-  await p.evaluate(()=>[...document.querySelectorAll('[data-fave-host] .filter-chip')].find(x=>x.textContent.includes('Love')).click());
+  await tick(p,1);
+  await tick(p,2);
   await p.waitForTimeout(500);
   check('several levels can be on at once', await p.evaluate(()=>faveFilter.outfits.join()==='1,2' && location.search==='?fave=1%2C2'));
-  await p.evaluate(()=>[...document.querySelectorAll('[data-fave-host] .filter-chip')].find(x=>x.textContent.includes('Love')).click());
-  await p.waitForTimeout(500);
-  await p.waitForTimeout(800);
+  await tick(p,2);
+  await p.waitForTimeout(1300);
   check('empty state for a level with nothing',
     (await p.evaluate(()=>document.getElementById('outfit-empty-title').textContent)).startsWith('No likes yet')&&(await p.evaluate(()=>document.getElementById('outfit-empty-hint').textContent)).startsWith('Tap a heart'));
 

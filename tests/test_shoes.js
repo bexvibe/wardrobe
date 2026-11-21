@@ -1,5 +1,5 @@
 const { chromium } = require('playwright');
-const { toFaves } = require('./nav');
+const { toFaves, openFilterSection } = require('./nav');
 const fs=require('fs'), path=require('path');
 const REPO = require('path').join(__dirname, '..');
 const SHOTS = require('path').join(__dirname, 'shots');
@@ -43,6 +43,13 @@ async function run(browser, shoesOn){
   return page;
 }
 
+// Open the sheet, then Pieces, and read the category rows.
+async function shoeCats(page){
+  await page.click('#filters-fab'); await page.waitForTimeout(500);
+  await openFilterSection(page, 'pieces');
+  return page.evaluate(()=>Array.from(document.querySelectorAll('#filter-sheet [data-filter-cat]')).map(e=>e.dataset.filterCat));
+}
+
 (async()=>{
   const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium'});
 
@@ -61,14 +68,15 @@ async function run(browser, shoesOn){
         // (tops x bottoms + dresses) x the layers, not tops x bottoms alone.
         expected: (()=>{const n=s=>slotList(outfitFilters,s).length;
           return (topCount(false)*n('bottom') + n('dress')) * n('jumper') * n('jacket');})(),
-        filterChips: Array.from(document.querySelectorAll('#sheet-filter-grid .filter-chip')).map(e=>e.textContent.trim().split('\n')[0]),
       };
     });
+    // The category list under Pieces is where a chip for Shoes used to be.
+    info.filterChips = await shoeCats(page);
     check('wardrobe still contains shoes', info.shoeCount>0, info.shoeCount+' pairs');
     check('no generated outfit includes shoes', info.combosWithShoe===0, `${info.shown} shown, ${info.combosWithShoe} with shoes`);
     check('combo keys keep their shoe segment as none', info.keysEndNone);
     check('combination count drops the shoe multiplier', info.total===info.expected, `${info.total} = ${info.expected}`);
-    check('Shoes filter chip is gone', !info.filterChips.some(c=>/Shoes/.test(c)), info.filterChips.join(', '));
+    check('Shoes is not in the Pieces category list', !info.filterChips.some(c=>/Shoes/.test(c)), info.filterChips.join(', '));
 
     // a pre-existing saved outfit keeps its shoe
     await page.evaluate(()=>closeFilterSheet()); await page.waitForTimeout(300);
@@ -98,11 +106,11 @@ async function run(browser, shoesOn){
     const info = await page.evaluate(()=>({
       combosWithShoe: outfitDisplayed.filter(c=>c.shoe).length,
       shown: outfitDisplayed.length,
-      filterChips: Array.from(document.querySelectorAll('#sheet-filter-grid .filter-chip')).map(e=>e.textContent.trim().split('\n')[0]),
     }));
+    info.filterChips = await shoeCats(page);
     check('flipping the flag back on restores shoe combos', info.combosWithShoe>0,
       `${info.combosWithShoe}/${info.shown} shown include shoes`);
-    check('Shoes filter chip returns', info.filterChips.some(c=>/Shoes/.test(c)), info.filterChips.join(', '));
+    check('Shoes returns to the Pieces category list', info.filterChips.some(c=>/Shoes/.test(c)), info.filterChips.join(', '));
 
     // the legacy saved outfit's heart lights up again — keys survived the round trip
     const stillValid = await page.evaluate(()=>{

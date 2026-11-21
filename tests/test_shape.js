@@ -4,7 +4,7 @@
 // the only way shape is chosen now that ruling a category out is gone.
 // The count line and the stream have to agree exactly.
 const { chromium } = require('playwright');
-const { leaveSheet } = require('./nav');
+const { leaveSheet, openFilterSection } = require('./nav');
 const fs=require('fs'), path=require('path');
 const REPO = require('path').join(__dirname, '..');
 const SHOTS = require('path').join(__dirname, 'shots');
@@ -12,26 +12,31 @@ const fake=fs.readFileSync(path.join(__dirname,'fake-supabase.js'),'utf8');
 const seed=fs.readFileSync(REPO + '/supabase/seed-items.json','utf8');
 const results=[]; const check=(n,p,d)=>{results.push(p);console.log(`${p?'PASS':'FAIL'}  ${n}${d?'  — '+d:''}`);};
 
-const chipLabels = p => p.evaluate(()=>
-  Array.from(document.querySelectorAll('#sheet-filter-grid .filter-chip'))
-    .map(e=>e.childNodes[0].textContent.trim()));
-const chipState = (p, label) => p.evaluate(l=>{
-  const chip = Array.from(document.querySelectorAll('#sheet-filter-grid .filter-chip'))
-    .find(e=>e.childNodes[0].textContent.trim()===l);
-  if(!chip) return null;
-  // The chip no longer spells its state out — it is an outline, or filled
-  // with a count. Read it back off the attribute and put the old words on
-  // it, so the checks below still read as sentences.
-  const badge = chip.querySelector('.chip-count');
+// The sheet is a list of rows now. Pieces opens the categories, and each
+// category row says what is picked in it ("Any" when nothing is). These open
+// the sheet, read the list, and put it away again.
+async function onCategoryList(p, fn){
+  await p.click('#filters-fab'); await p.waitForTimeout(500);
+  await openFilterSection(p, 'pieces');
+  const r = await fn();
+  await leaveSheet(p, {settle:600});
+  return r;
+}
+const chipLabels = p => onCategoryList(p, () => p.evaluate(()=>
+  Array.from(document.querySelectorAll('#filter-sheet [data-filter-cat]')).map(e=>e.dataset.filterCat)));
+const chipState = (p, label) => onCategoryList(p, () => p.evaluate(l=>{
+  const row = document.querySelector(`#filter-sheet [data-filter-cat="${l}"]`);
+  if(!row) return null;
+  const value = row.querySelector('.capsule-pick-value').textContent.trim();
   return {
-    state: chip.dataset.state === 'any' ? 'Any' : `${badge.textContent.trim()} selected`,
-    badge: badge ? badge.textContent.trim() : null,
-    active: chip.classList.contains('active'),
-    // Dimming a slot the shape cannot use is gone: every chip reads at
-    // full strength whatever else is set.
-    dimmed: chip.classList.contains('moot') || getComputedStyle(chip).opacity !== '1',
+    // The row's value stands in for the old state: Any, or what is picked.
+    state: value,
+    value,
+    active: value !== 'Any',
+    // Every row reads at full strength whatever else is set.
+    dimmed: row.classList.contains('moot') || getComputedStyle(row).opacity !== '1',
   };
-}, label);
+}, label));
 const bases = p => p.evaluate(()=>outfitDisplayed.map(c=>c.base));
 
 // Through the real category page, the way she would: open the category, tap
@@ -78,14 +83,11 @@ async function unpin(p, cat){
     await p.evaluate(()=>!document.getElementById('base-topbottom-btn') && !document.getElementById('base-dress-btn')));
   check('and so is the Shape chip that replaced it',
     !(await chipLabels(p)).includes('Shape'), (await chipLabels(p)).join(', '));
-  check('the wardrobe categories lead the row instead',
-    await p.evaluate(()=>{
-      const ls = Array.from(document.querySelectorAll('#sheet-filter-grid .filter-chip'))
-        .map(e=>e.childNodes[0].textContent.trim());
-      return ls.slice(0,3).every(t => itemsInTab(t).length > 0) &&
-             ls.every(t => OUTFIT_TABS.includes(t));
-    }),
-    (await chipLabels(p)).join(', '));
+  const cats = await chipLabels(p);
+  check('the wardrobe categories fill the list instead',
+    await p.evaluate(ls => ls.slice(0,3).every(t => itemsInTab(t).length > 0) &&
+             ls.every(t => OUTFIT_TABS.includes(t)), cats),
+    cats.join(', '));
   check('every category starts on Any',
     (await chipState(p,'Tops')).state==='Any' &&
     (await chipState(p,'Pants')).state==='Any' &&
@@ -114,8 +116,8 @@ async function unpin(p, cat){
   await pin(p, 'Dresses');
   check('pinning a dress leaves dress outfits only',
     (await bases(p)).every(x=>x==='dress') && (await bases(p)).length>0);
-  check('the Dress chip says so, with a count',
-    (await chipState(p,'Dresses')).badge === '1',
+  check('the Dresses row says so, naming the dress picked',
+    (await chipState(p,'Dresses')).value === await p.evaluate(()=>slotSummary('Dresses')) && (await chipState(p,'Dresses')).active,
     JSON.stringify(await chipState(p,'Dresses')));
   check('without dimming itself or anything else',
     !(await chipState(p,'Dresses')).dimmed && !(await chipState(p,'Tops')).dimmed);
@@ -130,7 +132,7 @@ async function unpin(p, cat){
   await pin(p, 'Tops');
   check('pinning a top narrows the other way, to tops and bottoms',
     (await bases(p)).every(x=>x==='topbottom') && (await bases(p)).length>0);
-  check('the Dress chip is untouched', (await chipState(p,'Dresses')).state==='Any');
+  check('the Dresses row is untouched', (await chipState(p,'Dresses')).state==='Any');
   check('and nothing is dimmed for being the narrowed pair',
     !(await chipState(p,'Tops')).dimmed && !(await chipState(p,'Pants')).dimmed);
   const tbOnly = await p.evaluate(()=>{
@@ -158,7 +160,7 @@ async function unpin(p, cat){
   await p.waitForTimeout(700);
   check('asking for a particular top rules dresses out on its own',
     (await bases(p)).every(x=>x==='topbottom'));
-  check('without touching the Dress chip, in value or in weight',
+  check('without touching the Dresses row, in value or in weight',
     (await chipState(p,'Dresses')).state==='Any' && !(await chipState(p,'Dresses')).dimmed);
 
   await p.evaluate(()=>{
@@ -181,7 +183,7 @@ async function unpin(p, cat){
 
   // The empty page says it. Dimming three chips said it a second time, in
   // a language you had to learn first.
-  check('and no chip is dimmed to explain it',
+  check('and no row is dimmed to explain it',
     !(await chipState(p,'Tops')).dimmed && !(await chipState(p,'Pants')).dimmed &&
     !(await chipState(p,'Dresses')).dimmed);
 

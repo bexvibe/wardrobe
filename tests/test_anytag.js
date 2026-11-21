@@ -1,6 +1,7 @@
 // The Outfits tab should keep any combination containing at least one
 // tagged piece, and report that number exactly.
 const { chromium } = require('playwright');
+const { tickFilter, openFilterSection } = require('./nav');
 // The filters dock at the bottom of the screen and open themselves on
 // Outfits and Faves. Everywhere else the pill raises them.
 async function openFilters(page){
@@ -36,7 +37,7 @@ const results=[]; const check=(n,p,d)=>{results.push(p);console.log(`${p?'PASS':
   await p.click('#nav-outfits-btn'); await p.waitForTimeout(700);
 
   const all=await p.evaluate(()=>totalComboCount());
-  await openFilters(p); await p.click('#sheet-tag-chips .tag-chip:has-text("summer")'); await p.waitForTimeout(900);
+  await openFilters(p); await tickFilter(p,'tags','summer'); await p.waitForTimeout(600);
   const tagged=await p.evaluate(()=>totalComboCount());
   check('tag narrows the count but keeps far more than all-tagged would',
     tagged>1 && tagged<all, `${all} -> ${tagged}`);
@@ -63,7 +64,7 @@ const results=[]; const check=(n,p,d)=>{results.push(p);console.log(`${p?'PASS':
   check('outfits may also contain untagged pieces (the point of the change)', someHaveUntagged);
 
   await p.screenshot({path:shot('anytag-outfits.png')});
-  await p.click('#sheet-tag-chips .tag-chip.active'); await p.waitForTimeout(800);
+  await p.click('#filter-sheet .filter-active .filter-chip'); await p.waitForTimeout(800);
   check('clearing restores the full count', await p.evaluate(()=>totalComboCount())===all);
 
   await b.close();

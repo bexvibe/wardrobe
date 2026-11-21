@@ -156,13 +156,14 @@ const cards = p => p.evaluate(()=>
     check('is still set on the kept ones', await p.evaluate(()=>
       outfitFilters['Jackets'].type === 'none'));
     check('and narrowing them', (await cards(p)) === 2, String(await cards(p)));
-    check('the chip in the panel agrees',
+    await p.evaluate(()=>openFilterSheet()); await p.waitForTimeout(600);
+    check('the active chip in the panel agrees',
       await p.evaluate(()=>Array.from(
-        document.querySelectorAll('#sheet-filter-grid .filter-chip.active'))
-          .map(e=>e.textContent.trim()).join(',') === 'Jackets'));
+        document.querySelectorAll('#filter-sheet .filter-active .filter-chip'))
+          .map(e=>e.textContent.trim()).join(',').includes('Jackets')),
+      await p.evaluate(()=>Array.from(document.querySelectorAll('#filter-sheet .filter-active .filter-chip')).map(e=>e.textContent.trim()).join(',')));
 
     // And Clear all clears the one set, from either side.
-    await p.evaluate(()=>openFilterSheet()); await p.waitForTimeout(600);
     await p.click('#filter-sheet-clear'); await p.waitForTimeout(900);
     check('clearing from here clears it for both',
       await p.evaluate(()=>Object.keys(outfitFilters).every(k=>outfitFilters[k].type==='any')));

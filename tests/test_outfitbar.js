@@ -1,5 +1,5 @@
-// The Outfits page has the wardrobe's sticky bar: layout switch, Filters,
-// a quick Faves tap, then the tags used most. List is a layout of the cards
+// The Outfits page has a bar that scrolls away: layout switch, Filters and a
+// quick Faves tap (the quick tags are hidden). Filters docks at the bottom past the hero. List is a layout of the cards
 // below the hero; the hero is the same in both.
 const { chromium } = require('playwright');
 const { toFaves, toAll } = require('./nav');
@@ -61,18 +61,20 @@ const cards = p => p.evaluate(()=>
   check('the bar is there, with the layout switch first',
     await q(()=>{const k=document.querySelector('#outfit-tabs').children; return k[0].className==='bar-seg' && !!k[0].querySelector('.view-seg');}));
   check('Filters is in the bar', await q(()=>document.querySelector('#outfit-tabs > #filters-fab')?.textContent.trim().startsWith('Filters')));
-  check('the bar sticks like the wardrobe row', await q(()=>document.getElementById('outfit-tabs').classList.contains('stuck-row')));
+  check('the bar scrolls away with the page, not sticky', await q(()=>{
+    const bar=document.getElementById('outfit-tabs'); return !bar.classList.contains('stuck-row') && getComputedStyle(bar).position!=='sticky' && getComputedStyle(bar).position!=='fixed';}));
   const quick = await q(()=>Array.from(document.querySelectorAll('#outfit-tabs .bar-chips .tab')).map(e=>e.textContent.trim()));
-  check('Faves first, then at most five tags', quick[0]==='Faves' && quick.length>=2 && quick.length<=6, quick.join(', '));
-  check('the five are the most used tags', await q(()=>{
-    const top=tagsByUse().slice(0,5);
-    return Array.from(document.querySelectorAll('#outfit-tabs .bar-chips .tab')).slice(1).every(e=>top.includes(e.textContent.trim()));
-  }));
-  const tag = quick[1];
-  await p.click(`#outfit-tabs .bar-chips .tab:has-text("${tag}")`); await p.waitForTimeout(900);
-  check('tapping a tag applies it', await q(t=>outfitTags.includes(t), tag));
-  await p.click(`#outfit-tabs .bar-chips .tab:has-text("${tag}")`); await p.waitForTimeout(900);
-  check('and again takes it off', await q(()=>outfitTags.length===0));
+  check('Faves is the one chip after Filters; the quick tags are hidden', quick.length===1 && quick[0]==='Faves', quick.join(', '));
+  check('quickTags() is empty', await q(()=>quickTags().length===0));
+  // Past the hero, Filters docks into the float row and Shuffle tucks.
+  await q(()=>{ const sp=document.createElement('div'); sp.id='__sp'; sp.style.height='3000px'; document.getElementById('outfit-gallery').after(sp); });
+  await q(()=>{ const g=document.getElementById('outfit-gallery'); window.scrollTo(0, g.getBoundingClientRect().top+scrollY-200); });
+  await p.waitForTimeout(700);
+  check('scrolled past the hero, Filters docks into the float row', await q(()=>!!document.querySelector('#float-row > #filters-fab') && !document.querySelector('#outfit-tabs > #filters-fab') && !document.getElementById('filters-fab').classList.contains('in-head')));
+  check('and Shuffle tucks away', await q(()=>{const s=document.getElementById('shuffle-fab'); return s.classList.contains('tucked') || getComputedStyle(s).display==='none';}));
+  await q(()=>window.scrollTo(0,0)); await p.waitForTimeout(700);
+  check('back at the top it returns to the bar', await q(()=>!!document.querySelector('#outfit-tabs > #filters-fab.in-head')));
+  await q(()=>document.getElementById('__sp').remove());
 
   const cards = await q(()=>document.querySelectorAll('#outfit-gallery .outfit-card').length);
   check('the grid has cards', cards>0, String(cards));
@@ -103,7 +105,8 @@ const cards = p => p.evaluate(()=>
   const before = await q(()=>document.getElementById('outfit-tabs').scrollLeft);
   await p.evaluate(()=>setMode('saved')); await p.waitForTimeout(500);
   await p.evaluate(()=>setMode('outfits')); await p.waitForTimeout(500);
-  check('flipping Faves does not reset the quick row', await q(()=>document.getElementById('outfit-tabs').scrollLeft) === before, String(before));
+  const after = await q(()=>document.getElementById('outfit-tabs').scrollLeft);
+  check('flipping Faves does not reset the quick row', after === before, before+' -> '+after);
   // Pickers: search at the foot, level with Back, fully rounded.
   await q(()=>{ openItemForm(); });
   await p.waitForTimeout(600);

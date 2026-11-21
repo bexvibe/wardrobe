@@ -3,7 +3,7 @@
 // and any one of them is enough — OR within the filter, the way every
 // faceted filter works, while the piece chips beside them still narrow.
 const { chromium } = require('playwright');
-const { toFaves } = require('./nav');
+const { toFaves, tickFilter } = require('./nav');
 const fs=require('fs'), path=require('path');
 const REPO = require('path').join(__dirname, '..');
 const SHOTS = require('path').join(__dirname, 'shots');
@@ -36,12 +36,15 @@ async function open(b){
   return p;
 }
 
+// A tag is ticked on the Tags page of the sheet; Back returns to the rows,
+// where each tag that is on shows as a removable chip at the top.
 const tap = async (p, tag) => {
-  await p.click(`#sheet-tag-chips .tag-chip[data-tag="${tag}"]`);
-  await p.waitForTimeout(900);
+  await tickFilter(p, 'tags', tag);
+  await p.waitForTimeout(500);
 };
 const on = p => p.evaluate(()=>Array.from(
-  document.querySelectorAll('#sheet-tag-chips .tag-chip.active')).map(e=>e.dataset.tag).sort());
+  document.querySelectorAll('#filter-sheet .filter-active .filter-chip'))
+  .map(e=>(e.getAttribute('aria-label')||'').replace(/^Remove\s+/,'')).sort());
 
 (async()=>{
   const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium'});
@@ -66,8 +69,8 @@ const on = p => p.evaluate(()=>Array.from(
       JSON.stringify(await on(p))===JSON.stringify(['summer','winter']),
       (await on(p)).join(', '));
     const both = await p.evaluate(()=>totalComboCount());
-    check('and both chips are filled, as the row always implied',
-      await p.evaluate(()=>document.querySelectorAll('#sheet-tag-chips .tag-chip.active').length)===2);
+    check('and the Tags row lists both, as the row always implied',
+      (await p.textContent('[data-filter-row="tags"] .capsule-pick-value')).replace(/\s+/g,' ').trim()==='summer, winter');
 
     // OR, so a second value widens rather than narrows.
     check('asking for either finds at least as many as asking for one',

@@ -1,5 +1,5 @@
 const { chromium } = require('playwright');
-const { toFaves } = require('./nav');
+const { toFaves, tickFilter, openFilterSection, filterBack } = require('./nav');
 // The filters are a bottom sheet. It never raises itself: the Filters pill
 // does, and the sheet dims the page, so open it before touching a chip and
 // close it before touching the page.
@@ -59,12 +59,15 @@ const TAGS={seed_22:['summer'], seed_11:['summer'], seed_23:['winter']};
     !(await p.evaluate(()=>filterSheetOpen())) && (await p.isVisible('#filters-fab')));
   await openFilters(p);
   check('the pill raises the sheet', await p.evaluate(()=>filterSheetOpen()));
-  check('and it offers the saved tags', await p.isVisible('#sheet-tag-chips .tag-chip'));
+  check('and it offers the saved tags', await p.isVisible('#filter-sheet [data-filter-row="tags"]'));
+  await openFilterSection(p,'tags');
+  check('whose page lists them', (await p.locator('#filter-section-list .capsule-pick[data-tag]').count())>=2);
+  await filterBack(p);
   const cards=()=>p.evaluate(()=>document.querySelectorAll('#saved-view .outfit-card').length);
   check('3 cards rendered', await cards()===3);
 
   // filter to summer: only the outfit where EVERY piece is summer
-  await p.click('#sheet-tag-chips .tag-chip:has-text("summer")'); await p.waitForTimeout(400);
+  await tickFilter(p,'tags','summer'); await p.waitForTimeout(150);
   // seed_22 is summer, so outfits 1 and 2 both contain a summer piece
   check('outfits containing any summer piece match', await cards()===2, `${await cards()} card(s)`);
   check('and the third is simply not drawn',
@@ -77,26 +80,26 @@ const TAGS={seed_22:['summer'], seed_11:['summer'], seed_23:['winter']};
 
   // Tags accumulate rather than replace one another, so summer has to come
   // off before winter is asked about on its own.
-  await p.click('#sheet-tag-chips .tag-chip:has-text("summer")'); await p.waitForTimeout(400);
-  await p.click('#sheet-tag-chips .tag-chip:has-text("winter")'); await p.waitForTimeout(400);
+  await tickFilter(p,'tags','summer'); await p.waitForTimeout(150);
+  await tickFilter(p,'tags','winter'); await p.waitForTimeout(150);
   // seed_23 is winter but outfit 3 contains it, so winter DOES match one
   check('a tag on one piece of one outfit matches that outfit',
     await p.evaluate(()=>document.querySelectorAll('#saved-view .outfit-card').length)===1);
 
   // And asking for both is OR: either tag will do.
-  await p.click('#sheet-tag-chips .tag-chip:has-text("summer")'); await p.waitForTimeout(400);
+  await tickFilter(p,'tags','summer'); await p.waitForTimeout(150);
   check('both tags at once means either of them', await cards()===3, String(await cards()));
 
   // clear
-  await p.click('#sheet-tag-chips .tag-chip.active'); await p.waitForTimeout(400);
-  await p.click('#sheet-tag-chips .tag-chip.active'); await p.waitForTimeout(400);
+  await p.click('#filter-sheet .filter-active .filter-chip'); await p.waitForTimeout(400);
+  await p.click('#filter-sheet .filter-active .filter-chip'); await p.waitForTimeout(400);
   check('tapping each active chip clears it', await cards()===3 &&
     await p.evaluate(()=>outfitTags.length===0));
 
   // The wardrobe has no filters of its own and is not touched by these.
   // The two halves of Outfits share one sheet, so the tag follows you
   // across the switch rather than being asked for twice.
-  await p.click('#sheet-tag-chips .tag-chip:has-text("summer")'); await p.waitForTimeout(300);
+  await tickFilter(p,'tags','summer'); await p.waitForTimeout(150);
   await closeFilters(p);
   await p.click('#nav-inventory-btn'); await p.waitForTimeout(400);
   check('the wardrobe is not filtered by it', (await shown(p)) === 83);

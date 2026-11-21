@@ -1,6 +1,6 @@
 // The Capsules row in the filters: outfits drawn only from the chosen capsules.
 const { chromium } = require('playwright');
-const { toFaves, toAll } = require('./nav');
+const { toFaves, toAll, tickFilter, openFilterSection, filterBack } = require('./nav');
 const fs=require('fs'), path=require('path');
 const REPO = path.join(__dirname, '..');
 const fake=fs.readFileSync(path.join(__dirname,'fake-supabase.js'),'utf8');
@@ -31,13 +31,16 @@ async function open(b){
   await p.waitForSelector('#app-root',{state:'visible'}); await p.waitForTimeout(500);
   return p;
 }
-const chips = p => p.evaluate(() => [...document.querySelectorAll('#sheet-capsule-chips .filter-chip')]
-  .map(c => ({t:c.textContent.trim(), on:c.classList.contains('active')})));
-const tap = async (p, name) => {
-  await p.evaluate(n => [...document.querySelectorAll('#sheet-capsule-chips .filter-chip')]
-    .find(c => c.textContent.trim() === n).click(), name);
-  await p.waitForTimeout(500);
+// Capsules are ticked on their own page of the sheet; read them there, then
+// come back to the rows.
+const chips = async p => {
+  await openFilterSection(p, 'capsules');
+  const r = await p.evaluate(() => [...document.querySelectorAll('#filter-section-list .capsule-pick')]
+    .map(c => ({t:c.textContent.replace(/\s+/g,' ').trim(), on:c.classList.contains('picked')})));
+  await filterBack(p);
+  return r;
 };
+const tap = async (p, name) => { await tickFilter(p, 'capsules', name); await p.waitForTimeout(200); };
 const dealt = p => p.evaluate(() => outfitDisplayed.map(c => comboPieces(c).map(x => x.id)));
 
 (async()=>{
@@ -49,13 +52,13 @@ const dealt = p => p.evaluate(() => outfitDisplayed.map(c => comboPieces(c).map(
   await p.click('#filters-fab'); await p.waitForTimeout(400);
   check('the Filters pill raises it', await p.evaluate(() => filterSheetOpen()));
 
-  const first = await p.evaluate(() => document.querySelector('#filter-sheet-body .filter-section .filter-sheet-label').textContent);
-  check('Capsules is the first row of the sheet', first.startsWith('Capsules'), first);
-  check('one chip per capsule', JSON.stringify((await chips(p)).map(c=>c.t))==='["Alpha","Beta"]');
+  const val = await p.textContent('[data-filter-row="capsules"] .capsule-pick-value');
+  check('there is a Capsules row, saying Any', val.trim()==='Any', val);
+  check('one tick row per capsule', JSON.stringify((await chips(p)).map(c=>c.t.replace(/ ✓$/,'')))==='["Alpha","Beta"]', JSON.stringify((await chips(p)).map(c=>c.t)));
 
   await tap(p,'Alpha');
   let ids = await dealt(p);
-  check('Alpha on: chip is active', (await chips(p))[0].on);
+  check('Alpha on: row is ticked', (await chips(p))[0].on);
   check('Alpha on: only Alpha pieces are dealt', ids.length>0 && ids.every(c=>c.every(x=>['seed_22','seed_11'].includes(x))), JSON.stringify(ids.slice(0,3)));
 
   await tap(p,'Beta');

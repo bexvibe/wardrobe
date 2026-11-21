@@ -5,7 +5,7 @@
 // it gets no chip and no page in the filter sheet, so it cannot narrow
 // anything.
 const { chromium } = require('playwright');
-const { toFaves, leaveSheet } = require('./nav');
+const { toFaves, leaveSheet, openFilterSection } = require('./nav');
 const fs=require('fs'), path=require('path');
 const REPO = require('path').join(__dirname, '..');
 const SHOTS = require('path').join(__dirname, 'shots');
@@ -38,9 +38,14 @@ async function open(b, patch){
 
 const wardrobeTabs = p => p.evaluate(()=>
   Array.from(document.querySelectorAll('#tabs .tab:not(.view-tab)')).map(e=>e.textContent.trim()));
-const filterChips = p => p.evaluate(()=>
-  Array.from(document.querySelectorAll('#sheet-filter-grid .filter-chip'))
-    .map(e=>e.childNodes[0].textContent.trim()));
+// The categories the Filters sheet offers: the rows under Pieces. Opens the
+// sheet and the Pieces page if they are not up, and leaves them up.
+const filterChips = async p => {
+  if(!(await p.evaluate(()=>filterSheetOpen()))){ await p.click('#filters-fab'); await p.waitForTimeout(500); }
+  if(!(await p.$('#filter-sheet [data-filter-cat]'))) await openFilterSection(p, 'pieces');
+  return p.evaluate(()=>Array.from(document.querySelectorAll('#filter-sheet [data-filter-cat]'))
+    .map(e=>e.dataset.filterCat));
+};
 const counts = p => p.evaluate(()=>{
   const o = {};
   Array.from(document.querySelectorAll('#tabs .tab:not(.view-tab)')).forEach(e => {
@@ -86,14 +91,16 @@ function wellOrdered(list, owned){
     const owned = await counts(p);
     await p.click('#nav-outfits-btn'); await p.waitForTimeout(1400);
     const onOutfits = await filterChips(p);
-    check('the Outfits row follows the same rule',
+    await leaveSheet(p);
+    check('the Outfits category list follows the same rule',
       wellOrdered(onOutfits, owned), onOutfits.join(', '));
     check('and holds only the categories you own something in',
       onOutfits.length > 0 && onOutfits.every(t => owned[t] > 0), onOutfits.join(', '));
 
     await toFaves(p, 1200);
     const onFaves = await filterChips(p);
-    check('Faves is the same row in the same order',
+    await leaveSheet(p);
+    check('Faves is the same list in the same order',
       JSON.stringify(onFaves)===JSON.stringify(onOutfits), onFaves.join(', '));
 
     // And it is the order the wardrobe uses, for the ones they share.
@@ -127,7 +134,8 @@ function wellOrdered(list, owned){
 
     await p.click('#nav-outfits-btn'); await p.waitForTimeout(1400);
     const chips = await filterChips(p);
-    check('and the filter row moved it too',
+    await leaveSheet(p);
+    check('and the filter list moved it too',
       chips.includes('Skirts'), chips.join(', '));
     await p.close();
   }
@@ -136,8 +144,7 @@ function wellOrdered(list, owned){
   {
     const p=await open(b);
     await p.click('#nav-outfits-btn'); await p.waitForTimeout(1400);
-    await p.click('#filters-fab'); await p.waitForTimeout(500);
-    check('there is no chip for it',
+    check('there is no row for it',
       !(await filterChips(p)).includes('Skirts'), (await filterChips(p)).join(', '));
     // Asked for anyway, the sheet stays on its main page rather than
     // stranding you on a page with nothing on it.
@@ -146,11 +153,14 @@ function wellOrdered(list, owned){
       page: filterPage,
       title: document.getElementById('filter-sheet-title').textContent.trim(),
       gallery: !!document.getElementById('picker-gallery'),
-      chips: document.querySelectorAll('#sheet-filter-grid .filter-chip').length,
+      cats: Array.from(document.querySelectorAll('#filter-sheet [data-filter-cat]')).map(e=>e.dataset.filterCat),
       back: !!document.getElementById('filter-sheet-back'),
     }));
-    check('and asking for its page anyway leaves the sheet on the main page',
-      empty.page===null && empty.title==='Filters' && !empty.gallery && empty.chips>0 && !empty.back,
+    // It lands on the category list (one step short of the page asked for),
+    // not on a page with nothing on it.
+    check('and asking for its page anyway leaves the sheet on the category list',
+      empty.page===null && empty.title==='Pieces' && !empty.gallery && empty.cats.length>0
+        && !empty.cats.includes('Skirts') && empty.back,
       JSON.stringify(empty));
     await p.close();
   }

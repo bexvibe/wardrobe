@@ -1,5 +1,5 @@
 const { chromium } = require('playwright');
-const { addTags, leaveSheet } = require('./nav');
+const { addTags, leaveSheet, openFilterSection, tickFilter, filterBack } = require('./nav');
 // The filters dock at the bottom of the screen and open themselves on
 // Outfits and Faves. Everywhere else the pill raises them.
 async function openFilters(page){
@@ -74,9 +74,10 @@ async function open(b, {withTags=true, tags={}}={}){
     // The pill lives on Outfits and Faves; the wardrobe never shows one.
     check('the wardrobe still offers no pill', !(await p.isVisible('#filters-fab')));
     await p.click('#nav-outfits-btn'); await p.waitForTimeout(800);
-    check('and the new tag is in the Outfits panel',
-      await p.evaluate(()=>Array.from(document.querySelectorAll('#sheet-tag-chips .tag-chip'))
-        .some(c=>c.textContent.trim()==='summer')));
+    await openFilters(p); await openFilterSection(p,'tags');
+    check('and the new tag is on the Tags page of the Filters sheet',
+      await p.evaluate(()=>Array.from(document.querySelectorAll('#filter-section-list .capsule-pick[data-tag]'))
+        .some(c=>c.dataset.tag==='summer')));
     await p.close();
   }
 
@@ -105,7 +106,7 @@ async function open(b, {withTags=true, tags={}}={}){
     const p=await open(b,{tags:{seed_22:['summer'], seed_11:['summer'], seed_0:['winter']}});
     await p.click('#nav-outfits-btn'); await p.waitForTimeout(700);
     const all=await p.evaluate(()=>totalComboCount());
-    await openFilters(p); await p.click('#sheet-tag-chips .tag-chip:has-text("summer")'); await p.waitForTimeout(700);
+    await openFilters(p); await tickFilter(p,'tags','summer'); await p.waitForTimeout(500);
     const tagged=await p.evaluate(()=>totalComboCount());
     check('outfit count narrows to tagged pieces', tagged < all && tagged > 0, `${all} -> ${tagged}`);
     const ok=await p.evaluate(()=>{
