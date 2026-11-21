@@ -1,6 +1,6 @@
 # Back, Close, Cancel: one meaning each
 
-Recommendation. Nothing in the app has been changed for this yet.
+Agreed and applied: hero popup Close, outfit builder Cancel, wardrobe edit mode Done.
 
 ## The rule
 
@@ -44,6 +44,6 @@ So four changes: hero popup Back to Close, outfit builder Back to Cancel, edit m
 - **Chevron only on Back.** A Close or Cancel button never carries a chevron, so the icon alone tells you which it is.
 - **Order in a footer:** the leaving action on the left (Back / Close / Cancel), the forward action on the right (Save, Shuffle, See N outfits).
 
-## Open question
+## Decision
 
-Should Done exist, or should edit mode just say Close? I lean Done: it matches "I've been changing things and I'm finished", which Close does not say.
+Done stays, for edit mode.
