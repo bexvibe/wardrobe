@@ -848,6 +848,9 @@
   /* Each action is a pill of its own, not a group: the wrapper in the markup
      only keeps them together and takes no part in the layout. */
   .sheet-footer-actions{display:contents;}
+  /* Icon only, between Back and Shuffle; there once there is a shuffle to undo. */
+  .sheet-footer.pagebar .btn.hero-undo{flex:none;width:54px;min-height:54px;padding:0;justify-content:center;}
+  .sheet-footer.pagebar .btn.hero-undo[hidden]{display:none;}
   .sheet-footer.pagebar .sheet-footer-actions .btn{
     flex:1 1 auto;min-width:0;width:auto;min-height:54px;padding:0 20px;
     white-space:nowrap;
@@ -2353,6 +2356,9 @@
         <button class="btn secondary" type="button" id="hero-pop-back" onclick="closeHeroPopup()">
           <svg class="back-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>Back</button>
+        <button class="btn secondary hero-undo" type="button" id="hero-pop-undo" onclick="undoHeroShuffle()" aria-label="Previous outfit" hidden>
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button>
         <div class="sheet-footer-actions">
           <button class="btn hero-shuffle" id="hero-pop-shuffle" type="button" onclick="shuffleHero()">
             <svg class="wand" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true"><path d="m176-120-56-56 301-302-181-45 198-123-17-234 179 151 216-88-87 217 151 178-234-16-124 198-45-181-301 301Zm24-520-80-80 80-80 80 80-80 80Zm355 197 48-79 93 7-60-71 35-86-86 35-71-59 7 92-79 49 90 22 23 90Zm165 323-80-80 80-80 80 80-80 80ZM569-570Z"/></svg>
@@ -4890,6 +4896,8 @@ function openHeroPopup(deal){
   if(body) body.scrollTop = 0;
 }
 function closeHeroPopup(){
+  heroHistory = [];
+  syncHeroUndo();
   const pop = document.getElementById('hero-pop');
   const wrap = document.getElementById('hero-pop-wrap');
   heroPopOpen = false;
@@ -5051,12 +5059,30 @@ function nextHeroCombo(){
   }
   return fresh[Math.floor(Math.random() * fresh.length)][1];
 }
+// The outfits you have shuffled past, newest last, so the popup can step back.
+let heroHistory = [];
+function syncHeroUndo(){
+  const btn = document.getElementById('hero-pop-undo');
+  if(!btn) return;
+  const last = heroHistory[heroHistory.length - 1];
+  btn.hidden = !(last && last.mode === appMode);
+}
+function undoHeroShuffle(){
+  const prev = heroHistory.pop();
+  if(prev && prev.mode === appMode){
+    heroCombo = prev.combo;
+    if(appMode === 'saved') renderSavedOutfits(); else { storeHero(prev.combo); renderHero(); }
+  }
+  syncHeroUndo();
+}
 function shuffleHero(){
   const c = appMode === 'saved' ? nextSavedHero() : nextHeroCombo();
   if(!c){ showToast('No more combos'); return; }
   heroDealt.add(comboKey(c));
+  if(heroCombo) heroHistory.push({ mode: appMode, combo: heroCombo });
   heroCombo = c;
   if(appMode === 'saved') renderSavedOutfits(); else { storeHero(c); renderHero(); }
+  syncHeroUndo();
   ['hero-pop-shuffle','shuffle-fab'].forEach(id => {
     const fab = document.getElementById(id);
     if(fab){ fab.classList.remove('casting'); void fab.offsetWidth; fab.classList.add('casting'); }
