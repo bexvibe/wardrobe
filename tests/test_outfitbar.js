@@ -98,6 +98,12 @@ const cards = p => p.evaluate(()=>
   await p.waitForTimeout(400);
   check('no photo: the hero slot shows the name', await q(()=>document.querySelector('#outfit-hero .hero-name')?.textContent.trim().length>0));
   check('and a card shows it too', await q(()=>document.querySelectorAll('#outfit-gallery .no-photo-mini').length>0));
+  // Scroll the quick row, flip Faves, and the row stays where it was.
+  await q(()=>{ const bar=document.getElementById('outfit-tabs'); bar.style.maxWidth='200px'; bar.scrollLeft=60; });
+  const before = await q(()=>document.getElementById('outfit-tabs').scrollLeft);
+  await p.evaluate(()=>setMode('saved')); await p.waitForTimeout(500);
+  await p.evaluate(()=>setMode('outfits')); await p.waitForTimeout(500);
+  check('flipping Faves does not reset the quick row', await q(()=>document.getElementById('outfit-tabs').scrollLeft) === before, String(before));
   await b.close();
   const failed=results.filter(r=>!r).length;
   console.log(`\n${results.length-failed}/${results.length} checks passed`);

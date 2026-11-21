@@ -2950,6 +2950,11 @@ function renderBottomBar(){
 }
 
 function setMode(mode){
+  // Flipping between all outfits and faves is a filter, not a move: keep the
+  // page where it is and the quick-filter row scrolled to where you had it.
+  const carry = (appMode === 'outfits' || appMode === 'saved') && (mode === 'outfits' || mode === 'saved')
+    && appMode !== mode
+    ? { y: Math.round(window.scrollY), left: (outfitBarEl() || {}).scrollLeft || 0 } : null;
   // Leaving a page: note where you had got to on it.
   if(appMode && appMode !== mode) rememberScroll(appMode);
   appMode = mode;
@@ -2992,6 +2997,11 @@ function setMode(mode){
   closeFilterSheet();
   renderFiltersFab();
 
+  if(carry){
+    scrollPositions[mode] = carry.y;
+    const bar = outfitBarEl();
+    if(bar) bar.scrollLeft = carry.left;
+  }
   restoreScroll(mode);
 }
 
@@ -6439,7 +6449,6 @@ function openCapsuleEditor(id, seedItemIds){
         </label>
         <label>Description
           <input type="text" id="capsule-desc-input" maxlength="120"
-                 placeholder="A few words (optional)"
                  value="${esc(capsuleDraft.description)}" oninput="onCapsuleDescInput()">
         </label>
       </div>
