@@ -70,7 +70,7 @@ const stream = p => p.evaluate(()=>outfitDisplayed.slice(0, 8).map(c=>comboKey(c
     await p.evaluate(()=>closeHeroPopup()); await p.waitForTimeout(500);
 
     await toFaves(p, 1100);
-    const keptCards = await p.evaluate(()=>document.querySelectorAll('#saved-gallery .outfit-card').length);
+    const keptCards = await p.evaluate(()=>document.querySelectorAll('#saved-view .outfit-card').length);
     check('the wand is over what you kept, when there is any',
       (await shown(p)) === (keptCards > 0), `${keptCards} cards`);
     if(keptCards > 0){

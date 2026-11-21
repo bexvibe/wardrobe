@@ -101,7 +101,7 @@ const rows = p => p.evaluate(()=>window.__WARDROBE_STATE.outfit_extras.slice());
     await toFaves(p, 1200);
     await p.evaluate(()=>closeFilterSheet()); await p.waitForTimeout(400);
     check('keeping it does not undress it', await p.evaluate(()=>
-      document.querySelectorAll('#saved-gallery .outfit-extras img').length === 1));
+      document.querySelectorAll('#saved-view .outfit-extras img').length === 1));
     check('and nothing was copied onto the kept row',
       await p.evaluate(()=>{
         const row = window.__WARDROBE_STATE.saved_outfits[0];
@@ -211,7 +211,7 @@ const rows = p => p.evaluate(()=>window.__WARDROBE_STATE.outfit_extras.slice());
         return rec.key !== comboKey(favoriteRecordToCombo(rec));
       }));
     check('and it still wears its shoe', await p.evaluate(()=>
-      document.querySelectorAll('#saved-gallery .outfit-extras img').length === 1));
+      document.querySelectorAll('#saved-view .outfit-extras img').length === 1));
     await p.close();
   }
 

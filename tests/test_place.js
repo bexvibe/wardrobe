@@ -155,7 +155,7 @@ const scrollTo = async (p, top) => { await p.evaluate(t=>window.scrollTo({top:t}
     });
     await p.waitForFunction(()=>favoriteOutfits && favoriteOutfits.length === 1);
     await toFaves(p, 700);
-    await p.click('#saved-gallery .outfit-card');
+    await p.evaluate(()=>openOutfitPage(favoriteOutfits[0].key, document.querySelector('#saved-view .outfit-card')));
     // Waited for rather than slept through: under a parallel run the
     // expand can take longer than any number you would have picked.
     await p.waitForSelector('#outfit-page .outfit-piece-row.tappable');

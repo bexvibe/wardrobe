@@ -53,14 +53,14 @@ const TAGS={seed_22:['summer'], seed_11:['summer'], seed_23:['winter']};
   await toFaves(p, 500);
 
   check('saved tab shows all outfits unfiltered',
-    (await p.evaluate(()=>document.querySelectorAll('#saved-gallery .outfit-card').length))===3);
+    (await p.evaluate(()=>document.querySelectorAll('#saved-view .outfit-card').length))===3);
   // The sheet is down on arrival and the Filters pill raises it.
   check('the filter sheet is closed on arrival, behind the pill',
     !(await p.evaluate(()=>filterSheetOpen())) && (await p.isVisible('#filters-fab')));
   await openFilters(p);
   check('the pill raises the sheet', await p.evaluate(()=>filterSheetOpen()));
   check('and it offers the saved tags', await p.isVisible('#sheet-tag-chips .tag-chip'));
-  const cards=()=>p.evaluate(()=>document.querySelectorAll('#saved-gallery .outfit-card').length);
+  const cards=()=>p.evaluate(()=>document.querySelectorAll('#saved-view .outfit-card').length);
   check('3 cards rendered', await cards()===3);
 
   // filter to summer: only the outfit where EVERY piece is summer
@@ -69,7 +69,7 @@ const TAGS={seed_22:['summer'], seed_11:['summer'], seed_23:['winter']};
   check('outfits containing any summer piece match', await cards()===2, `${await cards()} card(s)`);
   check('and the third is simply not drawn',
     await p.evaluate(()=>favoriteOutfits.length===3 &&
-      document.querySelectorAll('#saved-gallery .outfit-card').length===2));
+      document.querySelectorAll('#saved-view .outfit-card').length===2));
   const shownKey=await p.evaluate(()=>favoriteOutfits.filter(savedOutfitMatchesTag).map(r=>r.key));
   check('the outfit with no summer piece is excluded',
     shownKey.length===2 && !shownKey.includes('tb|seed_23|seed_12|none|none|none'), shownKey.join(' '));
@@ -81,7 +81,7 @@ const TAGS={seed_22:['summer'], seed_11:['summer'], seed_23:['winter']};
   await p.click('#sheet-tag-chips .tag-chip:has-text("winter")'); await p.waitForTimeout(400);
   // seed_23 is winter but outfit 3 contains it, so winter DOES match one
   check('a tag on one piece of one outfit matches that outfit',
-    await p.evaluate(()=>document.querySelectorAll('#saved-gallery .outfit-card').length)===1);
+    await p.evaluate(()=>document.querySelectorAll('#saved-view .outfit-card').length)===1);
 
   // And asking for both is OR: either tag will do.
   await p.click('#sheet-tag-chips .tag-chip:has-text("summer")'); await p.waitForTimeout(400);

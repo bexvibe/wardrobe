@@ -226,7 +226,7 @@ const vis=(p,s)=>p.isVisible(s);
   await toFaves(p, 500);
   check('saved is one tap from anywhere', await vis(p,'#saved-view') && !(await vis(p,'#outfits-view')));
   check('the faves page renders its contents', await p.evaluate(()=>{
-    const cards = document.querySelectorAll('#saved-gallery .outfit-card').length;
+    const cards = document.querySelectorAll('#saved-view .outfit-card').length;
     const empty = document.getElementById('saved-empty');
     return cards > 0 || (empty.offsetParent !== null &&
       document.getElementById('saved-empty-title').textContent.trim().length > 0);

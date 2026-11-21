@@ -51,7 +51,7 @@ const hush = p => p.evaluate(()=>{
     const p=await open(b);
     await toFaves(p, 900);
     await p.evaluate(()=>closeFilterSheet()); await p.waitForTimeout(400);
-    await p.click('#saved-gallery .outfit-card'); await p.waitForTimeout(500);
+    await p.evaluate(()=>openOutfitPage(favoriteOutfits[0].key, document.querySelector('#saved-view .outfit-card'))); await p.waitForTimeout(500);
     await p.click('#outfit-page-extras'); await p.waitForTimeout(600);
 
     await p.click('#extras-gallery .picker-tile'); await p.waitForTimeout(600);

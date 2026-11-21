@@ -55,7 +55,7 @@ const segs = p => p.evaluate(()=>Array.from(document.querySelectorAll('.nav-seg'
             w:Math.round(e.getBoundingClientRect().width),
             h:Math.round(e.getBoundingClientRect().height)})));
 const cards = p => p.evaluate(()=>
-  document.querySelectorAll('#saved-gallery .outfit-card').length);
+  document.querySelectorAll('#saved-view .outfit-card').length);
 
 (async()=>{
   const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium'});

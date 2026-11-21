@@ -160,7 +160,7 @@ const on = p => p.evaluate(()=>Array.from(
     await p.evaluate(()=>{ outfitTags = ['wool']; renderSavedOutfits(); });
     await p.waitForTimeout(400);
     check('a tag nothing carries empties the page',
-      (await p.evaluate(()=>document.querySelectorAll('#saved-gallery .outfit-card').length))===0);
+      (await p.evaluate(()=>document.querySelectorAll('#saved-view .outfit-card').length))===0);
     check('and the line says so without repeating the tag',
       (await p.textContent('#saved-empty-title')).trim() === 'No outfits match',
       (await p.textContent('#saved-empty-title')).trim());

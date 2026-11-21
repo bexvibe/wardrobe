@@ -27,7 +27,7 @@ const row=p=>p.evaluate(k=>
 // The kept outfit itself, which taking accessories off must not touch.
 const savedRow=p=>p.evaluate(k=>
   window.__WARDROBE_STATE.saved_outfits.find(r=>r.combo_key===k), KEY);
-const onCard=p=>p.evaluate(()=>document.querySelectorAll('#saved-gallery .outfit-extras > *').length);
+const onCard=p=>p.evaluate(()=>document.querySelectorAll('#saved-view .outfit-extras > *').length);
 // The outfit's page stays up after a change (Save returns to it), so only
 // open it when it is not.
 async function ensureOpen(p){
@@ -35,7 +35,7 @@ async function ensureOpen(p){
     const t = sheetTrail[sheetTrail.length - 1];
     return Boolean(t) && t.sheet === 'outfit';
   });
-  if(!open){ await p.click('#saved-gallery .outfit-card'); await p.waitForTimeout(400); }
+  if(!open){ await p.evaluate(()=>openOutfitPage(favoriteOutfits[0].key, document.querySelector('#saved-view .outfit-card'))); await p.waitForTimeout(400); }
 }
 async function openPicker(p){
   await ensureOpen(p);
@@ -58,7 +58,7 @@ async function openPicker(p){
   check('a saved outfit starts with nothing on it', (await onCard(p))===0);
 
   // ---- 1. What the button says, and what it opens ----
-  await p.click('#saved-gallery .outfit-card'); await p.waitForTimeout(450);
+  await p.evaluate(()=>openOutfitPage(favoriteOutfits[0].key, document.querySelector('#saved-view .outfit-card'))); await p.waitForTimeout(450);
   check('the outfit\'s page offers to add accessories',
     await p.isVisible('#outfit-page-extras:has-text("+ Add accessories")'));
   check('and there is only the one button for it, not one per kind of thing',

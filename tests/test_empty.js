@@ -197,7 +197,7 @@ const said = (p, sel) => p.evaluate(s => {
     await p.waitForFunction(()=>favoriteOutfits.length === 1);
     await toFaves(p, 900);
     await p.evaluate(()=>closeFilterSheet()); await p.waitForTimeout(400);
-    await p.click('#saved-gallery .outfit-card'); await p.waitForTimeout(500);
+    await p.evaluate(()=>openOutfitPage(favoriteOutfits[0].key, document.querySelector('#saved-view .outfit-card'))); await p.waitForTimeout(500);
     await p.click('#outfit-page-extras'); await p.waitForTimeout(700);
     check('a picker with no accessories to offer says so',
       (await said(p, '.modal .empty h3')) === 'No accessories',

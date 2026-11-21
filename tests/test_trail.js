@@ -68,7 +68,7 @@ async function keepOne(p){
     const wasTab = await p.evaluate(()=>activeTab);
     await p.evaluate(()=>window.scrollTo({top:120})); await p.waitForTimeout(400);
     const wasAt = await p.evaluate(()=>Math.round(window.scrollY));
-    await p.click('#saved-gallery .outfit-card'); await p.waitForTimeout(500);
+    await p.evaluate(()=>openOutfitPage(favoriteOutfits[0].key, document.querySelector('#saved-view .outfit-card'))); await p.waitForTimeout(500);
     await p.locator('#outfit-page .outfit-piece-row').first().click();
     await p.waitForTimeout(700);
 

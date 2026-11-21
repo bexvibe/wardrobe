@@ -211,7 +211,7 @@ const ticked = p => p.evaluate(()=>Array.from(document.querySelectorAll('#builde
       }, key) && await p.isVisible('#outfit-page-extras'));
     await p.click('#outfit-page-back'); await p.waitForTimeout(600);
     check('and it is on the page', await p.evaluate(()=>
-      document.querySelectorAll('#saved-gallery .outfit-card').length === 1));
+      document.querySelectorAll('#saved-view .outfit-card').length === 1));
 
     // The whole point: one record, so the heart already knows.
     await p.click('#nav-outfits-btn'); await p.waitForTimeout(1500);
