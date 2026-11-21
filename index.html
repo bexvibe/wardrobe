@@ -4881,7 +4881,7 @@ function renderHero(){
   morphHtml(host, `
     <div class="outfit-card hero-feature" data-key="hero" role="button" tabindex="0" aria-haspopup="dialog"
          aria-label="Try this outfit. Tap to shuffle and lock items"
-         onclick="heroCardTap(event)"
+         onclick="openHeroPopup()"
          onkeydown="if(event.key === 'Enter' || event.key === ' '){ event.preventDefault(); openHeroPopup(); }">
       ${faveHeartHtml(key)}
       ${heroDressingHtml(c, 'hats')}
@@ -4933,14 +4933,6 @@ function heroRowsHtml(c, flat){
 
 // ---- The popup ---------------------------------------------
 let heroPopOpen = false;
-// On the page, tapping a piece goes straight to that piece's filter; tapping
-// anywhere else on the card opens the popup.
-function heroCardTap(e){
-  const slotEl = e.target.closest && e.target.closest('.hero-slot[data-slot]');
-  if(slotEl && !e.target.closest('.fave-heart')){ openHeroSlot(slotEl.dataset.slot); return; }
-  openHeroPopup();
-}
-
 function openHeroPopup(deal){
   const pop = document.getElementById('hero-pop');
   const wrap = document.getElementById('hero-pop-wrap');
@@ -5205,7 +5197,7 @@ function heroSlotHtml(slot, c, flat){
         ? `<img class="${shelfForItem(p) === 'Shorts' ? 'is-shorts' : ''}" src="${esc(p.photo)}" alt="" referrerpolicy="no-referrer" decoding="async">`
         : `<span class="hero-name">${esc(p.name)}</span>`).join('')
     : `<span class="hero-none">No ${noun}</span>`;
-  return `<div class="hero-slot ${slot} ${pieces.length ? '' : 'empty'} ${pieces.length > 1 ? 'pair' : ''} ${locked ? 'locked' : ''}" ${flat ? `data-slot="${slot}"` : ''}>
+  return `<div class="hero-slot ${slot} ${pieces.length ? '' : 'empty'} ${pieces.length > 1 ? 'pair' : ''} ${locked ? 'locked' : ''}">
     ${imgs}
     ${flat ? `<span class="hero-badge ${locked ? 'on' : ''}" aria-hidden="true">${lockGlyph(locked)}</span>` : `<button class="hero-slot-open" type="button" onclick="openHeroSlot('${slot}')"
             aria-label="Choose ${noun}${names ? ', now ' + esc(names) : ', now none'}"></button>

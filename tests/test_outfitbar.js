@@ -89,10 +89,10 @@ const cards = p => p.evaluate(()=>
   await p.click('#saved-tabs .view-seg'); await p.waitForTimeout(600);
   check('grid again', await q(()=>!document.querySelector('#saved-gallery').classList.contains('as-list')));
   await p.click('#nav-outfits-btn'); await p.waitForTimeout(800);
-  // Tapping a piece on the hero card goes straight to that piece's filter.
-  await p.click('#outfit-hero .hero-slot[data-slot]'); await p.waitForTimeout(700);
-  check('tapping a piece in the hero opens its filter, not the popup',
-    await q(()=>filterSheetOpen() && !heroPopOpen && !!filterPage));
+  // Tapping a piece on the hero card opens the popup, as ever.
+  await p.click('#outfit-hero .hero-slot'); await p.waitForTimeout(700);
+  check('tapping a piece in the hero opens the popup', await q(()=>heroPopOpen && !filterSheetOpen()));
+  await q(()=>closeHeroPopup());
   // A piece with no photo says its name in the hero and in the cards.
   await q(()=>{ closeFilterSheet(); ITEMS.forEach(i=>{ i.photo=null; }); renderHero(); renderOutfits(); });
   await p.waitForTimeout(400);
