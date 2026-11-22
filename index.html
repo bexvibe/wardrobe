@@ -6245,7 +6245,7 @@ function inspoTileHtml(g, i){
   return `<button class="inspo-tile" type="button" aria-label="Open inspo ${i + 1}"
             onclick='openInspoPage(${JSON.stringify(g.id)})'>
       ${g.image ? `<img src="${esc(g.image)}" alt="" referrerpolicy="no-referrer" loading="lazy" decoding="async" onerror="this.remove()">` : ''}
-      <span class="inspo-src">${esc(g.source || 'Link')}</span>
+      ${g.image ? '' : `<span class="inspo-src">${esc(g.source || 'Link')}</span>`}
       ${g.keys.length > 1 ? `<span class="inspo-count">${g.keys.length} outfits</span>` : ''}
     </button>`;
 }
@@ -6289,7 +6289,7 @@ function drawInspoPage(id){
       <div class="modal-body has-footer outfit-page-body inspo-page-body">
         <div class="inspo-big">
           ${g.image ? `<img src="${esc(g.image)}" alt="" referrerpolicy="no-referrer" decoding="async" onerror="this.remove()">` : ''}
-          <span class="inspo-src">${esc(g.source || 'Link')}</span>
+          ${g.image ? '' : `<span class="inspo-src">${esc(g.source || 'Link')}</span>`}
         </div>
         <h3 class="inspo-outfits-title">${n === 1 ? 'Saved to 1 outfit' : `Saved to ${n} outfits`}</h3>
         <div class="inspo-outfits">${g.keys.map(inspoOutfitCardHtml).join('')}</div>
@@ -6341,7 +6341,7 @@ function inspoSectionHtml(key, combo){
         <button class="inspo-tile" type="button" aria-label="Open inspo ${i + 1}"
                 onclick='openInspoViewer(${JSON.stringify(p.id)})'>
           ${p.image ? `<img src="${esc(p.image)}" alt="" referrerpolicy="no-referrer" loading="lazy" decoding="async" onerror="this.remove()">` : ''}
-          <span class="inspo-src">${esc(p.source || 'Link')}</span>
+          ${p.image ? '' : `<span class="inspo-src">${esc(p.source || 'Link')}</span>`}
         </button>`).join('')}</div>`
     : `<div class="empty">
         <span class="empty-emoji" aria-hidden="true">✨</span>
