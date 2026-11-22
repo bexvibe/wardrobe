@@ -156,7 +156,9 @@ processor) — all built, none of it wired into the app yet.
   (surface, second).
 - **"New piece" opens a short sheet** with the same two choices, in the
   same order, with a grip (it answers drag-down). One idea in two places.
-- **The picker is the "Add accessories" picker, unchanged:** title, category
+- **The picker is the "Add accessories" picker, unchanged, and full page**
+  (`as-page`: full height, no peek of the wardrobe, no rounded top — not an
+  85% sheet): title, category
   tabs, square photo-only tiles, `picker-check` tick, `Cancel` / `Add N
   pieces` pagebar. Staged: nothing is added until the button. Every colour
   is its own tile. **An Essentials tab at the front of the tabs** holds
