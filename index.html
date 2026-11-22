@@ -22,6 +22,9 @@
     --line:#D2CFC9;         /* the edge of an object: a card, a chip, a field.
                                Never a rule drawn across the page — space and
                                a shadow separate things here, not lines. */
+    --tonal:#D6D1DA;        /* a button that is offered, not the main act: grey-lilac */
+    --tonal-deep:#CBC5D0;
+    --tonal-ink:#2E2A36;
     --accent-soft:#D5D2CC;  /* the wash behind a chip that is on */
     --shadow-btn:0 1px 2px rgba(18,18,18,0.07), 0 2px 7px rgba(18,18,18,0.07);
                             /* THE RULE. A button (something you press to do a
@@ -326,10 +329,10 @@
      — solid enough not to read as disabled, quiet enough not to be the
      loudest thing on the bar. */
   .btn.tonal{
-    background:#D5D2CC;
-    color:var(--ink);
+    background:var(--tonal);
+    color:var(--tonal-ink);
   }
-  .btn.tonal:hover{background:#CAC7C0;opacity:1;}
+  .btn.tonal:hover{background:var(--tonal-deep);opacity:1;}
   .btn.small{padding:6px 10px;font-size:12px;}
   .btn:hover{opacity:0.85;}
 
