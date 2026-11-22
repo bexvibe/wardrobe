@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Start from the basics</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600&family=Figtree:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--page:#E3E0DB;--surface:#F7F5F1;--line:#D2CFC9;--accent-soft:#D5D2CC;--ink-soft:#6E6E6E;--accent:#1A1A1A;--ink:#121212;
+ --shadow-btn:0 1px 2px rgba(18,18,18,.07),0 2px 7px rgba(18,18,18,.07);
+ --bg:#F7F7F6;--fg:#171717;--muted:#66666A;
+ --display:'Bricolage Grotesque',Georgia,serif;--body:'Figtree',system-ui,sans-serif;--mono:'IBM Plex Mono',ui-monospace,monospace;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.5;padding:32px 16px 72px;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1180px;margin:0 auto}
+h1,h2,h3{font-family:var(--display);font-weight:500;letter-spacing:-.015em;margin:0}
+p{margin:0}
+.kicker{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.intro{display:grid;gap:12px;max-width:66ch;margin-bottom:32px;color:var(--muted)}
+.intro h1{font-size:clamp(28px,6vw,38px);line-height:1.1;color:var(--fg)}
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:44px 28px;align-items:start}
+.opt{display:grid;gap:14px;justify-items:center}
+.opt-head{width:100%;max-width:340px;display:grid;gap:2px}
+.opt-head h2{font-size:22px}
+.notes{width:100%;max-width:340px;font-size:13.5px;color:var(--muted);margin:0;padding-left:18px;display:grid;gap:6px}
+.notes b{color:var(--fg);font-weight:600}
+.decide{max-width:66ch;margin-top:56px;display:grid;gap:10px}
+.decide h2{font-size:24px}
+.decide ol{margin:0;padding-left:20px;display:grid;gap:10px;color:var(--muted)}
+.decide b{color:var(--fg)}
+
+/* phone */
+.phone{width:340px;height:700px;background:var(--page);border-radius:34px;border:8px solid #1c1c1e;position:relative;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.18);color:var(--ink);font-family:var(--body)}
+.art{width:100%;height:100%;display:block;filter:drop-shadow(0 1px 2px rgba(18,18,18,.3))}
+.ph-head{display:flex;justify-content:space-between;align-items:center;padding:34px 16px 0}
+.ph-head h1{font-size:28px}
+.hr{display:flex;gap:8px;align-items:center}
+.icb{width:40px;height:40px;border-radius:50%;background:var(--surface);box-shadow:var(--shadow-btn);display:flex;align-items:center;justify-content:center}
+.icb svg{width:18px;height:18px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border-radius:999px;font-weight:600;font-size:13.5px;box-shadow:var(--shadow-btn);white-space:nowrap}
+.btn svg{width:15px;height:15px}
+.btn.dark{background:var(--ink);color:var(--page)}
+.btn.light{background:var(--surface);color:var(--ink)}
+.btn.quiet{background:var(--surface);color:var(--ink);padding:0 16px;height:52px;flex:none}
+.btn.sm{height:40px;padding:0 15px}
+.btn.sm2{height:40px;padding:0 16px}
+.btn.wide{height:52px;width:100%;font-size:14.5px}
+.btn.fill{flex:1;height:52px;font-size:14.5px}
+.btn.off{background:var(--accent-soft);color:var(--ink-soft);box-shadow:none}
+.tabrow{display:flex;gap:6px;padding:14px 16px 0;overflow:hidden;white-space:nowrap}
+.tabrow.gap{padding-top:16px}
+.tab{font-size:12.5px;font-weight:600;padding:8px 13px;border-radius:999px;border:1px solid var(--line);color:var(--ink-soft);flex:none;display:inline-flex;gap:6px;align-items:center}
+.tab.on{background:var(--accent);border-color:var(--accent);color:var(--page)}
+.tab b{font-family:var(--mono);font-size:10.5px;background:var(--accent-soft);color:var(--ink);border-radius:999px;padding:0 6px;font-weight:500}
+.tab.on b{background:var(--page)}
+
+/* empty */
+.emptywrap{position:absolute;left:0;right:0;top:150px;bottom:92px;display:flex;flex-direction:column;justify-content:space-between;padding:0 20px}
+.eh{text-align:center;padding-top:60px;color:var(--ink-soft)}
+.eh h3{color:var(--ink);font-size:24px;margin-bottom:8px}
+.eh p{font-size:15px;line-height:1.45}
+.eactions{display:grid;gap:10px}
+
+/* nav */
+.nav{position:absolute;left:14px;right:14px;bottom:16px;height:62px;border-radius:999px;background:var(--surface);box-shadow:var(--shadow-btn),0 6px 24px rgba(0,0,0,.08);display:flex;align-items:center;justify-content:space-around;font-size:12.5px;font-weight:600;color:var(--ink-soft);padding:0 8px}
+.nav .on{background:var(--accent-soft);color:var(--ink);padding:10px 14px;border-radius:999px}
+.dim{position:absolute;inset:0;background:rgba(0,0,0,.32)}
+
+/* sheets */
+.sheet{position:absolute;left:0;right:0;bottom:0;background:var(--page);border-radius:18px 18px 0 0;box-shadow:0 -8px 30px rgba(0,0,0,.18);display:flex;flex-direction:column;overflow:hidden}
+.sheet.tall{height:85%}
+.sheet.short{padding-bottom:20px}
+.sheet.piece{height:88%}
+.grip{width:38px;height:5px;border-radius:3px;background:#c4c4c4;margin:8px auto 6px;flex:none}
+.sh-body{flex:1;overflow:hidden;padding-bottom:84px}
+.sh-title{padding:18px 16px 0}
+.sh-title h2{font-size:21px}
+.sh-title p{font-size:13px;color:var(--ink-soft);margin-top:2px}
+.quick{display:flex;align-items:center;gap:10px;padding:12px 16px 0}
+.chip{white-space:nowrap;font-size:12.5px;font-weight:600;padding:8px 13px;border-radius:999px;border:1px solid var(--ink);color:var(--ink)}
+.qn{font-size:12px;color:var(--ink-soft)}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:14px 16px 0}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:6px 6px 8px}
+.tile.sel{outline:2px solid var(--ink);outline-offset:-2px;border-color:transparent}
+.tile .pic{position:relative;height:84px;padding:6px}
+.tn{font-size:11.5px;font-weight:600;text-align:center;margin-top:2px}
+.dots{display:flex;gap:4px;justify-content:center;margin-top:6px;flex-wrap:wrap}
+.dots i{width:11px;height:11px;border-radius:50%;border:1px solid rgba(0,0,0,.22);display:block}
+.dots i.on{outline:1.5px solid var(--ink);outline-offset:1.5px}
+.dots i.pk{box-shadow:0 0 0 1.5px var(--surface),0 0 0 3px var(--ink);}
+.badge{position:absolute;top:0;right:0;min-width:20px;height:20px;border-radius:999px;background:var(--ink);color:var(--page);font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center;padding:0 5px}
+.badge svg{width:12px;height:12px}
+.bar{position:absolute;left:0;right:0;bottom:0;padding:10px 14px 16px;display:flex;gap:8px;background:linear-gradient(to top,var(--page) 62%,rgba(227,224,219,0))}
+.opt-row{display:flex;gap:14px;align-items:center;margin:8px 14px 0;padding:14px;background:var(--surface);border-radius:16px;box-shadow:var(--shadow-btn)}
+.opt-row.primary{background:var(--ink);color:var(--page)}
+.opt-row b{display:block;font-size:15px}
+.opt-row span:not(.oi){font-size:12.5px;opacity:.7}
+.oi{width:42px;height:42px;border-radius:12px;background:var(--accent-soft);color:var(--ink);display:flex;align-items:center;justify-content:center;flex:none}
+.opt-row.primary .oi{background:rgba(255,255,255,.14);color:var(--page)}
+.oi svg{width:21px;height:21px}
+.bgtiles{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:14px 16px}
+.bt{background:var(--surface);border-radius:14px;height:150px;padding:18px}
+
+/* wardrobe after */
+.wgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:14px 16px 0}
+.wt .pic{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:14px;height:132px;padding:16px}
+.wn{font-size:12px;font-weight:600;margin:6px 2px 0;line-height:1.25}
+.stock{position:absolute;left:8px;bottom:8px;font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft);background:var(--accent-soft);border-radius:999px;padding:2px 7px}
+.toastcard{position:absolute;left:14px;right:14px;bottom:94px;background:var(--ink);color:var(--page);border-radius:20px;padding:12px 12px 12px 16px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+.toastcard b{display:block;font-size:14.5px}
+.toastcard span:not(.btn){font-size:12.5px;opacity:.7}
+.toastcard .btn{background:var(--page);color:var(--ink)}
+
+/* piece sheet */
+.photo{margin:8px 14px 0;background:var(--surface);border:1px solid var(--line);border-radius:18px;height:230px;padding:26px 60px;position:relative}
+.ptitle{padding:14px 18px 0;display:flex;gap:10px;align-items:center;justify-content:space-between}
+.ptitle h2{font-size:22px}
+.pill{font-family:var(--mono);font-size:11.5px;background:var(--accent-soft);border-radius:999px;padding:5px 11px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;margin:12px 14px 0}
+.card.swap{padding:14px;display:grid;gap:12px}
+.sw-t b{display:block;font-size:14.5px}
+.sw-t span{font-size:12.5px;color:var(--ink-soft)}
+.fact{display:grid;grid-template-columns:86px 1fr;padding:11px 14px;font-size:14px;align-items:center}
+.fact+.fact{border-top:1px solid var(--line)}
+.fact .k{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft)}
+.mut{color:var(--ink-soft)}
+</style></head><body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="tee" viewBox="0 0 100 100"><path fill="currentColor" stroke="rgba(0,0,0,.18)" stroke-width="1" d="M30 18 L42 13 Q50 23 58 13 L70 18 L92 32 L82 47 L71 41 L71 87 L29 87 L29 41 L18 47 L8 32 Z"/></symbol>
+<symbol id="polo" viewBox="0 0 100 100"><path fill="currentColor" stroke="rgba(0,0,0,.18)" stroke-width="1" d="M30 18 L42 13 L50 26 L58 13 L70 18 L92 32 L82 47 L71 41 L71 87 L29 87 L29 41 L18 47 L8 32 Z"/><path fill="none" stroke="rgba(0,0,0,.25)" d="M50 26 V50"/></symbol>
+<symbol id="longsleeve" viewBox="0 0 100 100"><path fill="currentColor" stroke="rgba(0,0,0,.18)" stroke-width="1" d="M31 16 L42 12 Q50 22 58 12 L69 16 L92 60 L82 66 L70 40 L70 88 L30 88 L30 40 L18 66 L8 60 Z"/></symbol>
+<symbol id="shirt" viewBox="0 0 100 100"><path fill="currentColor" stroke="rgba(0,0,0,.18)" stroke-width="1" d="M31 14 L42 10 L50 20 L58 10 L69 14 L92 58 L82 64 L70 38 L70 88 L30 88 L30 38 L18 64 L8 58 Z"/><path fill="none" stroke="rgba(0,0,0,.25)" d="M50 20 V88"/></symbol>
+<symbol id="singlet" viewBox="0 0 100 100"><path fill="currentColor" stroke="rgba(0,0,0,.18)" stroke-width="1" d="M34 12 L42 12 Q50 32 58 12 L66 12 L72 32 L68 88 L32 88 L28 32 Z"/></symbol>
+<symbol id="hoodie" viewBox="0 0 100 100"><path fill="currentColor" stroke="rgba(0,0,0,.18)" stroke-width="1" d="M32 20 Q50 34 68 20 L90 44 L84 80 L73 78 L72 90 H28 L27 78 L16 80 L10 44 Z"/></symbol>
+<symbol id="jeans" viewBox="0 0 100 100"><path fill="currentColor" stroke="rgba(0,0,0,.18)" stroke-width="1" d="M31 8 H69 L73 92 H54 L50 38 L46 92 H27 Z"/><path fill="none" stroke="rgba(0,0,0,.25)" d="M31 15 H69"/></symbol>
+<symbol id="baggy" viewBox="0 0 100 100"><path fill="currentColor" stroke="rgba(0,0,0,.18)" stroke-width="1" d="M28 8 H72 L84 92 H55 L50 36 L45 92 H16 Z"/><path fill="none" stroke="rgba(0,0,0,.25)" d="M28 15 H72"/></symbol>
+<symbol id="sneaker" viewBox="0 0 100 100"><path fill="currentColor" stroke="rgba(0,0,0,.18)" stroke-width="1" d="M8 58 L8 74 H92 Q95 62 80 58 L58 52 L44 40 L34 46 Q28 56 8 58 Z"/></symbol>
+</defs></svg>
+<div class="wrap">
+<div class="intro"><span class="kicker">Mockup · onboarding</span><h1>Start from the basics</h1>
+<p>A new user opens the wardrobe, finds it empty, and can fill it from a curated set of cutouts in under a minute, on their phone, without photographing a thing. Picture shapes here are placeholders: the real tiles use the generated cutouts. Everything else uses the app's own tokens, bars and sheet rules (staged picker with Cancel and a filling primary, grips only where the sheet answers a drag).</p></div>
+<div class="row"><section class="opt"><div class="opt-head"><span class="kicker">1 · Empty wardrobe</span><h2>Start with the basics</h2></div><div class="phone "><header class="ph-head"><h1>Wardrobe</h1><div class="hr"><span class="icb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></span><span class="btn dark sm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>New piece</span></div></header>
+<div class="tabrow gap"><span class="tab on">All</span></div>
+<div class="emptywrap">
+  <div class="eh"><h3>Start your wardrobe</h3><p>Tap the basics you already own. No photos needed, and you can do it anywhere.</p></div>
+  <div class="eactions">
+    <span class="btn dark wide">Pick from the basics</span>
+    <span class="btn light wide">Photograph a piece</span>
+  </div>
+</div><div class="nav"><span>Outfits</span><span class="on">Wardrobe</span><span>Capsules</span><span>Inspo</span></div></div><ul class="notes"><li>The catalogue is the <b>primary</b> action; photographing is the quiet second one.</li><li>Both buttons sit low, in thumb range. The line above only says what the page is for.</li><li>Wording keeps to the app: it says what is missing, the button fixes it.</li></ul></section><section class="opt"><div class="opt-head"><span class="kicker">2 · Later, from “New piece”</span><h2>One door, two ways in</h2></div><div class="phone "><header class="ph-head"><h1>Wardrobe</h1><div class="hr"><span class="icb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></span><span class="btn dark sm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>New piece</span></div></header><div class="tabrow gap"><span class="tab on">All</span><span class="tab">Tops</span><span class="tab">Pants</span><span class="tab">Jumpers</span></div>
+<div class="bgtiles"><div class="bt"><svg class="art " viewBox="0 0 100 100" aria-hidden="true"><use href="#tee" style="color:#F4F2EE"/></svg></div><div class="bt"><svg class="art " viewBox="0 0 100 100" aria-hidden="true"><use href="#jeans" style="color:#25304F"/></svg></div><div class="bt"><svg class="art " viewBox="0 0 100 100" aria-hidden="true"><use href="#hoodie" style="color:#44464A"/></svg></div><div class="bt"><svg class="art " viewBox="0 0 100 100" aria-hidden="true"><use href="#sneaker" style="color:#F4F2EE"/></svg></div></div><div class="dim"></div>
+<div class="sheet short"><div class="grip"></div>
+  <div class="opt-row primary"><span class="oi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg></span><div><b>From the basics</b><span>Tap the staples you own. No photo.</span></div></div>
+  <div class="opt-row"><span class="oi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></span><div><b>Photograph a piece</b><span>Camera or upload your own photo.</span></div></div>
+</div></div><ul class="notes"><li>Once there are pieces, <b>New piece</b> opens a short sheet instead of the item form straight away.</li><li>Same two choices in the same order, so the empty state and this sheet teach each other.</li><li>It answers drag-down, so it has a grip. No Cancel needed.</li></ul></section><section class="opt"><div class="opt-head"><span class="kicker">3 · The picker</span><h2>Tap what you own</h2></div><div class="phone "><header class="ph-head"><h1>Wardrobe</h1><div class="hr"><span class="icb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></span><span class="btn dark sm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>New piece</span></div></header><div class="dim"></div>
+<div class="sheet tall"><div class="sh-body">
+  <div class="sh-title"><h2>Pick what you own</h2><p>Tap a colour dot to choose that colour.</p></div>
+  <div class="tabrow"><span class="tab on">Tops</span><span class="tab ">Pants</span><span class="tab ">Shorts</span><span class="tab ">Skirts</span><span class="tab ">Dresses</span><span class="tab ">Jumpers</span><span class="tab ">Jackets</span><span class="tab ">Shoes</span><span class="tab ">Hats</span><span class="tab ">Accessories</span></div>
+  <div class="quick"><span class="chip">Select the essentials</span><span class="qn">12 everyday pieces</span></div>
+  <div class="grid"><div class="tile "><div class="pic"><svg class="art " viewBox="0 0 100 100" aria-hidden="true"><use href="#tee" style="color:#F4F2EE"/></svg></div><div class="tn">T-shirt</div><div class="dots"><i class="on " style="background:#F4F2EE"></i><i class=" " style="background:#1E1E1E"></i><i class=" " style="background:#9B9B9B"></i><i class=" " style="background:#1F2A4A"></i><i class=" " style="background:#B3262B"></i><i class=" " style="background:#EFE6D2"></i><i class=" " style="background:#5D6038"></i></div></div><div class="tile "><div class="pic"><svg class="art " viewBox="0 0 100 100" aria-hidden="true"><use href="#longsleeve" style="color:#F4F2EE"/></svg></div><div class="tn">Long sleeve</div><div class="dots"><i class="on " style="background:#F4F2EE"></i><i class=" " style="background:#1E1E1E"></i><i class=" " style="background:#9B9B9B"></i><i class=" " style="background:#1F2A4A"></i></div></div><div class="tile "><div class="pic"><svg class="art " viewBox="0 0 100 100" aria-hidden="true"><use href="#singlet" style="color:#F4F2EE"/></svg></div><div class="tn">Singlet</div><div class="dots"><i class="on " style="background:#F4F2EE"></i><i class=" " style="background:#1E1E1E"></i><i class=" " style="background:#9B9B9B"></i></div></div><div class="tile "><div class="pic"><svg class="art " viewBox="0 0 100 100" aria-hidden="true"><use href="#polo" style="color:#F4F2EE"/></svg></div><div class="tn">Polo</div><div class="dots"><i class="on " style="background:#F4F2EE"></i><i class=" " style="background:#1E1E1E"></i><i class=" " style="background:#1F2A4A"></i></div></div><div class="tile "><div class="pic"><svg class="art " viewBox="0 0 100 100" aria-hidden="true"><use href="#shirt" style="color:#F4F2EE"/></svg></div><div class="tn">Button-up</div><div class="dots"><i class="on " style="background:#F4F2EE"></i><i class=" " style="background:#A9C3DE"></i><i class=" " style="background:#1E1E1E"></i></div></div><div class="tile "><div class="pic"><svg class="art " viewBox="0 0 100 100" aria-hidden="true"><use href="#tee" style="color:#1E1E1E"/></svg></div><div class="tn">Crop top</div><div class="dots"><i class=" " style="background:#F4F2EE"></i><i class="on " style="background:#1E1E1E"></i></div></div></div>
+</div>
+<div class="bar"><span class="btn quiet">Cancel</span><span class="btn dark off fill">Pick what you own</span></div></div></div><ul class="notes"><li>An 85% sheet like the other pickers: page peeks above, category row at the top of the sheet.</li><li>One tile per <b>type</b>. Colours are the dots underneath; tapping a dot picks that colour, so a tee in white and black is two taps.</li><li><b>Select the essentials</b> ticks about 12 everyday pieces in one tap. You untick what you don't own.</li><li>Staged like the other pickers: nothing is added until the bar says so.</li></ul></section><section class="opt"><div class="opt-head"><span class="kicker">4 · Choosing</span><h2>Picks survive tab changes</h2></div><div class="phone "><header class="ph-head"><h1>Wardrobe</h1><div class="hr"><span class="icb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></span><span class="btn dark sm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>New piece</span></div></header><div class="dim"></div>
+<div class="sheet tall"><div class="sh-body">
+  <div class="sh-title"><h2>Pick what you own</h2><p>6 chosen so far</p></div>
+  <div class="tabrow"><span class="tab ">Tops<b>3</b></span><span class="tab on">Pants<b>3</b></span><span class="tab ">Shorts</span><span class="tab ">Skirts</span><span class="tab ">Dresses</span><span class="tab ">Jumpers</span><span class="tab ">Jackets</span><span class="tab ">Shoes</span><span class="tab ">Hats</span><span class="tab ">Accessories</span></div>
+  <div class="grid"><div class="tile sel"><div class="pic"><svg class="art " viewBox="0 0 100 100" aria-hidden="true"><use href="#jeans" style="color:#1E1E1E"/></svg><span class="badge">2</span></div><div class="tn">Straight</div><div class="dots"><i class=" pk" style="background:#25304F"></i><i class=" " style="background:#4A6C9B"></i><i class=" " style="background:#A9C3DE"></i><i class="on pk" style="background:#1E1E1E"></i></div></div><div class="tile sel"><div class="pic"><svg class="art " viewBox="0 0 100 100" aria-hidden="true"><use href="#baggy" style="color:#4A6C9B"/></svg><span class="badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span></div><div class="tn">Baggy</div><div class="dots"><i class=" " style="background:#25304F"></i><i class="on pk" style="background:#4A6C9B"></i><i class=" " style="background:#A9C3DE"></i><i class=" " style="background:#1E1E1E"></i></div></div><div class="tile "><div class="pic"><svg class="art " viewBox="0 0 100 100" aria-hidden="true"><use href="#jeans" style="color:#1E1E1E"/></svg></div><div class="tn">Skinny</div><div class="dots"><i class="on " style="background:#1E1E1E"></i><i class=" " style="background:#25304F"></i><i class=" " style="background:#4A6C9B"></i></div></div><div class="tile "><div class="pic"><svg class="art " viewBox="0 0 100 100" aria-hidden="true"><use href="#jeans" style="color:#4A6C9B"/></svg></div><div class="tn">Wide-leg</div><div class="dots"><i class="on " style="background:#4A6C9B"></i><i class=" " style="background:#25304F"></i></div></div><div class="tile "><div class="pic"><svg class="art " viewBox="0 0 100 100" aria-hidden="true"><use href="#jeans" style="color:#B5A27A"/></svg></div><div class="tn">Chinos</div><div class="dots"><i class="on " style="background:#B5A27A"></i><i class=" " style="background:#1F2A4A"></i><i class=" " style="background:#1E1E1E"></i><i class=" " style="background:#5D6038"></i></div></div><div class="tile "><div class="pic"><svg class="art " viewBox="0 0 100 100" aria-hidden="true"><use href="#jeans" style="color:#5D6038"/></svg></div><div class="tn">Cargo</div><div class="dots"><i class="on " style="background:#5D6038"></i><i class=" " style="background:#1E1E1E"></i><i class=" " style="background:#B5A27A"></i></div></div></div>
+</div>
+<div class="bar"><span class="btn quiet">Cancel</span><span class="btn dark fill">Add 6 pieces</span></div></div></div><ul class="notes"><li>A tick on the tile, a number when a type has several colours picked.</li><li>Category tabs carry a small count, so you know Tops already has 3 while you are on Pants.</li><li>The button counts what it will do: <b>Add 6 pieces</b>. Cancel is small and on the left, as everywhere else.</li></ul></section><section class="opt"><div class="opt-head"><span class="kicker">5 · After adding</span><h2>Straight to outfits</h2></div><div class="phone "><header class="ph-head"><h1>Wardrobe</h1><div class="hr"><span class="icb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></span><span class="btn dark sm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>New piece</span></div></header><div class="tabrow gap"><span class="tab on">All</span><span class="tab">Tops</span><span class="tab">Pants</span></div>
+<div class="wgrid"><div class="wt"><div class="pic"><svg class="art " viewBox="0 0 100 100" aria-hidden="true"><use href="#tee" style="color:#F4F2EE"/></svg><span class="stock">Stock</span></div><div class="wn">White t-shirt</div></div><div class="wt"><div class="pic"><svg class="art " viewBox="0 0 100 100" aria-hidden="true"><use href="#tee" style="color:#1E1E1E"/></svg><span class="stock">Stock</span></div><div class="wn">Black t-shirt</div></div><div class="wt"><div class="pic"><svg class="art " viewBox="0 0 100 100" aria-hidden="true"><use href="#shirt" style="color:#F4F2EE"/></svg><span class="stock">Stock</span></div><div class="wn">White button-up</div></div><div class="wt"><div class="pic"><svg class="art " viewBox="0 0 100 100" aria-hidden="true"><use href="#jeans" style="color:#1E1E1E"/></svg><span class="stock">Stock</span></div><div class="wn">Black straight jeans</div></div><div class="wt"><div class="pic"><svg class="art " viewBox="0 0 100 100" aria-hidden="true"><use href="#jeans" style="color:#25304F"/></svg><span class="stock">Stock</span></div><div class="wn">Dark indigo straight jeans</div></div><div class="wt"><div class="pic"><svg class="art " viewBox="0 0 100 100" aria-hidden="true"><use href="#baggy" style="color:#4A6C9B"/></svg><span class="stock">Stock</span></div><div class="wn">Mid blue baggy jeans</div></div></div>
+<div class="toastcard"><div><b>6 pieces added</b><span>Your outfits are ready.</span></div><span class="btn dark sm2">See outfits</span></div><div class="nav"><span>Outfits</span><span class="on">Wardrobe</span><span>Capsules</span><span>Inspo</span></div></div><ul class="notes"><li>Pieces land in the wardrobe, each marked <b>Stock</b> so nothing pretends to be your own photo.</li><li>The payoff is one button away: outfits are already generated from what you just picked.</li><li>The card sits low, above the nav, and goes away on its own.</li></ul></section><section class="opt"><div class="opt-head"><span class="kicker">6 · Later</span><h2>Swap in your real photo</h2></div><div class="phone "><header class="ph-head"><h1>Wardrobe</h1><div class="hr"><span class="icb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></span><span class="btn dark sm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>New piece</span></div></header><div class="dim"></div>
+<div class="sheet piece"><div class="grip"></div>
+  <div class="photo"><svg class="art big" viewBox="0 0 100 100" aria-hidden="true"><use href="#tee" style="color:#F4F2EE"/></svg></div>
+  <div class="ptitle"><h2>White t-shirt</h2><span class="pill">T-shirts</span></div>
+  <div class="card swap"><div class="sw-t"><b>Stock photo</b><span>A placeholder cutout. Swap it for a photo of yours when you're next at your wardrobe.</span></div><span class="btn dark sm2 wide">Add my photo</span></div>
+  <div class="card facts"><div class="fact"><span class="k">Category</span><span>T-shirts</span></div><div class="fact"><span class="k">Brand</span><span class="mut">Add</span></div><div class="fact"><span class="k">Size</span><span class="mut">Add</span></div></div>
+</div></div><ul class="notes"><li>A stock piece's sheet says what it is and offers <b>Add my photo</b>. No pressure, no nagging.</li><li>It keeps its name, category and capsules; only the picture changes.</li><li>The Stock tag disappears once it has your photo.</li></ul></section></div>
+<div class="decide"><h2>Decisions I'd like your call on</h2><ol>
+<li><b>Colour on the tile or a second step?</b> Shown: coloured dots under each tile, one tap per colour. The alternative is tapping a tile to open a colour strip, which is calmer but adds a tap per item.</li>
+<li><b>“Select the essentials” button.</b> One tap ticks about 12 everyday pieces (white and black tee, dark and black jeans, a hoodie, sneakers, a cap...). Fastest start, but it assumes a lot. Keep, or drop?</li>
+<li><b>Category row at the top or the bottom.</b> Shown at the top, as the other pickers do it. The thumb rule says touch controls belong low, so a row just above the bar is the alternative.</li>
+<li><b>“Stock” tag on wardrobe tiles.</b> Shown, so placeholders are honest and easy to find. It could instead appear only on the piece sheet.</li>
+</ol></div>
+</div></body></html>
