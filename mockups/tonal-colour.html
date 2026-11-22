@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tonal button colour</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,800&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{--page:#E3E0DB;--surface:#F7F5F1;--line:#D2CFC9;--ink:#121212;--ink-soft:#6E6E6E;--brand:#756694;--shadow:0 6px 24px rgba(0,0,0,.11);}
+  *{box-sizing:border-box}
+  body{margin:0;background:#F7F7F6;color:#171717;font:15px/1.5 'Figtree',sans-serif;padding:28px 16px 60px;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1040px;margin:0 auto}
+  h1{font:600 30px/1.1 'Bricolage Grotesque',sans-serif;letter-spacing:-.03em;margin:0 0 8px}
+  .lede{color:#66666A;max-width:62ch;margin:0 0 26px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:22px}
+  .opt h3{font:500 17px 'Bricolage Grotesque',sans-serif;margin:12px 0 2px}
+  .opt p{margin:0 0 4px;font-size:13px;color:#66666A}
+  .sw{display:inline-block;width:12px;height:12px;border-radius:50%;vertical-align:-1px;margin-right:6px;border:1px solid rgba(0,0,0,.12)}
+  /* a phone-sized slice of the outfit page: cut-outs, then the bar */
+  .slice{position:relative;height:330px;background:var(--page);border-radius:22px;border:6px solid #111;overflow:hidden;padding:14px}
+  .card{background:var(--surface);border-radius:12px;height:100%;display:flex;flex-direction:column;align-items:center;gap:2px;padding-top:6px;overflow:hidden}
+  .card img{width:62%;object-fit:contain}
+  .card img.b{width:78%;margin-top:-6%}
+  .bar{position:absolute;left:14px;right:14px;bottom:14px;display:flex;gap:8px}
+  .btn{font:600 13px 'Figtree';min-height:50px;padding:0 18px;border-radius:999px;border:1px solid transparent;box-shadow:var(--shadow);cursor:default;display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;background:var(--tone);color:var(--ink)}
+  .btn.back{background:var(--surface);flex:none}
+  .btn.main{flex:1}
+  .row{display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap}
+  .row .btn{min-height:40px;padding:0 14px;font-size:12px;box-shadow:0 1px 2px rgba(18,18,18,.07),0 2px 7px rgba(18,18,18,.07);border-radius:6px}
+  .row .shuf{background:var(--brand);color:#fff;border-radius:999px}
+  .note{margin-top:34px;max-width:70ch}
+  .note h2{font:500 20px 'Bricolage Grotesque',sans-serif;margin:0 0 6px}
+  .note p,.note li{color:#66666A;font-size:14px;margin:0 0 6px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Tonal button colour</h1>
+  <p class="lede">Today the quieter button on a page's bar is a flat grey (#D5D2CC), close to the page behind it, so it reads as disabled. Five options, each shown on the outfit page's bar, and on the three buttons that use it: <b>Edit accessories</b>, <b>Edit capsule</b> and <b>Open original</b>. Mock-up only.</p>
+  <div class="grid" id="grid"></div>
+
+  <div class="note">
+    <h2>How I'd choose</h2>
+    <ul>
+      <li>The app's rule is that colour comes from the clothes, and the one hue (purple) is spent on Shuffle. So a tonal colour should be <b>muted and light</b>, a tint rather than a colour, or it will fight the cut-outs.</li>
+      <li><b>Sage</b> is my pick: it's the colour that sits best beside most clothes, and it's far enough from the purple to avoid competing with Shuffle.</li>
+      <li><b>Lavender mist</b> is the safest if you want it to feel related to Shuffle, but it blurs the line between "the main thing" and "an option".</li>
+      <li>Only the tonal button changes: Back stays the off-white pill and primary actions stay black.</li>
+    </ul>
+  </div>
+</div>
+<script>
+const P='../wardrobe-photos/';
+const OPTS=[
+ ['Current grey','#D5D2CC','Flat; reads as disabled next to the stone page.'],
+ ['Sage','#C8D1C2','Muted green. Sits well beside most clothes. My pick.'],
+ ['Blush','#E6CFCB','Soft dusty pink. Warm, pairs with the heart on the outfit.'],
+ ['Lavender mist','#D8D2E3','A tint of the brand purple. Related to Shuffle, quieter.'],
+ ['Oat','#E3D3B8','Warm sand. Already close to the Pinterest card colour.'],
+ ['Powder blue','#CAD6DF','Cool and calm. The most contrast with the warm page.'],
+];
+grid.innerHTML=OPTS.map(([n,c,d])=>`<div class="opt" style="--tone:${c}">
+ <div class="slice"><div class="card"><img src="${P}white-lace-collar-blouse-nobg.webp" alt=""><img class="b" src="${P}gingham-maxi-skirt-nobg.webp" alt=""></div>
+  <div class="bar"><span class="btn back">‹ Back</span><span class="btn main">Edit accessories</span></div></div>
+ <h3><span class="sw" style="background:${c}"></span>${n}</h3><p>${c} · ${d}</p>
+ <div class="row"><span class="btn">Edit capsule</span><span class="btn">Open original ↗</span><span class="btn shuf">Shuffle</span></div></div>`).join('');
+</script>
+</body>
+</html>
