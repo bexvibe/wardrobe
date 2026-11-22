@@ -177,6 +177,18 @@ processor) — all built, none of it wired into the app yet.
 - Which pieces are in Essentials.
 - The swap-in-your-own-photo flow on a stock piece (sketched, not decided).
 
+### Checked against `index.html` (22 Nov), not the handover notes
+
+The handover notes are partly out of date, so each pattern was checked in
+the code. Confirmed: the picker opens with `as-page` (full page); a short
+sheet exists as `.modal-backdrop.compact`; active tab chips are grey
+(`--accent-soft`), not black; tiles are square and photo-only with
+`.picker-check`; the toast is an 8px-radius ink box sitting above the nav
+(`--above-nav`); `.tile-chip` is the black uppercase pill; a piece opens as
+the floating `item-card` (14px margins, 26px radius, blurred page behind),
+not a bottom sheet. No anchored menu was found, so the "New piece" menu
+option would be new. Check the code again before building each screen.
+
 ### To build
 
 1. Generate the 5 test images, run `scripts/catalogue-process.py`, check
