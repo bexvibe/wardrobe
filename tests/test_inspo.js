@@ -224,15 +224,20 @@ async function addLink(p, text){
     check('with a way to the original, in a new tab',
       (await p.getAttribute('#inspo-open', 'href')) === 'https://www.pinterest.com/pin/111/' &&
       (await p.getAttribute('#inspo-open', 'target')) === '_blank');
-    await p.click('#inspo-remove'); await p.waitForTimeout(700);
+    await p.click('#inspo-remove'); await p.waitForTimeout(300);
+    check('the bin top right asks first, and keeping it changes nothing',
+      await p.evaluate(()=>document.getElementById('confirm-backdrop').classList.contains('open')));
+    await p.click('#confirm-stay'); await p.waitForTimeout(300);
+    check('still on the inspo page', (await rows(p)).every(r => !r.archived_at));
+    await p.click('#inspo-remove'); await p.waitForTimeout(300);
+    await p.click('#confirm-go'); await p.waitForTimeout(700);
     const gone = await rows(p);
     check('Remove takes it off the page at once', (await tiles(p)) === 1);
     check('and is a soft delete, like everything else here',
       gone.length === 2 && gone[0].archived_at && !gone[1].archived_at);
     check('back on the outfit\'s page', (await topSheet(p)) === 'outfit');
-    check('with Undo offered, and no question asked first',
-      await p.isVisible('.toast-undo') &&
-      !(await p.evaluate(()=>document.getElementById('confirm-backdrop').classList.contains('open'))));
+    check('with Undo offered',
+      await p.isVisible('.toast-undo'));
     await p.click('.toast-undo'); await p.waitForTimeout(700);
     check('Undo puts it back where it was',
       (await tiles(p)) === 2 && !(await rows(p))[0].archived_at &&

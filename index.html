@@ -6322,6 +6322,11 @@ function drawInspoPage(id){
   layer.innerHTML = `
     <div class="outfit-page-inner">
       <div class="modal-body has-footer outfit-page-body inspo-page-body">
+        <div class="sheet-title-row">
+          <div class="modal-name">Inspo</div>
+          ${removable ? `<button class="round-btn" id="inspo-remove" type="button" aria-label="Remove inspo"
+              onclick='confirmRemoveInspo(${JSON.stringify(id)})'><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M16 9v10H8V9h8m-1.5-6h-5l-1 1H5v2h14V4h-3.5l-1-1zM18 7H6v12c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7z"/></svg></button>` : ''}
+        </div>
         <div class="inspo-big">
           ${g.image ? `<img src="${esc(g.image)}" alt="" referrerpolicy="no-referrer" decoding="async" onerror="this.remove()">` : ''}
           ${g.image ? '' : `<span class="inspo-src">${esc(g.source || 'Link')}</span>`}
@@ -6334,7 +6339,6 @@ function drawInspoPage(id){
           <button class="btn secondary" type="button" id="outfit-page-back" onclick="goBackFromSheet()">${BACK_GLYPH}Back</button>
           <div class="sheet-footer-actions">
             ${g.url ? `<a class="btn tonal" id="inspo-open" href="${esc(g.url)}" target="_blank" rel="noopener noreferrer">Open original ↗</a>` : ''}
-            ${removable ? `<button class="btn secondary" type="button" id="inspo-remove" onclick='removeInspoFromViewer(${JSON.stringify(id)})'>Remove</button>` : ''}
           </div>
         </div>
       </div>
@@ -6478,6 +6482,11 @@ async function saveInspoLink(){
 function openInspoViewer(id){
   if(!findInspo(id)) return;
   openPage('inspopage', id, null, { removable: true });
+}
+
+function confirmRemoveInspo(id){
+  askConfirm({ title: 'Remove inspo?', body: 'It comes off this outfit. You can undo it right after.',
+    stay: 'Keep it', go: 'Remove', onConfirm: () => removeInspoFromViewer(id) });
 }
 
 async function removeInspoFromViewer(id){
