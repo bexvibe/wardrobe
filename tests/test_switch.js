@@ -7,7 +7,7 @@
 // meant nothing on the other, an outfit you had hidden went on sitting on
 // Faves, and only one of them could build one.
 //
-// So: three destinations, a switch in the one you are on, and everything
+// So: three destinations (and Inspo after them), a switch in the one you are on, and everything
 // a page has shared between its two halves.
 const { chromium } = require('playwright');
 const { toFaves, toAll } = require('./nav');
@@ -63,8 +63,8 @@ const cards = p => p.evaluate(()=>
   // ---- 1. The bar ----
   {
     const p=await open(b);
-    check('three destinations, not four',
-      JSON.stringify(await dests(p)) === JSON.stringify(['Wardrobe','Outfits','Capsules']),
+    check('the destinations: Outfits is one of them, not two',
+      JSON.stringify(await dests(p)) === JSON.stringify(['Wardrobe','Outfits','Capsules','Inspo']),
       (await dests(p)).join(' | '));
     // Off Outfits the pill is just the destination's name; the heart
     // only appears once you are there.

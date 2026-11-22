@@ -1046,6 +1046,46 @@
   .inspo-opt svg{width:22px;height:22px;flex:none;stroke:var(--ink);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
   .inspo-opt small{display:block;font-weight:400;font-size:12px;color:var(--ink-soft);}
   .inspo-hint{font-size:12px;color:var(--ink-soft);margin:6px 2px 0;line-height:1.4;}
+  /* The Inspo destination: every pin in two columns, because here the
+     pictures are the page. The same tile as on an outfit. */
+  .inspo-page-grid{display:grid;grid-template-columns:repeat(2, 1fr);gap:8px;}
+  .inspo-count{
+    position:absolute;right:6px;top:6px;
+    font-family:'Figtree',sans-serif;font-size:10px;font-weight:600;
+    background:var(--surface);color:var(--ink);padding:2px 7px;border-radius:999px;
+    box-shadow:0 1px 3px rgba(0,0,0,0.14);
+  }
+  /* An inspo's own page: the picture, then the outfits it is kept against,
+     as the app's outfit cards, two to a row. */
+  /* The picture runs the full width of the popup at its own proportions,
+     so the card grows as tall as the picture needs. */
+  .inspo-page-body .inspo-big{cursor:default;display:block;min-height:0;max-height:none;margin-bottom:0;border-radius:16px;overflow:hidden;}
+  .inspo-page-body .inspo-big:not(:has(img)){min-height:240px;}
+  .inspo-page-body .inspo-big img{display:block;width:100%;height:auto;max-height:none;object-fit:cover;border-radius:16px;}
+  .inspo-outfits-title{font-family:'Bricolage Grotesque',sans-serif;font-weight:500;font-size:17px;margin:22px 0 10px;}
+  .inspo-outfits{display:grid;grid-template-columns:repeat(2, minmax(0, 1fr));gap:12px;}
+  .inspo-outfits .outfit-card{padding:6px;}
+  /* Picking: a card is a selector, so it is outlined and filled when on. */
+  .outfit-card.inspo-pick{position:relative;font:inherit;color:inherit;text-align:left;}
+  .outfit-card.inspo-pick[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--ink);}
+  .inspo-tick{
+    position:absolute;top:8px;right:8px;z-index:2;width:22px;height:22px;border-radius:50%;
+    border:1.5px solid var(--line);background:var(--surface);
+    display:grid;place-items:center;
+  }
+  .inspo-pick[aria-pressed="true"] .inspo-tick{background:var(--ink);border-color:var(--ink);}
+  .inspo-pick[aria-pressed="true"] .inspo-tick::after{
+    content:'';width:5px;height:9px;border:solid #fff;border-width:0 2px 2px 0;
+    transform:rotate(45deg) translate(-1px,-1px);
+  }
+  .inspo-pick-note{padding:30px 10px;text-align:center;color:var(--ink-soft);font-size:15px;line-height:1.45;}
+  /* Four destinations: the side padding is what gives. */
+  .bottom-bar.four{gap:2px;padding:4px;}
+  .bottom-bar.four .bottom-btn{padding:0 8px;font-size:12.5px;}
+  .bottom-bar.four .bottom-btn.nav-switch{padding:3px;}
+  .bottom-bar.four .nav-seg{padding:0 8px;min-width:44px;font-size:12.5px;}
+  .bottom-bar.four .nav-seg.nav-seg-all{padding:0 12px;min-width:0;}
+  .sheet-footer-actions a.btn{text-decoration:none;display:flex;align-items:center;justify-content:center;}
   /* A short sheet sizes itself to what is on it instead of filling 85%. */
   .modal-backdrop.compact .modal{height:auto;max-height:85%;}
   /* The heart lives on the bar here, not over a corner of the picture. */
@@ -1518,6 +1558,8 @@
     transition:transform var(--sheet-ease-ms) var(--sheet-ease);
   }
   .hero-pop-wrap.open .hero-pop{transform:none;}
+  /* Under the finger while it is pulled down: no easing, it goes where the finger goes. */
+  .hero-pop-wrap.dragging .hero-pop{transition:none;}
   .hero-pop-body{flex:1;min-height:0;display:flex;flex-direction:column;padding:14px 14px 12px;}
   .hero-pop .sheet-footer{flex:none;}
   .hero-pop .sheet-footer{position:static;padding-top:0;}
@@ -1884,7 +1926,7 @@
   .filter-active .filter-chip{gap:8px;}
   .chip-x{font-size:10px;opacity:.6;}
   /* A piece's chip carries its photo, tucked into the left end of the pill. */
-  .filter-active .filter-chip.has-thumb{padding-left:4px;}
+  .filter-active .filter-chip.has-thumb{padding-left:8px;}
   .chip-thumb{width:34px;height:34px;box-sizing:border-box;padding:3px;flex:none;border-radius:8px;object-fit:contain;background:var(--surface);}
   .filter-active .chip-label{max-width:160px;overflow:hidden;text-overflow:ellipsis;}
   /* Specific enough to beat .capsule-picks' own 14px above and below, which
@@ -2390,6 +2432,18 @@
     </div>
   </div>
 
+  <div id="inspo-view" style="display:none;">
+    <header class="page-head">
+      <h1>Inspo</h1>
+    </header>
+    <div class="inspo-page-grid" id="inspo-page-grid"></div>
+    <div class="empty" id="inspo-empty" style="display:none;">
+      <span class="empty-emoji" aria-hidden="true">📌</span>
+      <h3>Save your inspo</h3>
+      <p class="empty-sub">Pins or screenshots of outfits you love</p>
+    </div>
+  </div>
+
   <div id="archive-view" style="display:none;">
     <button class="quiet-link back-link" onclick="setMode('inventory')"><svg class="back-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>Wardrobe</button>
     <header class="page-head">
@@ -2417,7 +2471,7 @@
     <div class="search-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
       <!-- Results narrow as you type, so Search on the keyboard only needs to
            put the keyboard away and leave the bar and the results where they are. -->
-      <input type="text" id="filter-search" placeholder="Search name, brand, category, colour..."
+      <input type="text" id="filter-search" placeholder="Search name, brand, colour"
              enterkeyhint="search" autocomplete="off" autocapitalize="off" spellcheck="false"
              oninput="render()"
              onkeydown="if(event.key==='Escape') closeSearch(); else if(event.key==='Enter') this.blur();">
@@ -2453,7 +2507,7 @@
      Outfits; on faves it only changes the order they are shown in. -->
 <!-- Try this, opened up: the outfit large, each space a way into Filters and
      a lock, and Shuffle on the bar. Over the floating buttons, under Filters. -->
-<div class="hero-pop-wrap" id="hero-pop-wrap" onclick="if(event.target === this) closeHeroPopup()">
+<div class="hero-pop-wrap" id="hero-pop-wrap" onclick="if(event.target === this && !heroPulled) closeHeroPopup()">
   <div class="hero-pop" id="hero-pop" role="dialog" aria-label="Try this outfit" inert>
     <div class="hero-pop-body" id="hero-pop-body"></div>
     <div class="sheet-footer split pagebar">
@@ -3011,7 +3065,12 @@ function renderBottomBar(){
       ? `<button class="bottom-btn ${appMode === 'capsules' ? 'active' : ''}"
                  id="nav-capsules-btn" type="button" onclick="setMode('capsules')">Capsules</button>`
       : ''}
+    ${inspoAvailable
+      ? `<button class="bottom-btn ${appMode === 'inspo' ? 'active' : ''}"
+                 id="nav-inspo-btn" type="button" onclick="setMode('inspo')">Inspo</button>`
+      : ''}
   `;
+  bar.classList.toggle('four', capsulesAvailable && inspoAvailable);
 }
 
 function setMode(mode){
@@ -3043,6 +3102,7 @@ function setMode(mode){
   document.getElementById('saved-view').style.display = mode==='saved' ? 'block' : 'none';
   document.getElementById('capsules-view').style.display = mode==='capsules' ? 'block' : 'none';
   document.getElementById('archive-view').style.display = mode==='archive' ? 'block' : 'none';
+  document.getElementById('inspo-view').style.display = mode==='inspo' ? 'block' : 'none';
 
   // Arriving anywhere: the panel has to hold the filters of the page you
   // have moved to before it is shown.
@@ -3052,6 +3112,7 @@ function setMode(mode){
   if(mode==='archive') renderArchive();
   if(mode==='saved') renderSavedOutfits();
   if(mode==='capsules') renderCapsules();
+  if(mode==='inspo') renderInspoPage();
   if(mode==='outfits'){
     outfitRenderContext = 'tab';
     outfitTags = outfitTags.filter(t => allTags().includes(t));
@@ -3093,10 +3154,10 @@ const SHEETS = {
   // backdrop while it is the sheet you are on.
   outfit:    { backdrop: null, draw: key => drawOutfitPage(key) },
   capsulepage: { backdrop: null, draw: id => drawCapsulePage(id) },
+  inspopage: { backdrop: null, draw: id => drawInspoPage(id) },
   // Small sheets over an outfit's page, only ever left.
   inspoadd:  { backdrop: 'modal-backdrop', draw: null },
   inspolink: { backdrop: 'modal-backdrop', draw: null },
-  inspoview: { backdrop: 'modal-backdrop', draw: null },
   // Only ever left, never returned to: their drafts do not survive the trip.
   capsule:   { backdrop: 'modal-backdrop', draw: null },
   builder:   { backdrop: 'modal-backdrop', draw: null },
@@ -3124,6 +3185,7 @@ function outfitPageShowing(){
 const PAGE_DRAW = {
   outfit:      key => drawOutfitPage(key),
   capsulepage: id  => drawCapsulePage(id),
+  inspopage:   id  => drawInspoPage(id),
 };
 
 function syncOutfitPage(redraw){
@@ -4088,6 +4150,13 @@ function wireSheetDrag(){
                   '.outfit-page-inner');
   wireDragToClose(document.querySelector('#form-backdrop .modal'),
                   formSheetIsUp, () => { if(sheetDragClose) sheetDragClose(); });
+  // The hero popup: pulled down by its card, like the other popups.
+  const heroWrap = document.getElementById('hero-pop-wrap');
+  wireDragToClose(heroWrap, () => heroPopOpen, closeHeroPopup, '.hero-pop');
+  // A pull holds the pointer on the backdrop, so letting go lands a click
+  // there. That is the end of a pull, not a tap outside the card.
+  heroWrap.addEventListener('pointerdown', () => { heroPulled = false; });
+  heroWrap.addEventListener('pointermove', () => { if(sheetDrag && sheetDrag.pulling) heroPulled = true; });
 }
 
 const SCROLL_KEYS = ['ArrowUp','ArrowDown','PageUp','PageDown','Home','End',' ','Spacebar'];
@@ -4100,13 +4169,14 @@ function filterSheetHoldsPage(){
   // Any sheet or page over the top holds the page too, not only the filters:
   // a piece, a capsule or an outfit page is no place for the wardrobe behind
   // it to move.
-  return filterSheetOpen() || sheetOverTheTop();
+  // The hero popup too: it blurs the page, it does not release it.
+  return filterSheetOpen() || sheetOverTheTop() || heroPopOpen;
 }
 
 // The thing under the finger that can take the scroll itself, if there is
 // one: a sheet, a page or the filter panel, with room left in the direction
 // asked for. Anything else is the page behind, and is refused.
-const HELD_SCROLLERS = '.modal, .outfit-page-layer, #filter-sheet';
+const HELD_SCROLLERS = '.modal, .outfit-page-layer, #filter-sheet, .hero-pop-body';
 function insideScrollableSheet(target, dy){
   if(!target || !target.closest) return false;
   const sheet = target.closest(HELD_SCROLLERS);
@@ -4145,7 +4215,7 @@ window.addEventListener('keydown', e => {
   if(!filterSheetHoldsPage() || !SCROLL_KEYS.includes(e.key)) return;
   const t = e.target;
   // Arrows in a field move the caret, and a sheet scrolls itself.
-  if(t && t.closest && t.closest('input, textarea, select, [contenteditable], .modal, .outfit-page-layer, #filter-sheet')) return;
+  if(t && t.closest && t.closest('input, textarea, select, [contenteditable], .modal, .outfit-page-layer, #filter-sheet, .hero-pop-body')) return;
   // Space on a button is a press. The other keys do nothing to a button, so
   // they would scroll the page behind — which matters now that the Filters
   // button stays in view, with focus on it, while its sheet is up.
@@ -4943,8 +5013,8 @@ function openCapsulePage(id, fromEl){
   openPage('capsulepage', id, fromEl);
 }
 
-function openPage(sheet, id, fromEl){
-  pushSheet({ sheet, id });
+function openPage(sheet, id, fromEl, extra){
+  pushSheet(Object.assign({ sheet, id }, extra));
   // Opened from a piece's sheet, that sheet gives way to the page.
   showSheetBackdrop(null);
   syncOutfitPage(true);
@@ -4963,7 +5033,7 @@ function openPage(sheet, id, fromEl){
 // settles back when you return to the top. Two thresholds, so it cannot
 // flicker at the edge: it grows past 40px, and shrinks only at the very top.
 function syncScrollLock(){
-  document.body.classList.toggle('sheet-open', anySheetShowing());
+  document.body.classList.toggle('sheet-open', anySheetShowing() || heroPopOpen);
 }
 function wireSheetScrollLock(){
   const watch = new MutationObserver(syncScrollLock);
@@ -5167,6 +5237,7 @@ function heroRowsHtml(c, flat){
 
 // ---- The popup ---------------------------------------------
 let heroPopOpen = false;
+let heroPulled = false;   // the gesture in progress is a pull, not a tap
 function openHeroPopup(deal){
   const pop = document.getElementById('hero-pop');
   const wrap = document.getElementById('hero-pop-wrap');
@@ -5175,6 +5246,7 @@ function openHeroPopup(deal){
   heroPopOpen = true;
   pop.removeAttribute('inert');
   wrap.classList.add('open');
+  syncScrollLock();
   const body = document.getElementById('hero-pop-body');
   if(body) body.scrollTop = 0;
 }
@@ -5188,6 +5260,7 @@ function closeHeroPopup(){
   if(pop.contains(document.activeElement)) document.activeElement.blur();
   pop.setAttribute('inert', '');
   wrap.classList.remove('open');
+  syncScrollLock();
 }
 document.addEventListener('keydown', e => {
   if(e.key === 'Escape' && heroPopOpen && !filterSheetOpen() && !sheetOverTheTop()) closeHeroPopup();
@@ -5983,7 +6056,8 @@ function rowToInspo(r){
     id: r.id, key: r.combo_key, kind: r.kind,
     url: r.url || null, imagePath: r.image_path || null,
     image: r.image_url || null,            // a photo's is filled in by hydrateInspoImages
-    source: r.source || ''
+    source: r.source || '',
+    at: r.created_at || ''
   };
 }
 
@@ -6037,13 +6111,13 @@ async function fetchLinkPreview(url){
   }catch(e){ return null; }
 }
 
-async function addInspoLink(key, raw){
+async function addInspoLink(key, raw, known){
   const url = normalizeInspoUrl(raw);
   if(!url) return { error: 'That does not look like a link.' };
-  const preview = await fetchLinkPreview(url);
+  const preview = known !== undefined ? known : await fetchLinkPreview(url);
   const pin = { id: newInspoId(), key, kind: 'link', url, imagePath: null,
     image: (preview && preview.imageUrl) || null,
-    source: (preview && preview.source) || inspoHost(url) };
+    source: (preview && preview.source) || inspoHost(url), at: new Date().toISOString() };
   const { error } = await client().from('outfit_inspo').insert({
     id: pin.id, combo_key: key, kind: 'link', url,
     image_url: pin.image, source: pin.source
@@ -6054,6 +6128,12 @@ async function addInspoLink(key, raw){
 }
 
 async function addInspoPhotos(key, files){
+  return addInspoPhotosTo([key], files);
+}
+
+// One upload, kept against each outfit: a row per outfit, all pointing at the
+// same stored picture, which is what lets the Inspo page show it once.
+async function addInspoPhotosTo(keys, files){
   const db = client();
   let added = 0;
   for(const file of files){
@@ -6063,16 +6143,23 @@ async function addInspoPhotos(key, files){
     const up = await db.storage.from(BUCKET).upload(path, blob,
       { contentType: blob.type || 'image/jpeg', upsert: true });
     if(up.error){ dbFail(up.error, 'Could not upload photo'); continue; }
-    const { error } = await db.from('outfit_inspo').insert({
-      id, combo_key: key, kind: 'photo', image_path: path, source: 'Photo'
-    });
-    if(error){ dbFail(error, 'Photo uploaded but not saved — try again'); continue; }
     const signed = await db.storage.from(BUCKET).createSignedUrl(path, PHOTO_URL_TTL);
-    (outfitInspo[key] = outfitInspo[key] || []).push({
-      id, key, kind: 'photo', url: null, imagePath: path,
-      image: (signed.data && signed.data.signedUrl) || null, source: 'Photo'
-    });
-    added++;
+    const image = (signed.data && signed.data.signedUrl) || null;
+    let kept = false;
+    for(let i = 0; i < keys.length; i++){
+      const key = keys[i];
+      const rowId = i === 0 ? id : newInspoId();
+      const { error } = await db.from('outfit_inspo').insert({
+        id: rowId, combo_key: key, kind: 'photo', image_path: path, source: 'Photo'
+      });
+      if(error){ dbFail(error, 'Photo uploaded but not saved — try again'); continue; }
+      (outfitInspo[key] = outfitInspo[key] || []).push({
+        id: rowId, key, kind: 'photo', url: null, imagePath: path,
+        image, source: 'Photo', at: new Date().toISOString()
+      });
+      kept = true;
+    }
+    if(kept) added++;
   }
   return added;
 }
@@ -6103,6 +6190,121 @@ async function restoreInspo(hit){
   const list = (outfitInspo[hit.key] = outfitInspo[hit.key] || []);
   list.splice(Math.min(hit.at, list.length), 0, hit.pin);
   return true;
+}
+
+// ---- The Inspo destination -----------------------------------
+//
+// Every pin from every outfit on one page. The same picture kept against
+// several outfits is several rows (a link shares its address, a photo its
+// stored file), and shows here once, with the outfits it belongs to.
+function inspoIdentity(p){
+  return p.kind === 'photo' ? 'photo:' + (p.imagePath || p.id) : 'link:' + (p.url || p.id);
+}
+
+function inspoGroups(){
+  const byId = new Map();
+  Object.keys(outfitInspo).forEach(key => outfitInspo[key].forEach(pin => {
+    const id = inspoIdentity(pin);
+    let g = byId.get(id);
+    if(!g){
+      g = { id: pin.id, pins: [], keys: [], image: pin.image, source: pin.source,
+            url: pin.url, at: pin.at || '' };
+      byId.set(id, g);
+    }
+    g.pins.push(pin);
+    if(!g.keys.includes(key)) g.keys.push(key);
+    if(!g.image && pin.image) g.image = pin.image;
+    if((pin.at || '') > g.at) g.at = pin.at || '';
+  }));
+  return [...byId.values()].sort((a, b) => b.at < a.at ? -1 : b.at > a.at ? 1 : 0);
+}
+
+function inspoGroupFor(id){
+  const hit = findInspo(id);
+  if(!hit) return null;
+  const ident = inspoIdentity(hit.pin);
+  return inspoGroups().find(g => g.pins.some(p => inspoIdentity(p) === ident)) || null;
+}
+
+// An outfit from its key alone: one on screen or kept resolves as usual; one
+// that only has inspo is read back out of the key.
+function comboFromKey(key){
+  const known = comboForKey(key);
+  if(known) return known;
+  const p = String(key).split('|');
+  const id = v => (v && v !== 'none') ? v : null;
+  let rec = null;
+  if(p[0] === 'dress') rec = { key, base: 'dress', top: null, overtop: null, bottom: null,
+    dress: id(p[1]), jumper: id(p[2]), jacket: id(p[3]) };
+  else if(p[0] === 'tb') rec = { key, base: 'topbottom', top: id(p[1]), bottom: id(p[2]),
+    jumper: id(p[3]), jacket: id(p[4]), overtop: id(p[6]), dress: null };
+  return rec ? favoriteRecordToCombo(rec) : null;
+}
+
+function inspoTileHtml(g, i){
+  return `<button class="inspo-tile" type="button" aria-label="Open inspo ${i + 1}"
+            onclick='openInspoPage(${JSON.stringify(g.id)})'>
+      ${g.image ? `<img src="${esc(g.image)}" alt="" referrerpolicy="no-referrer" loading="lazy" decoding="async" onerror="this.remove()">` : ''}
+      <span class="inspo-src">${esc(g.source || 'Link')}</span>
+      ${g.keys.length > 1 ? `<span class="inspo-count">${g.keys.length} outfits</span>` : ''}
+    </button>`;
+}
+
+function renderInspoPage(){
+  const grid = document.getElementById('inspo-page-grid');
+  if(!grid) return;
+  const groups = inspoGroups();
+  grid.innerHTML = groups.map(inspoTileHtml).join('');
+  document.getElementById('inspo-empty').style.display = groups.length ? 'none' : 'block';
+}
+
+function openInspoPage(id, fromEl){
+  if(!inspoGroupFor(id)) return;
+  openPage('inspopage', id, fromEl);
+}
+
+function inspoOutfitCardHtml(key){
+  const combo = comboFromKey(key);
+  if(!combo) return '';
+  return `<div class="outfit-card" data-key="${esc(key)}" onclick='openOutfitPage(${JSON.stringify(key)}, this)'>
+      <div class="outfit-thumbs">${outfitThumbsHtml(combo)}</div>
+    </div>`;
+}
+
+const BACK_GLYPH = `<svg class="back-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>`;
+
+// An inspo as a page: the picture large, then the outfits it is kept against
+// as cards, two to a row. Back, Open original and Remove sit on the bar.
+function drawInspoPage(id){
+  const g = inspoGroupFor(id);
+  const layer = document.getElementById('outfit-page');
+  if(!g || !layer){ closeModal(); return; }
+  const n = g.keys.length;
+  const entry = sheetTrail.find(e => e.sheet === 'inspopage' && e.id === id);
+  const removable = Boolean(entry && entry.removable);
+  layer.dataset.key = 'inspopage:' + id;
+  layer.innerHTML = `
+    <div class="outfit-page-inner">
+      <div class="modal-body has-footer outfit-page-body inspo-page-body">
+        <div class="inspo-big">
+          ${g.image ? `<img src="${esc(g.image)}" alt="" referrerpolicy="no-referrer" decoding="async" onerror="this.remove()">` : ''}
+          <span class="inspo-src">${esc(g.source || 'Link')}</span>
+        </div>
+        <h3 class="inspo-outfits-title">${n === 1 ? 'Saved to 1 outfit' : `Saved to ${n} outfits`}</h3>
+        <div class="inspo-outfits">${g.keys.map(inspoOutfitCardHtml).join('')}</div>
+      </div>
+      <div class="sheet-footer split pagebar outfit-page-bar">
+        <div class="sheet-footer-inner">
+          <button class="btn secondary" type="button" id="outfit-page-back" onclick="goBackFromSheet()">${BACK_GLYPH}Back</button>
+          <div class="sheet-footer-actions">
+            ${g.url ? `<a class="btn tonal" id="inspo-open" href="${esc(g.url)}" target="_blank" rel="noopener noreferrer">Open original ↗</a>` : ''}
+            ${removable ? `<button class="btn secondary" type="button" id="inspo-remove" onclick='removeInspoFromViewer(${JSON.stringify(id)})'>Remove</button>` : ''}
+          </div>
+        </div>
+      </div>
+    </div>`;
+  allowSheetDrag(goBackFromSheet);
 }
 
 // Words for a search from what the outfit is made of — the pieces' own
@@ -6236,21 +6438,11 @@ async function saveInspoLink(){
   goBackFromSheet();
 }
 
+// From an outfit's page an inspo opens as a page, the same as from the Inspo
+// destination, and keeps its Remove: there it is clear which outfit is meant.
 function openInspoViewer(id){
-  const hit = findInspo(id);
-  if(!hit) return;
-  const { pin } = hit;
-  openInspoSheet('inspoview', id, `
-    <div class="modal-body inspo-sheet">
-      <div class="inspo-big">
-        ${pin.image ? `<img src="${esc(pin.image)}" alt="" referrerpolicy="no-referrer" decoding="async" onerror="this.remove()">` : ''}
-        <span class="inspo-src">${esc(pin.source || 'Link')}</span>
-      </div>
-      <div class="modal-actions">
-        ${pin.url ? `<a class="btn tonal" id="inspo-open" href="${esc(pin.url)}" target="_blank" rel="noopener noreferrer">Open original ↗</a>` : ''}
-        <button class="btn secondary" id="inspo-remove" type="button" onclick='removeInspoFromViewer(${JSON.stringify(id)})'>Remove</button>
-      </div>
-    </div>`);
+  if(!findInspo(id)) return;
+  openPage('inspopage', id, null, { removable: true });
 }
 
 async function removeInspoFromViewer(id){

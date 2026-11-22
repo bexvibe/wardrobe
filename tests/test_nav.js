@@ -1,4 +1,4 @@
-// Navigation: three destinations, no sub-tabs, archive demoted to a link.
+// Navigation: three destinations (four with Inspo), no sub-tabs, archive demoted to a link.
 const { chromium } = require('playwright');
 const { toFaves, openFilterSection, filterBack, tickFilter } = require('./nav');
 
@@ -33,12 +33,12 @@ const vis=(p,s)=>p.isVisible(s);
 
   // --- one navigation surface ---
   check('bottom bar visible once signed in', await vis(p,'#bottom-bar'));
-  // Three now: what you kept is a state of Outfits rather than a place of
-  // its own, and it is reached by the switch inside that destination.
-  check('three destinations, all of them visible',
+  // Wardrobe, Outfits and Capsules, then Inspo: what you kept is a state of
+  // Outfits rather than a place of its own, reached by the switch inside it.
+  check('four destinations, all of them visible',
     await p.evaluate(()=>{
       const btns=Array.from(document.querySelectorAll('#bottom-bar .bottom-btn'));
-      return btns.length===3 && btns.every(x=>x.offsetParent !== null);
+      return btns.length===4 && btns.every(x=>x.offsetParent !== null);
     }),
     await p.evaluate(()=>Array.from(document.querySelectorAll('#bottom-bar .bottom-btn'))
       .map(x=>x.textContent.trim().replace(/\s+/g,' ')).join(' | ')));
