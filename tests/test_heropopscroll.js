@@ -30,6 +30,15 @@ const results=[]; const check=(n,p,d)=>{results.push(p);console.log(`${p?'PASS':
   await p.mouse.wheel(0, -300); await p.waitForTimeout(300);
   check('and so does wheeling up', await p.evaluate(()=>window.scrollY) === before);
   check('the page is locked while it is open', await p.evaluate(()=>document.body.classList.contains('sheet-open')));
+  // A short pull and let go: it springs back. A long pull: it closes.
+  await p.mouse.move(195, 300); await p.mouse.down(); await p.mouse.move(195, 315, {steps:3}); await p.mouse.move(195, 325, {steps:3}); await p.waitForTimeout(400);
+  check('a pull follows the finger', await p.evaluate(()=>/translateY\((\d+)/.test(document.getElementById('hero-pop').style.transform)));
+  await p.mouse.up(); await p.waitForTimeout(500);
+  check('let go short of far enough, it stays open', await p.evaluate(()=>heroPopOpen));
+  await p.mouse.move(195, 200); await p.mouse.down(); await p.mouse.move(195, 400, {steps:8}); await p.mouse.move(195, 600, {steps:8});
+  await p.mouse.up(); await p.waitForTimeout(600);
+  check('pulled down far enough, it closes', await p.evaluate(()=>!heroPopOpen && !document.getElementById('hero-pop-wrap').classList.contains('open')));
+  check('and leaves nothing dragged behind', await p.evaluate(()=>document.getElementById('hero-pop').style.transform==='' && !document.getElementById('hero-pop-wrap').classList.contains('dragging')));
   await p.evaluate(()=>closeHeroPopup()); await p.waitForTimeout(400);
   check('closing releases it', await p.evaluate(()=>!document.body.classList.contains('sheet-open')));
   await p.mouse.wheel(0, 200); await p.waitForTimeout(400);

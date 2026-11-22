@@ -1558,6 +1558,8 @@
     transition:transform var(--sheet-ease-ms) var(--sheet-ease);
   }
   .hero-pop-wrap.open .hero-pop{transform:none;}
+  /* Under the finger while it is pulled down: no easing, it goes where the finger goes. */
+  .hero-pop-wrap.dragging .hero-pop{transition:none;}
   .hero-pop-body{flex:1;min-height:0;display:flex;flex-direction:column;padding:14px 14px 12px;}
   .hero-pop .sheet-footer{flex:none;}
   .hero-pop .sheet-footer{position:static;padding-top:0;}
@@ -2505,7 +2507,7 @@
      Outfits; on faves it only changes the order they are shown in. -->
 <!-- Try this, opened up: the outfit large, each space a way into Filters and
      a lock, and Shuffle on the bar. Over the floating buttons, under Filters. -->
-<div class="hero-pop-wrap" id="hero-pop-wrap" onclick="if(event.target === this) closeHeroPopup()">
+<div class="hero-pop-wrap" id="hero-pop-wrap" onclick="if(event.target === this && !heroPulled) closeHeroPopup()">
   <div class="hero-pop" id="hero-pop" role="dialog" aria-label="Try this outfit" inert>
     <div class="hero-pop-body" id="hero-pop-body"></div>
     <div class="sheet-footer split pagebar">
@@ -4148,6 +4150,13 @@ function wireSheetDrag(){
                   '.outfit-page-inner');
   wireDragToClose(document.querySelector('#form-backdrop .modal'),
                   formSheetIsUp, () => { if(sheetDragClose) sheetDragClose(); });
+  // The hero popup: pulled down by its card, like the other popups.
+  const heroWrap = document.getElementById('hero-pop-wrap');
+  wireDragToClose(heroWrap, () => heroPopOpen, closeHeroPopup, '.hero-pop');
+  // A pull holds the pointer on the backdrop, so letting go lands a click
+  // there. That is the end of a pull, not a tap outside the card.
+  heroWrap.addEventListener('pointerdown', () => { heroPulled = false; });
+  heroWrap.addEventListener('pointermove', () => { if(sheetDrag && sheetDrag.pulling) heroPulled = true; });
 }
 
 const SCROLL_KEYS = ['ArrowUp','ArrowDown','PageUp','PageDown','Home','End',' ','Spacebar'];
@@ -5228,6 +5237,7 @@ function heroRowsHtml(c, flat){
 
 // ---- The popup ---------------------------------------------
 let heroPopOpen = false;
+let heroPulled = false;   // the gesture in progress is a pull, not a tap
 function openHeroPopup(deal){
   const pop = document.getElementById('hero-pop');
   const wrap = document.getElementById('hero-pop-wrap');
