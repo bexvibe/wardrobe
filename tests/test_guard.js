@@ -368,16 +368,13 @@ const confirmText = p => p.evaluate(()=>({
         !formSheetIsUp()));
     await p.evaluate(()=>{ itemFormBaseline = null; closeModal(); }); await p.waitForTimeout(400);
 
-    await p.evaluate(()=>openTagEditor('winter')); await p.waitForTimeout(600);
-    check('so the tag editor, untouched, answers it',
-      await p.evaluate(()=>sheetIsUp()));
-    await p.evaluate(()=>{ document.getElementById('tag-edit-input').value = 'winter2'; });
-    check('but once the name has been changed it does not',
-      await p.evaluate(()=>!sheetIsUp()));
-    check('and leaves by its bar instead',
-      await p.evaluate(()=>Array.from(
-        document.querySelectorAll('#modal .sheet-footer .btn')).map(x=>x.textContent.trim())
-        .join(' / ')) === 'Cancel / Save');
+    await p.evaluate(()=>openTagEditor('winter')); await p.waitForTimeout(400);
+    check('the tag editor is a popup, not a sheet',
+      await p.evaluate(()=>document.getElementById('name-edit-backdrop').classList.contains('open') && !sheetIsUp()));
+    await p.evaluate(()=>{ document.getElementById('name-edit-input').value = 'winter2'; });
+    await p.click('#name-edit-backdrop .btn.secondary'); await p.waitForTimeout(300);
+    check('and Cancel just closes it, changing nothing',
+      await p.evaluate(()=>!document.getElementById('name-edit-backdrop').classList.contains('open') && !nameEditor));
     await p.close();
   }
 
