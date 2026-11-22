@@ -138,3 +138,48 @@ survive. If the single-call route holds up, it is eight times cheaper and
 one call instead of five. If it does not, the question is whether chained
 fidelity is worth 5x the calls and a 576x864 ceiling.
 
+
+---
+
+## Start from the basics — a starter catalogue for new users
+
+Decided: a new user can fill an empty wardrobe by tapping generic cutouts
+(white tee, dark jeans, jandals) on their phone, with no photographing.
+Mockup: `mockups/catalogue-options.html`. Tooling: `catalogue/` and
+`scripts/catalogue-*.py` (manifest of 130 variants, prompts, cutout
+processor) — all built, none of it wired into the app yet.
+
+### Chosen
+
+- **Empty wardrobe:** the existing empty state, with its one pill becoming
+  two — **Pick from the basics** (ink, first) and **Photograph a piece**
+  (surface, second).
+- **"New piece" opens a short sheet** with the same two choices, in the
+  same order, with a grip (it answers drag-down). One idea in two places.
+- **The picker is the "Add accessories" picker, unchanged:** title, category
+  tabs, square photo-only tiles, `picker-check` tick, `Cancel` / `Add N
+  pieces` pagebar. Staged: nothing is added until the button. Every colour
+  is its own tile. **An Essentials tab at the front of the tabs** holds
+  about 12 common pieces on the same tiles, which is the quick start.
+- **After adding:** pieces carry the existing `tile-chip`, reading "Stock".
+
+### Not chosen (kept in the mockup)
+
+- A small anchored menu from "New piece" (a new pattern).
+- Type tiles with colour dots (one tile per type, tap a dot to pick a
+  colour): less scrolling, but a new control.
+
+### Still to decide
+
+- Whether "Stock" shows on every wardrobe tile or only on the piece sheet.
+- Which pieces are in Essentials.
+- The swap-in-your-own-photo flow on a stock piece (sketched, not decided).
+
+### To build
+
+1. Generate the 5 test images, run `scripts/catalogue-process.py`, check
+   `catalogue/preview.png`; then the rest.
+2. Supabase: a catalogue table or flag (items from the catalogue need a
+   `source` that marks them as stock), reading `catalogue/catalogue.json`.
+3. The picker, reusing `openOutfitExtrasPicker`'s structure.
+4. The two-button empty state, and the short "New piece" sheet.
