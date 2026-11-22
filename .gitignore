@@ -3,3 +3,5 @@
 
 # Screenshots the test suites write as they go
 tests/shots/
+
+__pycache__/
