@@ -2212,6 +2212,10 @@
   .capsule-pick.group{font-weight:500;}
   .capsule-pick.child{margin-left:20px;min-height:48px;font-weight:400;}
   .capsule-pick.picked{background:var(--accent-soft);}
+  .pick-edit-wrap{display:flex;align-items:center;}
+  .pick-edit-wrap .capsule-pick{flex:1;min-width:0;}
+  .pick-edit{flex:none;width:44px;height:44px;border:0;background:none;color:var(--ink-soft);font-size:16px;cursor:pointer;border-radius:50%;}
+  .pick-edit:hover{color:var(--ink);}
   .capsule-pick-mark{flex:none;font-size:15px;color:var(--ink);width:18px;text-align:right;}
   .capsule-pick-mark.go{width:auto;font-family:'Figtree',sans-serif;font-size:20px;line-height:1;color:var(--ink-soft);padding:0 4px;text-align:center;}
 
@@ -3584,8 +3588,8 @@ function filterSectionHtml(section){
   } else if(section === 'tags'){
     rows = tagsByUse().slice().sort((a, b) => a.localeCompare(b)).filter(keep).map(t => {
       const on = outfitTags.includes(t);
-      return `<button type="button" class="capsule-pick ${on ? 'picked' : ''}" aria-pressed="${on}" data-key="${esc(t)}" data-tag="${esc(t)}"
-        onclick='setOutfitTag(${jsArg(t)})'><span>${esc(t)}</span>${pickMark(on)}</button>`;
+      return `<div class="pick-edit-wrap"><button type="button" class="capsule-pick ${on ? 'picked' : ''}" aria-pressed="${on}" data-key="${esc(t)}" data-tag="${esc(t)}"
+        onclick='setOutfitTag(${jsArg(t)})'><span>${esc(t)}</span>${pickMark(on)}</button>${editPencil('openTagEditor(' + jsArg(t) + ')', 'Edit ' + t)}</div>`;
     }).join('');
   } else {
     const mode = appMode === 'saved' ? 'saved' : 'outfits';
@@ -8315,12 +8319,12 @@ function openTagEditor(tag){
            renaming it, so it stays in the body rather than joining the
            pair on the bar. -->
       <div class="modal-actions">
-        <button class="btn small secondary" onclick='deleteTag(${JSON.stringify(tag)})'>Delete tag</button>
+        <button class="btn small secondary" onclick='confirmDeleteTag(${JSON.stringify(tag)})'>Delete tag</button>
       </div>
     </div>
     <div class="sheet-footer split pagebar">
       <div class="sheet-footer-inner">
-        <button class="btn secondary" type="button" onclick="closeModal()">Cancel</button>
+        <button class="btn secondary" type="button" onclick='cancelTagEdit(${JSON.stringify(tag)})'>Cancel</button>
         <div class="sheet-footer-actions"><button class="btn" id="tag-edit-save" onclick='renameTag(${JSON.stringify(tag)})'>Save</button></div>
       </div>
     </div>
@@ -8330,6 +8334,19 @@ function openTagEditor(tag){
   allowSheetDrag(closeModal, () =>
     document.getElementById('tag-edit-input').value !== tag);
   document.getElementById('modal-backdrop').classList.add('open');
+}
+
+function cancelTagEdit(tag){
+  const el = document.getElementById('tag-edit-input');
+  if(el && el.value !== tag) askToLeave('changes to this tag', closeModal);
+  else closeModal();
+}
+
+function confirmDeleteTag(tag){
+  const n = itemsWithTag(tag).length;
+  askConfirm({ title: 'Delete tag?',
+    body: `“${tag}” will come off ${n} piece${n === 1 ? '' : 's'}. You can undo it right after.`,
+    stay: 'Keep it', go: 'Delete', onConfirm: () => deleteTag(tag) });
 }
 
 async function renameTag(from){
@@ -8972,6 +8989,7 @@ const pickRow = (label, picked, onclick, cls) =>
      <span class="capsule-pick-mark">${picked ? '✓' : ''}</span>
    </button>`;
 const jsArg = v => JSON.stringify(v).replace(/'/g, '&#39;');
+const editPencil = (call, label) => `<button type="button" class="pick-edit" aria-label="${esc(label)}" onclick='${call}'>✎</button>`;
 
 // -- Category: one of the list, or a word nothing has used yet.
 function openFormCategoryPicker(){
@@ -9211,7 +9229,8 @@ function renderFormSourcePicks(){
   if(typed && !all.some(v => v.toLowerCase() === q)){
     rows.push(pickRow('Add “' + typed + '”', false, 'addFormSource()'));
   }
-  all.forEach(v => rows.push(pickRow(v, v === chosen, 'pickFormSource(' + jsArg(v) + ')')));
+  all.forEach(v => rows.push(`<div class="pick-edit-wrap">${pickRow(v, v === chosen, 'pickFormSource(' + jsArg(v) + ')')}${
+    used.includes(v) ? editPencil('openSourceEditor(' + jsArg(v) + ')', 'Edit ' + v) : ''}</div>`));
   list.innerHTML = rows.join('') || '<p class="modal-meta">No sources yet. Type one to add it.</p>';
 }
 
@@ -9231,6 +9250,107 @@ function addFormSource(){
   document.getElementById('form-source').value = same || typed;
   input.value = '';
   renderFormSourcePicks();
+}
+
+// ---- Renaming and removing a source ------------------------
+// Same idea as a tag: a source is only ever typed into a piece, so one rename
+// or removal rewrites every piece that carries it, with an undo.
+function itemsWithSource(src){
+  return ITEMS.concat(ARCHIVED).filter(i => (i.source || '').trim() === src);
+}
+
+async function writeSources(changes){
+  const db = client();
+  for(const c of changes){
+    const { error } = await db.from('items').update({ source: c.source }).eq('id', c.id);
+    if(error) return dbFail(error, 'Could not save the source — check connection');
+  }
+  return true;
+}
+
+async function resourceAll(from, to){
+  const changes = itemsWithSource(from).map(i => ({ id: i.id, was: i.source || '', source: to }));
+  if(!changes.length) return [];
+  if(!await writeSources(changes)) return null;
+  changes.forEach(c => { const i = itemById(c.id); if(i) i.source = c.source; });
+  return changes;
+}
+
+function afterSourceChange(from, to){
+  const f = document.getElementById('form-source');
+  if(f && f.value.trim() === from) f.value = to;
+  renderFormSourcePicks();
+  render();
+}
+
+async function undoResource(changes, from, to){
+  if(!await writeSources(changes.map(c => ({ id: c.id, source: c.was })))) return;
+  changes.forEach(c => { const i = itemById(c.id); if(i) i.source = c.was; });
+  afterSourceChange(to, from);
+}
+
+function openSourceEditor(src){
+  const modal = document.getElementById('modal');
+  modal.innerHTML = `
+    <div class="sheet-grip"></div>
+    <div class="modal-body has-footer">
+      <div class="modal-name" style="margin-bottom:14px;">Edit source</div>
+      <div class="form-grid">
+        <label>Source<input type="text" id="source-edit-input" value="${esc(src)}"></label>
+      </div>
+      <div class="form-error" id="source-edit-error"></div>
+      <div class="modal-actions">
+        <button class="btn small secondary" onclick='confirmDeleteSource(${JSON.stringify(src)})'>Delete source</button>
+      </div>
+    </div>
+    <div class="sheet-footer split pagebar">
+      <div class="sheet-footer-inner">
+        <button class="btn secondary" type="button" onclick='cancelSourceEdit(${JSON.stringify(src)})'>Cancel</button>
+        <div class="sheet-footer-actions"><button class="btn" id="source-edit-save" onclick='renameSource(${JSON.stringify(src)})'>Save</button></div>
+      </div>
+    </div>`;
+  allowSheetDrag(closeModal, () => document.getElementById('source-edit-input').value !== src);
+  document.getElementById('modal-backdrop').classList.add('open');
+}
+
+function cancelSourceEdit(src){
+  const el = document.getElementById('source-edit-input');
+  if(el && el.value !== src) askToLeave('changes to this source', closeModal);
+  else closeModal();
+}
+
+async function renameSource(from){
+  const errorEl = document.getElementById('source-edit-error');
+  let to = document.getElementById('source-edit-input').value.trim();
+  if(!to){ errorEl.textContent = 'Give the source a name.'; return; }
+  if(to === from){ closeModal(); return; }
+  // Said the way an existing source says it, so this merges rather than splits.
+  to = sourcesByUse().find(v => v.toLowerCase() === to.toLowerCase() && v !== from) || to;
+  const btn = document.getElementById('source-edit-save');
+  btn.disabled = true;
+  const changes = await resourceAll(from, to);
+  btn.disabled = false;
+  if(!changes) return;
+  closeModal();
+  afterSourceChange(from, to);
+  showToast(`Now ${to}`, changes.length ? () => undoResource(changes, from, to) : null);
+}
+
+function confirmDeleteSource(src){
+  const n = itemsWithSource(src).length;
+  askConfirm({ title: 'Delete source?',
+    body: `“${src}” will be cleared from ${n} piece${n === 1 ? '' : 's'}. You can undo it right after.`,
+    stay: 'Keep it', go: 'Delete', onConfirm: () => deleteSource(src) });
+}
+
+async function deleteSource(src){
+  const changes = await resourceAll(src, '');
+  if(!changes) return;
+  closeModal();
+  afterSourceChange(src, '');
+  const n = changes.length;
+  showToast(`${src} removed from ${n} piece${n === 1 ? '' : 's'}`,
+    n ? () => undoResource(changes, src, '') : null);
 }
 
 // Back is only ever Back: whatever was ticked is already on the form.
