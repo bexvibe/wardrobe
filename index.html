@@ -3548,7 +3548,7 @@ const FILTER_MOUNTS = [
 // The sheet is a short list of rows, one per kind of filter. Each shows what it
 // is set to, and opens a page of its own to change it: the same pattern for
 // all four, rather than three that apply on the spot and one that opens.
-const FILTER_SECTION_TITLES = { pieces: 'Pieces', stars: 'Fave pieces', capsules: 'Capsules', tags: 'Tags', faves: 'Faves' };
+const FILTER_SECTION_TITLES = { pieces: 'Pieces', stars: 'Starred', capsules: 'Capsules', tags: 'Tags', faves: 'Faves' };
 
 function summariseList(names){
   if(!names.length) return 'Any';
@@ -3565,7 +3565,6 @@ function slotSummary(tab){
 
 function filterSectionValue(section){
   if(section === 'pieces') return summariseList(filterTabs().filter(t => outfitFilters[t].type !== 'any').map(slotSummary));
-  if(section === 'stars') return starFilter ? 'Only starred' : 'Any';
   if(section === 'capsules') return summariseList(capsuleFilter.map(id => (capsules.find(c => c.id === id) || {}).name).filter(Boolean));
   if(section === 'tags') return summariseList(outfitTags);
   const mode = appMode === 'saved' ? 'saved' : 'outfits';
@@ -3584,7 +3583,7 @@ function activeFilterChips(){
       if(it) chips.push(['piece', t + '\u0000' + id, it.name, it.photo || '']);
     });
   });
-  if(starFilter && starsAvailable) chips.push(['star', 'on', 'Fave pieces']);
+  if(starFilter && starsAvailable) chips.push(['star', 'on', 'Starred']);
   capsuleFilter.forEach(id => { const c = capsules.find(x => x.id === id); if(c) chips.push(['capsule', id, c.name]); });
   outfitTags.forEach(t => chips.push(['tag', t, t]));
   const mode = appMode === 'saved' ? 'saved' : 'outfits';
@@ -3638,6 +3637,11 @@ const pickMark = on => `<span class="capsule-pick-mark">${on ? '✓' : ''}</span
 const rowChevron = '<span class="capsule-pick-mark go" aria-hidden="true">›</span>';
 
 function filterRowHtml(section){
+  // Starred is on or off, so it applies right here instead of opening a page.
+  if(section === 'stars'){
+    return `<button type="button" class="capsule-pick ${starFilter ? 'picked' : ''}" data-filter-row="stars" aria-pressed="${starFilter}"
+      onclick="toggleStarFilter()"><span class="capsule-pick-label"><span class="capsule-pick-lead">${STAR_SVG(starFilter, 16)}</span>Starred</span>${pickMark(starFilter)}</button>`;
+  }
   const value = filterSectionValue(section);
   return `<button type="button" class="capsule-pick" data-filter-row="${section}" onclick="openFilterSection('${section}')">
     <span>${FILTER_SECTION_TITLES[section]}</span>
@@ -3672,9 +3676,6 @@ function filterSectionHtml(section){
         <span>${esc(t)}</span><span class="capsule-pick-value ${on ? 'on' : ''}">${on ? esc(slotSummary(t)) : 'Any'}</span>${rowChevron}
       </button>`;
     }).join('');
-  } else if(section === 'stars'){
-    rows = `<button type="button" class="capsule-pick ${starFilter ? 'picked' : ''}" aria-pressed="${starFilter}" data-key="stars"
-        onclick="toggleStarFilter()"><span class="capsule-pick-label"><span class="capsule-pick-lead">${STAR_SVG(true, 16)}</span>Only starred pieces</span>${pickMark(starFilter)}</button>`;
   } else if(section === 'capsules'){
     rows = capsules.filter(c => keep(c.name)).map(c => {
       const on = capsuleFilter.includes(c.id);
@@ -3933,7 +3934,6 @@ function clearFilterSection(section){
     if(!filterSheetOpen()) applyFilterResults();
     return;
   }
-  if(section === 'stars') starFilter = false;
   if(section === 'capsules') capsuleFilter = [];
   if(section === 'tags') outfitTags = [];
   if(section === 'faves'){

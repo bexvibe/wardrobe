@@ -36,18 +36,17 @@ async function open(b, stars){
   // Filters on the outfits page
   await p.evaluate(()=>setMode('outfits')); await p.waitForTimeout(800);
   await p.evaluate(()=>{ if(!filterSheetOpen()) document.getElementById('filters-fab').click(); }); await p.waitForTimeout(500);
-  check('the filter sheet has a Fave pieces row', await p.evaluate(()=>!!document.querySelector('[data-filter-row="stars"]')));
-  await p.click('[data-filter-row="stars"]'); await p.waitForTimeout(500);
-  await p.click('#filter-section-list .capsule-pick'); await p.waitForTimeout(800);
+  check('the filter sheet has a Starred row', await p.evaluate(()=>!!document.querySelector('[data-filter-row="stars"]')));
+  await p.click('[data-filter-row="stars"]'); await p.waitForTimeout(800);
+  check('it ticks on the first page, with no second page', await p.evaluate(()=>!filterSection && document.querySelector('[data-filter-row="stars"]').getAttribute('aria-pressed') === 'true'));
   check('turning it on narrows the pool to starred pieces', await p.evaluate(()=>starFilter === true && allowedPieceIds().size === 40));
   check('and every outfit shown is made of starred pieces', await p.evaluate(()=>{
     const ids = allowedPieceIds();
     return outfitDisplayed.length > 0 && outfitDisplayed.every(c => comboInCapsules(c));
   }));
   check('the pill counts it', await p.evaluate(()=>activeFilterCount() >= 1));
-  await filterBack(p); await p.waitForTimeout(500);
   check('a chip on the sheet says it is on, and removes it', await p.evaluate(()=>{
-    const c = [...document.querySelectorAll('.filter-active .filter-chip')].find(x => x.textContent.includes('Fave pieces'));
+    const c = [...document.querySelectorAll('.filter-active .filter-chip')].find(x => x.textContent.includes('Starred'));
     if(!c) return false; c.click(); return starFilter === false; }));
   console.log(`\n${results.filter(Boolean).length}/${results.length} checks passed`);
   await b.close(); process.exitCode = results.every(Boolean) ? 0 : 1;
