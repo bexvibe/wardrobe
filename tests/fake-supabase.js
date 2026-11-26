@@ -26,6 +26,7 @@ if(window.__FILTERS_OPEN_BY_DEFAULT === undefined) window.__FILTERS_OPEN_BY_DEFA
         notes: it.notes || '', photo: it.photo || null, photo_path: null,
         // Omitted entirely unless asked for, so the "column not added yet"
         // path is exercised by default just as it is on a real database.
+        ...(window.__WITH_STARS ? { starred: false } : {}),
         ...(window.__WITH_TAGS ? { tags: (window.__SEED_TAGS || {})['seed_' + i] || [] } : {}),
         archived_at: null,
         created_at: new Date(1700000000000 + i * 1000).toISOString(),

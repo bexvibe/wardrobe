@@ -729,6 +729,16 @@
     box-shadow:var(--shadow-btn);cursor:pointer;padding:0;
   }
   .photo-edit svg{width:18px;height:18px;}
+  /* The star sits opposite the pencil, in the same round lifted button. */
+  .photo-star{right:auto;left:10px;}
+  /* A starred piece wears it in the wardrobe too, small, in the corner. */
+  .tile-star{
+    position:absolute;top:6px;right:6px;width:22px;height:22px;
+    display:flex;align-items:center;justify-content:center;
+    border-radius:50%;background:var(--surface);color:var(--ink);
+    box-shadow:var(--shadow-btn);pointer-events:none;
+  }
+  .tile-star svg{width:12px;height:12px;}
   .sheet-footer-inner.modal-actions{margin-top:0;flex-wrap:nowrap;}
   /* A tall sheet that has been scrolled earns the rest of the screen, less a
      sliver of page at the top to pull on. */
@@ -2883,6 +2893,19 @@ let outfitTags = [];
 // of them, so two capsules mix with each other.
 let capsuleFilter = [];
 
+// Only starred pieces. Shared by both halves of the switch like the capsules,
+// and any outfit qualifies only if every piece of clothing in it is starred.
+let starFilter = false;
+
+// The pieces the page may draw from: the capsules and the stars together (a
+// piece has to pass both), or null when neither is narrowing.
+function allowedPieceIds(){
+  const cap = capsuleAllowedIds();
+  if(!starFilter || !starsAvailable) return cap;
+  const stars = new Set(ITEMS.filter(i => i.starred).map(i => i.id));
+  return cap ? new Set([...stars].filter(id => cap.has(id))) : stars;
+}
+
 // The pieces the capsule filter allows, or null when it is not narrowing.
 function capsuleAllowedIds(){
   capsuleFilter = capsuleFilter.filter(id => capsules.some(c => c.id === id));
@@ -2895,10 +2918,21 @@ function capsuleAllowedIds(){
 // An outfit qualifies when each piece of clothing in it is in a chosen
 // capsule. Accessories put on by hand are not held to it.
 function comboInCapsules(combo){
-  const allowed = capsuleAllowedIds();
+  const allowed = allowedPieceIds();
   if(!allowed) return true;
   return [combo.top, combo.overtop, combo.bottom, combo.dress, combo.jumper, combo.jacket]
     .filter(Boolean).every(p => allowed.has(p.id));
+}
+
+function toggleStarFilter(){
+  starFilter = !starFilter;
+  renderFilterControls();
+  renderFiltersFab();
+  if(appMode === 'saved'){
+    renderSavedOutfits();
+  } else {
+    resetOutfitResults();
+  }
 }
 
 function toggleCapsuleFilter(id){
@@ -3423,7 +3457,8 @@ function activeFilterCount(){
   if(appMode !== 'outfits' && appMode !== 'saved') return 0;
   return countNarrowedSlots(outfitFilters) + (outfitTags.length ? 1 : 0)
     + (faveFilter[appMode].length ? 1 : 0)
-    + (capsuleAllowedIds() ? 1 : 0);
+    + (capsuleAllowedIds() ? 1 : 0)
+    + (starFilter && starsAvailable ? 1 : 0);
 }
 
 // The pill is what raises the sheet: it appears wherever there is something
@@ -3513,7 +3548,7 @@ const FILTER_MOUNTS = [
 // The sheet is a short list of rows, one per kind of filter. Each shows what it
 // is set to, and opens a page of its own to change it: the same pattern for
 // all four, rather than three that apply on the spot and one that opens.
-const FILTER_SECTION_TITLES = { pieces: 'Pieces', capsules: 'Capsules', tags: 'Tags', faves: 'Faves' };
+const FILTER_SECTION_TITLES = { pieces: 'Pieces', stars: 'Fave pieces', capsules: 'Capsules', tags: 'Tags', faves: 'Faves' };
 
 function summariseList(names){
   if(!names.length) return 'Any';
@@ -3530,6 +3565,7 @@ function slotSummary(tab){
 
 function filterSectionValue(section){
   if(section === 'pieces') return summariseList(filterTabs().filter(t => outfitFilters[t].type !== 'any').map(slotSummary));
+  if(section === 'stars') return starFilter ? 'Only starred' : 'Any';
   if(section === 'capsules') return summariseList(capsuleFilter.map(id => (capsules.find(c => c.id === id) || {}).name).filter(Boolean));
   if(section === 'tags') return summariseList(outfitTags);
   const mode = appMode === 'saved' ? 'saved' : 'outfits';
@@ -3548,6 +3584,7 @@ function activeFilterChips(){
       if(it) chips.push(['piece', t + '\u0000' + id, it.name, it.photo || '']);
     });
   });
+  if(starFilter && starsAvailable) chips.push(['star', 'on', 'Fave pieces']);
   capsuleFilter.forEach(id => { const c = capsules.find(x => x.id === id); if(c) chips.push(['capsule', id, c.name]); });
   outfitTags.forEach(t => chips.push(['tag', t, t]));
   const mode = appMode === 'saved' ? 'saved' : 'outfits';
@@ -3556,6 +3593,7 @@ function activeFilterChips(){
 }
 
 function removeActiveFilter(kind, key){
+  if(kind === 'star') return toggleStarFilter();
   if(kind === 'capsule') return toggleCapsuleFilter(key);
   if(kind === 'tag') return setOutfitTag(key);
   if(kind === 'fave') return setFaveFilter(key);
@@ -3568,6 +3606,32 @@ function removeActiveFilter(kind, key){
   renderFiltersFab();
   filterResultsStale = true;
   if(!filterSheetOpen()) applyFilterResults();
+}
+
+// The star: an outline until it is on, then filled, like the heart beside it.
+const STAR_SVG = (on, size = 18) => `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="${on ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M12 2.8l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.6l-5.8 3.1 1.1-6.5L2.6 9.6l6.5-.9z"/></svg>`;
+
+async function toggleStar(id){
+  const item = itemById(id);
+  if(!item || !starsAvailable) return;
+  const next = !item.starred;
+  item.starred = next;
+  document.querySelectorAll(`.photo-star[data-id="${CSS.escape(id)}"]`).forEach(b => {
+    b.classList.toggle('on', next);
+    b.setAttribute('aria-pressed', next);
+    b.setAttribute('aria-label', next ? 'Remove from fave pieces' : 'Add to fave pieces');
+    b.innerHTML = STAR_SVG(next);
+  });
+  render();
+  const { error } = await client().from('items').update({ starred: next }).eq('id', id);
+  if(error){
+    item.starred = !next;
+    dbFail(error, 'Could not save the star — check connection');
+    render();
+    return;
+  }
+  // The outfits behind the card were dealt from the old pool.
+  if(starFilter){ filterResultsStale = true; renderFilterControls(); }
 }
 
 const pickMark = on => `<span class="capsule-pick-mark">${on ? '✓' : ''}</span>`;
@@ -3583,6 +3647,7 @@ function filterRowHtml(section){
 
 function filterControlsHtml(ns){
   const sections = ['pieces'];
+  if(starsAvailable) sections.push('stars');
   if(capsulesAvailable && capsules.length) sections.push('capsules');
   if(tagsAvailable && tagsByUse().length) sections.push('tags');
   sections.push('faves');
@@ -3607,6 +3672,9 @@ function filterSectionHtml(section){
         <span>${esc(t)}</span><span class="capsule-pick-value ${on ? 'on' : ''}">${on ? esc(slotSummary(t)) : 'Any'}</span>${rowChevron}
       </button>`;
     }).join('');
+  } else if(section === 'stars'){
+    rows = `<button type="button" class="capsule-pick ${starFilter ? 'picked' : ''}" aria-pressed="${starFilter}" data-key="stars"
+        onclick="toggleStarFilter()"><span class="capsule-pick-label"><span class="capsule-pick-lead">${STAR_SVG(true, 16)}</span>Only starred pieces</span>${pickMark(starFilter)}</button>`;
   } else if(section === 'capsules'){
     rows = capsules.filter(c => keep(c.name)).map(c => {
       const on = capsuleFilter.includes(c.id);
@@ -3865,6 +3933,7 @@ function clearFilterSection(section){
     if(!filterSheetOpen()) applyFilterResults();
     return;
   }
+  if(section === 'stars') starFilter = false;
   if(section === 'capsules') capsuleFilter = [];
   if(section === 'tags') outfitTags = [];
   if(section === 'faves'){
@@ -4280,7 +4349,7 @@ function clearFilters(){
     favePinned.clear(); faveLingering.clear();
     writeFaveUrl();
   }
-  if(appMode === 'outfits' || appMode === 'saved') capsuleFilter = [];
+  if(appMode === 'outfits' || appMode === 'saved'){ capsuleFilter = []; starFilter = false; }
   if(appMode === 'outfits'){
     outfitTags = [];
     Object.keys(outfitFilters).forEach(k => { outfitFilters[k] = anyFilter(); });
@@ -4732,7 +4801,7 @@ function slotList(filters, slot){
   // Only the page's own filters carry the capsules: a piece's sheet asks
   // about that one piece, and the can-it-make-outfits check asks about the
   // whole wardrobe.
-  const allowed = filters === outfitFilters ? capsuleAllowedIds() : null;
+  const allowed = filters === outfitFilters ? allowedPieceIds() : null;
   if(allowed) items = items.filter(i => allowed.has(i.id));
   // Every slot the generator draws from comes through here, so this is the
   // one place the order of the stream is decided. Shuffling per visit is
@@ -4981,7 +5050,7 @@ const HERO_KEY = 'wardrobe-hero-outfit';
 // again, or the one card the page leads with would be the one thing the
 // wand left alone.
 function heroSignature(){
-  return JSON.stringify({ deal: sessionSeed, tags: outfitTags, filters: outfitFilters, fave: faveFilter.outfits, capsules: capsuleFilter });
+  return JSON.stringify({ deal: sessionSeed, tags: outfitTags, filters: outfitFilters, fave: faveFilter.outfits, capsules: capsuleFilter, star: starFilter });
 }
 
 function readStoredHero(){
@@ -5967,7 +6036,7 @@ function renderFaveChips(){
 // something specific about it.
 function faveEmptyMessage(mode){
   const v = faveFilter[mode];
-  if(!v.length || outfitTags.length || capsuleFilter.length || countNarrowedSlots(outfitFilters) > 0) return null;
+  if(!v.length || outfitTags.length || capsuleFilter.length || starFilter || countNarrowedSlots(outfitFilters) > 0) return null;
   return v.length === 1 ? FAVE_EMPTY[v[0]] : ['No faves at those levels yet', 'Tap a heart to cycle an outfit up through them.'];
 }
 
@@ -6695,7 +6764,7 @@ function savedOutfitMatchesSlots(rec){
 }
 
 function savedOutfitInCapsules(rec){
-  const allowed = capsuleAllowedIds();
+  const allowed = allowedPieceIds();
   if(!allowed) return true;
   return ['top','bottom','dress','jumper','jacket'].every(f => !rec[f] || allowed.has(rec[f]));
 }
@@ -6729,7 +6798,7 @@ function renderSavedOutfits(){
   // Ones whose heart was just changed stay put until the filter changes.
   const want = faveFilter.saved;
   const shown = savedShownRecs();
-  const narrowed = outfitTags.length > 0 || capsuleFilter.length > 0 || countNarrowedSlots(outfitFilters) > 0;
+  const narrowed = outfitTags.length > 0 || capsuleFilter.length > 0 || starFilter || countNarrowedSlots(outfitFilters) > 0;
   renderFaveChips();
 
   // No count line: the cards are the count, and a line saying which
@@ -7312,6 +7381,7 @@ function rowToItem(row){
     photo: row.photo || null,
     photoPath: row.photo_path || null,
     tags: Array.isArray(row.tags) ? row.tags : [],
+    starred: row.starred === true,
     archivedAt: row.archived_at || null
   };
 }
@@ -7321,6 +7391,11 @@ function rowToItem(row){
 // checks what actually came back and hides the tag controls until the
 // migration in supabase/add-tags.sql has been run.
 let tagsAvailable = false;
+
+// Starring is a later column too: until supabase/add-item-star.sql has been
+// run the star and its filter stay away rather than offering a save that
+// cannot happen.
+let starsAvailable = false;
 
 function allTags(){
   const seen = new Set();
@@ -7563,6 +7638,8 @@ async function loadAll(){
 
   tagsAvailable = itemsRes.data.length > 0 &&
     Object.prototype.hasOwnProperty.call(itemsRes.data[0], 'tags');
+  starsAvailable = itemsRes.data.length > 0 &&
+    Object.prototype.hasOwnProperty.call(itemsRes.data[0], 'starred');
 
   // The table answers for itself: a database without it errors here, and
   // the accessories button stays away rather than offering something that
@@ -8624,6 +8701,7 @@ function drawItemSheet(id){
     ${asPage ? '' : '<div class="sheet-grip"></div>'}
     <div class="modal-photo">
       ${item.photo ? `<img src="${esc(item.photo)}" alt="${esc(item.name)}" referrerpolicy="no-referrer" decoding="async">` : `<span class="no-photo">${esc(item.name)}</span>`}
+      ${starsAvailable ? `<button type="button" class="photo-edit photo-star ${item.starred ? 'on' : ''}" data-id="${esc(item.id)}" aria-pressed="${!!item.starred}" aria-label="${item.starred ? 'Remove from fave pieces' : 'Add to fave pieces'}" onclick='toggleStar(${JSON.stringify(item.id)})'>${STAR_SVG(!!item.starred)}</button>` : ''}
       ${asPage ? editIcon : ''}
     </div>
     <div class="modal-body ${asPage ? 'has-footer' : ''}">
@@ -10012,6 +10090,7 @@ function render(){
       <div class="tile ${editMode ? 'select-mode' : ''} ${selected ? 'item-selected' : ''}" data-id="${i.id}" data-key="${i.id}" onclick="${clickHandler(i.id)}">
         ${editMode ? `<span class="select-check ${selected ? 'checked' : ''}">✓</span>` : ''}
         ${i.photo ? `<img src="${esc(i.photo)}" alt="${esc(i.name)}" referrerpolicy="no-referrer" loading="lazy" decoding="async">` : `<span class="no-photo">${esc(i.name)}</span>`}
+        ${i.starred && !editMode ? `<span class="tile-star" aria-label="Fave piece">${STAR_SVG(true, 12)}</span>` : ''}
       </div>
     `;
     }).join(''));
