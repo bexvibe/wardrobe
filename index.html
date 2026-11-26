@@ -1961,6 +1961,7 @@
     text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
   }
   .capsule-pick-value.on{color:var(--ink);}
+  .capsule-pick-trail{display:inline-flex;align-items:center;margin-left:8px;}
   .capsule-pick-lead{display:inline-flex;align-items:center;margin-right:8px;}
   .capsule-pick-label{display:inline-flex;align-items:center;min-width:0;}
 
@@ -3640,7 +3641,7 @@ function filterRowHtml(section){
   // Starred is on or off, so it applies right here instead of opening a page.
   if(section === 'stars'){
     return `<button type="button" class="capsule-pick ${starFilter ? 'picked' : ''}" data-filter-row="stars" aria-pressed="${starFilter}"
-      onclick="toggleStarFilter()"><span class="capsule-pick-label"><span class="capsule-pick-lead">${STAR_SVG(starFilter, 16)}</span>Starred</span>${pickMark(starFilter)}</button>`;
+      onclick="toggleStarFilter()"><span class="capsule-pick-label">Starred<span class="capsule-pick-trail">${STAR_SVG(starFilter, 16)}</span></span>${pickMark(starFilter)}</button>`;
   }
   const value = filterSectionValue(section);
   return `<button type="button" class="capsule-pick" data-filter-row="${section}" onclick="openFilterSection('${section}')">
